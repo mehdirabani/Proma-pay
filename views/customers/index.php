@@ -33,7 +33,7 @@ for ($i = 0; $i < 6; $i++) {
     <article class="card proma-profile-tile proma-customer-index-card">
       <div class="card-body">
         <div class="proma-profile-head">
-          <span class="proma-avatar-choice <?= e($item['avatar_key'] ?: 'avatar-1') ?>"><?= e(mb_substr($item['full_name'], 0, 1, 'UTF-8')) ?></span>
+          <span class="proma-progress-avatar" style="--progress: <?= (int) ($item['good_score'] ?? 0) ?>%"><span class="proma-avatar-choice <?= e($item['avatar_key'] ?: 'avatar-1') ?>"><?= e(mb_substr($item['full_name'], 0, 1, 'UTF-8')) ?></span></span>
           <div>
             <h5><?= e($item['full_name']) ?></h5>
             <p><?= to_persian_digits($item['mobile']) ?> · <?= to_persian_digits($item['national_id']) ?></p>
@@ -47,14 +47,6 @@ for ($i = 0; $i < 6; $i++) {
           <span><strong><?= to_persian_digits($item['good_score'] ?? 0) ?>٪</strong><small>خوش‌حسابی</small></span>
         </div>
 
-        <div class="proma-mini-chart">
-          <?php if (array_sum($item['payment_trend'] ?? []) > 0): ?>
-            <canvas data-chart="mini-line" data-title="روند پرداخت" data-labels='<?= e(json_encode($trendLabels, JSON_UNESCAPED_UNICODE)) ?>' data-values='<?= e(json_encode($item['payment_trend'])) ?>'></canvas>
-          <?php else: ?>
-            <div class="proma-empty-mini">پرداخت موفقی برای نمودار ثبت نشده است.</div>
-          <?php endif; ?>
-        </div>
-
         <div class="proma-medal-row">
           <?php foreach (array_slice($item['medals'] ?? [], 0, 3) as $medal): ?>
             <span class="badge badge-light-warning"><?= e($medal['title']) ?></span>
@@ -62,22 +54,10 @@ for ($i = 0; $i < 6; $i++) {
           <?php if (empty($item['medals'])): ?><span class="badge muted">بدون مدال</span><?php endif; ?>
         </div>
 
-        <div class="proma-payment-timeline compact">
-          <?php foreach (($item['payment_timeline'] ?? []) as $payment): ?>
-            <div class="proma-timeline-item">
-              <span class="proma-timeline-dot"></span>
-              <div>
-                <strong><?= money_toman($payment['amount']) ?></strong>
-                <p><?= e($payment['contract_number']) ?> · قسط <?= to_persian_digits($payment['installment_number']) ?> · <?= e(payment_method_label($payment['method'])) ?></p>
-              </div>
-              <time><?= e(jdate($payment['paid_at'] ?: $payment['created_at'])) ?></time>
-            </div>
-          <?php endforeach; ?>
-          <?php if (empty($item['payment_timeline'])): ?><div class="empty">پرداخت موفقی ثبت نشده است.</div><?php endif; ?>
-        </div>
-
         <div class="actions">
           <a class="btn small secondary" href="<?= e(url('customers/show/' . $item['id'])) ?>">مشاهده</a>
+          <button class="btn small info" type="button" data-open-modal="customer-chart-<?= (int) $item['id'] ?>">نمودار</button>
+          <button class="btn small warning" type="button" data-open-modal="customer-timeline-<?= (int) $item['id'] ?>">تایم‌لاین</button>
           <button class="btn small" type="button" data-open-modal="edit-customer-<?= (int) $item['id'] ?>">ویرایش</button>
           <form method="post" action="<?= e(url('customers/delete/' . $item['id'])) ?>">
             <?= csrf_field() ?>
@@ -131,6 +111,40 @@ for ($i = 0; $i < 6; $i++) {
 </div>
 
 <?php foreach ($customers as $item): ?>
+  <div class="modal" id="customer-chart-<?= (int) $item['id'] ?>">
+    <div class="modal-content">
+      <div class="modal-header"><h3>نمودار پرداخت <?= e($item['full_name']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+      <div class="modal-body">
+        <div class="proma-chart-md">
+          <?php if (array_sum($item['payment_trend'] ?? []) > 0): ?>
+            <canvas data-chart="line" data-title="روند پرداخت" data-labels='<?= e(json_encode($trendLabels, JSON_UNESCAPED_UNICODE)) ?>' data-values='<?= e(json_encode($item['payment_trend'])) ?>'></canvas>
+          <?php else: ?>
+            <div class="proma-empty-mini">پرداخت موفقی برای نمودار ثبت نشده است.</div>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal" id="customer-timeline-<?= (int) $item['id'] ?>">
+    <div class="modal-content">
+      <div class="modal-header"><h3>تایم‌لاین پرداخت <?= e($item['full_name']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+      <div class="modal-body">
+        <div class="proma-payment-timeline">
+          <?php foreach (($item['payment_timeline'] ?? []) as $payment): ?>
+            <div class="proma-timeline-item">
+              <span class="proma-timeline-dot"></span>
+              <div>
+                <strong><?= money_toman($payment['amount']) ?></strong>
+                <p><?= e($payment['contract_number']) ?> · <?= e(payment_type_label($payment['payment_type'] ?? 'installment')) ?><?= !empty($payment['installment_number']) ? ' · قسط ' . to_persian_digits($payment['installment_number']) : '' ?> · <?= e(payment_method_label($payment['method'])) ?></p>
+              </div>
+              <time><?= e(jdate($payment['payment_date'] ?: ($payment['paid_at'] ?: $payment['created_at']))) ?></time>
+            </div>
+          <?php endforeach; ?>
+          <?php if (empty($item['payment_timeline'])): ?><div class="empty">پرداخت موفقی ثبت نشده است.</div><?php endif; ?>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="modal" id="edit-customer-<?= (int) $item['id'] ?>">
     <div class="modal-content proma-modal-lg">
       <div class="modal-header"><h3>ویرایش مشتری</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>

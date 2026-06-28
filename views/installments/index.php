@@ -1,4 +1,4 @@
-<?php $customerMode = $customerMode ?? false; ?>
+<?php $customerMode = $customerMode ?? false; $defaultPaymentDate = jdate(date('Y-m-d')); ?>
 <section class="card">
   <div class="card-header card-no-border">
     <div class="header-top">
@@ -57,11 +57,22 @@
           <div class="modal" id="manual-<?= (int) $item['id'] ?>">
             <div class="modal-content">
               <div class="modal-header"><h3>ثبت پرداخت دستی</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-              <form method="post" action="<?= e(url('installments/payment/' . $item['id'])) ?>">
+              <form method="post" action="<?= e(url('installments/payment/' . $item['id'])) ?>" data-payment-preview data-preview-url="<?= e(url('installments/previewPayment')) ?>">
                 <div class="modal-body form-grid">
                   <?= csrf_field() ?>
+                  <input type="hidden" name="installment_id" value="<?= (int) $item['id'] ?>">
                   <label>مبلغ<input name="amount" data-money value="<?= e(number_format((float) $item['payable'], 0)) ?>" required></label>
+                  <label>تاریخ پرداخت<input name="payment_date" value="<?= e($defaultPaymentDate) ?>" required placeholder="۱۴۰۳/۰۱/۰۱"></label>
+                  <label>ساعت پرداخت<input name="payment_time" type="time" value="<?= e(date('H:i')) ?>" required></label>
                   <label class="full">شرح<input name="description" value="پرداخت دستی"></label>
+                  <div class="proma-preview-grid full">
+                    <span><small>مانده قبل پرداخت</small><strong data-payment-remaining-before><?= money_toman($item['remaining_amount'] ?? max(0, (float) $item['base_amount'] - (float) $item['paid_amount'])) ?></strong></span>
+                    <span><small>جریمه تاریخ انتخابی</small><strong data-payment-penalty><?= money_toman($item['penalty']) ?></strong></span>
+                    <span><small>پاداش تاریخ انتخابی</small><strong data-payment-reward><?= money_toman($item['reward']) ?></strong></span>
+                    <span><small>قابل پرداخت</small><strong data-payment-payable><?= money_toman($item['payable']) ?></strong></span>
+                    <span><small>مانده پس از پرداخت</small><strong data-payment-remaining-after>۰ تومان</strong></span>
+                  </div>
+                  <div class="notice info full" data-payment-message>محاسبه پرداخت بر اساس تاریخ انتخابی انجام می‌شود.</div>
                 </div>
                 <div class="modal-footer"><button class="btn" type="submit">ثبت پرداخت</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
               </form>

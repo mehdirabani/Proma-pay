@@ -33,6 +33,7 @@ class ContractsController extends Controller
                 'customer_id' => $customerId,
                 'prefix' => $_POST['prefix'] ?? '',
                 'principal_amount' => $_POST['principal_amount'] ?? 0,
+                'down_payment_amount' => $_POST['down_payment_amount'] ?? 0,
                 'monthly_interest_rate' => $_POST['monthly_interest_rate'] ?? 0,
                 'interest_type' => ($_POST['interest_type'] ?? 'simple') === 'compound' ? 'compound' : 'simple',
                 'months' => $_POST['months'] ?? 1,
@@ -40,10 +41,11 @@ class ContractsController extends Controller
                 'first_due_date' => $firstDue,
                 'assigned_operator_id' => $_POST['assigned_operator_id'] ?? null,
                 'notes' => $_POST['notes'] ?? '',
+                'created_by' => Auth::id(),
             ], $_POST['guarantors'] ?? []);
             set_flash('success', 'قرارداد و اقساط آن با موفقیت ساخته شد.');
         } catch (Throwable $e) {
-            set_flash('error', 'ثبت قرارداد انجام نشد. شماره قرارداد یا داده‌های ورودی را بررسی کنید.');
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت قرارداد انجام نشد. شماره قرارداد یا داده‌های ورودی را بررسی کنید.');
         }
         redirect('contracts');
     }
@@ -58,19 +60,45 @@ class ContractsController extends Controller
             set_flash('error', 'تاریخ‌های قرارداد معتبر نیست.');
             redirect('contracts');
         }
-        Contract::updateContract((int) $id, [
-            'customer_id' => (int) ($_POST['customer_id'] ?? 0),
-            'principal_amount' => $_POST['principal_amount'] ?? 0,
-            'monthly_interest_rate' => $_POST['monthly_interest_rate'] ?? 0,
-            'interest_type' => ($_POST['interest_type'] ?? 'simple') === 'compound' ? 'compound' : 'simple',
-            'months' => $_POST['months'] ?? 1,
-            'start_date' => $startDate,
-            'first_due_date' => $firstDue,
-            'assigned_operator_id' => $_POST['assigned_operator_id'] ?? null,
-            'notes' => $_POST['notes'] ?? '',
-        ], $_POST['guarantors'] ?? []);
-        set_flash('success', 'قرارداد به‌روزرسانی شد.');
+        try {
+            Contract::updateContract((int) $id, [
+                'customer_id' => (int) ($_POST['customer_id'] ?? 0),
+                'principal_amount' => $_POST['principal_amount'] ?? 0,
+                'down_payment_amount' => $_POST['down_payment_amount'] ?? 0,
+                'monthly_interest_rate' => $_POST['monthly_interest_rate'] ?? 0,
+                'interest_type' => ($_POST['interest_type'] ?? 'simple') === 'compound' ? 'compound' : 'simple',
+                'months' => $_POST['months'] ?? 1,
+                'start_date' => $startDate,
+                'first_due_date' => $firstDue,
+                'assigned_operator_id' => $_POST['assigned_operator_id'] ?? null,
+                'notes' => $_POST['notes'] ?? '',
+                'updated_by' => Auth::id(),
+            ], $_POST['guarantors'] ?? []);
+            set_flash('success', 'قرارداد به‌روزرسانی شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ویرایش قرارداد انجام نشد. داده‌های ورودی را بررسی کنید.');
+        }
         redirect('contracts');
+    }
+
+    public function preview()
+    {
+        $this->requireRole('admin');
+        $preview = FinanceHelper::contractPreview(
+            $_GET['principal_amount'] ?? 0,
+            $_GET['down_payment_amount'] ?? 0,
+            $_GET['months'] ?? 1,
+            $_GET['monthly_interest_rate'] ?? 0,
+            ($_GET['interest_type'] ?? 'simple') === 'compound' ? 'compound' : 'simple'
+        );
+        $preview['formatted'] = [
+            'principal_amount' => money_toman($preview['principal_amount']),
+            'down_payment_amount' => money_toman($preview['down_payment_amount']),
+            'financed_amount' => money_toman($preview['financed_amount']),
+            'installment_amount' => money_toman($preview['installment_amount']),
+            'total_payable' => money_toman($preview['total_payable']),
+        ];
+        $this->json(['ok' => true, 'preview' => $preview]);
     }
 
     public function booklet($id)

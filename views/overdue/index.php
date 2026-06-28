@@ -23,6 +23,7 @@
             <strong><?= e($item['customer_name']) ?></strong><br>
             <span class="badge info"><?= to_persian_digits($item['mobile']) ?></span>
             <?php if ($item['secondary_phone']): ?><span class="badge muted"><?= to_persian_digits($item['secondary_phone']) ?></span><?php endif; ?>
+            <?php if (!empty($item['legal_case_count']) || ($item['legal_status'] ?? '') === 'referred'): ?><span class="badge danger">شکایت شده</span><?php endif; ?>
           </td>
           <td><?= e($item['contract_number']) ?></td>
           <td><?= e(jdate($item['due_date'])) ?></td>
@@ -30,12 +31,15 @@
           <td><?= money_toman($item['payable']) ?></td>
           <td class="actions">
             <button class="btn small secondary" type="button" data-open-modal="details-<?= (int) $item['id'] ?>">مشاهده</button>
+            <a class="btn small success" href="tel:<?= e($item['mobile']) ?>">شماره اول</a>
+            <?php if (!empty($item['secondary_phone'])): ?><a class="btn small info" href="tel:<?= e($item['secondary_phone']) ?>">شماره دوم</a><?php endif; ?>
+            <?php if (!empty($item['guarantor_mobile'])): ?><a class="btn small warning" href="tel:<?= e($item['guarantor_mobile']) ?>">ضامن</a><?php endif; ?>
             <?php if (Auth::role() === 'admin'): ?>
               <button class="btn small" type="button" data-open-modal="manual-overdue-<?= (int) $item['id'] ?>">پرداخت دستی</button>
               <button class="btn small warning" type="button" data-open-modal="discount-<?= (int) $item['id'] ?>">اصلاحیه</button>
               <button class="btn small info" type="button" data-open-modal="operator-<?= (int) $item['id'] ?>">ارسال به اپراتور</button>
             <?php endif; ?>
-            <button class="btn small danger" type="button" data-open-modal="lawyer-<?= (int) $item['id'] ?>">ارسال به وکیل</button>
+            <button class="btn small danger" type="button" data-open-modal="lawyer-<?= (int) $item['id'] ?>">ارجاع به شکایت</button>
           </td>
         </tr>
         <div class="modal" id="details-<?= (int) $item['id'] ?>">
@@ -46,6 +50,7 @@
               <div><strong>کد ملی:</strong> <?= to_persian_digits($item['national_id']) ?></div>
               <div><strong>موبایل:</strong> <?= to_persian_digits($item['mobile']) ?></div>
               <div><strong>تلفن دوم:</strong> <?= to_persian_digits($item['secondary_phone']) ?></div>
+              <div><strong>ضامن:</strong> <?= e($item['guarantor_name'] ?: '-') ?> <?= $item['guarantor_mobile'] ? ' - ' . to_persian_digits($item['guarantor_mobile']) : '' ?></div>
               <div><strong>مبلغ پایه:</strong> <?= money_toman($item['base_amount']) ?></div>
               <div><strong>پرداخت شده:</strong> <?= money_toman($item['paid_amount']) ?></div>
               <div><strong>پاداش:</strong> <?= money_toman($item['reward']) ?></div>
@@ -57,8 +62,24 @@
         <div class="modal" id="manual-overdue-<?= (int) $item['id'] ?>">
           <div class="modal-content">
             <div class="modal-header"><h3>ثبت پرداخت دستی</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-            <form method="post" action="<?= e(url('installments/payment/' . $item['id'])) ?>">
-              <div class="modal-body form-grid"><?= csrf_field() ?><label>مبلغ<input name="amount" data-money value="<?= e(number_format((float) $item['payable'], 0)) ?>"></label><label>شرح<input name="description" value="پرداخت دستی"></label></div>
+            <form method="post" action="<?= e(url('installments/payment/' . $item['id'])) ?>" data-payment-preview data-preview-url="<?= e(url('installments/previewPayment')) ?>">
+              <div class="modal-body form-grid">
+                <?= csrf_field() ?>
+                <input type="hidden" name="installment_id" value="<?= (int) $item['id'] ?>">
+                <input type="hidden" name="redirect_to" value="overdue">
+                <label>مبلغ<input name="amount" data-money value="<?= e(number_format((float) $item['payable'], 0)) ?>"></label>
+                <label>تاریخ پرداخت<input name="payment_date" value="<?= e(jdate(date('Y-m-d'))) ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
+                <label>ساعت پرداخت<input name="payment_time" type="time" value="<?= e(date('H:i')) ?>" required></label>
+                <label class="full">شرح<input name="description" value="پرداخت دستی"></label>
+                <div class="proma-preview-grid full">
+                  <span><small>مانده قبل پرداخت</small><strong data-payment-remaining-before><?= money_toman($item['remaining_amount'] ?? max(0, (float) $item['base_amount'] - (float) $item['paid_amount'])) ?></strong></span>
+                  <span><small>جریمه تاریخ انتخابی</small><strong data-payment-penalty><?= money_toman($item['penalty']) ?></strong></span>
+                  <span><small>پاداش تاریخ انتخابی</small><strong data-payment-reward><?= money_toman($item['reward']) ?></strong></span>
+                  <span><small>قابل پرداخت</small><strong data-payment-payable><?= money_toman($item['payable']) ?></strong></span>
+                  <span><small>مانده پس از پرداخت</small><strong data-payment-remaining-after>۰ تومان</strong></span>
+                </div>
+                <div class="notice info full" data-payment-message>محاسبه پرداخت بر اساس تاریخ انتخابی انجام می‌شود.</div>
+              </div>
               <div class="modal-footer"><button class="btn" type="submit">ثبت پرداخت</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
             </form>
           </div>

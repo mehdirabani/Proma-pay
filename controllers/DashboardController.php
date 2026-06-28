@@ -23,6 +23,8 @@ class DashboardController extends Controller
 
     protected function admin()
     {
+        Payment::ensureCorrectionSchema();
+
         $monthStart = date('Y-m-01');
         $nextMonthStart = date('Y-m-01', strtotime('+1 month'));
 
@@ -30,8 +32,8 @@ class DashboardController extends Controller
             "SELECT COALESCE(SUM(amount),0) AS total
              FROM payments
              WHERE status = 'paid'
-             AND COALESCE(paid_at, created_at) >= ?
-             AND COALESCE(paid_at, created_at) < ?",
+             AND COALESCE(payment_date, DATE(paid_at), DATE(created_at)) >= ?
+             AND COALESCE(payment_date, DATE(paid_at), DATE(created_at)) < ?",
             [$monthStart, $nextMonthStart]
         );
         $dueMonth = $this->sumValue(
@@ -118,9 +120,9 @@ class DashboardController extends Controller
              FROM payments p
              JOIN contracts c ON c.id = p.contract_id
              JOIN users u ON u.id = c.customer_id
-             JOIN installments i ON i.id = p.installment_id
+             LEFT JOIN installments i ON i.id = p.installment_id
              WHERE p.status = 'paid'
-             ORDER BY COALESCE(p.paid_at, p.created_at) DESC, p.id DESC
+             ORDER BY COALESCE(p.payment_date, DATE(p.paid_at), DATE(p.created_at)) DESC, p.id DESC
              LIMIT 7"
         );
         $riskCustomers = Model::fetchAll(
@@ -184,10 +186,10 @@ class DashboardController extends Controller
         $start = new DateTime('first day of this month');
         $start->modify('-5 months');
         $rows = Model::fetchAll(
-            "SELECT DATE_FORMAT(COALESCE(paid_at, created_at), '%Y-%m') AS month_key,
+            "SELECT DATE_FORMAT(COALESCE(payment_date, DATE(paid_at), DATE(created_at)), '%Y-%m') AS month_key,
              COALESCE(SUM(amount),0) AS total
              FROM payments
-             WHERE status = 'paid' AND COALESCE(paid_at, created_at) >= ?
+             WHERE status = 'paid' AND COALESCE(payment_date, DATE(paid_at), DATE(created_at)) >= ?
              GROUP BY month_key
              ORDER BY month_key",
             [$start->format('Y-m-01')]
@@ -281,6 +283,7 @@ class DashboardController extends Controller
             'title' => 'داشبورد مشتری',
             'contracts' => Contract::all(['customer_id' => $customerId]),
             'installments' => Installment::all(['customer_id' => $customerId]),
+            'payments' => Payment::recentForCustomer($customerId, 9),
             'medals' => Model::fetchAll('SELECT * FROM medals WHERE user_id = ? ORDER BY id DESC', [$customerId]),
         ]);
     }

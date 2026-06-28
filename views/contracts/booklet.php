@@ -163,6 +163,8 @@ foreach ($installments as $item) {
         <div><span>اولین سررسید</span><strong><?= e(jdate($contract['first_due_date'])) ?></strong></div>
         <div><span>تعداد اقساط</span><strong><?= to_persian_digits(count($installments)) ?></strong></div>
         <div><span>اصل قرارداد</span><strong><?= money_toman($contract['principal_amount']) ?></strong></div>
+        <div><span>پیش‌پرداخت</span><strong><?= money_toman($contract['down_payment_amount'] ?? 0) ?></strong></div>
+        <div><span>مانده تقسیط</span><strong><?= money_toman(max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0))) ?></strong></div>
       </div>
       <?php if ($guarantors): ?>
         <p><strong>ضامنان:</strong> <?= e(implode('، ', array_column($guarantors, 'full_name'))) ?></p>

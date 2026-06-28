@@ -2,7 +2,7 @@
 
 return [
     'app_name' => 'پرما پرداخت',
-    'asset_version' => '1.0.4',
+    'asset_version' => '1.0.7',
     'timezone' => 'Asia/Tehran',
     'base_url' => '',
     'session_name' => 'proma_pay_session',
@@ -11,6 +11,24 @@ return [
         'operator' => 'اپراتور',
         'lawyer' => 'وکیل',
         'customer' => 'مشتری',
+    ],
+    'departments' => [
+        '' => 'بدون واحد',
+        'management' => 'واحد مدیریت',
+        'finance' => 'مدیریت مالی و پیگیری اقساط',
+        'legal' => 'بخش حقوقی و شکایت‌ها',
+        'operations' => 'واحد عملیات و تماس',
+    ],
+    'legal_stages' => [
+        'notified' => 'ابلاغ شده',
+        'complaint_petition' => 'ثبت دادخواست شکایت',
+        'court_hearing' => 'رسیدگی جلسه دادگاه',
+        'verdict' => 'صدور رای',
+        'execution_request' => 'درخواست اجراییه',
+        'execution_registered' => 'ثبت اجراییه',
+        'money_collected' => 'وصول پول',
+        'closed' => 'مختومه',
+        'satisfaction' => 'رضایت',
     ],
     'statuses' => [
         'active' => 'فعال',
@@ -26,6 +44,7 @@ return [
         'rejected' => 'رد شده',
         'uploaded' => 'بارگذاری شده',
         'previewed' => 'آماده تأیید',
+        'applied' => 'اعمال شده',
         'raw' => 'خام',
         'open' => 'باز',
         'closed' => 'بسته',
@@ -34,5 +53,9 @@ return [
     'payment_methods' => [
         'manual' => 'پرداخت دستی',
         'zibal' => 'درگاه زیبال',
+    ],
+    'payment_types' => [
+        'installment' => 'پرداخت قسط',
+        'down_payment' => 'پیش‌پرداخت قرارداد',
     ],
 ];

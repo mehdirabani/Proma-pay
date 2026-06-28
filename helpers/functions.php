@@ -123,6 +123,21 @@ function role_label($role)
     return app_config('roles', [])[$role] ?? 'نامشخص';
 }
 
+function department_label($department)
+{
+    return app_config('departments', [])[$department ?: ''] ?? 'بدون واحد';
+}
+
+function is_staff_role($role)
+{
+    return in_array($role, ['admin', 'operator', 'lawyer'], true);
+}
+
+function legal_stage_label($stage)
+{
+    return app_config('legal_stages', [])[$stage ?: ''] ?? ($stage ?: 'ثبت اولیه');
+}
+
 function status_label($status)
 {
     return app_config('statuses', [])[$status] ?? 'نامشخص';
@@ -131,6 +146,11 @@ function status_label($status)
 function payment_method_label($method)
 {
     return app_config('payment_methods', [])[$method] ?? 'نامشخص';
+}
+
+function payment_type_label($type)
+{
+    return app_config('payment_types', [])[$type ?: 'installment'] ?? 'پرداخت قسط';
 }
 
 function badge_class($status)
@@ -147,6 +167,11 @@ function badge_class($status)
         'open' => 'info',
         'closed' => 'success',
         'approved' => 'success',
+        'confirmed' => 'success',
+        'applied' => 'success',
+        'previewed' => 'warning',
+        'uploaded' => 'info',
+        'raw' => 'muted',
         'referred' => 'warning',
         'rejected' => 'danger',
     ];

@@ -15,6 +15,7 @@ class PortalController extends Controller
             'title' => 'قراردادهای من',
             'contracts' => Contract::all(['customer_id' => Auth::id()]),
             'installments' => [],
+            'payments' => Payment::recentForCustomer(Auth::id(), 9),
             'medals' => [],
         ]);
     }
@@ -33,13 +34,10 @@ class PortalController extends Controller
     public function guaranteed()
     {
         $this->requireRole('customer');
-        $this->render('contracts/index', [
-            'title' => 'قراردادهای ضمانت شده',
+        $this->render('portal/guaranteed', [
+            'title' => 'ضمانت‌ها',
             'contracts' => Contract::all(['guarantor_id' => Auth::id()]),
-            'customers' => [],
-            'operators' => [],
-            'settings' => Settings::allKeyed(),
-            'readOnly' => true,
+            'guarantors' => Contract::guarantorsForCustomer(Auth::id()),
         ]);
     }
 }

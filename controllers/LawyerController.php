@@ -31,8 +31,12 @@ class LawyerController extends Controller
             redirect('lawyer');
         }
         $_POST['lawyer_id'] = Auth::id();
-        LegalCase::updateCase((int) $id, $_POST);
-        set_flash('success', 'وضعیت پرونده به‌روزرسانی شد.');
+        try {
+            LegalCase::updateCase((int) $id, $_POST);
+            set_flash('success', 'وضعیت پرونده به‌روزرسانی شد.');
+        } catch (InvalidArgumentException $e) {
+            set_flash('error', $e->getMessage());
+        }
         redirect('lawyer');
     }
 }

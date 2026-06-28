@@ -2,8 +2,23 @@
 
 class LegalCase extends Model
 {
+    protected static $schemaReady = false;
+
+    public static function ensureSchema()
+    {
+        if (self::$schemaReady) {
+            return;
+        }
+        try {
+            self::execute('ALTER TABLE legal_cases ADD COLUMN expense_reason TEXT NULL');
+        } catch (Throwable $e) {
+        }
+        self::$schemaReady = true;
+    }
+
     public static function all($filters = [])
     {
+        self::ensureSchema();
         $params = [];
         $where = [];
         if (!empty($filters['lawyer_id'])) {
@@ -32,6 +47,7 @@ class LegalCase extends Model
 
     public static function find($id)
     {
+        self::ensureSchema();
         return self::fetch(
             "SELECT lc.*, c.contract_number, u.full_name AS customer_name, u.mobile
              FROM legal_cases lc
@@ -44,6 +60,7 @@ class LegalCase extends Model
 
     public static function createCase($lawyerId, $contractId, $notes = '')
     {
+        self::ensureSchema();
         $contract = Contract::find($contractId);
         if (!$contract) {
             return false;
@@ -51,7 +68,7 @@ class LegalCase extends Model
         self::execute(
             'INSERT INTO legal_cases (lawyer_id, customer_id, contract_id, status, stage, notes, expense_amount, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, 0, NOW(), NOW())',
-            [$lawyerId ?: null, $contract['customer_id'], (int) $contractId, 'open', 'ثبت اولیه', $notes]
+            [$lawyerId ?: null, $contract['customer_id'], (int) $contractId, 'open', 'notified', $notes]
         );
         self::execute('UPDATE contracts SET legal_status = ? WHERE id = ?', ['referred', (int) $contractId]);
         if ($lawyerId) {
@@ -62,14 +79,20 @@ class LegalCase extends Model
 
     public static function updateCase($id, array $data)
     {
+        self::ensureSchema();
+        $expense = normalize_money($data['expense_amount'] ?? 0);
+        if ($expense > 0 && trim($data['expense_reason'] ?? '') === '') {
+            throw new InvalidArgumentException('علت هزینه الزامی است.');
+        }
         self::execute(
-            'UPDATE legal_cases SET lawyer_id = ?, stage = ?, status = ?, complaint_number = ?, expense_amount = ?, notes = ?, updated_at = NOW() WHERE id = ?',
+            'UPDATE legal_cases SET lawyer_id = ?, stage = ?, status = ?, complaint_number = ?, expense_amount = ?, expense_reason = ?, notes = ?, updated_at = NOW() WHERE id = ?',
             [
                 $data['lawyer_id'] ?: null,
                 $data['stage'],
                 $data['status'],
                 $data['complaint_number'] ?: null,
-                normalize_money($data['expense_amount'] ?? 0),
+                $expense,
+                trim($data['expense_reason'] ?? ''),
                 $data['notes'] ?? '',
                 (int) $id,
             ]
@@ -78,6 +101,7 @@ class LegalCase extends Model
 
     public static function eligibleContracts()
     {
+        self::ensureSchema();
         return self::fetchAll(
             "SELECT DISTINCT c.*, u.full_name AS customer_name, u.mobile
              FROM contracts c

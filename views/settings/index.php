@@ -41,8 +41,12 @@ $callbackUrl = $callbackBase . '/index.php?route=payments/callback';
   <section class="card">
     <div class="card-header"><h2>تنظیمات هوش مصنوعی</h2></div>
     <div class="card-body form-grid">
-      <label>کلید اوپن‌روتر<input name="openrouter_api_key" value="<?= e($settings['openrouter_api_key']) ?>" dir="ltr"></label>
+      <label>کلید اوپن‌روتر<input name="openrouter_api_key" type="password" autocomplete="off" value="<?= e($settings['openrouter_api_key']) ?>" dir="ltr"></label>
       <label>مدل اوپن‌روتر<input name="openrouter_model" value="<?= e($settings['openrouter_model']) ?>" dir="ltr"></label>
+      <div class="full ai-test-actions">
+        <button class="btn secondary" type="button" data-ai-test-url="<?= e(url('settings/testAi')) ?>">تست اتصال</button>
+        <span class="ai-test-result" data-ai-test-result>برای تست، کلید و مدل را وارد کنید و دکمه تست اتصال را بزنید.</span>
+      </div>
     </div>
   </section>
   <section class="card">

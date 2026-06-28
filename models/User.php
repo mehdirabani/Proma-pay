@@ -12,6 +12,9 @@ class User extends Model
         foreach ([
             'address' => 'TEXT NULL',
             'avatar_key' => "VARCHAR(40) NULL",
+            'department' => "VARCHAR(40) NULL",
+            'is_department_manager' => "TINYINT(1) NOT NULL DEFAULT 0",
+            'tour_completed_at' => 'DATETIME NULL',
         ] as $column => $definition) {
             try {
                 self::execute("ALTER TABLE users ADD COLUMN {$column} {$definition}");
@@ -101,10 +104,37 @@ class User extends Model
 
     public static function addMedal($userId, $title, $description = '', $points = 0)
     {
+        self::ensureMedalSchema();
         self::execute(
-            'INSERT INTO medals (user_id, title, description, points, created_at) VALUES (?, ?, ?, ?, NOW())',
-            [(int) $userId, trim($title), trim($description), (int) to_english_digits($points)]
+            'INSERT INTO medals (user_id, title, description, points, code, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+            [(int) $userId, trim($title), trim($description), (int) to_english_digits($points), null]
         );
+    }
+
+    public static function addMedalIfMissing($userId, $code, $title, $description = '', $points = 0)
+    {
+        self::ensureMedalSchema();
+        $exists = self::fetch('SELECT id FROM medals WHERE user_id = ? AND code = ? LIMIT 1', [(int) $userId, $code]);
+        if ($exists) {
+            return false;
+        }
+        self::execute(
+            'INSERT INTO medals (user_id, title, description, points, code, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+            [(int) $userId, trim($title), trim($description), (int) to_english_digits($points), $code]
+        );
+        return true;
+    }
+
+    public static function ensureMedalSchema()
+    {
+        try {
+            self::execute('ALTER TABLE medals ADD COLUMN code VARCHAR(80) NULL');
+        } catch (Throwable $e) {
+        }
+        try {
+            self::execute('CREATE UNIQUE INDEX uq_medals_user_code ON medals (user_id, code)');
+        } catch (Throwable $e) {
+        }
     }
 
     public static function deleteMedal($id)
@@ -114,9 +144,10 @@ class User extends Model
 
     public static function create(array $data)
     {
+        self::ensureProfileColumns();
         self::execute(
-            'INSERT INTO users (role, username, full_name, national_id, mobile, secondary_phone, email, password_hash, status, created_at)
-             VALUES (:role, :username, :full_name, :national_id, :mobile, :secondary_phone, :email, :password_hash, :status, NOW())',
+            'INSERT INTO users (role, username, full_name, national_id, mobile, secondary_phone, email, password_hash, status, department, is_department_manager, created_at)
+             VALUES (:role, :username, :full_name, :national_id, :mobile, :secondary_phone, :email, :password_hash, :status, :department, :is_department_manager, NOW())',
             [
                 'role' => $data['role'],
                 'username' => $data['username'] ?: null,
@@ -127,6 +158,8 @@ class User extends Model
                 'email' => $data['email'] ?: null,
                 'password_hash' => password_hash($data['password'] ?: bin2hex(random_bytes(8)), PASSWORD_DEFAULT),
                 'status' => $data['status'] ?? 'active',
+                'department' => $data['department'] ?? null,
+                'is_department_manager' => !empty($data['is_department_manager']) ? 1 : 0,
             ]
         );
         return (int) self::lastInsertId();
@@ -151,6 +184,8 @@ class User extends Model
             'status' => $data['status'] ?? $user['status'],
             'address' => $data['address'] ?? ($user['address'] ?? ''),
             'avatar_key' => $data['avatar_key'] ?? ($user['avatar_key'] ?? null),
+            'department' => $data['department'] ?? ($user['department'] ?? null),
+            'is_department_manager' => !empty($data['is_department_manager']) ? 1 : 0,
         ];
         $passwordSql = '';
         if (!empty($data['password'])) {
@@ -160,7 +195,8 @@ class User extends Model
         self::execute(
             "UPDATE users SET role = :role, username = :username, full_name = :full_name,
              national_id = :national_id, mobile = :mobile, secondary_phone = :secondary_phone,
-             email = :email, status = :status, address = :address, avatar_key = :avatar_key {$passwordSql} WHERE id = :id",
+             email = :email, status = :status, address = :address, avatar_key = :avatar_key,
+             department = :department, is_department_manager = :is_department_manager {$passwordSql} WHERE id = :id",
             $params
         );
         return true;
@@ -203,6 +239,18 @@ class User extends Model
 
     public static function staffContacts()
     {
+        self::ensureProfileColumns();
         return self::fetchAll("SELECT id, full_name, role FROM users WHERE role IN ('admin','operator','lawyer') AND status = 'active' ORDER BY role, full_name");
+    }
+
+    public static function departments()
+    {
+        return app_config('departments', []);
+    }
+
+    public static function markTourCompleted($id)
+    {
+        self::ensureProfileColumns();
+        self::execute('UPDATE users SET tour_completed_at = NOW() WHERE id = ?', [(int) $id]);
     }
 }

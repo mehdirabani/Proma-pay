@@ -69,8 +69,11 @@ class Installment extends Model
             $params[] = $today;
         }
         $rows = self::fetchAll(
-            "SELECT i.*, c.contract_number, c.customer_id, c.assigned_operator_id, u.full_name AS customer_name,
-             u.mobile, u.secondary_phone, u.national_id
+            "SELECT i.*, c.contract_number, c.customer_id, c.assigned_operator_id, c.legal_status,
+             u.full_name AS customer_name, u.mobile, u.secondary_phone, u.national_id,
+             (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id AND lc.status != 'closed') AS legal_case_count,
+             (SELECT gu.full_name FROM contract_guarantors cg JOIN users gu ON gu.id = cg.guarantor_id WHERE cg.contract_id = c.id ORDER BY gu.id LIMIT 1) AS guarantor_name,
+             (SELECT gu.mobile FROM contract_guarantors cg JOIN users gu ON gu.id = cg.guarantor_id WHERE cg.contract_id = c.id ORDER BY gu.id LIMIT 1) AS guarantor_mobile
              FROM installments i
              JOIN contracts c ON c.id = i.contract_id
              JOIN users u ON u.id = c.customer_id
@@ -84,10 +87,11 @@ class Installment extends Model
     public static function createCustom($contractId, $dueDate, $amount)
     {
         $number = (int) self::fetch('SELECT COALESCE(MAX(installment_number), 0) + 1 AS n FROM installments WHERE contract_id = ?', [$contractId])['n'];
+        $amount = normalize_money($amount);
         self::execute(
-            'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, status, created_at)
-             VALUES (?, ?, ?, ?, 0, ?, NOW())',
-            [(int) $contractId, $number, $dueDate, normalize_money($amount), $dueDate < date('Y-m-d') ? 'overdue' : 'pending']
+            'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, created_at)
+             VALUES (?, ?, ?, ?, 0, ?, ?, NOW())',
+            [(int) $contractId, $number, $dueDate, $amount, $amount, $dueDate < date('Y-m-d') ? 'overdue' : 'pending']
         );
     }
 
@@ -126,7 +130,7 @@ class Installment extends Model
         if ($amount > 0) {
             Payment::record($id, $installment['contract_id'], $userId, $amount, 'manual', 'paid', null, null, 'تسویه دستی قسط');
         }
-        self::execute('UPDATE installments SET paid_amount = base_amount, status = ? WHERE id = ?', ['paid', (int) $id]);
+        self::execute('UPDATE installments SET paid_amount = base_amount, remaining_amount = 0, last_payment_date = CURDATE(), status = ? WHERE id = ?', ['paid', (int) $id]);
         return true;
     }
 
@@ -137,7 +141,7 @@ class Installment extends Model
             return;
         }
         $status = FinanceHelper::status((float) $row['base_amount'], (float) $row['paid_amount'], $row['due_date']);
-        self::execute('UPDATE installments SET status = ? WHERE id = ?', [$status, (int) $id]);
+        self::execute('UPDATE installments SET status = ?, remaining_amount = ? WHERE id = ?', [$status, max(0, (float) $row['base_amount'] - (float) $row['paid_amount']), (int) $id]);
     }
 
     public static function withPreview(array $rows)
@@ -145,10 +149,11 @@ class Installment extends Model
         $settings = Settings::allKeyed();
         foreach ($rows as &$row) {
             $storedStatus = $row['status'] ?? null;
+            $storedRemaining = (float) ($row['remaining_amount'] ?? ((float) ($row['base_amount'] ?? 0) - (float) ($row['paid_amount'] ?? 0)));
             $preview = FinanceHelper::preview($row, Payment::forInstallment($row['id']), $settings);
             $row = array_merge($row, $preview);
-            if ($row['status'] !== $storedStatus) {
-                self::execute('UPDATE installments SET status = ? WHERE id = ?', [$row['status'], $row['id']]);
+            if ($row['status'] !== $storedStatus || $storedRemaining !== (float) ($preview['remaining_amount'] ?? 0)) {
+                self::execute('UPDATE installments SET status = ?, remaining_amount = ? WHERE id = ?', [$row['status'], $row['remaining_amount'], $row['id']]);
             }
         }
         unset($row);

@@ -21,7 +21,7 @@ if (Auth::role() === 'admin') {
         ['payments', 'پرداخت‌ها', 'stroke-ecommerce', 'fill-ecommerce'],
         ['legal', 'حقوقی و شکایت‌ها', 'stroke-file', 'fill-file'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
-        ['imports', 'ورود اکسل', 'stroke-table', 'fill-table'],
+        ['imports', 'ورود دیتا', 'stroke-table', 'fill-table'],
         ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
         ['ai', 'تحلیل هوشمند', 'stroke-learning', 'fill-learning'],
         ['settings', 'تنظیمات', 'stroke-others', 'fill-others'],
@@ -29,12 +29,15 @@ if (Auth::role() === 'admin') {
 } elseif (Auth::role() === 'operator') {
     $nav = [
         ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
+        ['users', 'کاربران', 'stroke-user', 'fill-user'],
+        ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
         ['operator', 'پیگیری‌ها', 'stroke-task', 'fill-task'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
     ];
 } elseif (Auth::role() === 'lawyer') {
     $nav = [
         ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
+        ['users', 'کاربران', 'stroke-user', 'fill-user'],
         ['lawyer', 'پرونده‌ها', 'stroke-file', 'fill-file'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
     ];
@@ -74,7 +77,7 @@ if (Auth::role() === 'admin') {
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
 </head>
-<body onload="if (window.startTime) startTime()">
+<body onload="if (window.startTime) startTime()" data-tour-needed="<?= empty($user['tour_completed_at']) ? '1' : '0' ?>" data-tour-complete-url="<?= e(url('tour/complete')) ?>" data-tour-token="<?= e(Csrf::token()) ?>">
   <div class="loader-wrapper">
     <div class="loader-index"><span></span></div>
     <svg><defs></defs><filter id="goo"><feGaussianBlur in="SourceGraphic" stdDeviation="11" result="blur"></feGaussianBlur><feColorMatrix in="blur" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo"></feColorMatrix></filter></svg>
@@ -277,5 +280,15 @@ if (Auth::role() === 'admin') {
   <script src="<?= e(template_asset_url('js/height-equal.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/script.js')) ?>"></script>
   <script src="<?= e(asset_url('assets/js/app.js')) ?>"></script>
+  <div class="proma-tour" data-tour hidden>
+    <div class="proma-tour-box">
+      <strong data-tour-title>خوش آمدید</strong>
+      <p data-tour-text>Proma-pay آماده است.</p>
+      <div class="proma-tour-actions">
+        <button class="btn secondary" type="button" data-tour-skip>رد کردن</button>
+        <button class="btn" type="button" data-tour-next>بعدی</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

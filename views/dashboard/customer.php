@@ -59,19 +59,21 @@
       <div class="card-body pt-0">
         <div class="table-responsive">
           <table class="table table-bordernone">
-            <thead><tr><th>شماره</th><th>مبلغ</th><th>نوع سود</th><th>شروع</th><th>وضعیت</th><th>دفترچه</th></tr></thead>
+            <thead><tr><th>شماره</th><th>مبلغ اصل</th><th>پیش‌پرداخت</th><th>مانده تقسیط</th><th>نوع سود</th><th>شروع</th><th>وضعیت</th><th>دفترچه</th></tr></thead>
             <tbody>
             <?php foreach ($contracts as $contract): ?>
               <tr>
                 <td><?= e($contract['contract_number']) ?></td>
                 <td><?= money_toman($contract['principal_amount']) ?></td>
+                <td><?= money_toman($contract['down_payment_amount'] ?? 0) ?></td>
+                <td><?= money_toman(max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0))) ?></td>
                 <td><?= $contract['interest_type'] === 'compound' ? 'مرکب ماهانه' : 'ساده ماهانه' ?></td>
                 <td><?= e(jdate($contract['start_date'])) ?></td>
                 <td><span class="badge badge-light-<?= e(badge_class($contract['status'])) ?>"><?= e(status_label($contract['status'])) ?></span></td>
                 <td><a class="btn small secondary" href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank">چاپ</a></td>
               </tr>
             <?php endforeach; ?>
-            <?php if (!$contracts): ?><tr><td colspan="6" class="text-center f-light">قراردادی برای شما ثبت نشده است.</td></tr><?php endif; ?>
+            <?php if (!$contracts): ?><tr><td colspan="8" class="text-center f-light">قراردادی برای شما ثبت نشده است.</td></tr><?php endif; ?>
             </tbody>
           </table>
         </div>
@@ -99,6 +101,45 @@
             <?php if (!$installments): ?><tr><td colspan="5" class="text-center f-light">قسطی ثبت نشده است.</td></tr><?php endif; ?>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-12">
+    <div class="card">
+      <div class="card-header card-no-border"><div class="header-top"><h5>تاریخچه سفارشات و قراردادهای اخیر</h5><a class="link-only" href="<?= e(url('portal/contracts')) ?>">همه قراردادها</a></div></div>
+      <div class="card-body">
+        <div class="row g-sm-4 g-3 proma-order-history">
+          <?php foreach (array_slice($contracts, 0, 3) as $contract): ?>
+            <div class="col-xxl-4 col-md-6">
+              <div class="prooduct-details-box">
+                <div class="media"><span class="proma-order-icon"><i class="fa fa-file-text-o"></i></span>
+                  <div class="media-body ms-3">
+                    <div class="product-name"><h6><a href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank"><?= e($contract['contract_number']) ?></a></h6></div>
+                    <div class="rating"><span class="badge <?= e(badge_class($contract['status'])) ?>"><?= e(status_label($contract['status'])) ?></span></div>
+                    <div class="price d-flex"><div class="text-muted me-2">مبلغ</div>: <?= money_toman($contract['principal_amount']) ?></div>
+                    <div class="avaiabilty"><div class="text-success">شروع <?= e(jdate($contract['start_date'])) ?></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+          <?php foreach (($payments ?? []) as $payment): ?>
+            <div class="col-xxl-4 col-md-6">
+              <div class="prooduct-details-box">
+                <div class="media"><span class="proma-order-icon success"><i class="fa fa-credit-card"></i></span>
+                  <div class="media-body ms-3">
+                    <div class="product-name"><h6><?= e($payment['contract_number']) ?></h6></div>
+                    <div class="rating"><span class="badge badge-light-info"><?= e(payment_type_label($payment['payment_type'] ?? 'installment')) ?></span></div>
+                    <div class="price d-flex"><div class="text-muted me-2">پرداخت</div>: <?= money_toman($payment['amount']) ?></div>
+                    <div class="avaiabilty"><div class="text-success"><?= e(jdate($payment['payment_date'] ?: ($payment['paid_at'] ?: $payment['created_at']))) ?></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+          <?php if (!$contracts && empty($payments)): ?><div class="empty">تاریخچه‌ای برای نمایش وجود ندارد.</div><?php endif; ?>
         </div>
       </div>
     </div>

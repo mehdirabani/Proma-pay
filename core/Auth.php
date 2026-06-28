@@ -137,4 +137,20 @@ class Auth
     {
         return $_SESSION['role'] ?? null;
     }
+
+    public static function isStaff()
+    {
+        return is_staff_role(self::role());
+    }
+
+    public static function requireStaff()
+    {
+        self::requireLogin();
+        if (!self::isStaff()) {
+            http_response_code(403);
+            $controller = new Controller();
+            $controller->render('errors/403', ['title' => 'دسترسی غیرمجاز'], 'app');
+            exit;
+        }
+    }
 }

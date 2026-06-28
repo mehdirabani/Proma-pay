@@ -1,8 +1,8 @@
-const CACHE_NAME = 'proma-pay-static-v1';
+const CACHE_NAME = 'proma-pay-static-v1.0.7';
 const STATIC_ASSETS = [
   'offline.html',
-  'assets/css/app.css?v=1.0.0',
-  'assets/js/app.js?v=1.0.0',
+  'assets/css/app.css?v=1.0.7',
+  'assets/js/app.js?v=1.0.7',
   'manifest.json'
 ];
 

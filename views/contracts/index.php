@@ -20,13 +20,17 @@ for ($i = 0; $i < 6; $i++) {
           <?php
           $stats = Contract::installmentStats((int) $cardContract['id']);
           $trend = Payment::monthlyTrendForContract((int) $cardContract['id']);
+          $timeline = Payment::recentForContract((int) $cardContract['id'], 3);
           $remainingCount = max(0, (int) $stats['total'] - (int) $stats['paid']);
+          $progress = (int) $stats['total'] > 0 ? min(100, (int) round(((int) $stats['paid'] / (int) $stats['total']) * 100)) : 0;
+          $financedAmount = max(0, (float) $cardContract['principal_amount'] - (float) ($cardContract['down_payment_amount'] ?? 0));
           ?>
           <article class="proma-contract-card">
             <div class="proma-contract-card-main">
-              <span class="proma-contract-badge"><?= e($cardContract['contract_number']) ?></span>
+              <span class="proma-progress-avatar sm" style="--progress: <?= $progress ?>%"><span class="proma-contract-badge"><?= e($cardContract['contract_number']) ?></span></span>
               <h6><?= e($cardContract['customer_name']) ?></h6>
-              <p><?= money_toman($cardContract['principal_amount']) ?></p>
+              <p><?= money_toman($financedAmount) ?></p>
+              <small>اصل: <?= money_toman($cardContract['principal_amount']) ?> · پیش‌پرداخت: <?= money_toman($cardContract['down_payment_amount'] ?? 0) ?></small>
             </div>
             <div class="proma-contract-stats four">
               <span><strong><?= to_persian_digits($stats['total']) ?></strong><small>کل اقساط</small></span>
@@ -34,32 +38,59 @@ for ($i = 0; $i < 6; $i++) {
               <span><strong><?= to_persian_digits($remainingCount) ?></strong><small>باقی‌مانده</small></span>
               <span><strong><?= to_persian_digits($stats['overdue']) ?></strong><small>معوق</small></span>
             </div>
-            <div class="proma-mini-chart" aria-label="روند پرداخت اقساط">
-              <?php if (array_sum($trend) > 0): ?>
-                <canvas data-chart="mini-line" data-title="روند پرداخت" data-labels='<?= e(json_encode($contractTrendLabels, JSON_UNESCAPED_UNICODE)) ?>' data-values='<?= e(json_encode($trend)) ?>'></canvas>
-              <?php else: ?>
-                <div class="proma-empty-mini">پرداخت موفقی برای نمودار ثبت نشده است.</div>
-              <?php endif; ?>
-            </div>
             <div class="proma-contract-card-footer">
               <span>مانده: <?= money_toman($stats['outstanding']) ?></span>
               <a href="<?= e(url('contracts/booklet/' . $cardContract['id'])) ?>" target="_blank">دفترچه</a>
             </div>
+            <div class="actions">
+              <button class="btn small info" type="button" data-open-modal="contract-chart-<?= (int) $cardContract['id'] ?>">نمودار</button>
+              <button class="btn small warning" type="button" data-open-modal="contract-timeline-<?= (int) $cardContract['id'] ?>">تایم‌لاین</button>
+            </div>
           </article>
+          <div class="modal" id="contract-chart-<?= (int) $cardContract['id'] ?>">
+            <div class="modal-content">
+              <div class="modal-header"><h3>نمودار <?= e($cardContract['contract_number']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+              <div class="modal-body"><div class="proma-chart-md">
+                <?php if (array_sum($trend) > 0): ?>
+                  <canvas data-chart="line" data-title="روند پرداخت" data-labels='<?= e(json_encode($contractTrendLabels, JSON_UNESCAPED_UNICODE)) ?>' data-values='<?= e(json_encode($trend)) ?>'></canvas>
+                <?php else: ?><div class="proma-empty-mini">پرداخت موفقی برای نمودار ثبت نشده است.</div><?php endif; ?>
+              </div></div>
+            </div>
+          </div>
+          <div class="modal" id="contract-timeline-<?= (int) $cardContract['id'] ?>">
+            <div class="modal-content">
+              <div class="modal-header"><h3>تایم‌لاین <?= e($cardContract['contract_number']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+              <div class="modal-body"><div class="proma-payment-timeline">
+                <?php foreach ($timeline as $payment): ?>
+                  <div class="proma-timeline-item">
+                    <span class="proma-timeline-dot"></span>
+                    <div><strong><?= money_toman($payment['amount']) ?></strong><p><?= e(payment_type_label($payment['payment_type'] ?? 'installment')) ?><?= !empty($payment['installment_number']) ? ' · قسط ' . to_persian_digits($payment['installment_number']) : '' ?></p></div>
+                    <time><?= e(jdate($payment['payment_date'] ?? $payment['paid_at'] ?? $payment['created_at'])) ?></time>
+                  </div>
+                <?php endforeach; ?>
+                <?php if (!$timeline): ?><div class="empty">پرداخت موفقی ثبت نشده است.</div><?php endif; ?>
+              </div></div>
+            </div>
+          </div>
         <?php endforeach; ?>
       </div>
     </div>
   <?php endif; ?>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>سود</th><th>اقساط</th><th>ضامنان</th><th>وضعیت</th><?php if (!$readOnly): ?><th>عملیات</th><?php endif; ?></tr></thead>
+      <thead><tr><th>شماره</th><th>مشتری</th><th>مبالغ قرارداد</th><th>سود</th><th>اقساط</th><th>ضامنان</th><th>وضعیت</th><?php if (!$readOnly): ?><th>عملیات</th><?php endif; ?></tr></thead>
       <tbody>
       <?php foreach ($contracts as $contract): ?>
         <?php $guarantors = Contract::guarantors($contract['id']); ?>
         <tr>
           <td><?= e($contract['contract_number']) ?></td>
           <td><?= e($contract['customer_name']) ?><br><span class="badge muted"><?= to_persian_digits($contract['mobile']) ?></span></td>
-          <td><?= money_toman($contract['principal_amount']) ?></td>
+          <?php $financedAmount = max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0)); ?>
+          <td>
+            <strong><?= money_toman($contract['principal_amount']) ?></strong><br>
+            <small>پیش‌پرداخت: <?= money_toman($contract['down_payment_amount'] ?? 0) ?></small><br>
+            <small>قابل تقسیط: <?= money_toman($financedAmount) ?></small>
+          </td>
           <td><?= percent_label($contract['monthly_interest_rate']) ?>، <?= $contract['interest_type'] === 'compound' ? 'مرکب' : 'ساده' ?></td>
           <td><?= to_persian_digits($contract['months']) ?></td>
           <td><?= $guarantors ? e(implode('، ', array_column($guarantors, 'full_name'))) : 'ندارد' ?></td>
@@ -84,47 +115,95 @@ for ($i = 0; $i < 6; $i++) {
 <div class="modal" id="create-contract">
   <div class="modal-content proma-modal-xl">
     <div class="modal-header"><h3>افزودن قرارداد</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-    <form method="post" action="<?= e(url('contracts/store')) ?>">
-      <div class="modal-body form-grid three">
+    <form method="post" action="<?= e(url('contracts/store')) ?>" data-contract-form data-preview-url="<?= e(url('contracts/preview')) ?>" novalidate>
+      <div class="modal-body proma-contract-form">
         <?= csrf_field() ?>
-        <label>پیشوند قرارداد<input name="prefix" value="<?= e($settings['contract_prefix'] ?? 'Pr') ?>" dir="ltr"></label>
-        <label>مشتری
-          <input data-select-filter="customer-select" placeholder="جست‌وجوی نام، کد ملی یا موبایل">
-          <select id="customer-select" name="customer_id">
-            <option value="">انتخاب مشتری موجود</option>
-            <?php foreach ($customers as $customer): ?>
-              <option value="<?= (int) $customer['id'] ?>"><?= e($customer['full_name']) ?> - <?= to_persian_digits($customer['national_id']) ?> - <?= to_persian_digits($customer['mobile']) ?></option>
-            <?php endforeach; ?>
-          </select>
-        </label>
-        <label>اپراتور پیگیری
-          <select name="assigned_operator_id"><option value="">بدون ارجاع</option><?php foreach ($operators as $operator): ?><option value="<?= (int) $operator['id'] ?>"><?= e($operator['full_name']) ?></option><?php endforeach; ?></select>
-        </label>
-        <label>نام مشتری تازه<input name="new_customer_full_name" placeholder="در صورت نبودن مشتری"></label>
-        <label>کد ملی مشتری تازه<input name="new_customer_national_id" inputmode="numeric"></label>
-        <label>موبایل مشتری تازه<input name="new_customer_mobile" inputmode="tel"></label>
-        <label>تلفن دوم مشتری تازه<input name="new_customer_secondary_phone" inputmode="tel"></label>
-        <label>مبلغ اصل قرارداد<input name="principal_amount" data-money required placeholder="مبلغ به تومان"></label>
-        <label>نرخ سود ماهانه<input name="monthly_interest_rate" required inputmode="decimal" placeholder="درصد"></label>
-        <label>تعداد اقساط<input name="months" required inputmode="numeric" value="12"></label>
-        <label>تاریخ شروع<input name="start_date" required value="<?= e($defaultStartDate ?? '') ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
-        <label>نخستین سررسید<input name="first_due_date" required value="<?= e($defaultFirstDueDate ?? '') ?>" placeholder="۱۴۰۳/۰۲/۰۱"></label>
-        <div class="full">
-          <span class="field-title">نوع سود</span>
-          <div class="switch-options" data-exclusive>
-            <label><input type="checkbox" name="interest_type" value="simple" checked><span>ساده ماهانه</span></label>
-            <label><input type="checkbox" name="interest_type" value="compound"><span>مرکب ماهانه</span></label>
+        <section class="proma-form-section">
+          <div class="proma-section-title"><h4>اطلاعات قرارداد</h4><span>شماره قرارداد به صورت خودکار ساخته می‌شود.</span></div>
+          <div class="form-grid three">
+            <label>پیشوند قرارداد<input name="prefix" value="<?= e($settings['contract_prefix'] ?? 'Pr') ?>" dir="ltr"></label>
+            <label>سریال بعدی<input value="<?= to_persian_digits($settings['contract_next_serial'] ?? '') ?>" disabled></label>
+            <label>اپراتور پیگیری
+              <select name="assigned_operator_id"><option value="">بدون ارجاع</option><?php foreach ($operators as $operator): ?><option value="<?= (int) $operator['id'] ?>"><?= e($operator['full_name']) ?></option><?php endforeach; ?></select>
+            </label>
           </div>
-        </div>
-        <label class="full">ضامنان
-          <input data-select-filter="guarantor-select" placeholder="جست‌وجوی ضامن">
-          <select id="guarantor-select" name="guarantors[]" multiple>
-            <?php foreach ($customers as $customer): ?>
-              <option value="<?= (int) $customer['id'] ?>"><?= e($customer['full_name']) ?> - <?= to_persian_digits($customer['national_id']) ?> - <?= to_persian_digits($customer['mobile']) ?></option>
-            <?php endforeach; ?>
-          </select>
-        </label>
-        <label class="full">یادداشت<textarea name="notes"></textarea></label>
+        </section>
+
+        <section class="proma-form-section">
+          <div class="proma-section-title"><h4>اطلاعات مشتری</h4><button class="btn small secondary" type="button" data-toggle-new-customer>مشتری جدید</button></div>
+          <div class="form-grid two">
+            <label class="full">انتخاب مشتری موجود
+              <input data-select-filter="customer-select" placeholder="جست‌وجوی نام، کد ملی یا موبایل">
+              <select id="customer-select" name="customer_id" data-customer-select>
+                <option value="">انتخاب مشتری موجود</option>
+                <?php foreach ($customers as $customer): ?>
+                  <option value="<?= (int) $customer['id'] ?>"><?= e($customer['full_name']) ?> - <?= to_persian_digits($customer['national_id']) ?> - <?= to_persian_digits($customer['mobile']) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </label>
+            <div class="proma-chip-row full" data-customer-chip></div>
+          </div>
+          <div class="form-grid four proma-new-customer-fields" data-new-customer-fields hidden>
+            <label>نام مشتری تازه<input name="new_customer_full_name" placeholder="نام و نام خانوادگی"></label>
+            <label>کد ملی مشتری تازه<input name="new_customer_national_id" inputmode="numeric"></label>
+            <label>موبایل مشتری تازه<input name="new_customer_mobile" inputmode="tel"></label>
+            <label>تلفن دوم مشتری تازه<input name="new_customer_secondary_phone" inputmode="tel"></label>
+          </div>
+        </section>
+
+        <section class="proma-form-section">
+          <div class="proma-section-title"><h4>اطلاعات مالی</h4><span>سود فقط روی مانده قابل تقسیط محاسبه می‌شود.</span></div>
+          <div class="form-grid three">
+            <label>مبلغ اصل قرارداد<input name="principal_amount" data-money data-contract-principal required placeholder="مبلغ به تومان"></label>
+            <label>مبلغ پیش‌پرداخت<input name="down_payment_amount" data-money data-contract-down-payment value="0" placeholder="۰ تومان"></label>
+            <div class="proma-live-card">
+              <span>مانده قابل تقسیط</span>
+              <strong data-financed-balance>۰ تومان</strong>
+            </div>
+            <label>نرخ سود ماهانه<input name="monthly_interest_rate" data-contract-rate required inputmode="decimal" placeholder="درصد"></label>
+            <label>تعداد اقساط<input name="months" data-contract-months required inputmode="numeric" value="12"></label>
+            <div>
+              <span class="field-title">نوع سود</span>
+              <div class="switch-options" data-exclusive>
+                <label><input type="checkbox" name="interest_type" value="simple" checked><span>ساده ماهانه</span></label>
+                <label><input type="checkbox" name="interest_type" value="compound"><span>مرکب ماهانه</span></label>
+              </div>
+            </div>
+          </div>
+          <div class="proma-preview-grid" data-contract-preview>
+            <span><small>مبلغ اصل قرارداد</small><strong data-preview-principal>۰ تومان</strong></span>
+            <span><small>مبلغ پیش‌پرداخت</small><strong data-preview-down-payment>۰ تومان</strong></span>
+            <span><small>مانده قابل تقسیط</small><strong data-preview-financed>۰ تومان</strong></span>
+            <span><small>مبلغ تقریبی هر قسط</small><strong data-preview-installment>۰ تومان</strong></span>
+            <span><small>مجموع قابل پرداخت</small><strong data-preview-total>۰ تومان</strong></span>
+          </div>
+          <div class="proma-inline-error" data-contract-error hidden></div>
+        </section>
+
+        <section class="proma-form-section">
+          <div class="proma-section-title"><h4>زمان‌بندی اقساط</h4><span>تاریخ‌ها در فرم شمسی هستند و در دیتابیس میلادی ذخیره می‌شوند.</span></div>
+          <div class="form-grid two">
+            <label>تاریخ شروع<input name="start_date" required value="<?= e($defaultStartDate ?? '') ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
+            <label>نخستین سررسید<input name="first_due_date" required value="<?= e($defaultFirstDueDate ?? '') ?>" placeholder="۱۴۰۳/۰۲/۰۱"></label>
+          </div>
+        </section>
+
+        <section class="proma-form-section">
+          <div class="proma-section-title"><h4>ضامنان</h4><span>مشتری اصلی نمی‌تواند ضامن خودش باشد.</span></div>
+          <label class="full">انتخاب ضامن
+            <input data-select-filter="guarantor-select" placeholder="جست‌وجوی ضامن">
+            <select id="guarantor-select" name="guarantors[]" multiple data-guarantor-select>
+              <?php foreach ($customers as $customer): ?>
+                <option value="<?= (int) $customer['id'] ?>"><?= e($customer['full_name']) ?> - <?= to_persian_digits($customer['national_id']) ?> - <?= to_persian_digits($customer['mobile']) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </label>
+          <div class="proma-chip-row" data-guarantor-chips></div>
+        </section>
+
+        <section class="proma-form-section">
+          <label class="full">یادداشت<textarea name="notes"></textarea></label>
+        </section>
       </div>
       <div class="modal-footer"><button class="btn" type="submit">ثبت و ساخت اقساط</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
     </form>
@@ -136,25 +215,66 @@ for ($i = 0; $i < 6; $i++) {
   <div class="modal" id="edit-contract-<?= (int) $contract['id'] ?>">
     <div class="modal-content proma-modal-xl">
       <div class="modal-header"><h3>ویرایش قرارداد</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('contracts/update/' . $contract['id'])) ?>">
-        <div class="modal-body form-grid three">
+      <form method="post" action="<?= e(url('contracts/update/' . $contract['id'])) ?>" data-contract-form data-preview-url="<?= e(url('contracts/preview')) ?>" novalidate>
+        <div class="modal-body proma-contract-form">
           <?= csrf_field() ?>
-          <label>مشتری<select name="customer_id"><?php foreach ($customers as $customer): ?><option value="<?= (int) $customer['id'] ?>"<?= selected($contract['customer_id'], $customer['id']) ?>><?= e($customer['full_name']) ?></option><?php endforeach; ?></select></label>
-          <label>اپراتور<select name="assigned_operator_id"><option value="">بدون ارجاع</option><?php foreach ($operators as $operator): ?><option value="<?= (int) $operator['id'] ?>"<?= selected($contract['assigned_operator_id'], $operator['id']) ?>><?= e($operator['full_name']) ?></option><?php endforeach; ?></select></label>
-          <label>مبلغ اصل<input name="principal_amount" data-money value="<?= e(number_format((float) $contract['principal_amount'], 0)) ?>"></label>
-          <label>نرخ سود ماهانه<input name="monthly_interest_rate" value="<?= e($contract['monthly_interest_rate']) ?>"></label>
-          <label>تعداد اقساط<input name="months" value="<?= e($contract['months']) ?>"></label>
-          <label>تاریخ شروع<input name="start_date" value="<?= e(jdate($contract['start_date'])) ?>"></label>
-          <label>نخستین سررسید<input name="first_due_date" value="<?= e(jdate($contract['first_due_date'])) ?>"></label>
-          <div class="full">
-            <span class="field-title">نوع سود</span>
-            <div class="switch-options" data-exclusive>
-              <label><input type="checkbox" name="interest_type" value="simple"<?= checked($contract['interest_type'], 'simple') ?>><span>ساده ماهانه</span></label>
-              <label><input type="checkbox" name="interest_type" value="compound"<?= checked($contract['interest_type'], 'compound') ?>><span>مرکب ماهانه</span></label>
+          <section class="proma-form-section">
+            <div class="proma-section-title"><h4>اطلاعات قرارداد</h4><span><?= e($contract['contract_number']) ?></span></div>
+            <div class="form-grid two">
+              <label>مشتری
+                <select name="customer_id" data-customer-select><?php foreach ($customers as $customer): ?><option value="<?= (int) $customer['id'] ?>"<?= selected($contract['customer_id'], $customer['id']) ?>><?= e($customer['full_name']) ?></option><?php endforeach; ?></select>
+              </label>
+              <label>اپراتور<select name="assigned_operator_id"><option value="">بدون ارجاع</option><?php foreach ($operators as $operator): ?><option value="<?= (int) $operator['id'] ?>"<?= selected($contract['assigned_operator_id'], $operator['id']) ?>><?= e($operator['full_name']) ?></option><?php endforeach; ?></select></label>
             </div>
-          </div>
-          <label class="full">ضامنان<select name="guarantors[]" multiple><?php $selectedGuarantors = array_column($guarantors, 'id'); foreach ($customers as $customer): ?><option value="<?= (int) $customer['id'] ?>"<?= in_array($customer['id'], $selectedGuarantors) ? ' selected' : '' ?>><?= e($customer['full_name']) ?></option><?php endforeach; ?></select></label>
-          <label class="full">یادداشت<textarea name="notes"><?= e($contract['notes']) ?></textarea></label>
+            <div class="proma-chip-row" data-customer-chip></div>
+          </section>
+
+          <section class="proma-form-section">
+            <div class="proma-section-title"><h4>اطلاعات مالی</h4><span>مبالغ به تومان هستند.</span></div>
+            <div class="form-grid three">
+              <label>مبلغ اصل<input name="principal_amount" data-money data-contract-principal value="<?= e(number_format((float) $contract['principal_amount'], 0)) ?>"></label>
+              <label>مبلغ پیش‌پرداخت<input name="down_payment_amount" data-money data-contract-down-payment value="<?= e(number_format((float) ($contract['down_payment_amount'] ?? 0), 0)) ?>"></label>
+              <div class="proma-live-card">
+                <span>مانده قابل تقسیط</span>
+                <strong data-financed-balance><?= money_toman(max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0))) ?></strong>
+              </div>
+              <label>نرخ سود ماهانه<input name="monthly_interest_rate" data-contract-rate value="<?= e($contract['monthly_interest_rate']) ?>"></label>
+              <label>تعداد اقساط<input name="months" data-contract-months value="<?= e($contract['months']) ?>"></label>
+              <div>
+                <span class="field-title">نوع سود</span>
+                <div class="switch-options" data-exclusive>
+                  <label><input type="checkbox" name="interest_type" value="simple"<?= checked($contract['interest_type'], 'simple') ?>><span>ساده ماهانه</span></label>
+                  <label><input type="checkbox" name="interest_type" value="compound"<?= checked($contract['interest_type'], 'compound') ?>><span>مرکب ماهانه</span></label>
+                </div>
+              </div>
+            </div>
+            <div class="proma-preview-grid" data-contract-preview>
+              <span><small>مبلغ اصل قرارداد</small><strong data-preview-principal>۰ تومان</strong></span>
+              <span><small>مبلغ پیش‌پرداخت</small><strong data-preview-down-payment>۰ تومان</strong></span>
+              <span><small>مانده قابل تقسیط</small><strong data-preview-financed>۰ تومان</strong></span>
+              <span><small>مبلغ تقریبی هر قسط</small><strong data-preview-installment>۰ تومان</strong></span>
+              <span><small>مجموع قابل پرداخت</small><strong data-preview-total>۰ تومان</strong></span>
+            </div>
+            <div class="proma-inline-error" data-contract-error hidden></div>
+          </section>
+
+          <section class="proma-form-section">
+            <div class="proma-section-title"><h4>زمان‌بندی اقساط</h4></div>
+            <div class="form-grid two">
+              <label>تاریخ شروع<input name="start_date" value="<?= e(jdate($contract['start_date'])) ?>"></label>
+              <label>نخستین سررسید<input name="first_due_date" value="<?= e(jdate($contract['first_due_date'])) ?>"></label>
+            </div>
+          </section>
+
+          <section class="proma-form-section">
+            <div class="proma-section-title"><h4>ضامنان</h4><span>مشتری اصلی نمی‌تواند ضامن خودش باشد.</span></div>
+            <label class="full">ضامنان<select name="guarantors[]" multiple data-guarantor-select><?php $selectedGuarantors = array_column($guarantors, 'id'); foreach ($customers as $customer): ?><option value="<?= (int) $customer['id'] ?>"<?= in_array($customer['id'], $selectedGuarantors) ? ' selected' : '' ?>><?= e($customer['full_name']) ?></option><?php endforeach; ?></select></label>
+            <div class="proma-chip-row" data-guarantor-chips></div>
+          </section>
+
+          <section class="proma-form-section">
+            <label class="full">یادداشت<textarea name="notes"><?= e($contract['notes']) ?></textarea></label>
+          </section>
         </div>
         <div class="modal-footer"><button class="btn" type="submit">ذخیره تغییرات</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
       </form>

@@ -32,6 +32,7 @@
           <th>قرارداد</th>
           <th>مشتری</th>
           <th>قسط</th>
+          <th>نوع پرداخت</th>
           <th>مبلغ</th>
           <th>روش</th>
           <th>کدها</th>
@@ -42,12 +43,19 @@
       </thead>
       <tbody>
       <?php foreach ($payments as $payment): ?>
-        <?php $isCorrected = (int) ($payment['is_corrected'] ?? 0) === 1 || ($payment['status'] ?? '') === 'corrected'; ?>
+        <?php
+        $isCorrected = (int) ($payment['is_corrected'] ?? 0) === 1 || ($payment['status'] ?? '') === 'corrected';
+        $paymentType = $payment['payment_type'] ?? 'installment';
+        ?>
         <tr>
-          <td><?= e(jdate($payment['paid_at'] ?: $payment['created_at'])) ?></td>
+          <td>
+            <?= e(jdate($payment['payment_date'] ?: ($payment['paid_at'] ?: $payment['created_at']))) ?><br>
+            <span class="badge muted"><?= e(to_persian_digits(date('H:i', strtotime($payment['paid_at'] ?: $payment['created_at'])))) ?></span>
+          </td>
           <td><?= e($payment['contract_number']) ?></td>
           <td><strong><?= e($payment['customer_name']) ?></strong></td>
-          <td><?= to_persian_digits($payment['installment_number']) ?></td>
+          <td><?= $payment['installment_number'] ? to_persian_digits($payment['installment_number']) : '-' ?></td>
+          <td><span class="badge badge-light-info"><?= e(payment_type_label($paymentType)) ?></span></td>
           <td><?= money_toman($payment['amount']) ?></td>
           <td><span class="badge badge-light-info"><?= e(payment_method_label($payment['method'])) ?></span></td>
           <td>
@@ -66,13 +74,13 @@
           </td>
           <td class="actions">
             <a class="btn small secondary" href="<?= e(url('contracts')) ?>">مشاهده</a>
-            <?php if (($payment['status'] ?? '') === 'paid' && !$isCorrected): ?>
+            <?php if (($payment['status'] ?? '') === 'paid' && !$isCorrected && $paymentType !== 'down_payment'): ?>
               <button class="btn small warning" type="button" data-open-modal="correct-payment-<?= (int) $payment['id'] ?>">اصلاحیه</button>
             <?php endif; ?>
           </td>
         </tr>
       <?php endforeach; ?>
-      <?php if (!$payments): ?><tr><td colspan="10" class="empty">پرداختی با این فیلترها پیدا نشد.</td></tr><?php endif; ?>
+      <?php if (!$payments): ?><tr><td colspan="11" class="empty">پرداختی با این فیلترها پیدا نشد.</td></tr><?php endif; ?>
       </tbody>
     </table>
   </div>
@@ -80,7 +88,7 @@
 
 <?php foreach ($payments as $payment): ?>
   <?php $isCorrected = (int) ($payment['is_corrected'] ?? 0) === 1 || ($payment['status'] ?? '') === 'corrected'; ?>
-  <?php if (($payment['status'] ?? '') !== 'paid' || $isCorrected) continue; ?>
+  <?php if (($payment['status'] ?? '') !== 'paid' || $isCorrected || ($payment['payment_type'] ?? 'installment') === 'down_payment') continue; ?>
   <div class="modal" id="correct-payment-<?= (int) $payment['id'] ?>">
     <div class="modal-content">
       <div class="modal-header">

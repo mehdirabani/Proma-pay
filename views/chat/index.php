@@ -7,7 +7,7 @@
           <span class="proma-risk-avatar"><?= e(mb_substr($contact['full_name'], 0, 1, 'UTF-8')) ?></span>
           <span>
             <strong><?= e($contact['full_name']) ?></strong>
-            <small><?= e(role_label($contact['role'])) ?></small>
+            <small><?= e(Auth::role() === 'customer' ? department_label($contact['department'] ?? '') : role_label($contact['role'])) ?></small>
           </span>
           <?php if ((int) ($contact['unread_count'] ?? 0) > 0): ?><em><?= to_persian_digits($contact['unread_count']) ?></em><?php endif; ?>
         </a>

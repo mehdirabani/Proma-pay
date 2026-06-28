@@ -32,7 +32,7 @@ $statCards = [
 ];
 ?>
 <div class="row widget-grid proma-dashboard">
-  <div class="col-xxl-5 col-xl-12 box-col-12">
+  <div class="col-xxl-4 col-xl-12 box-col-12">
     <div class="card profile-box proma-dashboard-hero">
       <div class="card-body">
         <div class="media media-wrapper justify-content-between">
@@ -71,7 +71,7 @@ $statCards = [
     </div>
   </div>
 
-  <div class="col-xxl-7 col-xl-12 box-col-12">
+  <div class="col-xxl-8 col-xl-12 box-col-12">
     <div class="row">
       <?php foreach ($statCards as $card): ?>
         <div class="col-xl-3 col-sm-6">
@@ -201,7 +201,7 @@ $statCards = [
     </div>
   </div>
 
-  <div class="col-xxl-5 col-lg-6 box-col-6">
+  <div class="col-xxl-4 col-lg-6 box-col-6">
     <div class="card">
       <div class="card-header card-no-border">
         <div class="header-top">
@@ -217,7 +217,7 @@ $statCards = [
     </div>
   </div>
 
-  <div class="col-xxl-3 col-lg-6 box-col-6">
+  <div class="col-xxl-4 col-lg-6 box-col-6">
     <div class="card">
       <div class="card-header card-no-border">
         <div class="header-top">
@@ -311,7 +311,7 @@ $statCards = [
     </div>
   </div>
 
-  <div class="col-xxl-8 col-lg-12 box-col-12">
+  <div class="col-xxl-6 col-lg-12 box-col-12">
     <div class="card appointment-detail">
       <div class="card-header card-no-border">
         <div class="header-top">
@@ -343,7 +343,7 @@ $statCards = [
     </div>
   </div>
 
-  <div class="col-xxl-7 col-lg-12 box-col-12">
+  <div class="col-xxl-6 col-lg-12 box-col-12">
     <div class="card appointment-detail">
       <div class="card-header card-no-border">
         <div class="header-top">
@@ -355,16 +355,16 @@ $statCards = [
         <div class="appointment-table table-responsive">
           <table class="table table-bordernone">
             <thead>
-              <tr><th>مشتری</th><th>قسط</th><th>مبلغ</th><th>روش</th><th>تاریخ</th></tr>
+              <tr><th>مشتری</th><th>نوع</th><th>مبلغ</th><th>روش</th><th>تاریخ</th></tr>
             </thead>
             <tbody>
             <?php foreach ($recentPayments as $payment): ?>
               <tr>
                 <td><h6 class="mb-0"><?= e($payment['customer_name']) ?></h6><span class="f-light"><?= e($payment['contract_number']) ?></span></td>
-                <td><?= to_persian_digits($payment['installment_number']) ?></td>
+                <td><?= e(payment_type_label($payment['payment_type'] ?? 'installment')) ?><?= !empty($payment['installment_number']) ? ' · ' . to_persian_digits($payment['installment_number']) : '' ?></td>
                 <td><?= money_toman($payment['amount']) ?></td>
                 <td><span class="badge badge-light-info"><?= e(payment_method_label($payment['method'])) ?></span></td>
-                <td><?= e(jdate($payment['paid_at'] ?: $payment['created_at'])) ?></td>
+                <td><?= e(jdate($payment['payment_date'] ?: ($payment['paid_at'] ?: $payment['created_at']))) ?></td>
               </tr>
             <?php endforeach; ?>
             <?php if (!$recentPayments): ?><tr><td colspan="5" class="text-center f-light">هنوز پرداخت تاییدشده‌ای ثبت نشده است.</td></tr><?php endif; ?>

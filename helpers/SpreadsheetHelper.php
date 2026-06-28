@@ -8,10 +8,27 @@ class SpreadsheetHelper
         if ($extension === 'csv') {
             return self::readCsv($path);
         }
+        if ($extension === 'txt') {
+            return self::readText($path);
+        }
         if ($extension === 'xlsx') {
             return self::readXlsx($path);
         }
-        throw new RuntimeException('فقط فایل‌های اکسل یا سی‌اس‌وی پذیرفته می‌شود.');
+        throw new RuntimeException('فقط فایل‌های اکسل، سی‌اس‌وی یا متن پذیرفته می‌شود.');
+    }
+
+    public static function readRawText($text)
+    {
+        $lines = preg_split('/\R/u', trim((string) $text));
+        $rows = [];
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+            $rows[] = [$line];
+        }
+        return $rows;
     }
 
     protected static function readCsv($path)
@@ -26,6 +43,15 @@ class SpreadsheetHelper
         }
         fclose($handle);
         return $rows;
+    }
+
+    protected static function readText($path)
+    {
+        $content = file_get_contents($path);
+        if ($content === false) {
+            throw new RuntimeException('فایل متنی قابل خواندن نیست.');
+        }
+        return self::readRawText($content);
     }
 
     protected static function readXlsx($path)

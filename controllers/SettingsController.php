@@ -27,4 +27,20 @@ class SettingsController extends Controller
         set_flash('success', 'تنظیمات ذخیره شد.');
         redirect('settings');
     }
+
+    public function testAi()
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $apiKey = trim((string) ($_POST['openrouter_api_key'] ?? ''));
+        $model = trim((string) ($_POST['openrouter_model'] ?? ''));
+        $client = new OpenRouterClient($apiKey, $model);
+        $result = $client->testConnection();
+        $this->json([
+            'ok' => (bool) ($result['ok'] ?? false),
+            'message' => $result['message'] ?? ($result['error'] ?? 'خطا در تست اتصال'),
+            'details' => $result['details'] ?? '',
+            'type' => $result['type'] ?? '',
+        ], ($result['ok'] ?? false) ? 200 : 422);
+    }
 }
