@@ -1,0 +1,10 @@
+/config/database.php
+/installed.lock
+/tmp/
+/storage/cache/
+/vendor/
+/node_modules/
+/html/RTL/node_modules/
+/.env
+*.log
+*.tmp
