@@ -1,0 +1,292 @@
+:root {
+  --proma-card-radius: 16px;
+  --proma-card-shadow: 0 10px 30px rgba(82, 82, 108, .08);
+  --proma-compact-gap: 16px;
+}
+
+/* Dashboard: tighter grid inspired by the form wizard / widget template spacing */
+.proma-dashboard.widget-grid,
+.proma-dashboard .row {
+  --bs-gutter-x: var(--proma-compact-gap);
+  --bs-gutter-y: var(--proma-compact-gap);
+}
+
+.proma-dashboard .card {
+  height: 100%;
+  margin-bottom: 0;
+  border: 0;
+  border-radius: var(--proma-card-radius);
+  box-shadow: var(--proma-card-shadow);
+}
+
+.proma-dashboard .card-header {
+  padding: 18px 20px 10px;
+}
+
+.proma-dashboard .card-body {
+  padding: 18px 20px;
+}
+
+.proma-dashboard .card-header + .card-body,
+.proma-dashboard .card-body.pt-0 {
+  padding-top: 0 !important;
+}
+
+.proma-dashboard-hero .card-body {
+  min-height: 100%;
+}
+
+.proma-dashboard-hero .media-wrapper {
+  gap: 16px;
+}
+
+.proma-dashboard-hero .cartoon {
+  display: none;
+}
+
+.proma-hero-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.proma-hero-actions a {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(115, 102, 255, .08);
+  color: var(--proma-text);
+}
+
+.proma-hero-actions a span {
+  color: var(--proma-primary);
+  font-weight: 900;
+  font-size: 18px;
+}
+
+.proma-hero-actions a small {
+  color: var(--proma-muted);
+  font-size: 12px;
+}
+
+.proma-metric-card .widget-content {
+  align-items: center;
+  gap: 14px;
+}
+
+.proma-metric-card h4 {
+  margin-bottom: 2px;
+  font-size: clamp(18px, 1.5vw, 24px);
+}
+
+.proma-health-card .card-body,
+.proma-ranking-card .card-body,
+.appointment-detail .card-body {
+  display: grid;
+  gap: 12px;
+}
+
+.proma-chart-lg { height: 285px; }
+.proma-chart-md { height: 235px; }
+.proma-chart-sm { height: 220px; }
+
+.proma-risk-list,
+.proma-operator-list {
+  display: grid;
+  gap: 10px;
+}
+
+.proma-risk-item,
+.proma-operator-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid var(--proma-line);
+  border-radius: 14px;
+  color: inherit;
+  background: #fff;
+}
+
+.proma-risk-item:hover,
+.proma-operator-item:hover {
+  border-color: rgba(115, 102, 255, .35);
+  box-shadow: 0 8px 24px rgba(115, 102, 255, .08);
+}
+
+.proma-risk-avatar {
+  width: 38px;
+  height: 38px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, #7366ff, #16c7f9);
+  font-weight: 900;
+}
+
+.proma-risk-avatar.danger {
+  background: linear-gradient(135deg, #fc4438, #ffaa05);
+}
+
+.proma-risk-item span:not(.proma-risk-avatar) {
+  min-width: 0;
+}
+
+.proma-risk-item strong,
+.proma-risk-item small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proma-risk-item small {
+  color: var(--proma-muted);
+  font-size: 12px;
+}
+
+/* Shared list/card view toggles */
+.proma-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--proma-line);
+  border-radius: 999px;
+  background: #fff;
+}
+
+.proma-view-toggle button,
+.proma-view-toggle a {
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--proma-muted);
+  background: transparent;
+  font-weight: 700;
+}
+
+.proma-view-toggle .active,
+.proma-view-toggle button.active,
+.proma-view-toggle a.active {
+  color: #fff;
+  background: var(--proma-primary);
+}
+
+.proma-view-pane[hidden] {
+  display: none !important;
+}
+
+/* Cards: base alignment for users/customers/contracts based on user-cards template */
+.proma-entity-card {
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  border: 1px solid var(--proma-line);
+  border-radius: var(--proma-card-radius);
+  background: #fff;
+  box-shadow: var(--proma-card-shadow);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.proma-entity-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(115, 102, 255, .28);
+  box-shadow: 0 16px 34px rgba(82, 82, 108, .12);
+}
+
+.proma-entity-card.contract-card {
+  grid-column: span 2;
+}
+
+.proma-card-medals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.proma-card-details {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--proma-line);
+}
+
+.proma-icon-btn {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  color: var(--proma-muted);
+  background: #f6f7fb;
+}
+
+.proma-icon-btn.danger {
+  color: var(--proma-danger);
+  background: rgba(252, 68, 56, .1);
+}
+
+/* Confirmation modals aligned with modal-animated / sweet-alert style */
+.proma-confirm-modal .modal-dialog {
+  max-width: 460px;
+}
+
+.proma-confirm-modal .modal-content {
+  border: 0;
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(82, 82, 108, .22);
+}
+
+.proma-confirm-modal .modal-body {
+  display: grid;
+  gap: 14px;
+}
+
+/* Tour must always stay above template overlays */
+.proma-tour {
+  z-index: 2147483000 !important;
+}
+
+.proma-tour-box {
+  z-index: 2147483001 !important;
+}
+
+.proma-tour-focus {
+  position: relative;
+  z-index: 2147482999 !important;
+}
+
+@media (max-width: 1199px) {
+  .proma-entity-card.contract-card {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 767px) {
+  .proma-hero-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .proma-dashboard .card-header,
+  .proma-dashboard .card-body {
+    padding-inline: 14px;
+  }
+
+  .proma-chart-lg,
+  .proma-chart-md,
+  .proma-chart-sm {
+    height: 220px;
+  }
+}
