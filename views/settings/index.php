@@ -10,6 +10,7 @@ $callbackUrl = $callbackBase . '/index.php?route=payments/callback';
     <div class="card-body form-grid">
       <label>نام سامانه<input name="system_name" value="<?= e($settings['system_name']) ?>"></label>
       <label>متن نشان<input name="logo_text" value="<?= e($settings['logo_text']) ?>"></label>
+      <label class="full">متن فوتر<textarea name="footer_text" rows="2"><?= e($settings['footer_text'] ?? '') ?></textarea></label>
     </div>
   </section>
   <section class="card">
