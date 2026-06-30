@@ -1,4 +1,8 @@
-<?php $sprite = template_asset_url('svg/icon-sprite.svg'); ?>
+<?php
+$sprite = template_asset_url('svg/icon-sprite.svg');
+$givenGuarantees = $givenGuarantees ?? [];
+$receivedGuarantees = $receivedGuarantees ?? [];
+?>
 <div class="row widget-grid">
   <div class="col-xxl-4 col-sm-6 box-col-6">
     <div class="card profile-box">
@@ -108,38 +112,47 @@
 
   <div class="col-xl-12">
     <div class="card">
-      <div class="card-header card-no-border"><div class="header-top"><h5>تاریخچه سفارشات و قراردادهای اخیر</h5><a class="link-only" href="<?= e(url('portal/contracts')) ?>">همه قراردادها</a></div></div>
-      <div class="card-body">
-        <div class="row g-sm-4 g-3 proma-order-history">
-          <?php foreach (array_slice($contracts, 0, 3) as $contract): ?>
-            <div class="col-xxl-4 col-md-6">
-              <div class="prooduct-details-box">
-                <div class="media"><span class="proma-order-icon"><i class="fa fa-file-text-o"></i></span>
-                  <div class="media-body ms-3">
-                    <div class="product-name"><h6><a href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank"><?= e($contract['contract_number']) ?></a></h6></div>
-                    <div class="rating"><span class="badge <?= e(badge_class($contract['status'])) ?>"><?= e(status_label($contract['status'])) ?></span></div>
-                    <div class="price d-flex"><div class="text-muted me-2">مبلغ</div>: <?= money_toman($contract['principal_amount']) ?></div>
-                    <div class="avaiabilty"><div class="text-success">شروع <?= e(jdate($contract['start_date'])) ?></div></div>
-                  </div>
-                </div>
-              </div>
+      <div class="card-header card-no-border"><div class="header-top"><h5>ضمانت‌ها</h5><a class="link-only" href="<?= e(url('portal/guaranteed')) ?>">قراردادهای ضمانت شده</a></div></div>
+      <div class="card-body pt-0">
+        <div class="row">
+          <div class="col-xl-6">
+            <h6 class="mb-3">من ضامن این قراردادها هستم</h6>
+            <div class="table-responsive">
+              <table class="table table-bordernone">
+                <thead><tr><th>قرارداد</th><th>مشتری</th><th>تماس</th><th>وضعیت</th></tr></thead>
+                <tbody>
+                <?php foreach ($givenGuarantees as $contract): ?>
+                  <tr>
+                    <td><a href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank"><?= e($contract['contract_number']) ?></a></td>
+                    <td><?= e($contract['customer_name']) ?></td>
+                    <td><?= to_persian_digits($contract['mobile']) ?></td>
+                    <td><span class="badge <?= e(badge_class($contract['status'])) ?>"><?= e(status_label($contract['status'])) ?></span></td>
+                  </tr>
+                <?php endforeach; ?>
+                <?php if (!$givenGuarantees): ?><tr><td colspan="4" class="text-center f-light">شما ضامن قراردادی نیستید.</td></tr><?php endif; ?>
+                </tbody>
+              </table>
             </div>
-          <?php endforeach; ?>
-          <?php foreach (($payments ?? []) as $payment): ?>
-            <div class="col-xxl-4 col-md-6">
-              <div class="prooduct-details-box">
-                <div class="media"><span class="proma-order-icon success"><i class="fa fa-credit-card"></i></span>
-                  <div class="media-body ms-3">
-                    <div class="product-name"><h6><?= e($payment['contract_number']) ?></h6></div>
-                    <div class="rating"><span class="badge badge-light-info"><?= e(payment_type_label($payment['payment_type'] ?? 'installment')) ?></span></div>
-                    <div class="price d-flex"><div class="text-muted me-2">پرداخت</div>: <?= money_toman($payment['amount']) ?></div>
-                    <div class="avaiabilty"><div class="text-success"><?= e(jdate($payment['payment_date'] ?: ($payment['paid_at'] ?: $payment['created_at']))) ?></div></div>
-                  </div>
-                </div>
-              </div>
+          </div>
+          <div class="col-xl-6">
+            <h6 class="mb-3">ضامنان قراردادهای من</h6>
+            <div class="table-responsive">
+              <table class="table table-bordernone">
+                <thead><tr><th>قرارداد</th><th>ضامن</th><th>کد ملی</th><th>تماس</th></tr></thead>
+                <tbody>
+                <?php foreach ($receivedGuarantees as $guarantor): ?>
+                  <tr>
+                    <td><?= e($guarantor['contract_number']) ?></td>
+                    <td><?= e($guarantor['full_name']) ?></td>
+                    <td><?= to_persian_digits($guarantor['national_id']) ?></td>
+                    <td><?= to_persian_digits($guarantor['mobile']) ?></td>
+                  </tr>
+                <?php endforeach; ?>
+                <?php if (!$receivedGuarantees): ?><tr><td colspan="4" class="text-center f-light">برای قراردادهای شما ضامنی ثبت نشده است.</td></tr><?php endif; ?>
+                </tbody>
+              </table>
             </div>
-          <?php endforeach; ?>
-          <?php if (!$contracts && empty($payments)): ?><div class="empty">تاریخچه‌ای برای نمایش وجود ندارد.</div><?php endif; ?>
+          </div>
         </div>
       </div>
     </div>

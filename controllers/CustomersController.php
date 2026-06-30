@@ -7,6 +7,9 @@ class CustomersController extends Controller
         $this->requireRole('admin');
         $customers = User::customerSummaries($_GET['q'] ?? null, $_GET['status'] ?? null);
         $ids = array_column($customers, 'id');
+        foreach ($ids as $customerId) {
+            User::syncAutomaticMedals((int) $customerId);
+        }
         $medals = User::medalsForUsers($ids);
         $timelines = Payment::recentForCustomers($ids, 3);
         foreach ($customers as &$customer) {
@@ -84,6 +87,15 @@ class CustomersController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
+        if (trim((string) ($_POST['confirm_text'] ?? '')) !== 'حذف مشتری') {
+            set_flash('error', 'عبارت تأیید حذف مشتری درست وارد نشده است.');
+            redirect('customers');
+        }
+        $activeContracts = Model::fetch("SELECT COUNT(*) AS total FROM contracts WHERE customer_id = ? AND status = 'active'", [(int) $id]);
+        if ((int) ($activeContracts['total'] ?? 0) > 0) {
+            set_flash('error', 'این مشتری قرارداد فعال دارد و قابل حذف نیست.');
+            redirect('customers');
+        }
         User::deleteUser((int) $id);
         set_flash('success', 'مشتری حذف شد.');
         redirect('customers');

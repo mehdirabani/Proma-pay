@@ -27,7 +27,7 @@
       <?php foreach ($messages as $message): ?>
         <div class="message <?= (int) $message['sender_id'] === (int) Auth::id() ? 'mine' : '' ?>" data-id="<?= (int) $message['id'] ?>">
           <div><?= nl2br(e($message['body'])) ?></div>
-          <small><?= e($message['sender_name']) ?>، <?= e(jdate($message['created_at'])) ?></small>
+          <small><?= e($message['sender_name']) ?>، <?= e(jdatetime($message['created_at'])) ?></small>
         </div>
       <?php endforeach; ?>
       <?php if (!$contactId): ?><div class="empty">برای شروع، یک مخاطب را انتخاب کنید.</div><?php endif; ?>

@@ -10,7 +10,7 @@ class LegalCase extends Model
             return;
         }
         try {
-            self::execute('ALTER TABLE legal_cases ADD COLUMN expense_reason TEXT NULL');
+            self::execute('ALTER TABLE legal_cases ADD COLUMN expense_reason TEXT NULL AFTER expense_amount');
         } catch (Throwable $e) {
         }
         self::$schemaReady = true;
@@ -68,7 +68,7 @@ class LegalCase extends Model
         self::execute(
             'INSERT INTO legal_cases (lawyer_id, customer_id, contract_id, status, stage, notes, expense_amount, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, 0, NOW(), NOW())',
-            [$lawyerId ?: null, $contract['customer_id'], (int) $contractId, 'open', 'notified', $notes]
+            [$lawyerId ?: null, $contract['customer_id'], (int) $contractId, 'open', 'ثبت اولیه', $notes]
         );
         self::execute('UPDATE contracts SET legal_status = ? WHERE id = ?', ['referred', (int) $contractId]);
         if ($lawyerId) {
@@ -81,8 +81,8 @@ class LegalCase extends Model
     {
         self::ensureSchema();
         $expense = normalize_money($data['expense_amount'] ?? 0);
-        if ($expense > 0 && trim($data['expense_reason'] ?? '') === '') {
-            throw new InvalidArgumentException('علت هزینه الزامی است.');
+        if ($expense > 0 && trim((string) ($data['expense_reason'] ?? '')) === '') {
+            throw new InvalidArgumentException('علت هزینه حقوقی الزامی است.');
         }
         self::execute(
             'UPDATE legal_cases SET lawyer_id = ?, stage = ?, status = ?, complaint_number = ?, expense_amount = ?, expense_reason = ?, notes = ?, updated_at = NOW() WHERE id = ?',
@@ -92,7 +92,7 @@ class LegalCase extends Model
                 $data['status'],
                 $data['complaint_number'] ?: null,
                 $expense,
-                trim($data['expense_reason'] ?? ''),
+                $data['expense_reason'] ?? '',
                 $data['notes'] ?? '',
                 (int) $id,
             ]
@@ -101,7 +101,6 @@ class LegalCase extends Model
 
     public static function eligibleContracts()
     {
-        self::ensureSchema();
         return self::fetchAll(
             "SELECT DISTINCT c.*, u.full_name AS customer_name, u.mobile
              FROM contracts c

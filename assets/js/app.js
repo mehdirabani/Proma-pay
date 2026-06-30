@@ -512,61 +512,58 @@
     history.scrollTop = history.scrollHeight;
   };
 
+  const initCardLinks = function () {
+    document.querySelectorAll('[data-card-href]').forEach(function (card) {
+      card.addEventListener('click', function (event) {
+        if (event.target.closest('a,button,form,input,select,textarea,label')) return;
+        const href = card.getAttribute('data-card-href');
+        if (href) window.location.href = href;
+      });
+    });
+  };
+
   const initTour = function () {
-    if (document.body.getAttribute('data-tour-needed') !== '1') return;
     const tour = document.querySelector('[data-tour]');
-    if (!tour) return;
-    const box = tour.querySelector('.proma-tour-box');
-    const title = tour.querySelector('[data-tour-title]');
-    const text = tour.querySelector('[data-tour-text]');
-    const next = tour.querySelector('[data-tour-next]');
-    const skip = tour.querySelector('[data-tour-skip]');
+    if (!tour || !window.localStorage) return;
+    const userId = document.body.getAttribute('data-user-id') || 'guest';
+    const key = 'proma-tour-seen-' + userId;
+    if (localStorage.getItem(key) === '1') return;
+
     const steps = [
-      { selector: '.sidebar-wrapper', title: 'منوی اصلی', text: 'از اینجا به داشبورد، قراردادها، اقساط و چت دسترسی دارید.' },
-      { selector: '.page-title', title: 'مسیر صفحه', text: 'نام صفحه و مسیر فعلی همیشه بالای صفحه دیده می‌شود.' },
-      { selector: '.nav-menus', title: 'اعلان‌ها و پیام‌ها', text: 'اعلان‌ها، پیام‌های تازه و پروفایل شما اینجا قرار دارد.' },
-      { selector: '.page-body .container-fluid:last-child', title: 'فضای کاری', text: 'فرم‌ها، جدول‌ها و گزارش‌های هر بخش در این قسمت نمایش داده می‌شود.' }
+      { title: 'داشبورد', body: 'نمای سریع وضعیت قراردادها، سررسیدها و پرداخت‌ها را اینجا می‌بینید.' },
+      { title: 'منوی سامانه', body: 'از منوی کناری بین قراردادها، اقساط، چت و گزارش‌ها جابه‌جا شوید.' },
+      { title: 'جستجو و فیلتر', body: 'در صفحه‌های اصلی از فیلترها برای پیدا کردن مشتری، قرارداد یا پرداخت استفاده کنید.' },
+      { title: 'گفت‌وگو', body: 'برای ارتباط با واحدهای داخلی یا کاربران مجاز از بخش گفت‌وگو استفاده کنید.' }
     ];
     let index = 0;
+    const step = tour.querySelector('[data-tour-step]');
+    const title = tour.querySelector('[data-tour-title]');
+    const body = tour.querySelector('[data-tour-body]');
+    const next = tour.querySelector('[data-tour-next]');
+    const skip = tour.querySelector('[data-tour-skip]');
 
-    const complete = function () {
-      tour.hidden = true;
-      document.querySelectorAll('.proma-tour-focus').forEach(function (item) { item.classList.remove('proma-tour-focus'); });
-      fetch(document.body.getAttribute('data-tour-complete-url'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ _csrf: document.body.getAttribute('data-tour-token') || '' })
-      }).catch(function () {});
-    };
-
-    const show = function () {
-      document.querySelectorAll('.proma-tour-focus').forEach(function (item) { item.classList.remove('proma-tour-focus'); });
-      const step = steps[index];
-      const target = document.querySelector(step.selector);
-      if (!target) {
-        index += 1;
-        if (index >= steps.length) complete();
-        else show();
-        return;
-      }
-      target.classList.add('proma-tour-focus');
-      title.textContent = step.title;
-      text.textContent = step.text;
+    const render = function () {
+      step.textContent = (index + 1).toLocaleString('fa-IR') + ' از ' + steps.length.toLocaleString('fa-IR');
+      title.textContent = steps[index].title;
+      body.textContent = steps[index].body;
       next.textContent = index === steps.length - 1 ? 'پایان' : 'بعدی';
-      tour.hidden = false;
-      const rect = target.getBoundingClientRect();
-      const top = Math.min(window.innerHeight - box.offsetHeight - 24, Math.max(24, rect.top + 12));
-      box.style.top = top + 'px';
-      box.style.left = window.innerWidth < 768 ? '16px' : '32px';
+    };
+    const close = function () {
+      localStorage.setItem(key, '1');
+      tour.hidden = true;
     };
 
     next.addEventListener('click', function () {
+      if (index >= steps.length - 1) {
+        close();
+        return;
+      }
       index += 1;
-      if (index >= steps.length) complete();
-      else show();
+      render();
     });
-    skip.addEventListener('click', complete);
-    window.setTimeout(show, 700);
+    skip.addEventListener('click', close);
+    render();
+    tour.hidden = false;
   };
 
   const initServiceWorker = function () {
@@ -588,6 +585,7 @@
     initSidebarCollapse();
     initCharts();
     initChat();
+    initCardLinks();
     initTour();
     initServiceWorker();
   });

@@ -15,8 +15,17 @@ class PortalController extends Controller
             'title' => 'قراردادهای من',
             'contracts' => Contract::all(['customer_id' => Auth::id()]),
             'installments' => [],
-            'payments' => Payment::recentForCustomer(Auth::id(), 9),
             'medals' => [],
+            'givenGuarantees' => Contract::all(['guarantor_id' => Auth::id()]),
+            'receivedGuarantees' => Model::fetchAll(
+                "SELECT c.contract_number, c.id AS contract_id, u.full_name, u.mobile, u.national_id
+                 FROM contracts c
+                 JOIN contract_guarantors cg ON cg.contract_id = c.id
+                 JOIN users u ON u.id = cg.guarantor_id
+                 WHERE c.customer_id = ?
+                 ORDER BY c.id DESC, u.full_name",
+                [Auth::id()]
+            ),
         ]);
     }
 
@@ -34,10 +43,13 @@ class PortalController extends Controller
     public function guaranteed()
     {
         $this->requireRole('customer');
-        $this->render('portal/guaranteed', [
-            'title' => 'ضمانت‌ها',
-            'contracts' => Contract::all(['guarantor_id' => Auth::id()]),
-            'guarantors' => Contract::guarantorsForCustomer(Auth::id()),
+        $this->render('contracts/index', [
+            'title' => 'قراردادهای ضمانت شده',
+            'contracts' => Contract::all(['guarantor_id' => Auth::id(), 'search' => $_GET['q'] ?? null]),
+            'customers' => [],
+            'operators' => [],
+            'settings' => Settings::allKeyed(),
+            'readOnly' => true,
         ]);
     }
 }

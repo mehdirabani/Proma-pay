@@ -364,7 +364,7 @@ $statCards = [
                 <td><?= e(payment_type_label($payment['payment_type'] ?? 'installment')) ?><?= !empty($payment['installment_number']) ? ' · ' . to_persian_digits($payment['installment_number']) : '' ?></td>
                 <td><?= money_toman($payment['amount']) ?></td>
                 <td><span class="badge badge-light-info"><?= e(payment_method_label($payment['method'])) ?></span></td>
-                <td><?= e(jdate($payment['payment_date'] ?: ($payment['paid_at'] ?: $payment['created_at']))) ?></td>
+                <td><?= e(jdatetime($payment['paid_at'] ?: ($payment['payment_date'] ?: $payment['created_at']))) ?></td>
               </tr>
             <?php endforeach; ?>
             <?php if (!$recentPayments): ?><tr><td colspan="5" class="text-center f-light">هنوز پرداخت تاییدشده‌ای ثبت نشده است.</td></tr><?php endif; ?>

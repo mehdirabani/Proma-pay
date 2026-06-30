@@ -2,7 +2,7 @@
 
 return [
     'app_name' => 'پرما پرداخت',
-    'asset_version' => '1.0.7',
+    'asset_version' => '1.0.8',
     'timezone' => 'Asia/Tehran',
     'base_url' => '',
     'session_name' => 'proma_pay_session',
@@ -11,24 +11,6 @@ return [
         'operator' => 'اپراتور',
         'lawyer' => 'وکیل',
         'customer' => 'مشتری',
-    ],
-    'departments' => [
-        '' => 'بدون واحد',
-        'management' => 'واحد مدیریت',
-        'finance' => 'مدیریت مالی و پیگیری اقساط',
-        'legal' => 'بخش حقوقی و شکایت‌ها',
-        'operations' => 'واحد عملیات و تماس',
-    ],
-    'legal_stages' => [
-        'notified' => 'ابلاغ شده',
-        'complaint_petition' => 'ثبت دادخواست شکایت',
-        'court_hearing' => 'رسیدگی جلسه دادگاه',
-        'verdict' => 'صدور رای',
-        'execution_request' => 'درخواست اجراییه',
-        'execution_registered' => 'ثبت اجراییه',
-        'money_collected' => 'وصول پول',
-        'closed' => 'مختومه',
-        'satisfaction' => 'رضایت',
     ],
     'statuses' => [
         'active' => 'فعال',
@@ -57,5 +39,16 @@ return [
     'payment_types' => [
         'installment' => 'پرداخت قسط',
         'down_payment' => 'پیش‌پرداخت قرارداد',
+    ],
+    'legal_stages' => [
+        'ابلاغ شده',
+        'ثبت دادخواست شکایت',
+        'رسیدگی جلسه دادگاه',
+        'صدور رای',
+        'درخواست اجراییه',
+        'ثبت اجراییه',
+        'وصول پول',
+        'مختومه',
+        'رضایت',
     ],
 ];

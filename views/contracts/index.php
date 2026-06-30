@@ -1,5 +1,6 @@
 <?php
 $readOnly = $readOnly ?? false;
+$viewMode = in_array($_GET['view'] ?? '', ['cards', 'list'], true) ? $_GET['view'] : 'cards';
 $contractTrendLabels = [];
 $contractTrendStart = (new DateTime('first day of this month'))->modify('-5 months');
 for ($i = 0; $i < 6; $i++) {
@@ -10,27 +11,43 @@ for ($i = 0; $i < 6; $i++) {
   <div class="card-header card-no-border">
     <div class="header-top">
       <h2><?= $readOnly ? 'قراردادهای ضمانت شده' : 'فهرست قراردادها' ?></h2>
-      <?php if (!$readOnly): ?><button class="btn" type="button" data-open-modal="create-contract">افزودن قرارداد</button><?php endif; ?>
+      <div class="actions">
+        <a class="btn small <?= $viewMode === 'cards' ? '' : 'secondary' ?>" href="<?= e(url($readOnly ? 'portal/guaranteed' : 'contracts', array_filter(['q' => $_GET['q'] ?? null, 'view' => 'cards']))) ?>">کارت‌ها</a>
+        <a class="btn small <?= $viewMode === 'list' ? '' : 'secondary' ?>" href="<?= e(url($readOnly ? 'portal/guaranteed' : 'contracts', array_filter(['q' => $_GET['q'] ?? null, 'view' => 'list']))) ?>">لیست</a>
+        <?php if (!$readOnly): ?><button class="btn" type="button" data-open-modal="create-contract">افزودن قرارداد</button><?php endif; ?>
+      </div>
     </div>
   </div>
-  <?php if ($contracts): ?>
+  <div class="card-body">
+    <form method="get" action="<?= e(url($readOnly ? 'portal/guaranteed' : 'contracts')) ?>" class="form-grid three">
+      <input type="hidden" name="route" value="<?= e($readOnly ? 'portal/guaranteed' : 'contracts') ?>">
+      <input type="hidden" name="view" value="<?= e($viewMode) ?>">
+      <label class="full">جستجو در قرارداد و مشتری<input name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="شماره قرارداد، نام، کد ملی یا موبایل"></label>
+      <div class="actions"><button class="btn secondary" type="submit">جستجو</button></div>
+    </form>
+  </div>
+  <?php if ($contracts && $viewMode === 'cards'): ?>
     <div class="card-body pt-0">
       <div class="proma-contract-card-grid">
-        <?php foreach (array_slice($contracts, 0, 6) as $cardContract): ?>
+        <?php foreach ($contracts as $cardContract): ?>
           <?php
           $stats = Contract::installmentStats((int) $cardContract['id']);
           $trend = Payment::monthlyTrendForContract((int) $cardContract['id']);
           $timeline = Payment::recentForContract((int) $cardContract['id'], 3);
           $remainingCount = max(0, (int) $stats['total'] - (int) $stats['paid']);
-          $progress = (int) $stats['total'] > 0 ? min(100, (int) round(((int) $stats['paid'] / (int) $stats['total']) * 100)) : 0;
           $financedAmount = max(0, (float) $cardContract['principal_amount'] - (float) ($cardContract['down_payment_amount'] ?? 0));
+          $progress = (int) $stats['total'] > 0 ? (int) round(((int) $stats['paid'] / (int) $stats['total']) * 100) : 0;
           ?>
           <article class="proma-contract-card">
             <div class="proma-contract-card-main">
-              <span class="proma-progress-avatar sm" style="--progress: <?= $progress ?>%"><span class="proma-contract-badge"><?= e($cardContract['contract_number']) ?></span></span>
-              <h6><?= e($cardContract['customer_name']) ?></h6>
-              <p><?= money_toman($financedAmount) ?></p>
-              <small>اصل: <?= money_toman($cardContract['principal_amount']) ?> · پیش‌پرداخت: <?= money_toman($cardContract['down_payment_amount'] ?? 0) ?></small>
+              <span class="proma-progress-avatar" style="--progress: <?= $progress ?>">
+                <span class="proma-avatar-choice <?= e($cardContract['avatar_key'] ?? 'avatar-1') ?>"><?= e(mb_substr($cardContract['customer_name'], 0, 1, 'UTF-8')) ?></span>
+              </span>
+              <div>
+                <span class="proma-contract-badge"><?= e($cardContract['contract_number']) ?></span>
+                <h6><?= e($cardContract['customer_name']) ?></h6>
+                <p><?= money_toman($financedAmount) ?></p>
+              </div>
             </div>
             <div class="proma-contract-stats four">
               <span><strong><?= to_persian_digits($stats['total']) ?></strong><small>کل اقساط</small></span>
@@ -40,42 +57,16 @@ for ($i = 0; $i < 6; $i++) {
             </div>
             <div class="proma-contract-card-footer">
               <span>مانده: <?= money_toman($stats['outstanding']) ?></span>
-              <a href="<?= e(url('contracts/booklet/' . $cardContract['id'])) ?>" target="_blank">دفترچه</a>
-            </div>
-            <div class="actions">
               <button class="btn small info" type="button" data-open-modal="contract-chart-<?= (int) $cardContract['id'] ?>">نمودار</button>
               <button class="btn small warning" type="button" data-open-modal="contract-timeline-<?= (int) $cardContract['id'] ?>">تایم‌لاین</button>
+              <a href="<?= e(url('contracts/booklet/' . $cardContract['id'])) ?>" target="_blank">دفترچه</a>
             </div>
           </article>
-          <div class="modal" id="contract-chart-<?= (int) $cardContract['id'] ?>">
-            <div class="modal-content">
-              <div class="modal-header"><h3>نمودار <?= e($cardContract['contract_number']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-              <div class="modal-body"><div class="proma-chart-md">
-                <?php if (array_sum($trend) > 0): ?>
-                  <canvas data-chart="line" data-title="روند پرداخت" data-labels='<?= e(json_encode($contractTrendLabels, JSON_UNESCAPED_UNICODE)) ?>' data-values='<?= e(json_encode($trend)) ?>'></canvas>
-                <?php else: ?><div class="proma-empty-mini">پرداخت موفقی برای نمودار ثبت نشده است.</div><?php endif; ?>
-              </div></div>
-            </div>
-          </div>
-          <div class="modal" id="contract-timeline-<?= (int) $cardContract['id'] ?>">
-            <div class="modal-content">
-              <div class="modal-header"><h3>تایم‌لاین <?= e($cardContract['contract_number']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-              <div class="modal-body"><div class="proma-payment-timeline">
-                <?php foreach ($timeline as $payment): ?>
-                  <div class="proma-timeline-item">
-                    <span class="proma-timeline-dot"></span>
-                    <div><strong><?= money_toman($payment['amount']) ?></strong><p><?= e(payment_type_label($payment['payment_type'] ?? 'installment')) ?><?= !empty($payment['installment_number']) ? ' · قسط ' . to_persian_digits($payment['installment_number']) : '' ?></p></div>
-                    <time><?= e(jdate($payment['payment_date'] ?? $payment['paid_at'] ?? $payment['created_at'])) ?></time>
-                  </div>
-                <?php endforeach; ?>
-                <?php if (!$timeline): ?><div class="empty">پرداخت موفقی ثبت نشده است.</div><?php endif; ?>
-              </div></div>
-            </div>
-          </div>
         <?php endforeach; ?>
       </div>
     </div>
   <?php endif; ?>
+  <?php if ($viewMode === 'list'): ?>
   <div class="table-wrap">
     <table>
       <thead><tr><th>شماره</th><th>مشتری</th><th>مبالغ قرارداد</th><th>سود</th><th>اقساط</th><th>ضامنان</th><th>وضعیت</th><?php if (!$readOnly): ?><th>عملیات</th><?php endif; ?></tr></thead>
@@ -98,6 +89,8 @@ for ($i = 0; $i < 6; $i++) {
           <?php if (!$readOnly): ?>
           <td class="actions">
             <button class="btn small secondary" type="button" data-open-modal="edit-contract-<?= (int) $contract['id'] ?>">ویرایش</button>
+            <button class="btn small info" type="button" data-open-modal="contract-chart-<?= (int) $contract['id'] ?>">نمودار</button>
+            <button class="btn small warning" type="button" data-open-modal="contract-timeline-<?= (int) $contract['id'] ?>">تایم‌لاین</button>
             <button class="btn small info" type="button" data-open-modal="custom-installment-<?= (int) $contract['id'] ?>">قسط دلخواه</button>
             <a class="btn small success" href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank">چاپ دفترچه</a>
             <button class="btn small danger" type="button" data-open-modal="delete-contract-<?= (int) $contract['id'] ?>">حذف</button>
@@ -109,7 +102,48 @@ for ($i = 0; $i < 6; $i++) {
       </tbody>
     </table>
   </div>
+  <?php endif; ?>
 </section>
+
+<?php foreach ($contracts as $contract): ?>
+  <?php
+    $contractTrend = Payment::monthlyTrendForContract((int) $contract['id']);
+    $contractTimeline = Payment::recentForContract((int) $contract['id'], 8);
+  ?>
+  <div class="modal" id="contract-chart-<?= (int) $contract['id'] ?>">
+    <div class="modal-content">
+      <div class="modal-header"><h3>نمودار پرداخت <?= e($contract['contract_number']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+      <div class="modal-body">
+        <?php if (array_sum($contractTrend) > 0): ?>
+          <canvas data-chart="line" data-title="روند پرداخت" data-labels='<?= e(json_encode($contractTrendLabels, JSON_UNESCAPED_UNICODE)) ?>' data-values='<?= e(json_encode($contractTrend)) ?>'></canvas>
+        <?php else: ?>
+          <div class="empty">پرداخت موفقی برای نمودار ثبت نشده است.</div>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="contract-timeline-<?= (int) $contract['id'] ?>">
+    <div class="modal-content">
+      <div class="modal-header"><h3>تایم‌لاین پرداخت <?= e($contract['contract_number']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+      <div class="modal-body">
+        <div class="proma-payment-timeline compact">
+          <?php foreach ($contractTimeline as $payment): ?>
+            <div class="proma-timeline-item">
+              <span class="proma-timeline-dot"></span>
+              <div>
+                <strong><?= money_toman($payment['amount']) ?></strong>
+                <p><?= e(payment_type_label($payment['payment_type'] ?? 'installment')) ?><?= !empty($payment['installment_number']) ? ' · قسط ' . to_persian_digits($payment['installment_number']) : '' ?></p>
+              </div>
+              <time><?= e(jdatetime($payment['paid_at'] ?? $payment['payment_date'] ?? $payment['created_at'])) ?></time>
+            </div>
+          <?php endforeach; ?>
+          <?php if (!$contractTimeline): ?><div class="empty">پرداخت موفقی ثبت نشده است.</div><?php endif; ?>
+        </div>
+      </div>
+    </div>
+  </div>
+<?php endforeach; ?>
 
 <?php if (!$readOnly): ?>
 <div class="modal" id="create-contract">
@@ -161,12 +195,12 @@ for ($i = 0; $i < 6; $i++) {
               <strong data-financed-balance>۰ تومان</strong>
             </div>
             <label>نرخ سود ماهانه<input name="monthly_interest_rate" data-contract-rate required inputmode="decimal" placeholder="درصد"></label>
-            <label>تعداد اقساط<input name="months" data-contract-months required inputmode="numeric" value="12"></label>
+            <label>تعداد اقساط<input name="months" data-contract-months required inputmode="numeric" value="6"></label>
             <div>
               <span class="field-title">نوع سود</span>
               <div class="switch-options" data-exclusive>
-                <label><input type="checkbox" name="interest_type" value="simple" checked><span>ساده ماهانه</span></label>
-                <label><input type="checkbox" name="interest_type" value="compound"><span>مرکب ماهانه</span></label>
+                <label><input type="checkbox" name="interest_type" value="simple"><span>ساده ماهانه</span></label>
+                <label><input type="checkbox" name="interest_type" value="compound" checked><span>مرکب ماهانه</span></label>
               </div>
             </div>
           </div>
@@ -292,6 +326,7 @@ for ($i = 0; $i < 6; $i++) {
           <label>قرارداد<input value="<?= e($contract['contract_number']) ?> - <?= e($contract['customer_name']) ?>" disabled></label>
           <label>سررسید<input name="due_date" value="<?= e($defaultFirstDueDate ?? '') ?>" required placeholder="۱۴۰۳/۰۱/۰۱"></label>
           <label>مبلغ پایه<input name="base_amount" data-money required></label>
+          <label class="full">توضیحات<input name="notes" required placeholder="علت یا توضیح قسط دلخواه"></label>
         </div>
         <div class="modal-footer"><button class="btn" type="submit">ثبت قسط</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
       </form>

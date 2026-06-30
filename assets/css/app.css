@@ -80,6 +80,27 @@ a {
   font-weight: 800;
 }
 
+.proma-progress-avatar {
+  --progress: 0;
+  width: 58px;
+  height: 58px;
+  display: inline-grid;
+  flex: 0 0 58px;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--proma-success) calc(var(--progress) * 1%), #edf1f8 0);
+}
+
+.proma-progress-avatar .proma-avatar-choice {
+  width: 46px;
+  height: 46px;
+  border: 3px solid #fff;
+}
+
+[data-card-href] {
+  cursor: pointer;
+}
+
 .proma-header-link {
   position: relative;
   display: inline-flex;
@@ -718,6 +739,44 @@ input.btn:not([class*="btn-"]):not(.secondary):not(.danger):not(.warning):not(.s
   gap: 12px;
 }
 
+.proma-tour[hidden] {
+  display: none;
+}
+
+.proma-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+}
+
+.proma-tour-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 20, 31, .58);
+  backdrop-filter: blur(4px);
+}
+
+.proma-tour-card {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 20px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, .26);
+}
+
+.proma-tour-card h5 {
+  margin: 12px 0 8px;
+  font-weight: 800;
+}
+
+.proma-tour-card p {
+  color: var(--proma-muted);
+  line-height: 1.9;
+}
+
 .icon-btn {
   width: 36px;
   height: 36px;
@@ -1166,13 +1225,13 @@ input.btn:not([class*="btn-"]):not(.secondary):not(.danger):not(.warning):not(.s
 
 .proma-contract-card-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
   gap: 14px;
   margin-top: 4px;
 }
 
 .proma-contract-card {
-  min-height: 174px;
+  min-height: 196px;
   display: grid;
   gap: 12px;
   padding: 16px;
@@ -1183,6 +1242,9 @@ input.btn:not([class*="btn-"]):not(.secondary):not(.danger):not(.warning):not(.s
 
 .proma-contract-card-main {
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .proma-contract-badge {
@@ -1263,6 +1325,7 @@ input.btn:not([class*="btn-"]):not(.secondary):not(.danger):not(.warning):not(.s
 
 .proma-contract-card-footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -1518,39 +1581,6 @@ input.btn:not([class*="btn-"]):not(.secondary):not(.danger):not(.warning):not(.s
 .proma-avatar-choice.avatar-5 { background: linear-gradient(135deg, #16c7f9, #7366ff); }
 .proma-avatar-choice.avatar-6 { background: linear-gradient(135deg, #ffaa05, #54ba4a); }
 
-.proma-progress-avatar {
-  width: 88px;
-  height: 88px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 50%;
-  background: conic-gradient(var(--proma-success) var(--progress, 0%), #edf1f8 0);
-  padding: 6px;
-}
-
-.proma-progress-avatar .proma-avatar-choice {
-  width: 76px;
-  height: 76px;
-  border-width: 4px;
-  box-shadow: none;
-}
-
-.proma-progress-avatar.sm {
-  width: 74px;
-  height: 74px;
-}
-
-.proma-progress-avatar.sm .proma-contract-badge {
-  width: 62px;
-  height: 62px;
-  justify-content: center;
-  border: 4px solid #fff;
-  border-radius: 50%;
-  padding: 6px;
-  text-align: center;
-  line-height: 1.35;
-}
-
 .proma-profile-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1721,110 +1751,6 @@ input.btn:not([class*="btn-"]):not(.secondary):not(.danger):not(.warning):not(.s
   font-weight: 800;
 }
 
-.proma-checkline {
-  display: inline-flex !important;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding-top: 23px;
-}
-
-.proma-checkline input {
-  width: 18px !important;
-  height: 18px;
-}
-
-.proma-tour {
-  position: fixed;
-  inset: 0;
-  z-index: 10020;
-  background: rgba(15, 23, 42, .46);
-  pointer-events: auto;
-}
-
-.proma-tour[hidden] {
-  display: none;
-}
-
-.proma-tour-box {
-  position: fixed;
-  left: 32px;
-  width: min(360px, calc(100vw - 32px));
-  padding: 18px;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 22px 60px rgba(15, 23, 42, .28);
-}
-
-.proma-tour-box strong {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--proma-text);
-  font-size: 17px;
-}
-
-.proma-tour-box p {
-  margin: 0 0 16px;
-  color: var(--proma-muted);
-  line-height: 1.9;
-}
-
-.proma-tour-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.proma-tour-focus {
-  position: relative;
-  z-index: 10021 !important;
-  outline: 3px solid rgba(115, 102, 255, .42);
-  outline-offset: 4px;
-  border-radius: 8px;
-}
-
-.proma-order-history .prooduct-details-box {
-  height: 100%;
-  min-height: 126px;
-  padding: 14px;
-  border: 1px solid var(--proma-line);
-  border-radius: 8px;
-  background: #fff;
-}
-
-.proma-order-history .media {
-  display: flex;
-  align-items: center;
-}
-
-.proma-order-icon {
-  width: 58px;
-  height: 58px;
-  flex: 0 0 58px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 8px;
-  color: var(--proma-primary);
-  background: var(--proma-primary-soft);
-  font-size: 24px;
-}
-
-.proma-order-icon.success {
-  color: var(--proma-success);
-  background: rgba(84, 186, 74, .12);
-}
-
-.proma-order-history .product-name h6 {
-  margin: 0 0 8px;
-  color: var(--proma-text);
-}
-
-.proma-order-history .price,
-.proma-order-history .avaiabilty {
-  margin-top: 6px;
-  font-size: 13px;
-}
-
 @media (max-width: 1200px) {
   .grid.cols-4,
   .grid.cols-3,
@@ -1833,10 +1759,13 @@ input.btn:not([class*="btn-"]):not(.secondary):not(.danger):not(.warning):not(.s
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .proma-contract-card-grid,
   .proma-profile-grid,
   .proma-preview-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .proma-contract-card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   }
 }
 

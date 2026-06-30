@@ -30,8 +30,12 @@ class LegalController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
-        LegalCase::updateCase((int) $id, $_POST);
-        set_flash('success', 'پرونده حقوقی به‌روزرسانی شد.');
+        try {
+            LegalCase::updateCase((int) $id, $_POST);
+            set_flash('success', 'پرونده حقوقی به‌روزرسانی شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'به‌روزرسانی پرونده انجام نشد.');
+        }
         redirect('legal');
     }
 }

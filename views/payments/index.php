@@ -48,10 +48,7 @@
         $paymentType = $payment['payment_type'] ?? 'installment';
         ?>
         <tr>
-          <td>
-            <?= e(jdate($payment['payment_date'] ?: ($payment['paid_at'] ?: $payment['created_at']))) ?><br>
-            <span class="badge muted"><?= e(to_persian_digits(date('H:i', strtotime($payment['paid_at'] ?: $payment['created_at'])))) ?></span>
-          </td>
+          <td><?= e(jdatetime($payment['paid_at'] ?: ($payment['payment_date'] ?: $payment['created_at']))) ?></td>
           <td><?= e($payment['contract_number']) ?></td>
           <td><strong><?= e($payment['customer_name']) ?></strong></td>
           <td><?= $payment['installment_number'] ? to_persian_digits($payment['installment_number']) : '-' ?></td>
@@ -66,7 +63,7 @@
           <td>
             <?php if ($isCorrected): ?>
               <span class="badge muted">اصلاح‌شده</span>
-              <small class="d-block"><?= e(jdate($payment['corrected_at'])) ?> - <?= e($payment['corrected_by_name'] ?: 'مدیر') ?></small>
+              <small class="d-block"><?= e(jdatetime($payment['corrected_at'])) ?> - <?= e($payment['corrected_by_name'] ?: 'مدیر') ?></small>
               <small class="d-block"><?= e($payment['correction_reason'] ?? '') ?></small>
             <?php else: ?>
               <span class="badge badge-light-success">بدون اصلاحیه</span>

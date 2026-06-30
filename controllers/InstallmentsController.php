@@ -23,7 +23,11 @@ class InstallmentsController extends Controller
             set_flash('error', 'تاریخ سررسید معتبر نیست.');
             redirect($redirectTo);
         }
-        Installment::createCustom((int) $_POST['contract_id'], $dueDate, $_POST['base_amount']);
+        if (trim((string) ($_POST['notes'] ?? '')) === '') {
+            set_flash('error', 'توضیحات قسط سفارشی الزامی است.');
+            redirect($redirectTo);
+        }
+        Installment::createCustom((int) $_POST['contract_id'], $dueDate, $_POST['base_amount'], $_POST['notes'] ?? '');
         set_flash('success', 'قسط سفارشی ثبت شد.');
         redirect($redirectTo);
     }
@@ -51,8 +55,7 @@ class InstallmentsController extends Controller
             redirect(($_POST['redirect_to'] ?? '') === 'overdue' ? 'overdue' : 'installments');
         }
         $paymentDate = parse_jalali_date($_POST['payment_date'] ?? '') ?: date('Y-m-d');
-        $paymentTime = to_english_digits($_POST['payment_time'] ?? date('H:i'));
-        Payment::record((int) $id, $installment['contract_id'], Auth::id(), $_POST['amount'] ?? 0, 'manual', 'paid', null, null, $_POST['description'] ?? 'پرداخت دستی', $paymentDate, 'installment', $paymentTime);
+        Payment::record((int) $id, $installment['contract_id'], Auth::id(), $_POST['amount'] ?? 0, 'manual', 'paid', null, null, $_POST['description'] ?? 'پرداخت دستی', $paymentDate, 'installment', $_POST['payment_time'] ?? null);
         Notification::create($installment['customer_id'], 'پرداخت جدید ثبت شد', 'یک پرداخت برای قسط شما ثبت شد.', 'payment', url('portal/installments'));
         set_flash('success', 'پرداخت دستی ثبت شد.');
         redirect(($_POST['redirect_to'] ?? '') === 'overdue' ? 'overdue' : 'installments');

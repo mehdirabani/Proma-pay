@@ -1,3 +1,4 @@
+<?php $legalStages = app_config('legal_stages', []); ?>
 <div class="row">
   <div class="col-xxl-4 col-xl-5">
     <section class="card">
@@ -84,6 +85,7 @@
           <div><strong>وکیل:</strong> <?= e($case['lawyer_name'] ?: 'ارجاع نشده') ?></div>
           <div><strong>مرحله:</strong> <?= e($case['stage']) ?></div>
           <div><strong>هزینه:</strong> <?= money_toman($case['expense_amount']) ?></div>
+          <div><strong>علت هزینه:</strong> <?= e($case['expense_reason'] ?: '-') ?></div>
         </div>
         <div class="proma-payment-timeline compact" style="margin-top:16px">
           <div class="proma-timeline-item">
@@ -113,10 +115,15 @@
               <?php foreach ($lawyers as $lawyer): ?><option value="<?= (int) $lawyer['id'] ?>"<?= selected($case['lawyer_id'], $lawyer['id']) ?>><?= e($lawyer['full_name']) ?></option><?php endforeach; ?>
             </select>
           </label>
-          <label>مرحله<input name="stage" value="<?= e($case['stage']) ?>" required></label>
+          <label>مرحله
+            <select name="stage" required>
+              <?php foreach ($legalStages as $stage): ?><option value="<?= e($stage) ?>"<?= selected($case['stage'], $stage) ?>><?= e($stage) ?></option><?php endforeach; ?>
+            </select>
+          </label>
           <label>وضعیت<select name="status"><option value="open"<?= selected($case['status'], 'open') ?>>باز</option><option value="referred"<?= selected($case['status'], 'referred') ?>>ارجاع شده</option><option value="closed"<?= selected($case['status'], 'closed') ?>>بسته</option></select></label>
           <label>شماره شکایت<input name="complaint_number" value="<?= e($case['complaint_number']) ?>"></label>
           <label>هزینه حقوقی<input name="expense_amount" data-money value="<?= e(number_format(ceil((float) $case['expense_amount']), 0)) ?>"></label>
+          <label class="full">علت هزینه<input name="expense_reason" value="<?= e($case['expense_reason'] ?? '') ?>" placeholder="برای هر هزینه، علت را ثبت کنید"></label>
           <label class="full">یادداشت<textarea name="notes"><?= e($case['notes']) ?></textarea></label>
         </div>
         <div class="modal-footer"><button class="btn" type="submit">ثبت تغییرات</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>

@@ -8,7 +8,8 @@ class OverdueController extends Controller
         $this->render('overdue/index', [
             'title' => 'اقساط سررسید گذشته',
             'bucket' => $_GET['bucket'] ?? null,
-            'installments' => Installment::overdue($_GET['bucket'] ?? null),
+            'search' => $_GET['q'] ?? '',
+            'installments' => Installment::overdue($_GET['bucket'] ?? null, $_GET['q'] ?? null),
             'operators' => User::all('operator'),
             'lawyers' => User::all('lawyer'),
         ]);

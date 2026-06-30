@@ -7,6 +7,7 @@ $unreadMessages = Chat::unreadCount(Auth::id());
 $notifications = Notification::latest(Auth::id());
 $systemName = $settings['system_name'] ?? app_config('app_name', 'پرما پرداخت');
 $logoText = $settings['logo_text'] ?? $systemName;
+$footerText = $settings['footer_text'] ?? 'پنل مدیریت مالی راست‌چین';
 $sprite = template_asset_url('svg/icon-sprite.svg');
 $userInitial = mb_substr($user['full_name'] ?? 'ک', 0, 1, 'UTF-8');
 $nav = [];
@@ -29,16 +30,16 @@ if (Auth::role() === 'admin') {
 } elseif (Auth::role() === 'operator') {
     $nav = [
         ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
-        ['users', 'کاربران', 'stroke-user', 'fill-user'],
-        ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
         ['operator', 'پیگیری‌ها', 'stroke-task', 'fill-task'],
+        ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
+        ['users', 'کاربران', 'stroke-user', 'fill-user'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
     ];
 } elseif (Auth::role() === 'lawyer') {
     $nav = [
         ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
-        ['users', 'کاربران', 'stroke-user', 'fill-user'],
         ['lawyer', 'پرونده‌ها', 'stroke-file', 'fill-file'],
+        ['users', 'کاربران', 'stroke-user', 'fill-user'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
     ];
 } else {
@@ -77,7 +78,7 @@ if (Auth::role() === 'admin') {
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
 </head>
-<body onload="if (window.startTime) startTime()" data-tour-needed="<?= empty($user['tour_completed_at']) ? '1' : '0' ?>" data-tour-complete-url="<?= e(url('tour/complete')) ?>" data-tour-token="<?= e(Csrf::token()) ?>">
+<body onload="if (window.startTime) startTime()" data-user-id="<?= (int) Auth::id() ?>">
   <div class="loader-wrapper">
     <div class="loader-index"><span></span></div>
     <svg><defs></defs><filter id="goo"><feGaussianBlur in="SourceGraphic" stdDeviation="11" result="blur"></feGaussianBlur><feColorMatrix in="blur" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo"></feColorMatrix></filter></svg>
@@ -252,11 +253,24 @@ if (Auth::role() === 'admin') {
         </div>
       </div>
 
+      <div class="proma-tour" data-tour hidden>
+        <div class="proma-tour-backdrop"></div>
+        <div class="proma-tour-card">
+          <span class="badge badge-light-primary" data-tour-step>۱ از ۴</span>
+          <h5 data-tour-title>خوش آمدید</h5>
+          <p data-tour-body>در این تور کوتاه با بخش‌های اصلی پنل آشنا می‌شوید.</p>
+          <div class="actions">
+            <button class="btn secondary" type="button" data-tour-skip>رد کردن</button>
+            <button class="btn" type="button" data-tour-next>بعدی</button>
+          </div>
+        </div>
+      </div>
+
       <footer class="footer">
         <div class="container-fluid">
           <div class="row">
             <div class="col-md-12 footer-copyright text-center">
-              <p class="mb-0"><?= e($systemName) ?> - پنل مدیریت مالی راست‌چین</p>
+              <p class="mb-0"><?= e($systemName) ?> - <?= e($footerText) ?></p>
             </div>
           </div>
         </div>
@@ -280,15 +294,5 @@ if (Auth::role() === 'admin') {
   <script src="<?= e(template_asset_url('js/height-equal.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/script.js')) ?>"></script>
   <script src="<?= e(asset_url('assets/js/app.js')) ?>"></script>
-  <div class="proma-tour" data-tour hidden>
-    <div class="proma-tour-box">
-      <strong data-tour-title>خوش آمدید</strong>
-      <p data-tour-text>Proma-pay آماده است.</p>
-      <div class="proma-tour-actions">
-        <button class="btn secondary" type="button" data-tour-skip>رد کردن</button>
-        <button class="btn" type="button" data-tour-next>بعدی</button>
-      </div>
-    </div>
-  </div>
 </body>
 </html>

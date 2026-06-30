@@ -227,7 +227,7 @@ class Payment extends Model
         self::ensureCorrectionSchema();
         $paymentType = $paymentType === 'down_payment' ? 'down_payment' : 'installment';
         $paymentDate = $paymentDate ?: date('Y-m-d');
-        $paymentTime = preg_match('/^\d{2}:\d{2}$/', (string) $paymentTime) ? $paymentTime : date('H:i');
+        $paymentTime = normalize_time($paymentTime) ?: date('H:i');
         $paidAt = $paymentDate . ' ' . $paymentTime . ':00';
         $amount = normalize_money($amount);
         $needsInstallmentTransaction = $status === 'paid' && $paymentType === 'installment' && $installmentId;
@@ -277,12 +277,6 @@ class Payment extends Model
             if ($startedTransaction) {
                 self::commit();
             }
-            if ($status === 'paid') {
-                $contract = self::fetch('SELECT customer_id FROM contracts WHERE id = ?', [(int) $contractId]);
-                if ($contract) {
-                    Achievement::evaluateCustomer((int) $contract['customer_id']);
-                }
-            }
             return $paymentId;
         } catch (Throwable $e) {
             if ($startedTransaction) {
@@ -320,6 +314,7 @@ class Payment extends Model
             return null;
         }
         $paymentDate = $paymentDate ?: date('Y-m-d');
+        $paidAt = $paymentDate . ' ' . date('H:i:s');
         if ($existing) {
             self::execute(
                 "UPDATE payments
@@ -327,7 +322,7 @@ class Payment extends Model
                      payment_date = ?, paid_at = ?, calculated_penalty = 0, calculated_reward = 0,
                      remaining_before_payment = NULL, remaining_after_payment = NULL
                  WHERE id = ?",
-                [$amount, $userId ?: null, $paymentDate, $paymentDate . ' 12:00:00', (int) $existing['id']]
+                [$amount, $userId ?: null, $paymentDate, $paidAt, (int) $existing['id']]
             );
             return (int) $existing['id'];
         }

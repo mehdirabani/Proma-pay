@@ -90,11 +90,30 @@ class ImportsController extends Controller
         $content = trim((string) $content);
         if (preg_match('/```json\s*(.*?)```/su', $content, $m)) {
             $content = trim($m[1]);
-        } elseif (preg_match('/(\{.*\})/su', $content, $m)) {
+        } elseif (preg_match('/(\{.*\}|\[.*\])/su', $content, $m)) {
             $content = $m[1];
         }
         $json = json_decode($content, true);
-        return is_array($json) ? $json : null;
+        if (!is_array($json)) {
+            return null;
+        }
+        return $this->normalizeParsedStructure($json);
+    }
+
+    protected function normalizeParsedStructure(array $json)
+    {
+        if (isset($json['data']) && is_array($json['data'])) {
+            $json = $json['data'];
+        }
+        if (array_is_list($json)) {
+            $json = ['rows' => $json, 'customers' => [], 'contracts' => [], 'installments' => [], 'guarantors' => [], 'payments' => []];
+        }
+        foreach (['customers', 'contracts', 'installments', 'guarantors', 'payments'] as $key) {
+            if (empty($json[$key]) || !is_array($json[$key])) {
+                $json[$key] = [];
+            }
+        }
+        return $json;
     }
 
     protected function readImportInput()

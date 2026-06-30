@@ -4,13 +4,18 @@ class UsersController extends Controller
 {
     public function index()
     {
-        Auth::requireStaff();
+        $this->requireRole(['admin', 'operator', 'lawyer']);
         $role = $_GET['role'] ?? null;
         $status = $_GET['status'] ?? null;
         $allowedRoles = ['admin', 'operator', 'lawyer', 'customer'];
         $role = in_array($role, $allowedRoles, true) ? $role : null;
         $status = in_array($status, ['active', 'inactive'], true) ? $status : null;
         $users = User::all($role, $_GET['q'] ?? null, $status);
+        foreach ($users as $candidate) {
+            if (($candidate['role'] ?? '') === 'customer') {
+                User::syncAutomaticMedals((int) $candidate['id']);
+            }
+        }
         $medals = User::medalsForUsers(array_column($users, 'id'));
         foreach ($users as &$user) {
             $user['medals'] = $medals[(int) $user['id']] ?? [];
@@ -20,7 +25,6 @@ class UsersController extends Controller
             'title' => 'مدیریت کاربران',
             'users' => $users,
             'roles' => $allowedRoles,
-            'departments' => User::departments(),
             'canManageUsers' => Auth::role() === 'admin',
             'profileRequests' => Auth::role() === 'admin' ? ProfileRequest::pending() : [],
         ]);
@@ -53,8 +57,6 @@ class UsersController extends Controller
                 'status' => $_POST['status'] ?? 'active',
                 'address' => $_POST['address'] ?? '',
                 'avatar_key' => in_array($_POST['avatar_key'] ?? '', ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6'], true) ? $_POST['avatar_key'] : null,
-                'department' => $_POST['department'] ?? null,
-                'is_department_manager' => !empty($_POST['is_department_manager']) ? 1 : 0,
             ]);
             set_flash('success', 'کاربر با موفقیت ثبت شد.');
         } catch (Throwable $e) {
@@ -89,10 +91,6 @@ class UsersController extends Controller
                 'email' => $_POST['email'] ?? '',
                 'password' => $_POST['password'] ?? '',
                 'status' => $_POST['status'] ?? 'active',
-                'address' => $_POST['address'] ?? '',
-                'avatar_key' => in_array($_POST['avatar_key'] ?? '', ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6'], true) ? $_POST['avatar_key'] : null,
-                'department' => $_POST['department'] ?? null,
-                'is_department_manager' => !empty($_POST['is_department_manager']) ? 1 : 0,
             ]);
             set_flash('success', 'اطلاعات کاربر به‌روزرسانی شد.');
         } catch (Throwable $e) {

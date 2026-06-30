@@ -32,7 +32,16 @@
       <thead><tr><th>قرارداد</th><th>مشتری</th><th>تماس</th><th>مبلغ</th><th>وضعیت</th></tr></thead>
       <tbody>
       <?php foreach ($contracts as $contract): ?>
-        <tr><td><?= e($contract['contract_number']) ?></td><td><?= e($contract['customer_name']) ?></td><td><?= to_persian_digits($contract['mobile']) ?><?= $contract['secondary_phone'] ? '، ' . to_persian_digits($contract['secondary_phone']) : '' ?></td><td><?= money_toman($contract['principal_amount']) ?></td><td><span class="badge <?= e(badge_class($contract['status'])) ?>"><?= e(status_label($contract['status'])) ?></span></td></tr>
+        <tr>
+          <td>
+            <?= e($contract['contract_number']) ?>
+            <?php if ((int) ($contract['legal_case_count'] ?? 0) > 0 || ($contract['legal_status'] ?? '') === 'referred'): ?><span class="badge danger">شکایت شده</span><?php endif; ?>
+          </td>
+          <td><?= e($contract['customer_name']) ?></td>
+          <td><?= to_persian_digits($contract['mobile']) ?><?= $contract['secondary_phone'] ? '، ' . to_persian_digits($contract['secondary_phone']) : '' ?></td>
+          <td><?= money_toman($contract['principal_amount']) ?></td>
+          <td><span class="badge <?= e(badge_class($contract['status'])) ?>"><?= e(status_label($contract['status'])) ?></span></td>
+        </tr>
       <?php endforeach; ?>
       <?php if (!$contracts): ?><tr><td colspan="5" class="empty">قراردادی برای پیگیری وجود ندارد.</td></tr><?php endif; ?>
       </tbody>

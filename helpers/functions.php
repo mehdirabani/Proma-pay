@@ -242,6 +242,30 @@ function jdate($date)
     return to_persian_digits(sprintf('%04d/%02d/%02d', $jy, $jm, $jd));
 }
 
+function jdatetime($dateTime)
+{
+    if (!$dateTime) {
+        return '';
+    }
+    $timestamp = is_numeric($dateTime) ? (int) $dateTime : strtotime((string) $dateTime);
+    if (!$timestamp) {
+        return '';
+    }
+    return jdate(date('Y-m-d', $timestamp)) . ' ' . to_persian_digits(date('H:i', $timestamp));
+}
+
+function normalize_time($value)
+{
+    $value = trim(to_english_digits((string) $value));
+    if ($value === '') {
+        return null;
+    }
+    if (!preg_match('/^([01]?\d|2[0-3]):([0-5]\d)$/', $value, $matches)) {
+        return null;
+    }
+    return sprintf('%02d:%02d', (int) $matches[1], (int) $matches[2]);
+}
+
 function parse_jalali_date($value)
 {
     $value = trim(to_english_digits($value));

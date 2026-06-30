@@ -189,6 +189,7 @@ function create_schema(PDO $pdo)
             manual_reward_adjustment DECIMAL(18,2) NOT NULL DEFAULT 0,
             penalty_discount_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
             status VARCHAR(30) NOT NULL DEFAULT 'pending',
+            notes TEXT NULL,
             created_at DATETIME NOT NULL,
             updated_at DATETIME NULL,
             UNIQUE KEY uq_contract_installment (contract_id, installment_number),
@@ -400,6 +401,7 @@ function seed_settings(PDO $pdo)
     $defaults = [
         'system_name' => 'پرما پرداخت',
         'logo_text' => 'پرما پرداخت',
+        'footer_text' => 'پنل مدیریت مالی راست‌چین',
         'contract_prefix' => 'Pr',
         'contract_next_serial' => '1000',
         'monthly_penalty_rate' => '2',

@@ -35,8 +35,8 @@ class ContractsController extends Controller
                 'principal_amount' => $_POST['principal_amount'] ?? 0,
                 'down_payment_amount' => $_POST['down_payment_amount'] ?? 0,
                 'monthly_interest_rate' => $_POST['monthly_interest_rate'] ?? 0,
-                'interest_type' => ($_POST['interest_type'] ?? 'simple') === 'compound' ? 'compound' : 'simple',
-                'months' => $_POST['months'] ?? 1,
+                'interest_type' => ($_POST['interest_type'] ?? 'compound') === 'simple' ? 'simple' : 'compound',
+                'months' => $_POST['months'] ?? 6,
                 'start_date' => $startDate,
                 'first_due_date' => $firstDue,
                 'assigned_operator_id' => $_POST['assigned_operator_id'] ?? null,
@@ -66,8 +66,8 @@ class ContractsController extends Controller
                 'principal_amount' => $_POST['principal_amount'] ?? 0,
                 'down_payment_amount' => $_POST['down_payment_amount'] ?? 0,
                 'monthly_interest_rate' => $_POST['monthly_interest_rate'] ?? 0,
-                'interest_type' => ($_POST['interest_type'] ?? 'simple') === 'compound' ? 'compound' : 'simple',
-                'months' => $_POST['months'] ?? 1,
+                'interest_type' => ($_POST['interest_type'] ?? 'compound') === 'simple' ? 'simple' : 'compound',
+                'months' => $_POST['months'] ?? 6,
                 'start_date' => $startDate,
                 'first_due_date' => $firstDue,
                 'assigned_operator_id' => $_POST['assigned_operator_id'] ?? null,
@@ -87,9 +87,9 @@ class ContractsController extends Controller
         $preview = FinanceHelper::contractPreview(
             $_GET['principal_amount'] ?? 0,
             $_GET['down_payment_amount'] ?? 0,
-            $_GET['months'] ?? 1,
+            $_GET['months'] ?? 6,
             $_GET['monthly_interest_rate'] ?? 0,
-            ($_GET['interest_type'] ?? 'simple') === 'compound' ? 'compound' : 'simple'
+            ($_GET['interest_type'] ?? 'compound') === 'simple' ? 'simple' : 'compound'
         );
         $preview['formatted'] = [
             'principal_amount' => money_toman($preview['principal_amount']),

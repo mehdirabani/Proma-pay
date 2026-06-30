@@ -48,43 +48,6 @@
 </section>
 
 <section class="card" style="margin-top:16px">
-  <div class="card-header card-no-border"><h5>تاریخچه سفارشات و قراردادهای اخیر</h5></div>
-  <div class="card-body">
-    <div class="row g-sm-4 g-3 proma-order-history">
-      <?php foreach (array_slice($contracts, 0, 3) as $contract): ?>
-        <div class="col-xxl-4 col-md-6">
-          <div class="prooduct-details-box">
-            <div class="media"><span class="proma-order-icon"><i class="fa fa-file-text-o"></i></span>
-              <div class="media-body ms-3">
-                <div class="product-name"><h6><?= e($contract['contract_number']) ?></h6></div>
-                <div class="rating"><span class="badge <?= e(badge_class($contract['status'])) ?>"><?= e(status_label($contract['status'])) ?></span></div>
-                <div class="price d-flex"><div class="text-muted me-2">مبلغ</div>: <?= money_toman($contract['principal_amount']) ?></div>
-                <div class="avaiabilty"><div class="text-success">شروع <?= e(jdate($contract['start_date'])) ?></div></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      <?php endforeach; ?>
-      <?php foreach (array_slice($payments, 0, 6) as $payment): ?>
-        <div class="col-xxl-4 col-md-6">
-          <div class="prooduct-details-box">
-            <div class="media"><span class="proma-order-icon success"><i class="fa fa-credit-card"></i></span>
-              <div class="media-body ms-3">
-                <div class="product-name"><h6><?= e($payment['contract_number']) ?></h6></div>
-                <div class="rating"><span class="badge badge-light-info"><?= e(payment_type_label($payment['payment_type'] ?? 'installment')) ?></span></div>
-                <div class="price d-flex"><div class="text-muted me-2">پرداخت</div>: <?= money_toman($payment['amount']) ?></div>
-                <div class="avaiabilty"><div class="text-success"><?= e(jdate($payment['payment_date'] ?: ($payment['paid_at'] ?: $payment['created_at']))) ?></div></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      <?php endforeach; ?>
-      <?php if (!$contracts && !$payments): ?><div class="empty">تاریخچه‌ای برای نمایش وجود ندارد.</div><?php endif; ?>
-    </div>
-  </div>
-</section>
-
-<section class="card" style="margin-top:16px">
   <div class="card-header card-no-border"><h5>خط زمانی پرداخت‌های موفق</h5></div>
   <div class="card-body">
     <div class="proma-payment-timeline">
@@ -95,7 +58,7 @@
             <strong><?= money_toman($payment['amount']) ?></strong>
             <p><?= e(payment_type_label($payment['payment_type'] ?? 'installment')) ?><?= !empty($payment['installment_number']) ? ' · قسط ' . to_persian_digits($payment['installment_number']) : '' ?> · قرارداد <?= e($payment['contract_number']) ?></p>
           </div>
-          <time><?= e(jdate($payment['payment_date'] ?: ($payment['paid_at'] ?: $payment['created_at']))) ?></time>
+          <time><?= e(jdatetime($payment['paid_at'] ?: ($payment['payment_date'] ?: $payment['created_at']))) ?></time>
         </div>
       <?php endforeach; ?>
       <?php if (!$paymentTimeline): ?><div class="empty">پرداخت موفقی برای این مشتری ثبت نشده است.</div><?php endif; ?>
@@ -135,7 +98,7 @@
       <tbody>
       <?php foreach ($payments as $payment): ?>
         <tr>
-          <td><?= e(jdate($payment['payment_date'] ?: $payment['paid_at'])) ?></td>
+          <td><?= e(jdatetime($payment['paid_at'] ?: ($payment['payment_date'] ?: $payment['created_at']))) ?></td>
           <td><?= e($payment['contract_number']) ?></td>
           <td><?= $payment['installment_number'] ? to_persian_digits($payment['installment_number']) : '-' ?></td>
           <td><span class="badge badge-light-info"><?= e(payment_type_label($payment['payment_type'] ?? 'installment')) ?></span></td>

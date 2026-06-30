@@ -16,6 +16,9 @@ class Contract extends Model
         if (class_exists('Payment')) {
             Payment::ensureCorrectionSchema();
         }
+        if (class_exists('User')) {
+            User::ensureProfileColumns();
+        }
         self::$schemaReady = true;
     }
 
@@ -41,8 +44,9 @@ class Contract extends Model
             $where[] = '(c.contract_number LIKE ? OR u.full_name LIKE ? OR u.national_id LIKE ? OR u.mobile LIKE ? OR u.secondary_phone LIKE ?)';
             array_push($params, $needle, $needle, $needle, $needle, $needle);
         }
-        $sql = "SELECT c.*, u.full_name AS customer_name, u.mobile, u.national_id, u.secondary_phone,
-                op.full_name AS operator_name
+        $sql = "SELECT c.*, u.full_name AS customer_name, u.mobile, u.national_id, u.secondary_phone, u.avatar_key,
+                op.full_name AS operator_name,
+                (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id AND lc.status != 'closed') AS legal_case_count
                 FROM contracts c
                 JOIN users u ON u.id = c.customer_id
                 LEFT JOIN users op ON op.id = c.assigned_operator_id"
@@ -66,19 +70,6 @@ class Contract extends Model
         return self::fetchAll(
             'SELECT u.* FROM contract_guarantors cg JOIN users u ON u.id = cg.guarantor_id WHERE cg.contract_id = ? ORDER BY u.full_name',
             [(int) $contractId]
-        );
-    }
-
-    public static function guarantorsForCustomer($customerId)
-    {
-        return self::fetchAll(
-            "SELECT c.contract_number, c.id AS contract_id, gu.*
-             FROM contracts c
-             JOIN contract_guarantors cg ON cg.contract_id = c.id
-             JOIN users gu ON gu.id = cg.guarantor_id
-             WHERE c.customer_id = ?
-             ORDER BY c.id DESC, gu.full_name",
-            [(int) $customerId]
         );
     }
 
@@ -133,7 +124,6 @@ class Contract extends Model
             Payment::syncDownPayment($contractId, $data['created_by'] ?? null, normalize_money($data['down_payment_amount'] ?? 0), $data['start_date']);
             Settings::set('contract_next_serial', (string) ($serial + 1));
             self::commit();
-            Achievement::evaluateCustomer((int) $data['customer_id']);
             return $contractId;
         } catch (Throwable $e) {
             self::rollBack();

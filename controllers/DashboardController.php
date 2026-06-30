@@ -279,12 +279,24 @@ class DashboardController extends Controller
     protected function customer()
     {
         $customerId = Auth::id();
+        User::syncAutomaticMedals((int) $customerId);
+        $contracts = Contract::all(['customer_id' => $customerId]);
         $this->render('dashboard/customer', [
             'title' => 'داشبورد مشتری',
-            'contracts' => Contract::all(['customer_id' => $customerId]),
+            'contracts' => $contracts,
             'installments' => Installment::all(['customer_id' => $customerId]),
             'payments' => Payment::recentForCustomer($customerId, 9),
             'medals' => Model::fetchAll('SELECT * FROM medals WHERE user_id = ? ORDER BY id DESC', [$customerId]),
+            'givenGuarantees' => Contract::all(['guarantor_id' => $customerId]),
+            'receivedGuarantees' => Model::fetchAll(
+                "SELECT c.contract_number, c.id AS contract_id, u.full_name, u.mobile, u.national_id
+                 FROM contracts c
+                 JOIN contract_guarantors cg ON cg.contract_id = c.id
+                 JOIN users u ON u.id = cg.guarantor_id
+                 WHERE c.customer_id = ?
+                 ORDER BY c.id DESC, u.full_name",
+                [$customerId]
+            ),
         ]);
     }
 }

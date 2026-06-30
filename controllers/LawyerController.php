@@ -34,8 +34,8 @@ class LawyerController extends Controller
         try {
             LegalCase::updateCase((int) $id, $_POST);
             set_flash('success', 'وضعیت پرونده به‌روزرسانی شد.');
-        } catch (InvalidArgumentException $e) {
-            set_flash('error', $e->getMessage());
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'به‌روزرسانی پرونده انجام نشد.');
         }
         redirect('lawyer');
     }

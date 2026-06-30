@@ -15,7 +15,13 @@ class FinanceHelper
         } else {
             $total = $principal * (1 + ($rate * $months));
         }
-        return ceil($total / $months);
+        return self::roundInstallmentAmount($total / $months);
+    }
+
+    public static function roundInstallmentAmount($amount)
+    {
+        $step = 100000;
+        return (int) (ceil(max(0, (float) $amount) / $step) * $step);
     }
 
     public static function addMonths($date, $months)

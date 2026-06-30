@@ -4,29 +4,39 @@ class Chat extends Model
 {
     public static function contactsFor($userId)
     {
-        User::ensureProfileColumns();
         $user = User::find($userId);
         if (!$user) {
             return [];
         }
         if ($user['role'] === 'customer') {
             return self::fetchAll(
-                "SELECT u.id, u.full_name, u.role, u.department,
+                "SELECT u.id,
+                 CASE u.role
+                   WHEN 'admin' THEN 'واحد مدیریت'
+                   WHEN 'operator' THEN 'مدیریت مالی و پیگیری اقساط'
+                   WHEN 'lawyer' THEN 'بخش حقوقی و شکایت‌ها'
+                   ELSE u.full_name
+                 END AS full_name,
+                 u.role,
                  (SELECT COUNT(*) FROM messages m WHERE m.sender_id = u.id AND m.receiver_id = ? AND m.is_read = 0) AS unread_count
                  FROM users u
-                 WHERE u.role IN ('admin','operator','lawyer') AND u.status = 'active'
-                 AND COALESCE(u.department, CASE WHEN u.role = 'admin' THEN 'management' WHEN u.role = 'operator' THEN 'finance' WHEN u.role = 'lawyer' THEN 'legal' ELSE '' END) IN ('management','finance','legal')
-                 ORDER BY FIELD(COALESCE(u.department, ''), 'management','finance','legal'), u.full_name",
+                 JOIN (
+                   SELECT role, MIN(id) AS id FROM users
+                   WHERE role IN ('admin','operator','lawyer') AND status = 'active'
+                   GROUP BY role
+                 ) unit ON unit.id = u.id
+                 ORDER BY FIELD(u.role, 'admin', 'operator', 'lawyer')",
                 [(int) $userId]
             );
         }
         return self::fetchAll(
-            "SELECT u.id, u.full_name, u.role, u.department,
+            "SELECT u.id, u.full_name, u.role,
              (SELECT COUNT(*) FROM messages m WHERE m.sender_id = u.id AND m.receiver_id = ? AND m.is_read = 0) AS unread_count
              FROM users u
-             WHERE u.id != ? AND u.status = 'active' AND u.role IN ('admin','operator','lawyer')
+             WHERE u.id != ? AND u.status = 'active'
+             AND (u.role != 'customer' OR ? IN ('admin','operator','lawyer'))
              ORDER BY u.role, u.full_name",
-            [(int) $userId, (int) $userId]
+            [(int) $userId, (int) $userId, $user['role']]
         );
     }
 
@@ -37,14 +47,7 @@ class Chat extends Model
         if (!$sender || !$receiver) {
             return false;
         }
-        if ($sender['role'] === 'customer') {
-            $department = $receiver['department'] ?: ($receiver['role'] === 'admin' ? 'management' : ($receiver['role'] === 'operator' ? 'finance' : ($receiver['role'] === 'lawyer' ? 'legal' : '')));
-            return in_array($department, ['management', 'finance', 'legal'], true);
-        }
-        if ($receiver['role'] === 'customer') {
-            return false;
-        }
-        return is_staff_role($sender['role']) && is_staff_role($receiver['role']);
+        return !($sender['role'] === 'customer' && $receiver['role'] === 'customer');
     }
 
     public static function messages($userId, $contactId, $afterId = 0)

@@ -7,6 +7,7 @@ class Settings extends Model
         return [
             'system_name' => 'پرما پرداخت',
             'logo_text' => 'پرما پرداخت',
+            'footer_text' => 'پنل مدیریت مالی راست‌چین',
             'contract_prefix' => 'Pr',
             'contract_next_serial' => '1000',
             'monthly_penalty_rate' => '2',

@@ -12,9 +12,6 @@ class User extends Model
         foreach ([
             'address' => 'TEXT NULL',
             'avatar_key' => "VARCHAR(40) NULL",
-            'department' => "VARCHAR(40) NULL",
-            'is_department_manager' => "TINYINT(1) NOT NULL DEFAULT 0",
-            'tour_completed_at' => 'DATETIME NULL',
         ] as $column => $definition) {
             try {
                 self::execute("ALTER TABLE users ADD COLUMN {$column} {$definition}");
@@ -104,37 +101,59 @@ class User extends Model
 
     public static function addMedal($userId, $title, $description = '', $points = 0)
     {
-        self::ensureMedalSchema();
         self::execute(
-            'INSERT INTO medals (user_id, title, description, points, code, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
-            [(int) $userId, trim($title), trim($description), (int) to_english_digits($points), null]
+            'INSERT INTO medals (user_id, title, description, points, created_at) VALUES (?, ?, ?, ?, NOW())',
+            [(int) $userId, trim($title), trim($description), (int) to_english_digits($points)]
         );
     }
 
-    public static function addMedalIfMissing($userId, $code, $title, $description = '', $points = 0)
+    public static function syncAutomaticMedals($userId)
     {
-        self::ensureMedalSchema();
-        $exists = self::fetch('SELECT id FROM medals WHERE user_id = ? AND code = ? LIMIT 1', [(int) $userId, $code]);
+        $userId = (int) $userId;
+        if ($userId <= 0) {
+            return;
+        }
+        $contractCount = (int) (self::fetch('SELECT COUNT(*) AS total FROM contracts WHERE customer_id = ?', [$userId])['total'] ?? 0);
+        if ($contractCount >= 5) {
+            self::addMedalOnce($userId, '۵ قرارداد اقساطی', 'ثبت حداقل پنج قرارداد اقساطی', 50);
+        }
+
+        $earlyContract = self::fetch(
+            "SELECT c.id
+             FROM contracts c
+             JOIN installments i ON i.contract_id = c.id
+             WHERE c.customer_id = ?
+             GROUP BY c.id
+             HAVING COUNT(i.id) > 0
+             AND SUM(CASE WHEN i.status = 'paid' THEN 1 ELSE 0 END) = COUNT(i.id)
+             AND MAX(i.last_payment_date) IS NOT NULL
+             AND MAX(i.last_payment_date) < MAX(i.due_date)
+             LIMIT 1",
+            [$userId]
+        );
+        if ($earlyContract) {
+            self::addMedalOnce($userId, 'تسویه زودهنگام قرارداد', 'تسویه کامل یک قرارداد پیش از آخرین سررسید', 80);
+        }
+
+        $earlyInstallments = (int) (self::fetch(
+            "SELECT COUNT(*) AS total
+             FROM installments i
+             JOIN contracts c ON c.id = i.contract_id
+             WHERE c.customer_id = ? AND i.status = 'paid' AND i.last_payment_date IS NOT NULL AND i.last_payment_date < i.due_date",
+            [$userId]
+        )['total'] ?? 0);
+        if ($earlyInstallments >= 5) {
+            self::addMedalOnce($userId, '۵ قسط زودپرداخت', 'پرداخت حداقل پنج قسط زودتر از سررسید', 60);
+        }
+    }
+
+    protected static function addMedalOnce($userId, $title, $description, $points)
+    {
+        $exists = self::fetch('SELECT id FROM medals WHERE user_id = ? AND title = ? LIMIT 1', [(int) $userId, $title]);
         if ($exists) {
-            return false;
+            return;
         }
-        self::execute(
-            'INSERT INTO medals (user_id, title, description, points, code, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
-            [(int) $userId, trim($title), trim($description), (int) to_english_digits($points), $code]
-        );
-        return true;
-    }
-
-    public static function ensureMedalSchema()
-    {
-        try {
-            self::execute('ALTER TABLE medals ADD COLUMN code VARCHAR(80) NULL');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('CREATE UNIQUE INDEX uq_medals_user_code ON medals (user_id, code)');
-        } catch (Throwable $e) {
-        }
+        self::addMedal((int) $userId, $title, $description, $points);
     }
 
     public static function deleteMedal($id)
@@ -146,8 +165,8 @@ class User extends Model
     {
         self::ensureProfileColumns();
         self::execute(
-            'INSERT INTO users (role, username, full_name, national_id, mobile, secondary_phone, email, password_hash, status, department, is_department_manager, created_at)
-             VALUES (:role, :username, :full_name, :national_id, :mobile, :secondary_phone, :email, :password_hash, :status, :department, :is_department_manager, NOW())',
+            'INSERT INTO users (role, username, full_name, national_id, mobile, secondary_phone, email, password_hash, status, address, avatar_key, created_at)
+             VALUES (:role, :username, :full_name, :national_id, :mobile, :secondary_phone, :email, :password_hash, :status, :address, :avatar_key, NOW())',
             [
                 'role' => $data['role'],
                 'username' => $data['username'] ?: null,
@@ -158,8 +177,8 @@ class User extends Model
                 'email' => $data['email'] ?: null,
                 'password_hash' => password_hash($data['password'] ?: bin2hex(random_bytes(8)), PASSWORD_DEFAULT),
                 'status' => $data['status'] ?? 'active',
-                'department' => $data['department'] ?? null,
-                'is_department_manager' => !empty($data['is_department_manager']) ? 1 : 0,
+                'address' => $data['address'] ?? '',
+                'avatar_key' => $data['avatar_key'] ?? null,
             ]
         );
         return (int) self::lastInsertId();
@@ -184,8 +203,6 @@ class User extends Model
             'status' => $data['status'] ?? $user['status'],
             'address' => $data['address'] ?? ($user['address'] ?? ''),
             'avatar_key' => $data['avatar_key'] ?? ($user['avatar_key'] ?? null),
-            'department' => $data['department'] ?? ($user['department'] ?? null),
-            'is_department_manager' => !empty($data['is_department_manager']) ? 1 : 0,
         ];
         $passwordSql = '';
         if (!empty($data['password'])) {
@@ -195,8 +212,7 @@ class User extends Model
         self::execute(
             "UPDATE users SET role = :role, username = :username, full_name = :full_name,
              national_id = :national_id, mobile = :mobile, secondary_phone = :secondary_phone,
-             email = :email, status = :status, address = :address, avatar_key = :avatar_key,
-             department = :department, is_department_manager = :is_department_manager {$passwordSql} WHERE id = :id",
+             email = :email, status = :status, address = :address, avatar_key = :avatar_key {$passwordSql} WHERE id = :id",
             $params
         );
         return true;
@@ -239,18 +255,6 @@ class User extends Model
 
     public static function staffContacts()
     {
-        self::ensureProfileColumns();
         return self::fetchAll("SELECT id, full_name, role FROM users WHERE role IN ('admin','operator','lawyer') AND status = 'active' ORDER BY role, full_name");
-    }
-
-    public static function departments()
-    {
-        return app_config('departments', []);
-    }
-
-    public static function markTourCompleted($id)
-    {
-        self::ensureProfileColumns();
-        self::execute('UPDATE users SET tour_completed_at = NOW() WHERE id = ?', [(int) $id]);
     }
 }

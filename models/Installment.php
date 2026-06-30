@@ -2,8 +2,23 @@
 
 class Installment extends Model
 {
+    protected static $schemaReady = false;
+
+    public static function ensureSchema()
+    {
+        if (self::$schemaReady) {
+            return;
+        }
+        try {
+            self::execute('ALTER TABLE installments ADD COLUMN notes TEXT NULL AFTER status');
+        } catch (Throwable $e) {
+        }
+        self::$schemaReady = true;
+    }
+
     public static function all($filters = [])
     {
+        self::ensureSchema();
         $params = [];
         $where = [];
         if (!empty($filters['contract_id'])) {
@@ -35,6 +50,7 @@ class Installment extends Model
 
     public static function find($id)
     {
+        self::ensureSchema();
         $row = self::fetch(
             "SELECT i.*, c.contract_number, c.customer_id, u.full_name AS customer_name, u.mobile, u.national_id
              FROM installments i
@@ -50,8 +66,9 @@ class Installment extends Model
         return array_merge($row, $preview);
     }
 
-    public static function overdue($bucket = null)
+    public static function overdue($bucket = null, $search = null)
     {
+        self::ensureSchema();
         $today = date('Y-m-d');
         $where = "i.status != 'paid' AND i.due_date < ?";
         $params = [$today];
@@ -68,12 +85,15 @@ class Installment extends Model
             $where .= ' AND DATEDIFF(?, i.due_date) > 30';
             $params[] = $today;
         }
+        if ($search) {
+            $needle = '%' . to_english_digits($search) . '%';
+            $where .= ' AND (c.contract_number LIKE ? OR u.full_name LIKE ? OR u.national_id LIKE ? OR u.mobile LIKE ? OR u.secondary_phone LIKE ?)';
+            array_push($params, $needle, $needle, $needle, $needle, $needle);
+        }
         $rows = self::fetchAll(
-            "SELECT i.*, c.contract_number, c.customer_id, c.assigned_operator_id, c.legal_status,
-             u.full_name AS customer_name, u.mobile, u.secondary_phone, u.national_id,
-             (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id AND lc.status != 'closed') AS legal_case_count,
-             (SELECT gu.full_name FROM contract_guarantors cg JOIN users gu ON gu.id = cg.guarantor_id WHERE cg.contract_id = c.id ORDER BY gu.id LIMIT 1) AS guarantor_name,
-             (SELECT gu.mobile FROM contract_guarantors cg JOIN users gu ON gu.id = cg.guarantor_id WHERE cg.contract_id = c.id ORDER BY gu.id LIMIT 1) AS guarantor_mobile
+            "SELECT i.*, c.contract_number, c.customer_id, c.assigned_operator_id, u.full_name AS customer_name,
+             u.mobile, u.secondary_phone, u.national_id,
+             (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id AND lc.status != 'closed') AS legal_case_count
              FROM installments i
              JOIN contracts c ON c.id = i.contract_id
              JOIN users u ON u.id = c.customer_id
@@ -84,14 +104,15 @@ class Installment extends Model
         return self::withPreview($rows);
     }
 
-    public static function createCustom($contractId, $dueDate, $amount)
+    public static function createCustom($contractId, $dueDate, $amount, $notes = '')
     {
+        self::ensureSchema();
         $number = (int) self::fetch('SELECT COALESCE(MAX(installment_number), 0) + 1 AS n FROM installments WHERE contract_id = ?', [$contractId])['n'];
         $amount = normalize_money($amount);
         self::execute(
-            'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, created_at)
-             VALUES (?, ?, ?, ?, 0, ?, ?, NOW())',
-            [(int) $contractId, $number, $dueDate, $amount, $amount, $dueDate < date('Y-m-d') ? 'overdue' : 'pending']
+            'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, notes, created_at)
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?, NOW())',
+            [(int) $contractId, $number, $dueDate, $amount, $amount, $dueDate < date('Y-m-d') ? 'overdue' : 'pending', trim((string) $notes)]
         );
     }
 
