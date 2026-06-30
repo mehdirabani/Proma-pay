@@ -144,6 +144,8 @@ $canManageUsers = $canManageUsers ?? Auth::role() === 'admin';
           </select>
         </label>
         <label>نام کامل<input name="full_name" required></label>
+        <label>نام پدر<input name="father_name"></label>
+        <label>صادره از<input name="issued_from"></label>
         <label>نام کاربری<input name="username" required dir="ltr"></label>
         <label>کد ملی<input name="national_id" inputmode="numeric"></label>
         <label>موبایل<input name="mobile" inputmode="tel"></label>
@@ -165,6 +167,8 @@ $canManageUsers = $canManageUsers ?? Auth::role() === 'admin';
           <?= csrf_field() ?>
           <label>نقش<select name="role"><?php foreach ($roles as $role): ?><option value="<?= e($role) ?>"<?= selected($item['role'], $role) ?>><?= e(role_label($role)) ?></option><?php endforeach; ?></select></label>
           <label>نام کامل<input name="full_name" value="<?= e($item['full_name']) ?>" required></label>
+          <label>نام پدر<input name="father_name" value="<?= e($item['father_name'] ?? '') ?>"></label>
+          <label>صادره از<input name="issued_from" value="<?= e($item['issued_from'] ?? '') ?>"></label>
           <label>نام کاربری<input name="username" value="<?= e($item['username']) ?>" dir="ltr"></label>
           <label>کد ملی<input name="national_id" value="<?= e($item['national_id']) ?>" inputmode="numeric"></label>
           <label>موبایل<input name="mobile" value="<?= e($item['mobile']) ?>" inputmode="tel"></label>

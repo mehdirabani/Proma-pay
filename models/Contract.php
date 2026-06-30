@@ -19,6 +19,9 @@ class Contract extends Model
         if (class_exists('User')) {
             User::ensureProfileColumns();
         }
+        if (class_exists('ContractDocument')) {
+            ContractDocument::ensureSchema();
+        }
         self::$schemaReady = true;
     }
 
@@ -59,7 +62,9 @@ class Contract extends Model
     {
         self::ensureSchema();
         return self::fetch(
-            "SELECT c.*, u.full_name AS customer_name, u.mobile, u.national_id, u.secondary_phone
+            "SELECT c.*, u.full_name AS customer_name, u.father_name AS customer_father_name,
+             u.issued_from AS customer_issued_from, u.mobile, u.national_id, u.secondary_phone,
+             u.address AS customer_address
              FROM contracts c JOIN users u ON u.id = c.customer_id WHERE c.id = ?",
             [(int) $id]
         );
@@ -86,16 +91,17 @@ class Contract extends Model
         ) ?: ['total' => 0, 'paid' => 0, 'overdue' => 0, 'outstanding' => 0];
     }
 
-    public static function createWithInstallments(array $data, array $guarantorIds)
+    public static function createWithInstallments(array $data, array $guarantorIds = [], array $items = [], array $guarantee = [], array $guarantorPeople = [])
     {
         self::ensureSchema();
         self::begin();
         try {
             self::validateFinancialData($data);
             $settings = Settings::allKeyed();
-            $prefix = trim($data['prefix'] ?: $settings['contract_prefix']);
+            $prefix = trim((string) ($settings['contract_prefix'] ?? 'PR')) ?: 'PR';
+            $year = trim(to_english_digits($settings['contract_year'] ?? '')) ?: substr(to_english_digits(jdate($data['start_date'] ?? date('Y-m-d'))), 0, 4);
             $serial = max((int) $settings['contract_next_serial'], self::maxSerial($prefix) + 1);
-            $contractNumber = self::uniqueNumber($prefix, $serial);
+            $contractNumber = self::uniqueNumber($prefix, $year, $serial);
 
             self::execute(
                 'INSERT INTO contracts
@@ -120,9 +126,18 @@ class Contract extends Model
             );
             $contractId = (int) self::lastInsertId();
             self::syncGuarantors($contractId, $guarantorIds, (int) $data['customer_id']);
+            ContractDocument::saveItems($contractId, $items);
+            ContractDocument::saveGuarantee($contractId, $guarantee);
+            ContractDocument::saveGuarantorPeople($contractId, $guarantorPeople);
             self::generateInstallments($contractId, $data);
             Payment::syncDownPayment($contractId, $data['created_by'] ?? null, normalize_money($data['down_payment_amount'] ?? 0), $data['start_date']);
             Settings::set('contract_next_serial', (string) ($serial + 1));
+            ContractDocument::log($contractId, 'create_contract', null, [
+                'contract' => $data,
+                'items' => $items,
+                'guarantee' => $guarantee,
+                'guarantor_people' => $guarantorPeople,
+            ], 'ثبت قرارداد', $data['created_by'] ?? null);
             self::commit();
             return $contractId;
         } catch (Throwable $e) {
@@ -131,12 +146,18 @@ class Contract extends Model
         }
     }
 
-    public static function updateContract($id, array $data, array $guarantorIds)
+    public static function updateContract($id, array $data, array $guarantorIds = [], array $items = [], array $guarantee = [], array $guarantorPeople = [])
     {
         self::ensureSchema();
         self::begin();
         try {
             self::validateFinancialData($data);
+            $old = [
+                'contract' => self::find((int) $id),
+                'items' => ContractDocument::items((int) $id),
+                'guarantees' => ContractDocument::guarantees((int) $id),
+                'guarantor_people' => ContractDocument::guarantorPeople((int) $id),
+            ];
             self::execute(
                 'UPDATE contracts SET customer_id = :customer_id, principal_amount = :principal_amount,
                  down_payment_amount = :down_payment_amount,
@@ -158,7 +179,16 @@ class Contract extends Model
                 ]
             );
             self::syncGuarantors($id, $guarantorIds, (int) $data['customer_id']);
+            ContractDocument::saveItems((int) $id, $items);
+            ContractDocument::saveGuarantee((int) $id, $guarantee);
+            ContractDocument::saveGuarantorPeople((int) $id, $guarantorPeople);
             Payment::syncDownPayment((int) $id, $data['updated_by'] ?? null, normalize_money($data['down_payment_amount'] ?? 0), $data['start_date']);
+            ContractDocument::log((int) $id, 'update_contract', $old, [
+                'contract' => $data,
+                'items' => $items,
+                'guarantee' => $guarantee,
+                'guarantor_people' => $guarantorPeople,
+            ], $data['change_reason'] ?? 'ویرایش قرارداد', $data['updated_by'] ?? null);
             self::commit();
             return true;
         } catch (Throwable $e) {
@@ -228,10 +258,10 @@ class Contract extends Model
         return (int) ($row['max_serial'] ?? 0);
     }
 
-    protected static function uniqueNumber($prefix, &$serial)
+    protected static function uniqueNumber($prefix, $year, &$serial)
     {
         do {
-            $number = $prefix . '/' . $serial;
+            $number = $prefix . '-' . $year . '-' . $serial;
             $exists = self::fetch('SELECT id FROM contracts WHERE contract_number = ?', [$number]);
             if ($exists) {
                 $serial++;

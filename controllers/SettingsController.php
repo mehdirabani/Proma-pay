@@ -18,7 +18,7 @@ class SettingsController extends Controller
         $values = [];
         foreach (Settings::defaults() as $key => $default) {
             if (array_key_exists($key, $_POST)) {
-                $values[$key] = in_array($key, ['monthly_penalty_rate', 'monthly_reward_rate', 'contract_next_serial'], true)
+                $values[$key] = in_array($key, ['monthly_penalty_rate', 'monthly_reward_rate', 'contract_next_serial', 'contract_year', 'company_representative_national_id', 'company_postal_code', 'company_phone'], true)
                     ? to_english_digits($_POST[$key])
                     : trim((string) $_POST[$key]);
             }

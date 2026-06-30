@@ -49,6 +49,8 @@ class UsersController extends Controller
                 'role' => in_array($_POST['role'] ?? '', ['admin', 'operator', 'lawyer'], true) ? $_POST['role'] : 'operator',
                 'username' => $_POST['username'] ?? '',
                 'full_name' => $_POST['full_name'] ?? '',
+                'father_name' => $_POST['father_name'] ?? '',
+                'issued_from' => $_POST['issued_from'] ?? '',
                 'national_id' => $_POST['national_id'] ?? '',
                 'mobile' => $_POST['mobile'] ?? '',
                 'secondary_phone' => '',
@@ -85,12 +87,16 @@ class UsersController extends Controller
                 'role' => $role,
                 'username' => $_POST['username'] ?? '',
                 'full_name' => $_POST['full_name'] ?? '',
+                'father_name' => $_POST['father_name'] ?? '',
+                'issued_from' => $_POST['issued_from'] ?? '',
                 'national_id' => $_POST['national_id'] ?? '',
                 'mobile' => $_POST['mobile'] ?? '',
                 'secondary_phone' => '',
                 'email' => $_POST['email'] ?? '',
                 'password' => $_POST['password'] ?? '',
                 'status' => $_POST['status'] ?? 'active',
+                'address' => $_POST['address'] ?? '',
+                'avatar_key' => in_array($_POST['avatar_key'] ?? '', ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6'], true) ? $_POST['avatar_key'] : null,
             ]);
             set_flash('success', 'اطلاعات کاربر به‌روزرسانی شد.');
         } catch (Throwable $e) {

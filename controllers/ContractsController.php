@@ -42,7 +42,7 @@ class ContractsController extends Controller
                 'assigned_operator_id' => $_POST['assigned_operator_id'] ?? null,
                 'notes' => $_POST['notes'] ?? '',
                 'created_by' => Auth::id(),
-            ], $_POST['guarantors'] ?? []);
+            ], $_POST['guarantors'] ?? [], $_POST['items'] ?? [], $_POST['guarantee'] ?? [], $_POST['guarantor_people'] ?? []);
             set_flash('success', 'قرارداد و اقساط آن با موفقیت ساخته شد.');
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت قرارداد انجام نشد. شماره قرارداد یا داده‌های ورودی را بررسی کنید.');
@@ -73,12 +73,70 @@ class ContractsController extends Controller
                 'assigned_operator_id' => $_POST['assigned_operator_id'] ?? null,
                 'notes' => $_POST['notes'] ?? '',
                 'updated_by' => Auth::id(),
-            ], $_POST['guarantors'] ?? []);
+                'change_reason' => $_POST['change_reason'] ?? '',
+            ], $_POST['guarantors'] ?? [], $_POST['items'] ?? [], $_POST['guarantee'] ?? [], $_POST['guarantor_people'] ?? []);
             set_flash('success', 'قرارداد به‌روزرسانی شد.');
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ویرایش قرارداد انجام نشد. داده‌های ورودی را بررسی کنید.');
         }
         redirect('contracts');
+    }
+
+    public function show($id)
+    {
+        Auth::requireLogin();
+        $contract = Contract::find((int) $id);
+        $this->authorizeContractAccess($contract);
+        $this->render('contracts/show', [
+            'title' => 'جزئیات قرارداد',
+            'contract' => $contract,
+            'document' => ContractDocument::document((int) $id),
+            'items' => ContractDocument::items((int) $id),
+            'guarantees' => ContractDocument::guarantees((int) $id),
+            'guarantorPeople' => ContractDocument::guarantorPeople((int) $id),
+            'installments' => Installment::all(['contract_id' => (int) $id]),
+            'logs' => ContractDocument::logs((int) $id),
+            'canManageDocument' => Auth::role() === 'admin',
+        ]);
+    }
+
+    public function generateDocument($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            ContractDocument::generate((int) $id, Auth::id());
+            set_flash('success', 'متن قرارداد تولید شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'تولید متن قرارداد انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) $id);
+    }
+
+    public function saveDocument($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            ContractDocument::saveRenderedBody((int) $id, $_POST['rendered_body'] ?? '', Auth::id(), $_POST['change_reason'] ?? '');
+            set_flash('success', 'نسخه نهایی قرارداد ذخیره شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ذخیره متن قرارداد انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) $id);
+    }
+
+    public function printDocument($id)
+    {
+        Auth::requireLogin();
+        $contract = Contract::find((int) $id);
+        $this->authorizeContractAccess($contract);
+        $document = ContractDocument::document((int) $id);
+        $this->render('contracts/print', [
+            'title' => 'چاپ قرارداد',
+            'contract' => $contract,
+            'body' => $document['rendered_body'] ?? ContractDocument::render((int) $id),
+        ], null);
     }
 
     public function preview()
@@ -152,12 +210,33 @@ class ContractsController extends Controller
             'role' => 'customer',
             'username' => null,
             'full_name' => $_POST['new_customer_full_name'],
+            'father_name' => $_POST['new_customer_father_name'] ?? '',
+            'issued_from' => $_POST['new_customer_issued_from'] ?? '',
             'national_id' => $_POST['new_customer_national_id'] ?? '',
             'mobile' => $_POST['new_customer_mobile'] ?? '',
             'secondary_phone' => $_POST['new_customer_secondary_phone'] ?? '',
+            'address' => $_POST['new_customer_address'] ?? '',
             'email' => '',
             'password' => bin2hex(random_bytes(8)),
             'status' => 'active',
         ]);
+    }
+
+    protected function authorizeContractAccess($contract)
+    {
+        if (!$contract) {
+            set_flash('error', 'قرارداد پیدا نشد.');
+            redirect('contracts');
+        }
+        $role = Auth::role();
+        if ($role === 'admin' || $role === 'operator') {
+            return;
+        }
+        if ($role === 'customer' && (int) $contract['customer_id'] === (int) Auth::id()) {
+            return;
+        }
+        http_response_code(403);
+        $this->render('errors/403', ['title' => 'دسترسی غیرمجاز'], 'app');
+        exit;
     }
 }

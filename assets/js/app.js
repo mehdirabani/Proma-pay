@@ -108,6 +108,44 @@
     });
   };
 
+  const initRepeaters = function () {
+    document.querySelectorAll('[data-repeater]').forEach(function (repeater) {
+      const list = repeater.querySelector('[data-repeater-list]');
+      const template = repeater.querySelector('[data-repeater-template]');
+      const add = repeater.querySelector('[data-repeater-add]');
+      if (!list || !template || !add) return;
+
+      const bindRemove = function (row) {
+        const remove = row.querySelector('[data-repeater-remove]');
+        if (!remove) return;
+        remove.addEventListener('click', function () {
+          row.remove();
+        });
+      };
+
+      list.querySelectorAll('[data-repeater-row]').forEach(bindRemove);
+      add.addEventListener('click', function () {
+        const index = String(Date.now()) + String(Math.floor(Math.random() * 1000));
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = template.innerHTML.replace(/__INDEX__/g, index).trim();
+        const row = wrapper.firstElementChild;
+        if (!row) return;
+        bindRemove(row);
+        list.appendChild(row);
+      });
+    });
+
+    document.querySelectorAll('[data-guarantee-type]').forEach(function (select) {
+      const section = select.closest('.proma-form-section') || select.closest('form');
+      const other = section ? section.querySelector('[data-guarantee-other]') : null;
+      const toggle = function () {
+        if (other) other.hidden = select.value !== 'سایر';
+      };
+      select.addEventListener('change', toggle);
+      toggle();
+    });
+  };
+
   const initContractForms = function () {
     document.querySelectorAll('[data-contract-form]').forEach(function (form) {
       const principal = form.querySelector('[name="principal_amount"]');
@@ -578,6 +616,7 @@
     initMoneyInputs();
     initModals();
     initFilters();
+    initRepeaters();
     initContractForms();
     initPaymentPreviews();
     initLoadingForms();

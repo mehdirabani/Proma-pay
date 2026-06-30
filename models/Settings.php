@@ -2,14 +2,37 @@
 
 class Settings extends Model
 {
+    protected static $schemaReady = false;
+
+    public static function ensureSchema()
+    {
+        if (self::$schemaReady) {
+            return;
+        }
+        try {
+            self::execute('ALTER TABLE settings MODIFY setting_value LONGTEXT NULL');
+        } catch (Throwable $e) {
+        }
+        self::$schemaReady = true;
+    }
+
     public static function defaults()
     {
+        $jalaliYear = substr(to_english_digits(jdate(date('Y-m-d'))), 0, 4) ?: '1404';
         return [
             'system_name' => 'پرما پرداخت',
             'logo_text' => 'پرما پرداخت',
             'footer_text' => 'پنل مدیریت مالی راست‌چین',
-            'contract_prefix' => 'Pr',
-            'contract_next_serial' => '1000',
+            'company_name' => 'موبایل پروما',
+            'company_representative_name' => '',
+            'company_representative_national_id' => '',
+            'company_address' => '',
+            'company_postal_code' => '',
+            'company_phone' => '',
+            'contract_prefix' => 'PR',
+            'contract_next_serial' => '1001',
+            'contract_year' => $jalaliYear,
+            'contract_template_body' => '',
             'monthly_penalty_rate' => '2',
             'monthly_reward_rate' => '1',
             'zibal_merchant' => '',
@@ -21,6 +44,7 @@ class Settings extends Model
 
     public static function allKeyed()
     {
+        self::ensureSchema();
         $settings = self::defaults();
         try {
             $rows = self::fetchAll('SELECT setting_key, setting_value FROM settings');
@@ -41,6 +65,7 @@ class Settings extends Model
 
     public static function set($key, $value, $secret = false)
     {
+        self::ensureSchema();
         self::execute(
             'INSERT INTO settings (setting_key, setting_value, is_secret) VALUES (?, ?, ?)
              ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), is_secret = VALUES(is_secret)',

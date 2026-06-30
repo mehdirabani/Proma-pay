@@ -27,7 +27,7 @@ class InstallmentsController extends Controller
             set_flash('error', 'توضیحات قسط سفارشی الزامی است.');
             redirect($redirectTo);
         }
-        Installment::createCustom((int) $_POST['contract_id'], $dueDate, $_POST['base_amount'], $_POST['notes'] ?? '');
+        Installment::createCustom((int) $_POST['contract_id'], $dueDate, $_POST['base_amount'], $_POST['notes'] ?? '', $_POST['guarantee_serial'] ?? '');
         set_flash('success', 'قسط سفارشی ثبت شد.');
         redirect($redirectTo);
     }

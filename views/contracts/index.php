@@ -38,7 +38,7 @@ for ($i = 0; $i < 6; $i++) {
           $financedAmount = max(0, (float) $cardContract['principal_amount'] - (float) ($cardContract['down_payment_amount'] ?? 0));
           $progress = (int) $stats['total'] > 0 ? (int) round(((int) $stats['paid'] / (int) $stats['total']) * 100) : 0;
           ?>
-          <article class="proma-contract-card">
+          <article class="proma-contract-card" data-card-href="<?= e(url('contracts/show/' . $cardContract['id'])) ?>">
             <div class="proma-contract-card-main">
               <span class="proma-progress-avatar" style="--progress: <?= $progress ?>">
                 <span class="proma-avatar-choice <?= e($cardContract['avatar_key'] ?? 'avatar-1') ?>"><?= e(mb_substr($cardContract['customer_name'], 0, 1, 'UTF-8')) ?></span>
@@ -59,6 +59,7 @@ for ($i = 0; $i < 6; $i++) {
               <span>مانده: <?= money_toman($stats['outstanding']) ?></span>
               <button class="btn small info" type="button" data-open-modal="contract-chart-<?= (int) $cardContract['id'] ?>">نمودار</button>
               <button class="btn small warning" type="button" data-open-modal="contract-timeline-<?= (int) $cardContract['id'] ?>">تایم‌لاین</button>
+              <a href="<?= e(url('contracts/show/' . $cardContract['id'])) ?>">جزئیات</a>
               <a href="<?= e(url('contracts/booklet/' . $cardContract['id'])) ?>" target="_blank">دفترچه</a>
             </div>
           </article>
@@ -74,7 +75,7 @@ for ($i = 0; $i < 6; $i++) {
       <?php foreach ($contracts as $contract): ?>
         <?php $guarantors = Contract::guarantors($contract['id']); ?>
         <tr>
-          <td><?= e($contract['contract_number']) ?></td>
+          <td><a href="<?= e(url('contracts/show/' . $contract['id'])) ?>"><?= e($contract['contract_number']) ?></a></td>
           <td><?= e($contract['customer_name']) ?><br><span class="badge muted"><?= to_persian_digits($contract['mobile']) ?></span></td>
           <?php $financedAmount = max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0)); ?>
           <td>
@@ -91,6 +92,7 @@ for ($i = 0; $i < 6; $i++) {
             <button class="btn small secondary" type="button" data-open-modal="edit-contract-<?= (int) $contract['id'] ?>">ویرایش</button>
             <button class="btn small info" type="button" data-open-modal="contract-chart-<?= (int) $contract['id'] ?>">نمودار</button>
             <button class="btn small warning" type="button" data-open-modal="contract-timeline-<?= (int) $contract['id'] ?>">تایم‌لاین</button>
+            <a class="btn small secondary" href="<?= e(url('contracts/show/' . $contract['id'])) ?>">جزئیات</a>
             <button class="btn small info" type="button" data-open-modal="custom-installment-<?= (int) $contract['id'] ?>">قسط دلخواه</button>
             <a class="btn small success" href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank">چاپ دفترچه</a>
             <button class="btn small danger" type="button" data-open-modal="delete-contract-<?= (int) $contract['id'] ?>">حذف</button>
@@ -179,9 +181,12 @@ for ($i = 0; $i < 6; $i++) {
           </div>
           <div class="form-grid four proma-new-customer-fields" data-new-customer-fields hidden>
             <label>نام مشتری تازه<input name="new_customer_full_name" placeholder="نام و نام خانوادگی"></label>
+            <label>نام پدر<input name="new_customer_father_name"></label>
+            <label>صادره از<input name="new_customer_issued_from"></label>
             <label>کد ملی مشتری تازه<input name="new_customer_national_id" inputmode="numeric"></label>
             <label>موبایل مشتری تازه<input name="new_customer_mobile" inputmode="tel"></label>
             <label>تلفن دوم مشتری تازه<input name="new_customer_secondary_phone" inputmode="tel"></label>
+            <label class="full">آدرس مشتری تازه<input name="new_customer_address"></label>
           </div>
         </section>
 
@@ -222,6 +227,77 @@ for ($i = 0; $i < 6; $i++) {
           </div>
         </section>
 
+        <section class="proma-form-section" data-repeater="items">
+          <div class="proma-section-title">
+            <h4>مشخصات کالای امانت</h4>
+            <button class="btn small secondary" type="button" data-repeater-add>افزودن کالا</button>
+          </div>
+          <div class="proma-repeat-list" data-repeater-list>
+            <div class="proma-repeat-row" data-repeater-row>
+              <div class="form-grid four">
+                <label>مدل کالا<input name="items[0][product_model]" placeholder="مثلاً iPhone 13"></label>
+                <label>IMEI 1<input name="items[0][imei_1]" dir="ltr"></label>
+                <label>IMEI 2<input name="items[0][imei_2]" dir="ltr"></label>
+                <label>توضیحات کالا<input name="items[0][description]"></label>
+              </div>
+              <button class="icon-btn danger" type="button" data-repeater-remove title="حذف">×</button>
+            </div>
+          </div>
+          <template data-repeater-template>
+            <div class="proma-repeat-row" data-repeater-row>
+              <div class="form-grid four">
+                <label>مدل کالا<input name="items[__INDEX__][product_model]"></label>
+                <label>IMEI 1<input name="items[__INDEX__][imei_1]" dir="ltr"></label>
+                <label>IMEI 2<input name="items[__INDEX__][imei_2]" dir="ltr"></label>
+                <label>توضیحات کالا<input name="items[__INDEX__][description]"></label>
+              </div>
+              <button class="icon-btn danger" type="button" data-repeater-remove title="حذف">×</button>
+            </div>
+          </template>
+        </section>
+
+        <section class="proma-form-section">
+          <div class="proma-section-title"><h4>شرایط ضمانت و پرداخت اقساط</h4></div>
+          <div class="form-grid four">
+            <label>نوع ضمانت
+              <select name="guarantee[guarantee_type]" data-guarantee-type>
+                <option value="">انتخاب کنید</option>
+                <option value="چک">چک</option>
+                <option value="سفته">سفته</option>
+                <option value="چک و سفته">چک و سفته</option>
+                <option value="ضامن">ضامن</option>
+                <option value="سایر">سایر</option>
+              </select>
+            </label>
+            <label>تعداد ضمانت<input name="guarantee[guarantee_count]" value="1" inputmode="numeric"></label>
+            <label>شناسه / شماره سریال<input name="guarantee[guarantee_serial]" dir="ltr"></label>
+            <label data-guarantee-other hidden>توضیح نوع ضمانت<input name="guarantee[guarantee_type_other]"></label>
+            <label class="full">توضیحات ضمانت<textarea name="guarantee[guarantee_description]"></textarea></label>
+          </div>
+        </section>
+
+        <section class="proma-form-section" data-repeater="guarantor_people">
+          <div class="proma-section-title">
+            <h4>مشخصات ضامن‌ها</h4>
+            <button class="btn small secondary" type="button" data-repeater-add>افزودن ضامن</button>
+          </div>
+          <div class="proma-repeat-list" data-repeater-list></div>
+          <template data-repeater-template>
+            <div class="proma-repeat-row" data-repeater-row>
+              <div class="form-grid four">
+                <label>نام و نام خانوادگی<input name="guarantor_people[__INDEX__][full_name]"></label>
+                <label>نام پدر<input name="guarantor_people[__INDEX__][father_name]"></label>
+                <label>شماره ملی<input name="guarantor_people[__INDEX__][national_id]" inputmode="numeric"></label>
+                <label>شماره تماس<input name="guarantor_people[__INDEX__][mobile]" inputmode="tel"></label>
+                <label>نسبت با مشتری<input name="guarantor_people[__INDEX__][relationship]"></label>
+                <label class="full">آدرس<input name="guarantor_people[__INDEX__][address]"></label>
+                <label class="full">توضیحات<input name="guarantor_people[__INDEX__][description]"></label>
+              </div>
+              <button class="icon-btn danger" type="button" data-repeater-remove title="حذف">×</button>
+            </div>
+          </template>
+        </section>
+
         <section class="proma-form-section">
           <div class="proma-section-title"><h4>ضامنان</h4><span>مشتری اصلی نمی‌تواند ضامن خودش باشد.</span></div>
           <label class="full">انتخاب ضامن
@@ -245,7 +321,13 @@ for ($i = 0; $i < 6; $i++) {
 </div>
 
 <?php foreach ($contracts as $contract): ?>
-  <?php $guarantors = Contract::guarantors($contract['id']); ?>
+  <?php
+    $guarantors = Contract::guarantors($contract['id']);
+    $contractItems = ContractDocument::items((int) $contract['id']);
+    $contractGuarantees = ContractDocument::guarantees((int) $contract['id']);
+    $contractGuarantee = $contractGuarantees[0] ?? [];
+    $contractGuarantorPeople = ContractDocument::guarantorPeople((int) $contract['id']);
+  ?>
   <div class="modal" id="edit-contract-<?= (int) $contract['id'] ?>">
     <div class="modal-content proma-modal-xl">
       <div class="modal-header"><h3>ویرایش قرارداد</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
@@ -300,6 +382,91 @@ for ($i = 0; $i < 6; $i++) {
             </div>
           </section>
 
+          <section class="proma-form-section" data-repeater="items">
+            <div class="proma-section-title">
+              <h4>مشخصات کالای امانت</h4>
+              <button class="btn small secondary" type="button" data-repeater-add>افزودن کالا</button>
+            </div>
+            <div class="proma-repeat-list" data-repeater-list>
+              <?php foreach ($contractItems ?: [['product_model' => '', 'imei_1' => '', 'imei_2' => '', 'description' => '']] as $itemIndex => $item): ?>
+                <div class="proma-repeat-row" data-repeater-row>
+                  <div class="form-grid four">
+                    <label>مدل کالا<input name="items[<?= (int) $itemIndex ?>][product_model]" value="<?= e($item['product_model'] ?? '') ?>"></label>
+                    <label>IMEI 1<input name="items[<?= (int) $itemIndex ?>][imei_1]" value="<?= e($item['imei_1'] ?? '') ?>" dir="ltr"></label>
+                    <label>IMEI 2<input name="items[<?= (int) $itemIndex ?>][imei_2]" value="<?= e($item['imei_2'] ?? '') ?>" dir="ltr"></label>
+                    <label>توضیحات کالا<input name="items[<?= (int) $itemIndex ?>][description]" value="<?= e($item['description'] ?? '') ?>"></label>
+                  </div>
+                  <button class="icon-btn danger" type="button" data-repeater-remove title="حذف">×</button>
+                </div>
+              <?php endforeach; ?>
+            </div>
+            <template data-repeater-template>
+              <div class="proma-repeat-row" data-repeater-row>
+                <div class="form-grid four">
+                  <label>مدل کالا<input name="items[__INDEX__][product_model]"></label>
+                  <label>IMEI 1<input name="items[__INDEX__][imei_1]" dir="ltr"></label>
+                  <label>IMEI 2<input name="items[__INDEX__][imei_2]" dir="ltr"></label>
+                  <label>توضیحات کالا<input name="items[__INDEX__][description]"></label>
+                </div>
+                <button class="icon-btn danger" type="button" data-repeater-remove title="حذف">×</button>
+              </div>
+            </template>
+          </section>
+
+          <section class="proma-form-section">
+            <div class="proma-section-title"><h4>شرایط ضمانت و پرداخت اقساط</h4></div>
+            <div class="form-grid four">
+              <label>نوع ضمانت
+                <select name="guarantee[guarantee_type]" data-guarantee-type>
+                  <?php foreach (['' => 'انتخاب کنید', 'چک' => 'چک', 'سفته' => 'سفته', 'چک و سفته' => 'چک و سفته', 'ضامن' => 'ضامن', 'سایر' => 'سایر'] as $value => $label): ?>
+                    <option value="<?= e($value) ?>"<?= selected($contractGuarantee['guarantee_type'] ?? '', $value) ?>><?= e($label) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </label>
+              <label>تعداد ضمانت<input name="guarantee[guarantee_count]" value="<?= e(to_persian_digits($contractGuarantee['guarantee_count'] ?? 1)) ?>" inputmode="numeric"></label>
+              <label>شناسه / شماره سریال<input name="guarantee[guarantee_serial]" value="<?= e($contractGuarantee['guarantee_serial'] ?? '') ?>" dir="ltr"></label>
+              <label data-guarantee-other<?= ($contractGuarantee['guarantee_type'] ?? '') === 'سایر' ? '' : ' hidden' ?>>توضیح نوع ضمانت<input name="guarantee[guarantee_type_other]"></label>
+              <label class="full">توضیحات ضمانت<textarea name="guarantee[guarantee_description]"><?= e($contractGuarantee['guarantee_description'] ?? '') ?></textarea></label>
+            </div>
+          </section>
+
+          <section class="proma-form-section" data-repeater="guarantor_people">
+            <div class="proma-section-title">
+              <h4>مشخصات ضامن‌ها</h4>
+              <button class="btn small secondary" type="button" data-repeater-add>افزودن ضامن</button>
+            </div>
+            <div class="proma-repeat-list" data-repeater-list>
+              <?php foreach ($contractGuarantorPeople as $personIndex => $person): ?>
+                <div class="proma-repeat-row" data-repeater-row>
+                  <div class="form-grid four">
+                    <label>نام و نام خانوادگی<input name="guarantor_people[<?= (int) $personIndex ?>][full_name]" value="<?= e($person['full_name'] ?? '') ?>"></label>
+                    <label>نام پدر<input name="guarantor_people[<?= (int) $personIndex ?>][father_name]" value="<?= e($person['father_name'] ?? '') ?>"></label>
+                    <label>شماره ملی<input name="guarantor_people[<?= (int) $personIndex ?>][national_id]" value="<?= e($person['national_id'] ?? '') ?>" inputmode="numeric"></label>
+                    <label>شماره تماس<input name="guarantor_people[<?= (int) $personIndex ?>][mobile]" value="<?= e($person['mobile'] ?? '') ?>" inputmode="tel"></label>
+                    <label>نسبت با مشتری<input name="guarantor_people[<?= (int) $personIndex ?>][relationship]" value="<?= e($person['relationship'] ?? '') ?>"></label>
+                    <label class="full">آدرس<input name="guarantor_people[<?= (int) $personIndex ?>][address]" value="<?= e($person['address'] ?? '') ?>"></label>
+                    <label class="full">توضیحات<input name="guarantor_people[<?= (int) $personIndex ?>][description]" value="<?= e($person['description'] ?? '') ?>"></label>
+                  </div>
+                  <button class="icon-btn danger" type="button" data-repeater-remove title="حذف">×</button>
+                </div>
+              <?php endforeach; ?>
+            </div>
+            <template data-repeater-template>
+              <div class="proma-repeat-row" data-repeater-row>
+                <div class="form-grid four">
+                  <label>نام و نام خانوادگی<input name="guarantor_people[__INDEX__][full_name]"></label>
+                  <label>نام پدر<input name="guarantor_people[__INDEX__][father_name]"></label>
+                  <label>شماره ملی<input name="guarantor_people[__INDEX__][national_id]" inputmode="numeric"></label>
+                  <label>شماره تماس<input name="guarantor_people[__INDEX__][mobile]" inputmode="tel"></label>
+                  <label>نسبت با مشتری<input name="guarantor_people[__INDEX__][relationship]"></label>
+                  <label class="full">آدرس<input name="guarantor_people[__INDEX__][address]"></label>
+                  <label class="full">توضیحات<input name="guarantor_people[__INDEX__][description]"></label>
+                </div>
+                <button class="icon-btn danger" type="button" data-repeater-remove title="حذف">×</button>
+              </div>
+            </template>
+          </section>
+
           <section class="proma-form-section">
             <div class="proma-section-title"><h4>ضامنان</h4><span>مشتری اصلی نمی‌تواند ضامن خودش باشد.</span></div>
             <label class="full">ضامنان<select name="guarantors[]" multiple data-guarantor-select><?php $selectedGuarantors = array_column($guarantors, 'id'); foreach ($customers as $customer): ?><option value="<?= (int) $customer['id'] ?>"<?= in_array($customer['id'], $selectedGuarantors) ? ' selected' : '' ?>><?= e($customer['full_name']) ?></option><?php endforeach; ?></select></label>
@@ -308,6 +475,7 @@ for ($i = 0; $i < 6; $i++) {
 
           <section class="proma-form-section">
             <label class="full">یادداشت<textarea name="notes"><?= e($contract['notes']) ?></textarea></label>
+            <label class="full">دلیل ویرایش<input name="change_reason" required placeholder="مثلاً اصلاح اطلاعات کالا یا ضمانت"></label>
           </section>
         </div>
         <div class="modal-footer"><button class="btn" type="submit">ذخیره تغییرات</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
@@ -326,6 +494,7 @@ for ($i = 0; $i < 6; $i++) {
           <label>قرارداد<input value="<?= e($contract['contract_number']) ?> - <?= e($contract['customer_name']) ?>" disabled></label>
           <label>سررسید<input name="due_date" value="<?= e($defaultFirstDueDate ?? '') ?>" required placeholder="۱۴۰۳/۰۱/۰۱"></label>
           <label>مبلغ پایه<input name="base_amount" data-money required></label>
+          <label>شناسه ضمانت<input name="guarantee_serial" dir="ltr" placeholder="شماره چک یا سفته"></label>
           <label class="full">توضیحات<input name="notes" required placeholder="علت یا توضیح قسط دلخواه"></label>
         </div>
         <div class="modal-footer"><button class="btn" type="submit">ثبت قسط</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>

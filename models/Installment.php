@@ -13,6 +13,10 @@ class Installment extends Model
             self::execute('ALTER TABLE installments ADD COLUMN notes TEXT NULL AFTER status');
         } catch (Throwable $e) {
         }
+        try {
+            self::execute('ALTER TABLE installments ADD COLUMN guarantee_serial VARCHAR(190) NULL AFTER notes');
+        } catch (Throwable $e) {
+        }
         self::$schemaReady = true;
     }
 
@@ -104,15 +108,15 @@ class Installment extends Model
         return self::withPreview($rows);
     }
 
-    public static function createCustom($contractId, $dueDate, $amount, $notes = '')
+    public static function createCustom($contractId, $dueDate, $amount, $notes = '', $guaranteeSerial = '')
     {
         self::ensureSchema();
         $number = (int) self::fetch('SELECT COALESCE(MAX(installment_number), 0) + 1 AS n FROM installments WHERE contract_id = ?', [$contractId])['n'];
         $amount = normalize_money($amount);
         self::execute(
-            'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, notes, created_at)
-             VALUES (?, ?, ?, ?, 0, ?, ?, ?, NOW())',
-            [(int) $contractId, $number, $dueDate, $amount, $amount, $dueDate < date('Y-m-d') ? 'overdue' : 'pending', trim((string) $notes)]
+            'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, notes, guarantee_serial, created_at)
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, NOW())',
+            [(int) $contractId, $number, $dueDate, $amount, $amount, $dueDate < date('Y-m-d') ? 'overdue' : 'pending', trim((string) $notes), trim(to_english_digits($guaranteeSerial)) ?: null]
         );
     }
 

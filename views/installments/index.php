@@ -109,6 +109,7 @@
         <label>قرارداد<select name="contract_id" required><?php foreach ($contracts as $contract): ?><option value="<?= (int) $contract['id'] ?>"><?= e($contract['contract_number']) ?> - <?= e($contract['customer_name']) ?></option><?php endforeach; ?></select></label>
         <label>سررسید<input name="due_date" value="<?= e($defaultDueDate ?? '') ?>" required placeholder="۱۴۰۳/۰۱/۰۱"></label>
         <label>مبلغ پایه<input name="base_amount" data-money required></label>
+        <label>شناسه ضمانت<input name="guarantee_serial" dir="ltr" placeholder="شماره چک یا سفته"></label>
         <label class="full">توضیحات<input name="notes" required placeholder="علت یا توضیح قسط سفارشی"></label>
       </div>
       <div class="modal-footer"><button class="btn" type="submit">ثبت قسط</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>

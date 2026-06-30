@@ -2,7 +2,7 @@
 
 return [
     'app_name' => 'پرما پرداخت',
-    'asset_version' => '1.0.8',
+    'asset_version' => '1.0.9',
     'timezone' => 'Asia/Tehran',
     'base_url' => '',
     'session_name' => 'proma_pay_session',

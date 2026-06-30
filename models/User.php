@@ -12,6 +12,8 @@ class User extends Model
         foreach ([
             'address' => 'TEXT NULL',
             'avatar_key' => "VARCHAR(40) NULL",
+            'father_name' => 'VARCHAR(190) NULL',
+            'issued_from' => 'VARCHAR(190) NULL',
         ] as $column => $definition) {
             try {
                 self::execute("ALTER TABLE users ADD COLUMN {$column} {$definition}");
@@ -165,12 +167,14 @@ class User extends Model
     {
         self::ensureProfileColumns();
         self::execute(
-            'INSERT INTO users (role, username, full_name, national_id, mobile, secondary_phone, email, password_hash, status, address, avatar_key, created_at)
-             VALUES (:role, :username, :full_name, :national_id, :mobile, :secondary_phone, :email, :password_hash, :status, :address, :avatar_key, NOW())',
+            'INSERT INTO users (role, username, full_name, father_name, issued_from, national_id, mobile, secondary_phone, email, password_hash, status, address, avatar_key, created_at)
+             VALUES (:role, :username, :full_name, :father_name, :issued_from, :national_id, :mobile, :secondary_phone, :email, :password_hash, :status, :address, :avatar_key, NOW())',
             [
                 'role' => $data['role'],
                 'username' => $data['username'] ?: null,
                 'full_name' => $data['full_name'],
+                'father_name' => trim((string) ($data['father_name'] ?? '')) ?: null,
+                'issued_from' => trim((string) ($data['issued_from'] ?? '')) ?: null,
                 'national_id' => trim(to_english_digits($data['national_id'] ?? '')) ?: null,
                 'mobile' => trim(to_english_digits($data['mobile'] ?? '')) ?: null,
                 'secondary_phone' => trim(to_english_digits($data['secondary_phone'] ?? '')) ?: null,
@@ -196,6 +200,8 @@ class User extends Model
             'role' => $data['role'] ?? $user['role'],
             'username' => ($data['username'] ?? $user['username']) ?: null,
             'full_name' => $data['full_name'] ?? $user['full_name'],
+            'father_name' => $data['father_name'] ?? ($user['father_name'] ?? null),
+            'issued_from' => $data['issued_from'] ?? ($user['issued_from'] ?? null),
             'national_id' => trim(to_english_digits($data['national_id'] ?? $user['national_id'])) ?: null,
             'mobile' => trim(to_english_digits($data['mobile'] ?? $user['mobile'])) ?: null,
             'secondary_phone' => trim(to_english_digits($data['secondary_phone'] ?? $user['secondary_phone'])) ?: null,
@@ -211,6 +217,7 @@ class User extends Model
         }
         self::execute(
             "UPDATE users SET role = :role, username = :username, full_name = :full_name,
+             father_name = :father_name, issued_from = :issued_from,
              national_id = :national_id, mobile = :mobile, secondary_phone = :secondary_phone,
              email = :email, status = :status, address = :address, avatar_key = :avatar_key {$passwordSql} WHERE id = :id",
             $params

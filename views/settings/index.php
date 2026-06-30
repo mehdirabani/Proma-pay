@@ -2,6 +2,7 @@
 $detectedBase = rtrim(((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . app_base_url(), '/');
 $callbackBase = rtrim($settings['callback_base_url'] ?: $detectedBase, '/');
 $callbackUrl = $callbackBase . '/index.php?route=payments/callback';
+$contractVariables = ContractDocument::variables();
 ?>
 <form method="post" action="<?= e(url('settings/update')) ?>" class="grid">
   <?= csrf_field() ?>
@@ -14,10 +15,26 @@ $callbackUrl = $callbackBase . '/index.php?route=payments/callback';
     </div>
   </section>
   <section class="card">
-    <div class="card-header"><h2>تنظیمات قرارداد</h2></div>
+    <div class="card-header"><h2>قالب قرارداد</h2></div>
     <div class="card-body form-grid">
-      <label>پیشوند قرارداد<input name="contract_prefix" value="<?= e($settings['contract_prefix']) ?>" dir="ltr"></label>
-      <label>سریال بعدی<input name="contract_next_serial" value="<?= e($settings['contract_next_serial']) ?>" inputmode="numeric"></label>
+      <label>نام مجموعه<input name="company_name" value="<?= e($settings['company_name'] ?? '') ?>"></label>
+      <label>نام نماینده مجموعه<input name="company_representative_name" value="<?= e($settings['company_representative_name'] ?? '') ?>"></label>
+      <label>کد ملی نماینده<input name="company_representative_national_id" value="<?= e(to_persian_digits($settings['company_representative_national_id'] ?? '')) ?>" inputmode="numeric"></label>
+      <label class="full">آدرس مجموعه<input name="company_address" value="<?= e($settings['company_address'] ?? '') ?>"></label>
+      <label>کد پستی مجموعه<input name="company_postal_code" value="<?= e(to_persian_digits($settings['company_postal_code'] ?? '')) ?>" inputmode="numeric"></label>
+      <label>شماره تماس مجموعه<input name="company_phone" value="<?= e(to_persian_digits($settings['company_phone'] ?? '')) ?>" inputmode="tel"></label>
+      <label>پیشوند شماره قرارداد<input name="contract_prefix" value="<?= e($settings['contract_prefix']) ?>" dir="ltr"></label>
+      <label>شماره بعدی قرارداد<input name="contract_next_serial" value="<?= e(to_persian_digits($settings['contract_next_serial'])) ?>" inputmode="numeric"></label>
+      <label>سال قرارداد<input name="contract_year" value="<?= e(to_persian_digits($settings['contract_year'] ?? '')) ?>" inputmode="numeric"></label>
+      <label class="full">متن کامل قرارداد<textarea name="contract_template_body" rows="18" placeholder="اگر خالی بماند متن پیش‌فرض قرارداد استفاده می‌شود."><?= e($settings['contract_template_body'] ?? '') ?></textarea></label>
+      <div class="full proma-variable-list">
+        <strong>متغیرهای قابل استفاده در متن قرارداد</strong>
+        <div>
+          <?php foreach ($contractVariables as $variable): ?>
+            <code><?= e($variable) ?></code>
+          <?php endforeach; ?>
+        </div>
+      </div>
     </div>
   </section>
   <section class="card">

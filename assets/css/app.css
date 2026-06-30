@@ -10,6 +10,117 @@
   --proma-line: #ecf0f7;
 }
 
+.proma-variable-list {
+  border: 1px dashed rgba(115, 102, 255, .35);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(115, 102, 255, .04);
+}
+
+.proma-variable-list > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.proma-variable-list code {
+  direction: ltr;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
+.proma-repeat-list {
+  display: grid;
+  gap: 12px;
+}
+
+.proma-repeat-row {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 48px 14px 14px;
+  background: #fff;
+}
+
+.proma-repeat-row > .icon-btn {
+  position: absolute;
+  inset-inline-start: 10px;
+  top: 10px;
+}
+
+.contract-document-preview,
+.contract-document-body {
+  direction: rtl;
+  color: #1f2937;
+  line-height: 2;
+}
+
+.contract-document-preview {
+  max-height: 680px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+  background: #fff;
+}
+
+.contract-print-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+}
+
+.contract-print-table th,
+.contract-print-table td {
+  border: 1px solid #1f2937;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.contract-print-table th {
+  background: #f6f7fb;
+}
+
+.contract-guarantor-box {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 10px 0;
+}
+
+.contract-guarantor-box .full {
+  grid-column: 1 / -1;
+}
+
+.contract-signature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.contract-signature-box {
+  min-height: 96px;
+  border-top: 1px solid #1f2937;
+  text-align: center;
+  padding-top: 8px;
+}
+
+.contract-empty {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--muted);
+  margin: 10px 0;
+}
+
 html,
 body,
 button,
