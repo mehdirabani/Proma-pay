@@ -254,6 +254,7 @@ function create_schema(PDO $pdo)
             status VARCHAR(30) NOT NULL DEFAULT 'pending',
             notes TEXT NULL,
             guarantee_serial VARCHAR(190) NULL,
+            is_custom TINYINT(1) NOT NULL DEFAULT 0,
             created_at DATETIME NOT NULL,
             updated_at DATETIME NULL,
             UNIQUE KEY uq_contract_installment (contract_id, installment_number),

@@ -1178,6 +1178,33 @@ input.btn:not([class*="btn-"]):not(.secondary):not(.danger):not(.warning):not(.s
   min-height: 0;
 }
 
+.proma-dashboard-wizard .card {
+  border: 1px solid var(--proma-line);
+  box-shadow: 0 10px 26px rgba(82, 82, 108, .07);
+}
+
+.proma-dashboard-wizard .card-header {
+  padding: 18px 18px 10px;
+}
+
+.proma-dashboard-wizard .card-body {
+  padding: 18px;
+}
+
+.proma-dashboard-wizard .card-header + .card-body.pt-0 {
+  padding-top: 0 !important;
+}
+
+.proma-dashboard-wizard .header-top h5,
+.proma-dashboard-wizard .header-top h4 {
+  margin: 0;
+}
+
+.proma-dashboard-wizard .row {
+  --bs-gutter-x: 16px;
+  --bs-gutter-y: 16px;
+}
+
 .proma-metric-card {
   min-height: 142px;
 }
@@ -1590,6 +1617,78 @@ input.btn:not([class*="btn-"]):not(.secondary):not(.danger):not(.warning):not(.s
   background: #fafbfe;
 }
 
+.proma-date-trigger {
+  width: auto !important;
+  min-height: 34px !important;
+  justify-self: start;
+  margin-top: -2px;
+}
+
+.proma-jalali-modal {
+  z-index: 99998;
+}
+
+.proma-jalali-modal.open .modal-content {
+  width: min(460px, calc(100vw - 28px));
+}
+
+.proma-jalali-toolbar {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1fr) 36px;
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.proma-jalali-toolbar label {
+  display: grid;
+  gap: 6px;
+  color: var(--proma-muted);
+  font-size: 12px;
+}
+
+.proma-jalali-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.jalali-weekday,
+.jalali-day {
+  min-height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.jalali-weekday {
+  color: var(--proma-muted);
+  background: #f7f8fc;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.jalali-day {
+  border: 1px solid var(--proma-line);
+  color: var(--proma-text);
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.jalali-day:hover {
+  border-color: rgba(115, 102, 255, .38);
+  color: var(--proma-primary);
+  background: var(--proma-primary-soft);
+}
+
+.jalali-day.muted {
+  border-style: dashed;
+  background: #fafbfe;
+  cursor: default;
+}
+
 .calendar-event {
   display: block;
   min-height: 24px;
@@ -1767,6 +1866,11 @@ input.btn:not([class*="btn-"]):not(.secondary):not(.danger):not(.warning):not(.s
   min-height: 28px;
 }
 
+.proma-medal-center {
+  justify-content: center;
+  margin: 10px 0 4px;
+}
+
 .proma-medal-list {
   display: grid;
   gap: 10px;
@@ -1862,6 +1966,68 @@ input.btn:not([class*="btn-"]):not(.secondary):not(.danger):not(.warning):not(.s
   font-weight: 800;
 }
 
+.proma-order-history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.proma-order-history-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 88px;
+  padding: 14px;
+  border: 1px solid var(--proma-line);
+  border-radius: 8px;
+  color: var(--proma-text);
+  background: #fff;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.proma-order-history-item:hover {
+  border-color: rgba(115, 102, 255, .36);
+  box-shadow: 0 12px 28px rgba(82, 82, 108, .09);
+  transform: translateY(-1px);
+}
+
+.proma-order-icon {
+  width: 48px;
+  height: 48px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  background: linear-gradient(135deg, #7366ff, #16c7f9);
+  font-weight: 900;
+}
+
+.proma-order-history-item span:nth-child(2) {
+  min-width: 0;
+}
+
+.proma-order-history-item strong,
+.proma-order-history-item small {
+  display: block;
+}
+
+.proma-order-history-item small {
+  margin-top: 4px;
+  color: var(--proma-muted);
+}
+
+.proma-order-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.proma-order-amount {
+  color: var(--proma-primary);
+  white-space: nowrap;
+}
+
 @media (max-width: 1200px) {
   .grid.cols-4,
   .grid.cols-3,
@@ -1929,6 +2095,14 @@ input.btn:not([class*="btn-"]):not(.secondary):not(.danger):not(.warning):not(.s
 
   .proma-timeline-item {
     grid-template-columns: 1fr;
+  }
+
+  .proma-order-history-item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .proma-order-amount {
+    grid-column: 1 / -1;
   }
 
   .chat-box {

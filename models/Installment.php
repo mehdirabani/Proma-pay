@@ -17,6 +17,10 @@ class Installment extends Model
             self::execute('ALTER TABLE installments ADD COLUMN guarantee_serial VARCHAR(190) NULL AFTER notes');
         } catch (Throwable $e) {
         }
+        try {
+            self::execute('ALTER TABLE installments ADD COLUMN is_custom TINYINT(1) NOT NULL DEFAULT 0 AFTER guarantee_serial');
+        } catch (Throwable $e) {
+        }
         self::$schemaReady = true;
     }
 
@@ -42,12 +46,15 @@ class Installment extends Model
             $where[] = '(c.contract_number LIKE ? OR u.full_name LIKE ? OR u.national_id LIKE ? OR u.mobile LIKE ?)';
             array_push($params, $needle, $needle, $needle, $needle);
         }
+        $orderBy = !empty($filters['custom_last'])
+            ? 'COALESCE(i.is_custom, 0) ASC, i.installment_number ASC, i.due_date ASC, i.id ASC'
+            : 'i.due_date ASC, i.id ASC';
         $sql = "SELECT i.*, c.contract_number, c.customer_id, u.full_name AS customer_name, u.mobile, u.national_id
                 FROM installments i
                 JOIN contracts c ON c.id = i.contract_id
                 JOIN users u ON u.id = c.customer_id"
             . ($where ? ' WHERE ' . implode(' AND ', $where) : '')
-            . ' ORDER BY i.due_date ASC, i.id ASC';
+            . ' ORDER BY ' . $orderBy;
         $rows = self::fetchAll($sql, $params);
         return self::withPreview($rows);
     }
@@ -114,8 +121,8 @@ class Installment extends Model
         $number = (int) self::fetch('SELECT COALESCE(MAX(installment_number), 0) + 1 AS n FROM installments WHERE contract_id = ?', [$contractId])['n'];
         $amount = normalize_money($amount);
         self::execute(
-            'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, notes, guarantee_serial, created_at)
-             VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, NOW())',
+            'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, notes, guarantee_serial, is_custom, created_at)
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, 1, NOW())',
             [(int) $contractId, $number, $dueDate, $amount, $amount, $dueDate < date('Y-m-d') ? 'overdue' : 'pending', trim((string) $notes), trim(to_english_digits($guaranteeSerial)) ?: null]
         );
     }

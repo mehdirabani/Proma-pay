@@ -216,8 +216,8 @@ class Contract extends Model
         for ($i = 1; $i <= $months; $i++) {
             $dueDate = FinanceHelper::addMonths($firstDue, $i - 1);
             self::execute(
-                'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, created_at)
-                 VALUES (?, ?, ?, ?, 0, ?, ?, NOW())',
+                'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, is_custom, created_at)
+                 VALUES (?, ?, ?, ?, 0, ?, ?, 0, NOW())',
                 [$contractId, $i, $dueDate, $amount, $amount, $amount <= 0 ? 'paid' : ($dueDate < date('Y-m-d') ? 'overdue' : 'pending')]
             );
         }

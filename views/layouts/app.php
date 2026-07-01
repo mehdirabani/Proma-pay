@@ -266,6 +266,28 @@ if (Auth::role() === 'admin') {
         </div>
       </div>
 
+      <div class="modal proma-jalali-modal" id="proma-jalali-modal" data-jalali-modal>
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 data-jalali-title>انتخاب تاریخ شمسی</h3>
+            <button class="icon-btn" type="button" data-close-modal>×</button>
+          </div>
+          <div class="modal-body">
+            <div class="proma-jalali-toolbar">
+              <button class="icon-btn" type="button" data-jalali-prev title="ماه قبل">‹</button>
+              <label>سال<input data-jalali-year inputmode="numeric"></label>
+              <label>ماه<select data-jalali-month></select></label>
+              <button class="icon-btn" type="button" data-jalali-next title="ماه بعد">›</button>
+            </div>
+            <div class="proma-jalali-grid" data-jalali-grid></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn secondary" type="button" data-jalali-today>امروز</button>
+            <button class="btn secondary" type="button" data-close-modal>بستن</button>
+          </div>
+        </div>
+      </div>
+
       <footer class="footer">
         <div class="container-fluid">
           <div class="row">

@@ -116,6 +116,7 @@ class CustomersController extends Controller
             'installments' => Installment::all(['customer_id' => $id]),
             'payments' => Payment::logs(['customer' => $customer['national_id']]),
             'paymentTimeline' => Payment::recentForCustomer((int) $id),
+            'medals' => User::medalsForUsers([(int) $id])[(int) $id] ?? [],
         ]);
     }
 }

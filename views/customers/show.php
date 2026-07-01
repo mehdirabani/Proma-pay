@@ -1,9 +1,21 @@
+<?php
+$uniqueContracts = [];
+foreach ($contracts as $contract) {
+    $uniqueContracts[(int) $contract['id']] = $contract;
+}
+$contracts = array_values($uniqueContracts);
+$medals = $medals ?? [];
+?>
 <div class="proma-customer-summary">
   <section class="card proma-customer-card">
     <div class="card-body">
       <div class="proma-customer-avatar"><?= e(mb_substr($customer['full_name'], 0, 1, 'UTF-8')) ?></div>
       <h4><?= e($customer['full_name']) ?></h4>
       <p><?= to_persian_digits($customer['mobile']) ?> · <?= to_persian_digits($customer['national_id']) ?></p>
+      <div class="proma-medal-row proma-medal-center">
+        <?php foreach (array_slice($medals, 0, 4) as $medal): ?><span class="badge badge-light-warning"><?= e($medal['title']) ?></span><?php endforeach; ?>
+        <?php if (!$medals): ?><span class="badge muted">بدون مدال</span><?php endif; ?>
+      </div>
       <div class="proma-customer-stats">
         <span><strong><?= to_persian_digits(count($contracts)) ?></strong><small>قرارداد</small></span>
         <span><strong><?= to_persian_digits(count($installments)) ?></strong><small>قسط</small></span>
@@ -24,26 +36,32 @@
 </div>
 
 <section class="card" style="margin-top:16px">
-  <div class="card-header"><h2>قراردادها</h2></div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>شماره قرارداد</th><th>مبلغ اصل</th><th>پیش‌پرداخت</th><th>مانده قابل تقسیط</th><th>سود ماهانه</th><th>نوع سود</th><th>وضعیت</th><th>دفترچه</th></tr></thead>
-      <tbody>
+  <div class="card-header card-no-border">
+    <div class="header-top">
+      <h2>تاریخچه سفارشات و قراردادهای اخیر</h2>
+      <a class="link-only" href="<?= e(url('contracts', ['q' => $customer['national_id']])) ?>">مدیریت قراردادهای مشتری</a>
+    </div>
+  </div>
+  <div class="card-body pt-0">
+    <div class="proma-order-history-list">
       <?php foreach ($contracts as $contract): ?>
-        <tr>
-          <td><?= e($contract['contract_number']) ?></td>
-          <td><?= money_toman($contract['principal_amount']) ?></td>
-          <td><?= money_toman($contract['down_payment_amount'] ?? 0) ?></td>
-          <td><?= money_toman(max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0))) ?></td>
-          <td><?= percent_label($contract['monthly_interest_rate']) ?></td>
-          <td><?= $contract['interest_type'] === 'compound' ? 'مرکب ماهانه' : 'ساده ماهانه' ?></td>
-          <td><span class="badge <?= e(badge_class($contract['status'])) ?>"><?= e(status_label($contract['status'])) ?></span></td>
-          <td><a class="btn small secondary" href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank">چاپ دفترچه</a></td>
-        </tr>
+        <?php $financed = max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0)); ?>
+        <a class="proma-order-history-item" href="<?= e(url('contracts/show/' . $contract['id'])) ?>">
+          <span class="proma-order-icon"><?= e(mb_substr($contract['contract_number'], 0, 1, 'UTF-8')) ?></span>
+          <span>
+            <strong><?= e($contract['contract_number']) ?></strong>
+            <small><?= e(jdate($contract['start_date'])) ?> · <?= $contract['interest_type'] === 'compound' ? 'سود مرکب' : 'سود ساده' ?> · <?= to_persian_digits($contract['months']) ?> قسط</small>
+            <span class="proma-order-badges">
+              <em class="badge <?= e(badge_class($contract['status'])) ?>"><?= e(status_label($contract['status'])) ?></em>
+              <em class="badge badge-light-info">پیش‌پرداخت <?= money_toman($contract['down_payment_amount'] ?? 0) ?></em>
+              <em class="badge badge-light-primary">قابل تقسیط <?= money_toman($financed) ?></em>
+            </span>
+          </span>
+          <strong class="proma-order-amount"><?= money_toman($contract['principal_amount']) ?></strong>
+        </a>
       <?php endforeach; ?>
-      <?php if (!$contracts): ?><tr><td colspan="8" class="empty">قراردادی ثبت نشده است.</td></tr><?php endif; ?>
-      </tbody>
-    </table>
+      <?php if (!$contracts): ?><div class="empty">قراردادی برای این مشتری ثبت نشده است.</div><?php endif; ?>
+    </div>
   </div>
 </section>
 

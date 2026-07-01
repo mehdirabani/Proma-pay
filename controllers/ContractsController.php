@@ -181,7 +181,7 @@ class ContractsController extends Controller
             'title' => 'دفترچه اقساط',
             'contract' => $contract,
             'guarantors' => Contract::guarantors((int) $id),
-            'installments' => Installment::all(['contract_id' => (int) $id]),
+            'installments' => Installment::all(['contract_id' => (int) $id, 'custom_last' => true]),
         ], null);
     }
 

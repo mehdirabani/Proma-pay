@@ -13,6 +13,85 @@
     return Math.ceil(Number(value) || 0).toLocaleString('fa-IR') + ' تومان';
   };
 
+  const toPersianDigits = function (value) {
+    return String(value || '').replace(/\d/g, function (digit) {
+      return '۰۱۲۳۴۵۶۷۸۹'[Number(digit)];
+    });
+  };
+
+  const gregorianToJalali = function (gy, gm, gd) {
+    const gdm = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+    const gy2 = gm > 2 ? gy + 1 : gy;
+    let days = 355666 + (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + gd + gdm[gm - 1];
+    let jy = -1595 + (33 * Math.floor(days / 12053));
+    days %= 12053;
+    jy += 4 * Math.floor(days / 1461);
+    days %= 1461;
+    if (days > 365) {
+      jy += Math.floor((days - 1) / 365);
+      days = (days - 1) % 365;
+    }
+    const jm = days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+    const jd = days < 186 ? 1 + (days % 31) : 1 + ((days - 186) % 30);
+    return [jy, jm, jd];
+  };
+
+  const jalaliToGregorian = function (jy, jm, jd) {
+    jy += 1595;
+    let days = -355668 + (365 * jy) + (Math.floor(jy / 33) * 8) + Math.floor(((jy % 33) + 3) / 4) + jd;
+    days += jm < 7 ? (jm - 1) * 31 : ((jm - 7) * 30) + 186;
+    let gy = 400 * Math.floor(days / 146097);
+    days %= 146097;
+    if (days > 36524) {
+      gy += 100 * Math.floor(--days / 36524);
+      days %= 36524;
+      if (days >= 365) days++;
+    }
+    gy += 4 * Math.floor(days / 1461);
+    days %= 1461;
+    if (days > 365) {
+      gy += Math.floor((days - 1) / 365);
+      days = (days - 1) % 365;
+    }
+    let gd = days + 1;
+    const leap = (gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0);
+    const months = [0, 31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let gm = 0;
+    while (gm < 13 && gd > months[gm]) {
+      gd -= months[gm];
+      gm++;
+    }
+    return [gy, gm, gd];
+  };
+
+  const todayJalali = function () {
+    const now = new Date();
+    return gregorianToJalali(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  };
+
+  const jalaliMonthLength = function (year, month) {
+    if (month <= 6) return 31;
+    if (month <= 11) return 30;
+    const g = jalaliToGregorian(year, 12, 30);
+    const j = gregorianToJalali(g[0], g[1], g[2]);
+    return j[1] === 12 && j[2] === 30 ? 30 : 29;
+  };
+
+  const formatJalaliDate = function (year, month, day) {
+    return toPersianDigits(String(year).padStart(4, '0') + '/' + String(month).padStart(2, '0') + '/' + String(day).padStart(2, '0'));
+  };
+
+  const parseJalaliParts = function (value) {
+    const clean = toEnglishDigits(value).trim();
+    const match = clean.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    if (!match) return todayJalali();
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    if (year > 1600) return gregorianToJalali(year, month, day);
+    return [year, Math.max(1, Math.min(12, month)), Math.max(1, Math.min(31, day))];
+  };
+
   const showToast = function (message, type) {
     const toast = document.createElement('div');
     toast.className = 'proma-toast ' + (type || '');
@@ -159,6 +238,7 @@
       const guarantorSelect = form.querySelector('[data-guarantor-select]');
       const guarantorChips = form.querySelector('[data-guarantor-chips]');
       const newCustomerFields = form.querySelector('[data-new-customer-fields]');
+      const newCustomerSummary = form.querySelector('[data-new-customer-summary]');
       const toggleNewCustomer = form.querySelector('[data-toggle-new-customer]');
       const previewUrl = form.getAttribute('data-preview-url');
       let previewTimer = null;
@@ -214,6 +294,17 @@
         });
       };
 
+      const clearNewCustomerDraft = function () {
+        if (!newCustomerFields) return;
+        newCustomerFields.querySelectorAll('[name^="new_customer_"]').forEach(function (input) {
+          input.value = '';
+        });
+        if (newCustomerSummary) {
+          newCustomerSummary.hidden = true;
+          newCustomerSummary.innerHTML = '';
+        }
+      };
+
       const updatePreview = function () {
         const principalValue = parseMoney(principal ? principal.value : 0);
         const downValue = parseMoney(downPayment ? downPayment.value : 0);
@@ -250,14 +341,11 @@
         }, 220);
       };
 
-      if (toggleNewCustomer && newCustomerFields) {
+      if (toggleNewCustomer) {
         toggleNewCustomer.addEventListener('click', function () {
-          newCustomerFields.hidden = !newCustomerFields.hidden;
-          if (!newCustomerFields.hidden && customerSelect) {
-            customerSelect.value = '';
-            syncCustomerChip();
-            syncGuarantorChips();
-          }
+          const modalId = toggleNewCustomer.getAttribute('data-new-customer-modal') || 'contract-new-customer-popup';
+          const modal = document.getElementById(modalId);
+          if (modal) modal.classList.add('open');
         });
       }
 
@@ -271,7 +359,7 @@
       });
       if (customerSelect) {
         customerSelect.addEventListener('change', function () {
-          if (newCustomerFields && customerSelect.value) newCustomerFields.hidden = true;
+          if (customerSelect.value) clearNewCustomerDraft();
           syncCustomerChip();
           syncGuarantorChips();
         });
@@ -304,6 +392,50 @@
       syncCustomerChip();
       syncGuarantorChips();
       updatePreview();
+    });
+  };
+
+  const initContractNewCustomerPopup = function () {
+    document.querySelectorAll('[data-contract-customer-popup]').forEach(function (modal) {
+      const apply = modal.querySelector('[data-apply-new-customer]');
+      const draft = modal.querySelector('[data-new-customer-draft]');
+      const form = document.getElementById('create-contract-form');
+      if (!apply || !draft || !form) return;
+
+      const fieldNames = ['full_name', 'father_name', 'issued_from', 'national_id', 'mobile', 'secondary_phone', 'address'];
+      const getDraftValue = function (name) {
+        const input = draft.querySelector('[data-new-customer-field="' + name + '"]');
+        return input ? input.value.trim() : '';
+      };
+
+      apply.addEventListener('click', function () {
+        const fullName = getDraftValue('full_name');
+        if (!fullName) {
+          showToast('نام مشتری تازه را وارد کنید.', 'error');
+          return;
+        }
+        fieldNames.forEach(function (name) {
+          const target = form.querySelector('[name="new_customer_' + name + '"]');
+          if (target) target.value = getDraftValue(name);
+        });
+        const customerSelect = form.querySelector('[data-customer-select]');
+        if (customerSelect) {
+          customerSelect.value = '';
+          customerSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        const summary = form.querySelector('[data-new-customer-summary]');
+        if (summary) {
+          summary.hidden = false;
+          const mobile = getDraftValue('mobile');
+          summary.innerHTML = '';
+          const chip = document.createElement('span');
+          chip.className = 'proma-chip';
+          chip.textContent = 'مشتری تازه: ' + fullName + (mobile ? ' - ' + mobile : '');
+          summary.appendChild(chip);
+        }
+        modal.classList.remove('open');
+        showToast('اطلاعات مشتری تازه به فرم قرارداد اضافه شد.', 'success');
+      });
     });
   };
 
@@ -349,6 +481,141 @@
       }
       update();
     });
+  };
+
+  const initJalaliDateInputs = function () {
+    const modal = document.querySelector('[data-jalali-modal]');
+    if (!modal) return;
+    const monthNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+    const weekDays = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
+    const grid = modal.querySelector('[data-jalali-grid]');
+    const title = modal.querySelector('[data-jalali-title]');
+    const yearInput = modal.querySelector('[data-jalali-year]');
+    const monthSelect = modal.querySelector('[data-jalali-month]');
+    let activeInput = null;
+    let view = todayJalali();
+
+    if (monthSelect && !monthSelect.options.length) {
+      monthNames.forEach(function (name, index) {
+        const option = document.createElement('option');
+        option.value = String(index + 1);
+        option.textContent = name;
+        monthSelect.appendChild(option);
+      });
+    }
+
+    const render = function () {
+      if (!grid || !yearInput || !monthSelect) return;
+      const year = Number(view[0]);
+      const month = Number(view[1]);
+      const days = jalaliMonthLength(year, month);
+      const firstGregorian = jalaliToGregorian(year, month, 1);
+      const jsDay = new Date(firstGregorian[0], firstGregorian[1] - 1, firstGregorian[2]).getDay();
+      const offset = (jsDay + 1) % 7;
+      yearInput.value = toPersianDigits(year);
+      monthSelect.value = String(month);
+      if (title) title.textContent = monthNames[month - 1] + ' ' + toPersianDigits(year);
+      grid.innerHTML = '';
+      weekDays.forEach(function (dayName) {
+        const head = document.createElement('span');
+        head.className = 'jalali-weekday';
+        head.textContent = dayName;
+        grid.appendChild(head);
+      });
+      for (let i = 0; i < offset; i++) {
+        const blank = document.createElement('span');
+        blank.className = 'jalali-day muted';
+        grid.appendChild(blank);
+      }
+      for (let day = 1; day <= days; day++) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'jalali-day';
+        button.textContent = toPersianDigits(day);
+        button.addEventListener('click', function () {
+          if (activeInput) {
+            activeInput.value = formatJalaliDate(year, month, day);
+            activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+            activeInput.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          modal.classList.remove('open');
+        });
+        grid.appendChild(button);
+      }
+    };
+
+    const openForInput = function (input) {
+      activeInput = input;
+      view = parseJalaliParts(input.value);
+      render();
+      modal.classList.add('open');
+    };
+
+    const bindInput = function (input) {
+      if (!input || input.dataset.jalaliBound === '1' || input.type === 'hidden') return;
+      input.dataset.jalaliBound = '1';
+      input.setAttribute('autocomplete', 'off');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn small secondary proma-date-trigger';
+      button.textContent = 'تقویم';
+      button.addEventListener('click', function () {
+        openForInput(input);
+      });
+      input.insertAdjacentElement('afterend', button);
+    };
+
+    document.querySelectorAll([
+      'input[name="start_date"]',
+      'input[name="first_due_date"]',
+      'input[name="due_date"]',
+      'input[name="payment_date"]',
+      'input[name="event_date"]',
+      'input[name="next_followup_date"]',
+      'input[name="date_from"]',
+      'input[name="date_to"]',
+      'input[data-jalali-input]'
+    ].join(',')).forEach(bindInput);
+
+    modal.querySelectorAll('[data-jalali-prev]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        view[1] -= 1;
+        if (view[1] < 1) {
+          view[1] = 12;
+          view[0] -= 1;
+        }
+        render();
+      });
+    });
+    modal.querySelectorAll('[data-jalali-next]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        view[1] += 1;
+        if (view[1] > 12) {
+          view[1] = 1;
+          view[0] += 1;
+        }
+        render();
+      });
+    });
+    modal.querySelectorAll('[data-jalali-today]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        view = todayJalali();
+        render();
+      });
+    });
+    if (yearInput) {
+      yearInput.addEventListener('change', function () {
+        const year = Number(toEnglishDigits(yearInput.value).replace(/[^\d]/g, '')) || view[0];
+        view[0] = year;
+        render();
+      });
+    }
+    if (monthSelect) {
+      monthSelect.addEventListener('change', function () {
+        view[1] = Number(monthSelect.value) || view[1];
+        render();
+      });
+    }
   };
 
   const initSidebarCollapse = function () {
@@ -618,7 +885,9 @@
     initFilters();
     initRepeaters();
     initContractForms();
+    initContractNewCustomerPopup();
     initPaymentPreviews();
+    initJalaliDateInputs();
     initLoadingForms();
     initAiConnectionTest();
     initSidebarCollapse();

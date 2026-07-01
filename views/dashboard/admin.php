@@ -31,7 +31,7 @@ $statCards = [
     ],
 ];
 ?>
-<div class="row widget-grid proma-dashboard">
+<div class="row widget-grid proma-dashboard proma-dashboard-wizard">
   <div class="col-xxl-4 col-xl-12 box-col-12">
     <div class="card profile-box proma-dashboard-hero">
       <div class="card-body">

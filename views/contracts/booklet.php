@@ -23,7 +23,7 @@ foreach ($installments as $item) {
       direction: rtl;
     }
     .booklet-shell {
-      width: min(980px, calc(100% - 24px));
+      width: min(780px, calc(100% - 24px));
       margin: 24px auto;
     }
     .booklet-toolbar {
@@ -64,7 +64,7 @@ foreach ($installments as $item) {
     }
     .meta-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
     }
     .meta-grid div {
@@ -131,7 +131,7 @@ foreach ($installments as $item) {
       font-size: 12px;
     }
     @media print {
-      @page { size: A5 landscape; margin: 6mm; }
+      @page { size: A5 portrait; margin: 6mm; }
       body { background: #fff; }
       .booklet-shell { width: 100%; margin: 0; }
       .booklet-toolbar { display: none; }
@@ -140,8 +140,8 @@ foreach ($installments as $item) {
         box-shadow: none;
       }
       .booklet-cover { page-break-after: always; }
-      .coupon-grid { gap: 7mm; }
-      .coupon { min-height: 70mm; }
+      .coupon-grid { grid-template-columns: 1fr; gap: 5mm; }
+      .coupon { min-height: 52mm; }
     }
   </style>
 </head>
@@ -163,8 +163,6 @@ foreach ($installments as $item) {
         <div><span>اولین سررسید</span><strong><?= e(jdate($contract['first_due_date'])) ?></strong></div>
         <div><span>تعداد اقساط</span><strong><?= to_persian_digits(count($installments)) ?></strong></div>
         <div><span>اصل قرارداد</span><strong><?= money_toman($contract['principal_amount']) ?></strong></div>
-        <div><span>پیش‌پرداخت</span><strong><?= money_toman($contract['down_payment_amount'] ?? 0) ?></strong></div>
-        <div><span>مانده تقسیط</span><strong><?= money_toman(max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0))) ?></strong></div>
       </div>
       <?php if ($guarantors): ?>
         <p><strong>ضامنان:</strong> <?= e(implode('، ', array_column($guarantors, 'full_name'))) ?></p>

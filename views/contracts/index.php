@@ -151,7 +151,7 @@ for ($i = 0; $i < 6; $i++) {
 <div class="modal" id="create-contract">
   <div class="modal-content proma-modal-xl">
     <div class="modal-header"><h3>افزودن قرارداد</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-    <form method="post" action="<?= e(url('contracts/store')) ?>" data-contract-form data-preview-url="<?= e(url('contracts/preview')) ?>" novalidate>
+    <form method="post" action="<?= e(url('contracts/store')) ?>" id="create-contract-form" data-contract-form data-preview-url="<?= e(url('contracts/preview')) ?>" novalidate>
       <div class="modal-body proma-contract-form">
         <?= csrf_field() ?>
         <section class="proma-form-section">
@@ -166,7 +166,7 @@ for ($i = 0; $i < 6; $i++) {
         </section>
 
         <section class="proma-form-section">
-          <div class="proma-section-title"><h4>اطلاعات مشتری</h4><button class="btn small secondary" type="button" data-toggle-new-customer>مشتری جدید</button></div>
+          <div class="proma-section-title"><h4>اطلاعات مشتری</h4><button class="btn small secondary" type="button" data-toggle-new-customer data-new-customer-modal="contract-new-customer-popup">مشتری جدید</button></div>
           <div class="form-grid two">
             <label class="full">انتخاب مشتری موجود
               <input data-select-filter="customer-select" placeholder="جست‌وجوی نام، کد ملی یا موبایل">
@@ -178,15 +178,16 @@ for ($i = 0; $i < 6; $i++) {
               </select>
             </label>
             <div class="proma-chip-row full" data-customer-chip></div>
+            <div class="proma-chip-row full" data-new-customer-summary hidden></div>
           </div>
-          <div class="form-grid four proma-new-customer-fields" data-new-customer-fields hidden>
-            <label>نام مشتری تازه<input name="new_customer_full_name" placeholder="نام و نام خانوادگی"></label>
-            <label>نام پدر<input name="new_customer_father_name"></label>
-            <label>صادره از<input name="new_customer_issued_from"></label>
-            <label>کد ملی مشتری تازه<input name="new_customer_national_id" inputmode="numeric"></label>
-            <label>موبایل مشتری تازه<input name="new_customer_mobile" inputmode="tel"></label>
-            <label>تلفن دوم مشتری تازه<input name="new_customer_secondary_phone" inputmode="tel"></label>
-            <label class="full">آدرس مشتری تازه<input name="new_customer_address"></label>
+          <div data-new-customer-fields hidden>
+            <input type="hidden" name="new_customer_full_name">
+            <input type="hidden" name="new_customer_father_name">
+            <input type="hidden" name="new_customer_issued_from">
+            <input type="hidden" name="new_customer_national_id">
+            <input type="hidden" name="new_customer_mobile">
+            <input type="hidden" name="new_customer_secondary_phone">
+            <input type="hidden" name="new_customer_address">
           </div>
         </section>
 
@@ -317,6 +318,28 @@ for ($i = 0; $i < 6; $i++) {
       </div>
       <div class="modal-footer"><button class="btn" type="submit">ثبت و ساخت اقساط</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
     </form>
+  </div>
+</div>
+
+<div class="modal" id="contract-new-customer-popup" data-contract-customer-popup>
+  <div class="modal-content proma-modal-lg">
+    <div class="modal-header"><h3>ثبت مشتری تازه برای قرارداد</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+    <div class="modal-body">
+      <div class="form-grid three" data-new-customer-draft>
+        <label>نام و نام خانوادگی<input data-new-customer-field="full_name" placeholder="نام مشتری" required></label>
+        <label>نام پدر<input data-new-customer-field="father_name"></label>
+        <label>صادره از<input data-new-customer-field="issued_from"></label>
+        <label>کد ملی<input data-new-customer-field="national_id" inputmode="numeric"></label>
+        <label>موبایل<input data-new-customer-field="mobile" inputmode="tel"></label>
+        <label>تلفن دوم<input data-new-customer-field="secondary_phone" inputmode="tel"></label>
+        <label class="full">آدرس<input data-new-customer-field="address"></label>
+      </div>
+      <div class="notice info">پس از تأیید، مشتری همراه با قرارداد ذخیره می‌شود و نیازی به ثبت جداگانه در صفحه مشتریان نیست.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" type="button" data-apply-new-customer>افزودن به فرم قرارداد</button>
+      <button class="btn secondary" type="button" data-close-modal>بستن</button>
+    </div>
   </div>
 </div>
 
