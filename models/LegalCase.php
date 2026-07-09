@@ -433,6 +433,44 @@ class LegalCase extends Model
         }
     }
 
+    public static function deleteCase($id)
+    {
+        self::ensureSchema();
+        $case = self::find((int) $id);
+        if (!$case) {
+            throw new InvalidArgumentException('پرونده حقوقی پیدا نشد.');
+        }
+        self::begin();
+        try {
+            foreach (LegalCaseLog::forCase((int) $id) as $log) {
+                LegalCaseLog::deleteLog((int) $log['id']);
+            }
+            try {
+                Event::execute('DELETE FROM events WHERE description LIKE ?', ['legal_case:' . (int) $id . ':%']);
+            } catch (Throwable $e) {
+            }
+            self::execute('DELETE FROM legal_cases WHERE id = ?', [(int) $id]);
+            $openOther = self::fetch(
+                "SELECT id FROM legal_cases WHERE contract_id = ? AND status != 'closed' ORDER BY id DESC LIMIT 1",
+                [(int) $case['contract_id']]
+            );
+            if (!$openOther) {
+                self::execute(
+                    "UPDATE contracts
+                     SET legal_status = NULL,
+                         status = CASE WHEN status = 'referred' THEN 'active' ELSE status END
+                     WHERE id = ?",
+                    [(int) $case['contract_id']]
+                );
+            }
+            self::commit();
+        } catch (Throwable $e) {
+            self::rollBack();
+            throw $e;
+        }
+        return true;
+    }
+
     public static function eligibleContracts($search = null)
     {
         $params = [];

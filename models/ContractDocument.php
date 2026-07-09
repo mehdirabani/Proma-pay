@@ -136,6 +136,7 @@ class ContractDocument extends Model
             '{{remaining_amount}}' => 'مانده قابل تقسیط',
             '{{monthly_penalty_rate}}' => 'نرخ جریمه عادی ماهانه',
             '{{legal_monthly_penalty_rate}}' => 'نرخ جریمه حقوقی ماهانه',
+            '{{late_penalty_grace_days}}' => 'مدت تنفس دیرکرد به روز',
             '{{legal_penalty_clause}}' => 'متن تایید جریمه حقوقی',
             '{{first_due_date}}' => 'تاریخ اولین سررسید',
             '{{last_due_date}}' => 'تاریخ آخرین سررسید',
@@ -179,6 +180,7 @@ class ContractDocument extends Model
 
 - در صورت تأخیر در پرداخت هر قسط، تا پیش از ارجاع یا ثبت پرونده حقوقی، بابت هر ماه دیرکرد، {{monthly_penalty_rate}} درصد از مانده قسط به عنوان جریمه تأخیر عادی محاسبه می‌شود.
 - در صورت ورود قرارداد به مرحله حقوقی یا شکایت، از همان تاریخ به بعد بابت هر ماه دیرکرد، {{legal_monthly_penalty_rate}} درصد از مانده قسط به عنوان جریمه تأخیر حقوقی محاسبه می‌شود.
+- تا {{late_penalty_grace_days}} روز پس از سررسید هر قسط، جریمه دیرکرد محاسبه نمی‌شود و پس از پایان این مهلت، جریمه از روز بعد محاسبه خواهد شد.
 - {{legal_penalty_clause}}
 - در صورت تأخیر بیش از ۲۰ روز، موبایل پروما مجاز است کالای امانت را بازپس گیرد و ضمانت ارائه‌شده را وصول نماید.
 - اگر ظرف ۷ روز پس از اخطار رسمی، کالای امانت در شرایط اولیه بازگردانده نشود، موبایل پروما حق شکایت و اعلام سرقت را دارد.
@@ -409,6 +411,7 @@ TEXT;
             '{{remaining_amount}}' => money_toman($remaining),
             '{{monthly_penalty_rate}}' => e(to_persian_digits($settings['monthly_penalty_rate'] ?? $contract['monthly_interest_rate'] ?? '0')),
             '{{legal_monthly_penalty_rate}}' => e(to_persian_digits($settings['legal_monthly_penalty_rate'] ?? $settings['monthly_penalty_rate'] ?? '0')),
+            '{{late_penalty_grace_days}}' => e(to_persian_digits($settings['late_penalty_grace_days'] ?? '0')),
             '{{legal_penalty_clause}}' => e($legalPenaltyClause),
             '{{first_due_date}}' => e(jdate($contract['first_due_date'])),
             '{{last_due_date}}' => e($lastInstallment ? jdate($lastInstallment['due_date']) : ''),
@@ -432,6 +435,7 @@ TEXT;
         return strtr($clause, [
             '{{monthly_penalty_rate}}' => to_persian_digits($settings['monthly_penalty_rate'] ?? '0'),
             '{{legal_monthly_penalty_rate}}' => to_persian_digits($settings['legal_monthly_penalty_rate'] ?? $settings['monthly_penalty_rate'] ?? '0'),
+            '{{late_penalty_grace_days}}' => to_persian_digits($settings['late_penalty_grace_days'] ?? '0'),
         ]);
     }
 

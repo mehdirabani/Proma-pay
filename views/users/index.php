@@ -2,6 +2,7 @@
 $avatars = ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6'];
 $viewMode = in_array($_GET['view'] ?? '', ['cards', 'list'], true) ? $_GET['view'] : 'cards';
 $canManageUsers = $canManageUsers ?? Auth::role() === 'admin';
+$socialLinks = $socialLinks ?? [];
 $pagination = $pagination ?? ['total' => count($users ?? []), 'page' => 1, 'pages' => 1, 'per_page' => count($users ?? []) ?: 36];
 $pageUrl = function ($page) use ($viewMode) {
     $params = [
@@ -59,6 +60,21 @@ $pageUrl = function ($page) use ($viewMode) {
     </form>
   </div>
 </section>
+
+<?php if ($socialLinks): ?>
+<section class="proma-social-card-grid proma-users-social-strip">
+  <?php foreach ($socialLinks as $social): ?>
+    <a class="proma-social-card proma-social-card--<?= e($social['class']) ?>" href="<?= e($social['url']) ?>" target="_blank" rel="noopener noreferrer">
+      <span class="proma-social-card__icon"><i data-feather="<?= e($social['icon']) ?>"></i></span>
+      <span>
+        <strong><?= e($social['label']) ?></strong>
+        <small><?= e(parse_url($social['url'], PHP_URL_HOST) ?: $social['url']) ?></small>
+      </span>
+      <em>مشاهده</em>
+    </a>
+  <?php endforeach; ?>
+</section>
+<?php endif; ?>
 
 <div data-ajax-results="users">
 <div class="proma-list-meta">

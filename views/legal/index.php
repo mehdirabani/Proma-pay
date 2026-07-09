@@ -80,6 +80,7 @@ $pageUrl = function ($page) {
               <td class="actions">
                 <a class="btn small info" href="<?= e(url('legal/show/' . (int) $case['id'])) ?>">جزئیات و تاریخچه</a>
                 <button class="btn small secondary" type="button" data-open-modal="legal-case-<?= (int) $case['id'] ?>">به‌روزرسانی</button>
+                <button class="btn small danger icon-only" type="button" data-open-modal="delete-legal-case-<?= (int) $case['id'] ?>" title="حذف پرونده" aria-label="حذف پرونده"><i data-feather="trash-2"></i></button>
               </td>
             </tr>
           <?php endforeach; ?>
@@ -146,14 +147,31 @@ $pageUrl = function ($page) {
           </label>
           <label>وضعیت<select name="status"><option value="open"<?= selected($case['status'], 'open') ?>>باز</option><option value="referred"<?= selected($case['status'], 'referred') ?>>ارجاع شده</option><option value="closed"<?= selected($case['status'], 'closed') ?>>بسته</option></select></label>
           <label>شماره شکایت<input name="complaint_number" value="<?= e($case['complaint_number']) ?>"></label>
-          <label>تاریخ ابلاغ<input name="notice_date" value="<?= e(!empty($case['notice_date']) ? jdate($case['notice_date']) : '') ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
-          <label>تاریخ دادگاه<input name="court_date" value="<?= e(!empty($case['court_date']) ? jdate($case['court_date']) : '') ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
-          <label>تاریخ جلسه رسیدگی<input name="hearing_date" value="<?= e(!empty($case['hearing_date']) ? jdate($case['hearing_date']) : '') ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
+          <label>تاریخ ابلاغ<input name="notice_date" data-jalali-input value="<?= e(!empty($case['notice_date']) ? jdate($case['notice_date']) : '') ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
+          <label>تاریخ دادگاه<input name="court_date" data-jalali-input value="<?= e(!empty($case['court_date']) ? jdate($case['court_date']) : '') ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
+          <label>تاریخ جلسه رسیدگی<input name="hearing_date" data-jalali-input value="<?= e(!empty($case['hearing_date']) ? jdate($case['hearing_date']) : '') ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
           <label>هزینه حقوقی<input name="expense_amount" data-money value="<?= e(number_format(ceil((float) $case['expense_amount']), 0)) ?>"></label>
           <label class="full">علت هزینه<input name="expense_reason" value="<?= e($case['expense_reason'] ?? '') ?>" placeholder="برای هر هزینه، علت را ثبت کنید"></label>
           <label class="full">یادداشت<textarea name="notes"><?= e($case['notes']) ?></textarea></label>
         </div>
         <div class="modal-footer"><button class="btn" type="submit">ثبت تغییرات</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
+      </form>
+    </div>
+  </div>
+  <div class="modal" id="delete-legal-case-<?= (int) $case['id'] ?>">
+    <div class="modal-content">
+      <div class="modal-header"><h3>حذف پرونده حقوقی</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+      <form method="post" action="<?= e(url('legal/delete/' . (int) $case['id'])) ?>">
+        <div class="modal-body grid">
+          <?= csrf_field() ?>
+          <?php $deleteCaseCode = ConfirmationCode::hint('legal_case_delete_' . (int) $case['id']); ?>
+          <div class="notice error">پرونده حقوقی «<?= e($case['contract_number']) ?>» و لاگ‌های ضمیمه‌شده به همین پرونده حذف می‌شود. برای تایید عدد <strong class="ltr"><?= e($deleteCaseCode) ?></strong> را وارد کنید.</div>
+          <label>عدد تایید<input name="confirm_text" required inputmode="numeric" autocomplete="off" placeholder="<?= e($deleteCaseCode) ?>"></label>
+        </div>
+        <div class="modal-footer">
+          <button class="btn danger icon-only" type="submit" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button>
+          <button class="btn secondary" type="button" data-close-modal>بستن</button>
+        </div>
       </form>
     </div>
   </div>

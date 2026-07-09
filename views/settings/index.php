@@ -122,7 +122,9 @@ if (!isset($tabs[$activeTab])) {
     <div class="card-body form-grid">
       <label>نرخ جریمه عادی ماهانه<input name="monthly_penalty_rate" value="<?= e($settings['monthly_penalty_rate']) ?>" inputmode="decimal"></label>
       <label>نرخ جریمه حقوقی ماهانه<input name="legal_monthly_penalty_rate" value="<?= e($settings['legal_monthly_penalty_rate'] ?? $settings['monthly_penalty_rate']) ?>" inputmode="decimal"></label>
+      <label>مدت تنفس دیرکرد<input name="late_penalty_grace_days" value="<?= e(to_persian_digits($settings['late_penalty_grace_days'] ?? '0')) ?>" inputmode="numeric" placeholder="مثلاً ۵ روز"></label>
       <label>نرخ پاداش ماهانه<input name="monthly_reward_rate" value="<?= e($settings['monthly_reward_rate']) ?>" inputmode="decimal"></label>
+      <div class="full notice info">اگر مدت تنفس ۵ روز باشد، تا پایان روز پنجم پس از سررسید جریمه دیرکرد محاسبه نمی‌شود و محاسبه از روز بعد آغاز می‌شود.</div>
       <label class="full">متن تأیید جریمه حقوقی در قرارداد<textarea name="contract_legal_penalty_clause" rows="4"><?= e($settings['contract_legal_penalty_clause'] ?? '') ?></textarea></label>
       <div class="full actions"><button class="btn" type="submit">ذخیره تنظیمات مالی</button></div>
     </div>
@@ -131,12 +133,24 @@ if (!isset($tabs[$activeTab])) {
   <section class="card proma-settings-panel <?= $activeTab === 'gateway' ? 'active' : '' ?>" data-settings-panel="gateway">
     <div class="card-header"><h2>درگاه پرداخت</h2></div>
     <div class="card-body form-grid">
+      <div>
+        <span class="field-title">پرداخت آنلاین زیبال</span>
+        <div class="switch-options">
+          <label><input type="checkbox" name="zibal_enabled" value="1"<?= checked($settings['zibal_enabled'] ?? '1', '1') ?>><span>فعال</span></label>
+        </div>
+      </div>
+      <div>
+        <span class="field-title">حالت تست زیبال</span>
+        <div class="switch-options">
+          <label><input type="checkbox" name="zibal_test_mode" value="1"<?= checked($settings['zibal_test_mode'] ?? '0', '1') ?>><span>فعال</span></label>
+        </div>
+      </div>
       <label>مرچنت زیبال<input name="zibal_merchant" value="<?= e($settings['zibal_merchant']) ?>" dir="ltr"></label>
       <label>نشانی پایه بازگشت<input name="callback_base_url" value="<?= e($settings['callback_base_url']) ?>" placeholder="<?= e($detectedBase) ?>" dir="ltr"></label>
       <div class="full notice info">
         <strong>نشانی نهایی بازگشت:</strong>
         <span class="ltr callback-url"><?= e($callbackUrl) ?></span>
-        <small class="d-block">اگر فقط دامنه وارد شود، سامانه هنگام ذخیره به صورت خودکار <span class="ltr">https://</span> را اضافه می‌کند.</small>
+        <small class="d-block">اگر فقط دامنه وارد شود، سامانه هنگام ذخیره به صورت خودکار <span class="ltr">https://</span> را اضافه می‌کند. در حالت تست، سامانه از مرچنت آزمایشی زیبال استفاده می‌کند و مرچنت live نادیده گرفته می‌شود.</small>
       </div>
       <div class="full">
         <span class="field-title">پرداخت کارت به کارت</span>
@@ -552,8 +566,9 @@ if (!isset($tabs[$activeTab])) {
       <form method="post" action="<?= e(url('updates/install/' . rawurlencode($package['name']))) ?>" data-loading-form data-loading-text="در حال نصب بروزرسانی...">
         <div class="modal-body grid">
           <?= csrf_field() ?>
-          <div class="notice info">قبل از نصب، بکاپ ایمنی ساخته می‌شود. فقط فایل‌های معرفی‌شده در manifest نصب می‌شوند.</div>
-          <label>عبارت تایید<input name="update_confirm_text" required placeholder="<?= e(ScriptUpdateService::CONFIRM_TEXT) ?>"></label>
+          <?php $installUpdateCode = ConfirmationCode::hint('update_install_' . sha1($package['name'])); ?>
+          <div class="notice info">قبل از نصب، بکاپ ایمنی ساخته می‌شود. فقط فایل‌های معرفی‌شده در manifest نصب می‌شوند. برای تایید عدد <strong class="ltr"><?= e($installUpdateCode) ?></strong> را وارد کنید.</div>
+          <label>عدد تایید<input name="update_confirm_text" required inputmode="numeric" autocomplete="off" placeholder="<?= e($installUpdateCode) ?>"></label>
         </div>
         <div class="modal-footer">
           <button class="btn success" type="submit">نصب بروزرسانی</button>

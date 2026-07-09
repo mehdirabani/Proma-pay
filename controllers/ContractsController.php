@@ -27,8 +27,9 @@ class ContractsController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
+        $reusedCustomer = null;
         try {
-            $customerId = $this->resolveCustomer();
+            $customerId = $this->resolveCustomer($reusedCustomer);
             $startDate = parse_jalali_date($_POST['start_date'] ?? '') ?: date('Y-m-d');
             $firstDue = parse_jalali_date($_POST['first_due_date'] ?? '') ?: FinanceHelper::addMonths($startDate, 1);
             if (!$customerId || !$startDate || !$firstDue) {
@@ -48,7 +49,11 @@ class ContractsController extends Controller
                 'notes' => $_POST['notes'] ?? '',
                 'created_by' => Auth::id(),
             ], $_POST['guarantors'] ?? [], $_POST['items'] ?? [], $_POST['guarantee'] ?? [], $_POST['guarantor_people'] ?? []);
-            set_flash('success', 'قرارداد و اقساط آن با موفقیت ساخته شد.');
+            $message = 'قرارداد و اقساط آن با موفقیت ساخته شد.';
+            if ($reusedCustomer) {
+                $message .= ' مشتری «' . $reusedCustomer . '» از قبل وجود داشت و همان پرونده برای قرارداد انتخاب شد.';
+            }
+            set_flash('success', $message);
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت قرارداد انجام نشد. شماره قرارداد یا داده‌های ورودی را بررسی کنید.');
         }
@@ -509,7 +514,7 @@ class ContractsController extends Controller
         redirect('contracts');
     }
 
-    protected function resolveCustomer()
+    protected function resolveCustomer(&$reusedCustomer = null)
     {
         if (!empty($_POST['customer_id'])) {
             return (int) $_POST['customer_id'];
@@ -517,7 +522,7 @@ class ContractsController extends Controller
         if (trim($_POST['new_customer_full_name'] ?? '') === '') {
             return null;
         }
-        return User::create([
+        $payload = [
             'role' => 'customer',
             'username' => null,
             'full_name' => $_POST['new_customer_full_name'],
@@ -530,7 +535,13 @@ class ContractsController extends Controller
             'email' => '',
             'password' => bin2hex(random_bytes(8)),
             'status' => 'active',
-        ]);
+        ];
+        $existing = User::findDuplicateCustomer($payload);
+        if ($existing) {
+            $reusedCustomer = $existing['full_name'] ?? 'مشتری موجود';
+            return (int) $existing['id'];
+        }
+        return User::create($payload);
     }
 
     protected function buildContractUpdatePayload(array $contract, array $input)

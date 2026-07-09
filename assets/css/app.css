@@ -3943,6 +3943,10 @@ body.dark-only .proma-payment-card__qr-grid {
   font-weight: 800;
 }
 
+.proma-users-social-strip {
+  margin: 0 0 16px;
+}
+
 .proma-social-card--instagram .proma-social-card__icon {
   background: linear-gradient(135deg, #f58529, #dd2a7b 48%, #515bd4);
 }
@@ -4002,6 +4006,28 @@ body.dark-only .proma-payment-card__qr-grid {
 }
 
 @media (max-width: 768px) {
+  .card-header .header-top,
+  .header-top,
+  .proma-section-title,
+  .modal-footer,
+  .actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .header-top .actions,
+  .modal-footer,
+  .form-grid > .actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .header-top .actions .btn,
+  .modal-footer .btn,
+  .form-grid > .actions .btn {
+    flex: 1 1 160px;
+  }
+
   .grid.cols-4,
   .grid.cols-3,
   .grid.cols-2,
@@ -4059,8 +4085,27 @@ body.dark-only .proma-payment-card__qr-grid {
   .proma-preview-grid,
   .proma-financial-summary,
   .proma-legal-stats,
-  .proma-legal-meta-grid {
+  .proma-legal-meta-grid,
+  .proma-social-card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .proma-payment-method-switch {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .proma-payment-method-switch button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .proma-date-input-wrap {
+    width: 100%;
+  }
+
+  .proma-date-input-wrap .proma-date-input {
+    min-width: 0;
   }
 
   .proma-timeline-item {

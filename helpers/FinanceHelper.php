@@ -54,6 +54,9 @@ class FinanceHelper
             'penalty_rate' => $state['penalty_rate'],
             'normal_penalty_rate' => $state['normal_penalty_rate'],
             'legal_penalty_rate' => $state['legal_penalty_rate'],
+            'grace_days' => $state['grace_days'],
+            'penalty_start_date' => $state['penalty_start_date'],
+            'overdue_days' => $state['overdue_days'],
             'reward' => $reward,
             'payable' => $payable,
             'status' => self::status($state['base_amount'], $state['paid_amount'], $installment['due_date'], $date),
@@ -77,6 +80,8 @@ class FinanceHelper
         $message = 'محاسبه پرداخت انجام شد.';
         if (!$isFull && $paymentDate <= $installment['due_date']) {
             $message = 'پرداخت جزئی شامل پاداش تسویه زودتر از موعد نمی‌شود.';
+        } elseif ($paymentDate > $installment['due_date'] && (int) ($state['grace_days'] ?? 0) > 0 && (float) ($state['penalty'] ?? 0) <= 0) {
+            $message = 'پرداخت در بازه تنفس دیرکرد است و جریمه‌ای محاسبه نشده است.';
         } elseif ($paymentDate > $installment['due_date']) {
             $message = $state['penalty_mode'] === 'legal'
                 ? 'جریمه دیرکرد حقوقی تا تاریخ پرداخت محاسبه شده است.'
@@ -97,6 +102,9 @@ class FinanceHelper
             'penalty_rate' => $state['penalty_rate'],
             'normal_penalty_rate' => $state['normal_penalty_rate'],
             'legal_penalty_rate' => $state['legal_penalty_rate'],
+            'grace_days' => $state['grace_days'],
+            'penalty_start_date' => $state['penalty_start_date'],
+            'overdue_days' => $state['overdue_days'],
             'calculated_reward' => $reward,
             'payable_on_payment_date' => $payable,
             'remaining_after_payment' => $remainingAfter,
@@ -105,6 +113,12 @@ class FinanceHelper
             'is_full_payment' => $isFull,
             'message' => $message,
         ];
+    }
+
+    public static function previewForMode(array $installment, array $payments, array $settings, $penaltyMode, $date = null)
+    {
+        $installment['__penalty_mode_override'] = $penaltyMode === 'legal' ? 'legal' : 'normal';
+        return self::preview($installment, $payments, $settings, $date);
     }
 
     public static function contractPreview($principal, $downPayment, $months, $monthlyRate, $interestType)
@@ -131,12 +145,14 @@ class FinanceHelper
         $baseAmount = (float) $installment['base_amount'];
         $normalMonthlyRate = (float) to_english_digits($settings['monthly_penalty_rate'] ?? 0);
         $legalMonthlyRate = (float) to_english_digits($settings['legal_monthly_penalty_rate'] ?? $normalMonthlyRate);
+        $graceDays = max(0, min(365, (int) to_english_digits($settings['late_penalty_grace_days'] ?? 0)));
         if ($legalMonthlyRate <= 0 && $normalMonthlyRate > 0) {
             $legalMonthlyRate = $normalMonthlyRate;
         }
         $normalDailyRate = $normalMonthlyRate / 100 / 30;
         $legalDailyRate = $legalMonthlyRate / 100 / 30;
         $legalStartDate = self::legalPenaltyStartDate($installment);
+        $penaltyStartDate = self::addDays($dueDate, $graceDays);
 
         usort($payments, function ($a, $b) {
             return strcmp($a['payment_date'] ?? $a['paid_at'] ?? $a['created_at'] ?? '', $b['payment_date'] ?? $b['paid_at'] ?? $b['created_at'] ?? '');
@@ -145,7 +161,7 @@ class FinanceHelper
         $remaining = $baseAmount;
         $normalPenalty = 0;
         $legalPenalty = 0;
-        $lastPenaltyDate = $dueDate;
+        $lastPenaltyDate = $penaltyStartDate;
         foreach ($payments as $payment) {
             if (($payment['status'] ?? '') !== 'paid' || ($payment['payment_type'] ?? 'installment') === 'down_payment') {
                 continue;
@@ -154,7 +170,7 @@ class FinanceHelper
             if ($paymentDate > $date) {
                 continue;
             }
-            if ($paymentDate > $dueDate && $remaining > 0) {
+            if ($paymentDate > $penaltyStartDate && $remaining > 0) {
                 $days = max(0, (int) ((strtotime($paymentDate) - strtotime($lastPenaltyDate)) / 86400));
                 $normalPenalty += $remaining * $normalDailyRate * $days;
                 $legalPenalty += self::legalPenaltyForPeriod($remaining, $lastPenaltyDate, $paymentDate, $normalDailyRate, $legalDailyRate, $legalStartDate);
@@ -167,7 +183,7 @@ class FinanceHelper
             }
         }
 
-        if ($remaining > 0 && $date > $dueDate) {
+        if ($remaining > 0 && $date > $penaltyStartDate) {
             $days = max(0, (int) ((strtotime($date) - strtotime($lastPenaltyDate)) / 86400));
             $normalPenalty += $remaining * $normalDailyRate * $days;
             $legalPenalty += self::legalPenaltyForPeriod($remaining, $lastPenaltyDate, $date, $normalDailyRate, $legalDailyRate, $legalStartDate);
@@ -178,7 +194,8 @@ class FinanceHelper
         $discount = (float) ($installment['penalty_discount_amount'] ?? 0);
         $normalPenalty = max(0, ceil($normalPenalty + $manualPenalty - $discount));
         $legalPenalty = max(0, ceil($legalPenalty + $manualPenalty - $discount));
-        $penaltyMode = self::usesLegalPenalty($installment) ? 'legal' : 'normal';
+        $penaltyMode = $installment['__penalty_mode_override'] ?? (self::usesLegalPenalty($installment) ? 'legal' : 'normal');
+        $penaltyMode = $penaltyMode === 'legal' ? 'legal' : 'normal';
         $penalty = $penaltyMode === 'legal' ? $legalPenalty : $normalPenalty;
 
         return [
@@ -192,6 +209,9 @@ class FinanceHelper
             'penalty_rate' => $penaltyMode === 'legal' ? $legalMonthlyRate : $normalMonthlyRate,
             'normal_penalty_rate' => $normalMonthlyRate,
             'legal_penalty_rate' => $legalMonthlyRate,
+            'grace_days' => $graceDays,
+            'penalty_start_date' => $penaltyStartDate,
+            'overdue_days' => max(0, (int) ((strtotime($date) - strtotime($dueDate)) / 86400)),
             'manual_reward' => max(0, ceil($manualReward)),
         ];
     }
@@ -246,6 +266,15 @@ class FinanceHelper
         $legalDays = max(0, (int) ((strtotime($toDate) - strtotime($legalStartDate)) / 86400));
         return ((float) $remaining * (float) $normalDailyRate * $normalDays)
             + ((float) $remaining * (float) $legalDailyRate * $legalDays);
+    }
+
+    protected static function addDays($date, $days)
+    {
+        $dt = new DateTime($date);
+        if ((int) $days > 0) {
+            $dt->modify('+' . (int) $days . ' day');
+        }
+        return $dt->format('Y-m-d');
     }
 
     protected static function potentialReward(array $installment, $remainingAmount, array $settings, $date)

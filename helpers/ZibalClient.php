@@ -3,19 +3,22 @@
 class ZibalClient
 {
     protected $merchant;
+    protected $testMode = false;
 
-    public function __construct($merchant)
+    public function __construct($merchant, $testMode = false)
     {
         $this->merchant = preg_replace('/\s+/', '', trim((string) $merchant));
+        $this->testMode = (bool) $testMode;
     }
 
     public function request($amountToman, $callbackUrl, $description)
     {
-        if ($this->merchant === '') {
+        $merchant = $this->effectiveMerchant();
+        if ($merchant === '') {
             return ['ok' => false, 'message' => 'مرچنت درگاه پرداخت تنظیم نشده است.'];
         }
         $payload = [
-            'merchant' => $this->merchant,
+            'merchant' => $merchant,
             'amount' => (int) round($amountToman * 10),
             'callbackUrl' => $callbackUrl,
             'description' => $description,
@@ -38,11 +41,12 @@ class ZibalClient
 
     public function verify($trackId)
     {
-        if ($this->merchant === '') {
+        $merchant = $this->effectiveMerchant();
+        if ($merchant === '') {
             return ['ok' => false, 'message' => 'مرچنت درگاه پرداخت تنظیم نشده است.'];
         }
         $result = $this->postJson('https://gateway.zibal.ir/v1/verify', [
-            'merchant' => $this->merchant,
+            'merchant' => $merchant,
             'trackId' => (int) $trackId,
         ]);
         if (!$result['ok']) {
@@ -57,6 +61,11 @@ class ZibalClient
             'amount_toman' => isset($body['amount']) ? ((float) $body['amount'] / 10) : null,
             'gateway_code' => $code,
         ];
+    }
+
+    protected function effectiveMerchant()
+    {
+        return $this->testMode ? 'zibal' : $this->merchant;
     }
 
     protected function postJson($url, array $payload)

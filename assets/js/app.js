@@ -1395,6 +1395,11 @@
       'input[name="event_date"]',
       'input[name="custom_reminder_date"]',
       'input[name="next_followup_date"]',
+      'input[name="promise_payment_date"]',
+      'input[name="action_date"]',
+      'input[name="notice_date"]',
+      'input[name="court_date"]',
+      'input[name="hearing_date"]',
       'input[name="date_from"]',
       'input[name="date_to"]',
       'input[data-jalali-input]'

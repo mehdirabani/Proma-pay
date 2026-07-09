@@ -291,7 +291,7 @@ class DashboardController extends Controller
             'installments' => Installment::all(['customer_id' => $customerId]),
             'payments' => Payment::recentForCustomer($customerId, 9),
             'medals' => Model::fetchAll('SELECT * FROM medals WHERE user_id = ? ORDER BY id DESC', [$customerId]),
-            'socialLinks' => $this->socialLinks(Settings::allKeyed()),
+            'socialLinks' => configured_social_links(Settings::allKeyed()),
             'givenGuarantees' => Contract::all(['guarantor_id' => $customerId]),
             'receivedGuarantees' => Model::fetchAll(
                 "SELECT c.contract_number, c.id AS contract_id, u.full_name, u.mobile, u.national_id
@@ -305,27 +305,4 @@ class DashboardController extends Controller
         ]);
     }
 
-    protected function socialLinks(array $settings)
-    {
-        $items = [
-            'instagram' => ['label' => 'اینستاگرام', 'setting' => 'social_instagram_url', 'icon' => 'instagram', 'class' => 'instagram'],
-            'telegram' => ['label' => 'تلگرام', 'setting' => 'social_telegram_url', 'icon' => 'send', 'class' => 'telegram'],
-            'whatsapp' => ['label' => 'واتساپ', 'setting' => 'social_whatsapp_url', 'icon' => 'message-circle', 'class' => 'whatsapp'],
-            'website' => ['label' => 'وب‌سایت', 'setting' => 'social_website_url', 'icon' => 'globe', 'class' => 'website'],
-            'facebook' => ['label' => 'فیسبوک', 'setting' => 'social_facebook_url', 'icon' => 'facebook', 'class' => 'facebook'],
-            'x' => ['label' => 'ایکس', 'setting' => 'social_x_url', 'icon' => 'twitter', 'class' => 'x'],
-            'youtube' => ['label' => 'یوتیوب', 'setting' => 'social_youtube_url', 'icon' => 'youtube', 'class' => 'youtube'],
-            'linkedin' => ['label' => 'لینکدین', 'setting' => 'social_linkedin_url', 'icon' => 'linkedin', 'class' => 'linkedin'],
-        ];
-        $links = [];
-        foreach ($items as $item) {
-            $url = trim((string) ($settings[$item['setting']] ?? ''));
-            if ($url === '' || !preg_match('#^https?://#i', $url)) {
-                continue;
-            }
-            $item['url'] = $url;
-            $links[] = $item;
-        }
-        return $links;
-    }
 }

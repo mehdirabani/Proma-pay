@@ -27,7 +27,7 @@ class SettingsController extends Controller
         $this->requireRole('admin');
         $this->onlyPost();
         $values = [];
-        $digitFields = ['monthly_penalty_rate', 'legal_monthly_penalty_rate', 'monthly_reward_rate', 'contract_next_serial', 'contract_year', 'company_representative_national_id', 'company_postal_code', 'company_phone', 'notifications_sound_volume', 'chat_file_auto_delete_days', 'card_transfer_card_number', 'card_transfer_account_number'];
+        $digitFields = ['monthly_penalty_rate', 'legal_monthly_penalty_rate', 'late_penalty_grace_days', 'monthly_reward_rate', 'contract_next_serial', 'contract_year', 'company_representative_national_id', 'company_postal_code', 'company_phone', 'notifications_sound_volume', 'chat_file_auto_delete_days', 'card_transfer_card_number', 'card_transfer_account_number'];
         foreach (Settings::defaults() as $key => $default) {
             if (array_key_exists($key, $_POST)) {
                 $rawValue = trim((string) $_POST[$key]);
@@ -50,11 +50,12 @@ class SettingsController extends Controller
                 $values[$key] = $rawValue;
             }
         }
-        foreach (['password_reset_enabled', 'calendar_notifications_enabled', 'calendar_notify_admin_without_user', 'calendar_due_day_repeat_enabled', 'notifications_sound_enabled', 'card_transfer_enabled', 'card_transfer_show_sheba', 'card_transfer_show_account_number'] as $checkbox) {
+        foreach (['password_reset_enabled', 'calendar_notifications_enabled', 'calendar_notify_admin_without_user', 'calendar_due_day_repeat_enabled', 'notifications_sound_enabled', 'zibal_enabled', 'zibal_test_mode', 'card_transfer_enabled', 'card_transfer_show_sheba', 'card_transfer_show_account_number'] as $checkbox) {
             $values[$checkbox] = isset($_POST[$checkbox]) ? '1' : '0';
         }
         $values['notifications_sound_volume'] = (string) max(0, min(1, (float) ($values['notifications_sound_volume'] ?? '0.45')));
         $values['chat_file_auto_delete_days'] = (string) max(1, min(365, (int) ($values['chat_file_auto_delete_days'] ?? '7')));
+        $values['late_penalty_grace_days'] = (string) max(0, min(365, (int) to_english_digits($values['late_penalty_grace_days'] ?? '0')));
         $values['card_transfer_primary_color'] = sanitize_hex_color($values['card_transfer_primary_color'] ?? '', '#7366ff');
         $values['card_transfer_secondary_color'] = sanitize_hex_color($values['card_transfer_secondary_color'] ?? '', '#16c7f9');
         $currentSettings = Settings::allKeyed();

@@ -1,6 +1,10 @@
 <?php
 $customerMode = $customerMode ?? false;
 $paymentSettings = $paymentSettings ?? Settings::allKeyed();
+$zibalEnabled = (string) ($paymentSettings['zibal_enabled'] ?? '1') === '1';
+$zibalTestMode = (string) ($paymentSettings['zibal_test_mode'] ?? '0') === '1';
+$zibalMerchant = trim((string) ($paymentSettings['zibal_merchant'] ?? ''));
+$gatewayReady = $zibalEnabled && ($zibalTestMode || $zibalMerchant !== '');
 $cardTransferEnabled = (string) ($paymentSettings['card_transfer_enabled'] ?? '1') === '1';
 $cardTransferBankName = trim((string) ($paymentSettings['card_transfer_bank_name'] ?? ''));
 $cardTransferBankLogoText = payment_card_logo_mark($cardTransferBankName, $paymentSettings['card_transfer_bank_logo_text'] ?? '');
@@ -14,6 +18,7 @@ $cardTransferShowSheba = (string) ($paymentSettings['card_transfer_show_sheba'] 
 $cardTransferShowAccountNumber = (string) ($paymentSettings['card_transfer_show_account_number'] ?? '0') === '1';
 $cardTransferQrPayload = trim((string) ($paymentSettings['card_transfer_qr_text'] ?? ''));
 $cardTransferQrPayloadB64 = $cardTransferQrPayload !== '' ? base64_encode($cardTransferQrPayload) : '';
+$defaultPaymentMethod = $gatewayReady ? 'gateway' : ($cardTransferEnabled ? 'card-transfer' : '');
 $defaultPaymentDate = jdate(date('Y-m-d'));
 $defaultPaymentTime = date('H:i');
 $pagination = $pagination ?? ['total' => count($installments), 'page' => 1, 'pages' => 1, 'per_page' => count($installments) ?: 20];
@@ -129,20 +134,27 @@ $pageUrl = function ($page) {
         </div>
         <div class="modal-body">
           <div class="proma-payment-method-shell" data-payment-method-shell>
-            <div class="proma-payment-method-switch" role="tablist" aria-label="روش پرداخت">
-              <button class="active" type="button" data-payment-method-toggle="gateway" aria-selected="true">
-                <i data-feather="credit-card"></i>
-                <span>پرداخت آنلاین</span>
-              </button>
+            <?php if ($defaultPaymentMethod === ''): ?>
+              <div class="notice warning">در حال حاضر روش پرداخت فعالی برای این سامانه تنظیم نشده است.</div>
+            <?php else: ?>
+              <div class="proma-payment-method-switch" role="tablist" aria-label="روش پرداخت">
+              <?php if ($gatewayReady): ?>
+                <button class="<?= $defaultPaymentMethod === 'gateway' ? 'active' : '' ?>" type="button" data-payment-method-toggle="gateway" aria-selected="<?= $defaultPaymentMethod === 'gateway' ? 'true' : 'false' ?>">
+                  <i data-feather="credit-card"></i>
+                  <span>پرداخت آنلاین</span>
+                </button>
+              <?php endif; ?>
               <?php if ($cardTransferEnabled): ?>
-                <button type="button" data-payment-method-toggle="card-transfer" aria-selected="false">
+                <button class="<?= $defaultPaymentMethod === 'card-transfer' ? 'active' : '' ?>" type="button" data-payment-method-toggle="card-transfer" aria-selected="<?= $defaultPaymentMethod === 'card-transfer' ? 'true' : 'false' ?>">
                   <i data-feather="smartphone"></i>
                   <span>کارت به کارت</span>
                 </button>
               <?php endif; ?>
-            </div>
+              </div>
+            <?php endif; ?>
 
-            <div class="proma-payment-panel active" data-payment-method-panel="gateway">
+            <?php if ($gatewayReady): ?>
+            <div class="proma-payment-panel <?= $defaultPaymentMethod === 'gateway' ? 'active' : '' ?>" data-payment-method-panel="gateway"<?= $defaultPaymentMethod === 'gateway' ? '' : ' hidden' ?>>
               <form method="post" action="<?= e(url('payments/zibal')) ?>" class="proma-payment-form">
                 <?= csrf_field() ?>
                 <input type="hidden" name="installment_id" value="<?= (int) $item['id'] ?>">
@@ -163,9 +175,10 @@ $pageUrl = function ($page) {
                 </div>
               </form>
             </div>
+            <?php endif; ?>
 
             <?php if ($cardTransferEnabled): ?>
-              <div class="proma-payment-panel" data-payment-method-panel="card-transfer" hidden>
+              <div class="proma-payment-panel <?= $defaultPaymentMethod === 'card-transfer' ? 'active' : '' ?>" data-payment-method-panel="card-transfer"<?= $defaultPaymentMethod === 'card-transfer' ? '' : ' hidden' ?>>
                 <?php $paymentCardDownloadName = 'proma-payment-qr-' . (int) $item['id'] . '.html'; ?>
                 <?php include __DIR__ . '/../partials/payment_card.php'; ?>
                 <form method="post" action="<?= e(url('payments/cardTransfer')) ?>" enctype="multipart/form-data" class="proma-card-transfer-form">

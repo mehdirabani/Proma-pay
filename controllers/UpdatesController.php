@@ -20,17 +20,18 @@ class UpdatesController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
+        $decoded = rawurldecode((string) $fileName);
         try {
-            if (trim((string) ($_POST['update_confirm_text'] ?? '')) !== ScriptUpdateService::CONFIRM_TEXT) {
-                throw new RuntimeException('عبارت تایید بروزرسانی درست وارد نشده است.');
+            if (!ConfirmationCode::verify('update_install_' . sha1($decoded), $_POST['update_confirm_text'] ?? '')) {
+                throw new RuntimeException('عدد تایید نصب بروزرسانی درست وارد نشده است.');
             }
-            $result = ScriptUpdateService::install(rawurldecode((string) $fileName));
+            $result = ScriptUpdateService::install($decoded);
             set_flash(
                 'success',
                 'بروزرسانی نصب شد. بکاپ ایمنی: ' . $result['backup'] . '، فایل‌های نصب‌شده: ' . to_persian_digits(count($result['installed_files'])) . '.'
             );
         } catch (Throwable $e) {
-            BackupService::log('update_install', rawurldecode((string) $fileName), 'failed', $e->getMessage());
+            BackupService::log('update_install', $decoded, 'failed', $e->getMessage());
             set_flash('error', $e->getMessage());
         }
         redirect('settings', ['tab' => 'update']);

@@ -149,6 +149,30 @@ function template_asset_url($path)
     return asset_url('html/RTL/assets/' . ltrim($path, '/'));
 }
 
+function configured_social_links(array $settings)
+{
+    $items = [
+        'instagram' => ['label' => 'اینستاگرام', 'setting' => 'social_instagram_url', 'icon' => 'instagram', 'class' => 'instagram'],
+        'telegram' => ['label' => 'تلگرام', 'setting' => 'social_telegram_url', 'icon' => 'send', 'class' => 'telegram'],
+        'whatsapp' => ['label' => 'واتساپ', 'setting' => 'social_whatsapp_url', 'icon' => 'message-circle', 'class' => 'whatsapp'],
+        'website' => ['label' => 'وب‌سایت', 'setting' => 'social_website_url', 'icon' => 'globe', 'class' => 'website'],
+        'facebook' => ['label' => 'فیسبوک', 'setting' => 'social_facebook_url', 'icon' => 'facebook', 'class' => 'facebook'],
+        'x' => ['label' => 'ایکس', 'setting' => 'social_x_url', 'icon' => 'twitter', 'class' => 'x'],
+        'youtube' => ['label' => 'یوتیوب', 'setting' => 'social_youtube_url', 'icon' => 'youtube', 'class' => 'youtube'],
+        'linkedin' => ['label' => 'لینکدین', 'setting' => 'social_linkedin_url', 'icon' => 'linkedin', 'class' => 'linkedin'],
+    ];
+    $links = [];
+    foreach ($items as $item) {
+        $target = trim((string) ($settings[$item['setting']] ?? ''));
+        if ($target === '' || !preg_match('#^https?://#i', $target)) {
+            continue;
+        }
+        $item['url'] = $target;
+        $links[] = $item;
+    }
+    return $links;
+}
+
 function redirect($route, array $params = [])
 {
     header('Location: ' . url($route, $params));

@@ -33,9 +33,18 @@ class PaymentsController extends Controller
             redirect('portal/installments');
         }
         $settings = Settings::allKeyed();
+        if ((string) ($settings['zibal_enabled'] ?? '1') !== '1') {
+            set_flash('error', 'پرداخت آنلاین در حال حاضر غیرفعال است.');
+            redirect('portal/installments');
+        }
+        $zibalTestMode = (string) ($settings['zibal_test_mode'] ?? '0') === '1';
+        if (!$zibalTestMode && trim((string) ($settings['zibal_merchant'] ?? '')) === '') {
+            set_flash('error', 'مرچنت زیبال برای پرداخت آنلاین تنظیم نشده است.');
+            redirect('portal/installments');
+        }
         $base = rtrim($settings['callback_base_url'] ?: detected_base_url(), '/');
         $callback = $base . '/index.php?route=payments/callback';
-        $client = new ZibalClient($settings['zibal_merchant']);
+        $client = new ZibalClient($settings['zibal_merchant'], $zibalTestMode);
         $request = $client->request($amount, $callback, 'پرداخت قسط قرارداد ' . $installment['contract_number']);
         if (!$request['ok']) {
             set_flash('error', $request['message']);
@@ -151,7 +160,7 @@ class PaymentsController extends Controller
             redirect('portal/installments');
         }
         $settings = Settings::allKeyed();
-        $client = new ZibalClient($settings['zibal_merchant']);
+        $client = new ZibalClient($settings['zibal_merchant'], (string) ($settings['zibal_test_mode'] ?? '0') === '1');
         $verify = $client->verify($trackId);
         if (!$verify['ok']) {
             set_flash('error', $verify['message']);

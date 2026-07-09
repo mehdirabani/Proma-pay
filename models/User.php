@@ -437,6 +437,50 @@ class User extends Model
         return (int) self::lastInsertId();
     }
 
+    public static function findDuplicateCustomer(array $data)
+    {
+        self::ensureProfileColumns();
+        $checks = [];
+        $nationalId = trim(to_english_digits($data['national_id'] ?? ''));
+        $mobile = trim(to_english_digits($data['mobile'] ?? ''));
+        $secondaryPhone = trim(to_english_digits($data['secondary_phone'] ?? ''));
+        $email = trim((string) ($data['email'] ?? ''));
+
+        if ($nationalId !== '') {
+            $checks[] = ['national_id = ?', $nationalId];
+        }
+        if ($mobile !== '') {
+            $checks[] = ['mobile = ?', $mobile];
+            $checks[] = ['secondary_phone = ?', $mobile];
+        }
+        if ($secondaryPhone !== '') {
+            $checks[] = ['mobile = ?', $secondaryPhone];
+            $checks[] = ['secondary_phone = ?', $secondaryPhone];
+        }
+        if ($email !== '') {
+            $checks[] = ['email = ?', $email];
+        }
+        if (!$checks) {
+            return null;
+        }
+
+        $where = [];
+        $params = [];
+        foreach ($checks as $check) {
+            $where[] = $check[0];
+            $params[] = $check[1];
+        }
+        return self::fetch(
+            "SELECT *
+             FROM users
+             WHERE role = 'customer'
+             AND (" . implode(' OR ', $where) . ")
+             ORDER BY CASE WHEN status = 'active' THEN 0 ELSE 1 END, id DESC
+             LIMIT 1",
+            $params
+        );
+    }
+
     public static function updateUser($id, array $data)
     {
         self::ensureProfileColumns();

@@ -16,6 +16,7 @@ class PortalController extends Controller
             'contracts' => Contract::all(['customer_id' => Auth::id()]),
             'installments' => [],
             'medals' => [],
+            'socialLinks' => configured_social_links(Settings::allKeyed()),
             'givenGuarantees' => Contract::all(['guarantor_id' => Auth::id()]),
             'receivedGuarantees' => Model::fetchAll(
                 "SELECT c.contract_number, c.id AS contract_id, u.full_name, u.mobile, u.national_id
