@@ -193,6 +193,67 @@ class Installment extends Model
     public static function overdue($bucket = null, $search = null, $operatorId = null, $limit = null)
     {
         self::ensureSchema();
+        [$where, $params] = self::overdueWhere($bucket, $search, $operatorId);
+        $rows = self::fetchAll(
+            "SELECT i.*, c.contract_number, c.customer_id, c.assigned_operator_id, u.full_name AS customer_name,
+             c.status AS contract_status, c.legal_status AS contract_legal_status,
+             u.mobile, u.secondary_phone, u.national_id,
+             (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_case_count,
+             (SELECT MIN(DATE(lc.created_at)) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_started_at
+             FROM installments i
+             JOIN contracts c ON c.id = i.contract_id
+             JOIN users u ON u.id = c.customer_id
+             WHERE {$where}
+             ORDER BY i.due_date ASC, i.id ASC"
+             . ($limit ? ' LIMIT ' . max(1, min(100, (int) $limit)) : ''),
+            $params
+        );
+        return self::withPreview($rows);
+    }
+
+    public static function overduePaginated($bucket = null, $search = null, $operatorId = null, array $options = [])
+    {
+        self::ensureSchema();
+        [$where, $params] = self::overdueWhere($bucket, $search, $operatorId);
+        $count = self::fetch(
+            "SELECT COUNT(*) AS total
+             FROM installments i
+             JOIN contracts c ON c.id = i.contract_id
+             JOIN users u ON u.id = c.customer_id
+             WHERE {$where}",
+            $params
+        );
+        $total = (int) ($count['total'] ?? 0);
+        $perPage = max(10, min(100, (int) ($options['per_page'] ?? 40)));
+        $page = max(1, (int) ($options['page'] ?? 1));
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $pages);
+        $offset = ($page - 1) * $perPage;
+        $rows = self::fetchAll(
+            "SELECT i.*, c.contract_number, c.customer_id, c.assigned_operator_id, u.full_name AS customer_name,
+             c.status AS contract_status, c.legal_status AS contract_legal_status,
+             u.mobile, u.secondary_phone, u.national_id,
+             (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_case_count,
+             (SELECT MIN(DATE(lc.created_at)) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_started_at
+             FROM installments i
+             JOIN contracts c ON c.id = i.contract_id
+             JOIN users u ON u.id = c.customer_id
+             WHERE {$where}
+             ORDER BY i.due_date ASC, i.id ASC
+             LIMIT {$perPage} OFFSET {$offset}",
+            $params
+        );
+        return [
+            'items' => self::withPreview($rows),
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'per_page' => $perPage,
+        ];
+    }
+
+    protected static function overdueWhere($bucket = null, $search = null, $operatorId = null)
+    {
         $today = date('Y-m-d');
         $where = "i.status != 'paid' AND i.due_date < ?";
         $params = [$today];
@@ -218,21 +279,7 @@ class Installment extends Model
             $where .= ' AND c.assigned_operator_id = ?';
             $params[] = (int) $operatorId;
         }
-        $rows = self::fetchAll(
-            "SELECT i.*, c.contract_number, c.customer_id, c.assigned_operator_id, u.full_name AS customer_name,
-             c.status AS contract_status, c.legal_status AS contract_legal_status,
-             u.mobile, u.secondary_phone, u.national_id,
-             (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_case_count,
-             (SELECT MIN(DATE(lc.created_at)) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_started_at
-             FROM installments i
-             JOIN contracts c ON c.id = i.contract_id
-             JOIN users u ON u.id = c.customer_id
-             WHERE {$where}
-             ORDER BY i.due_date ASC"
-             . ($limit ? ' LIMIT ' . max(1, min(100, (int) $limit)) : ''),
-            $params
-        );
-        return self::withPreview($rows);
+        return [$where, $params];
     }
 
     public static function createCustom($contractId, $dueDate, $amount, $notes = '', $guaranteeSerial = '', $title = '')

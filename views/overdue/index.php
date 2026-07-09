@@ -1,5 +1,14 @@
 <?php
+$bucket = $bucket ?? ($_GET['bucket'] ?? null);
 $search = trim((string) ($search ?? ($_GET['q'] ?? '')));
+$pagination = $pagination ?? ['total' => count($installments ?? []), 'page' => 1, 'pages' => 1, 'per_page' => count($installments ?? []) ?: 40];
+$pageUrl = function ($page) use ($bucket, $search) {
+    return url('overdue', array_filter([
+        'bucket' => $bucket ?: null,
+        'q' => $search ?: null,
+        'page' => (int) $page > 1 ? (int) $page : null,
+    ]));
+};
 $defaultPaymentTime = date('H:i');
 $singleOperator = count($operators ?? []) === 1 ? $operators[0] : null;
 ?>
@@ -26,7 +35,13 @@ $singleOperator = count($operators ?? []) === 1 ? $operators[0] : null;
 
 <div data-ajax-results="overdue">
 <section class="card" style="margin-top:16px">
-  <div class="card-header"><h2>اقساط نیازمند اقدام</h2></div>
+  <div class="card-header">
+    <h2>اقساط نیازمند اقدام</h2>
+    <div class="actions">
+      <span class="badge info">نتایج: <?= to_persian_digits($pagination['total'] ?? count($installments ?? [])) ?></span>
+      <span class="badge muted">صفحه <?= to_persian_digits($pagination['page'] ?? 1) ?> از <?= to_persian_digits($pagination['pages'] ?? 1) ?></span>
+    </div>
+  </div>
   <div class="table-wrap">
     <table>
       <thead><tr><th>مشتری و تماس</th><th>قرارداد</th><th>سررسید</th><th>جریمه</th><th>قابل پرداخت</th><th>عملیات</th></tr></thead>
@@ -220,5 +235,6 @@ $singleOperator = count($operators ?? []) === 1 ? $operators[0] : null;
       </tbody>
     </table>
   </div>
+  <?= render_pagination($pagination, $pageUrl) ?>
 </section>
 </div>
