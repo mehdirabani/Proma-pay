@@ -1,15 +1,17 @@
 <?php
 $readOnly = $readOnly ?? false;
+$contractsRoute = $contractsRoute ?? ($readOnly ? 'portal/guaranteed' : 'contracts');
+$pageTitle = $readOnlyTitle ?? ($readOnly ? 'قراردادهای ضمانت شده' : 'فهرست قراردادها');
 $singleOperator = !$readOnly && count($operators ?? []) === 1 ? $operators[0] : null;
 $viewMode = in_array($_GET['view'] ?? '', ['cards', 'list'], true) ? $_GET['view'] : 'cards';
 $pagination = $pagination ?? ['total' => count($contracts ?? []), 'page' => 1, 'pages' => 1, 'per_page' => count($contracts ?? []) ?: 24];
-$pageUrl = function ($page) use ($readOnly, $viewMode) {
+$pageUrl = function ($page) use ($contractsRoute, $viewMode) {
     $params = [
         'q' => $_GET['q'] ?? null,
         'view' => $viewMode,
         'page' => (int) $page > 1 ? (int) $page : null,
     ];
-    return url($readOnly ? 'portal/guaranteed' : 'contracts', array_filter($params, fn($value) => $value !== null && $value !== ''));
+    return url($contractsRoute, array_filter($params, fn($value) => $value !== null && $value !== ''));
 };
 $contractTrendLabels = [];
 $contractTrendStart = (new DateTime('first day of this month'))->modify('-5 months');
@@ -20,18 +22,18 @@ for ($i = 0; $i < 6; $i++) {
 <section class="card">
   <div class="card-header card-no-border">
     <div class="header-top">
-      <h2><?= $readOnly ? 'قراردادهای ضمانت شده' : 'فهرست قراردادها' ?></h2>
+      <h2><?= e($pageTitle) ?></h2>
       <div class="actions">
-        <a class="btn small <?= $viewMode === 'cards' ? '' : 'secondary' ?>" href="<?= e(url($readOnly ? 'portal/guaranteed' : 'contracts', array_filter(['q' => $_GET['q'] ?? null, 'view' => 'cards', 'page' => $_GET['page'] ?? null]))) ?>">کارت‌ها</a>
-        <a class="btn small <?= $viewMode === 'list' ? '' : 'secondary' ?>" href="<?= e(url($readOnly ? 'portal/guaranteed' : 'contracts', array_filter(['q' => $_GET['q'] ?? null, 'view' => 'list', 'page' => $_GET['page'] ?? null]))) ?>">لیست</a>
+        <a class="btn small <?= $viewMode === 'cards' ? '' : 'secondary' ?>" href="<?= e(url($contractsRoute, array_filter(['q' => $_GET['q'] ?? null, 'view' => 'cards', 'page' => $_GET['page'] ?? null]))) ?>">کارت‌ها</a>
+        <a class="btn small <?= $viewMode === 'list' ? '' : 'secondary' ?>" href="<?= e(url($contractsRoute, array_filter(['q' => $_GET['q'] ?? null, 'view' => 'list', 'page' => $_GET['page'] ?? null]))) ?>">لیست</a>
         <?php if (!$readOnly): ?><button class="btn small secondary" type="button" data-open-modal="bulk-contracts-modal">ویرایش دسته‌جمعی</button><?php endif; ?>
         <?php if (!$readOnly): ?><button class="btn" type="button" data-open-modal="create-contract">افزودن قرارداد</button><?php endif; ?>
       </div>
     </div>
   </div>
   <div class="card-body">
-    <form method="get" action="<?= e(url($readOnly ? 'portal/guaranteed' : 'contracts')) ?>" class="form-grid three" data-ajax-filter data-ajax-target="[data-ajax-results='contracts']">
-      <input type="hidden" name="route" value="<?= e($readOnly ? 'portal/guaranteed' : 'contracts') ?>">
+    <form method="get" action="<?= e(url($contractsRoute)) ?>" class="form-grid three" data-ajax-filter data-ajax-target="[data-ajax-results='contracts']">
+      <input type="hidden" name="route" value="<?= e($contractsRoute) ?>">
       <input type="hidden" name="view" value="<?= e($viewMode) ?>">
       <label class="full">جستجو در قرارداد و مشتری<input name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="شماره قرارداد، نام، کد ملی یا موبایل"></label>
       <div class="actions"><button class="btn secondary" type="submit">جستجو</button><span class="proma-ajax-status" data-ajax-status></span></div>
@@ -108,7 +110,7 @@ for ($i = 0; $i < 6; $i++) {
   <?php if ($viewMode === 'list'): ?>
   <div class="table-wrap">
     <table>
-      <thead><tr><?php if (!$readOnly): ?><th>انتخاب</th><?php endif; ?><th>شماره</th><th>مشتری</th><th>مبالغ قرارداد</th><th>سود</th><th>اقساط</th><th>ضامنان</th><th>وضعیت</th><?php if (!$readOnly): ?><th>عملیات</th><?php endif; ?></tr></thead>
+      <thead><tr><?php if (!$readOnly): ?><th>انتخاب</th><?php endif; ?><th>شماره</th><th>مشتری</th><th>مبالغ قرارداد</th><th>سود</th><th>اقساط</th><th>ضامنان</th><th>وضعیت</th><th>عملیات</th></tr></thead>
       <tbody>
       <?php foreach ($contracts as $contract): ?>
         <?php $guarantors = Contract::guarantors($contract['id']); ?>
@@ -126,20 +128,18 @@ for ($i = 0; $i < 6; $i++) {
           <td><?= to_persian_digits($contract['months']) ?></td>
           <td><?= $guarantors ? e(implode('، ', array_column($guarantors, 'full_name'))) : 'ندارد' ?></td>
           <td><span class="badge <?= e(badge_class($contract['status'])) ?>"><?= e(status_label($contract['status'])) ?></span></td>
-          <?php if (!$readOnly): ?>
           <td class="actions">
-            <button class="btn small secondary icon-only" type="button" data-open-modal="edit-contract-<?= (int) $contract['id'] ?>" title="ویرایش" aria-label="ویرایش"><i data-feather="edit-2"></i></button>
+            <?php if (!$readOnly): ?><button class="btn small secondary icon-only" type="button" data-open-modal="edit-contract-<?= (int) $contract['id'] ?>" title="ویرایش" aria-label="ویرایش"><i data-feather="edit-2"></i></button><?php endif; ?>
             <button class="btn small info" type="button" data-open-modal="contract-chart-<?= (int) $contract['id'] ?>">نمودار</button>
             <button class="btn small warning" type="button" data-open-modal="contract-timeline-<?= (int) $contract['id'] ?>">تایم‌لاین</button>
             <a class="btn small secondary" href="<?= e(url('contracts/show/' . $contract['id'])) ?>">جزئیات</a>
-            <button class="btn small info" type="button" data-open-modal="custom-installment-<?= (int) $contract['id'] ?>">قسط دلخواه</button>
+            <?php if (!$readOnly): ?><button class="btn small info" type="button" data-open-modal="custom-installment-<?= (int) $contract['id'] ?>">قسط دلخواه</button><?php endif; ?>
             <a class="btn small success" href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank">چاپ دفترچه</a>
-            <button class="btn small danger icon-only" type="button" data-open-modal="delete-contract-<?= (int) $contract['id'] ?>" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button>
+            <?php if (!$readOnly): ?><button class="btn small danger icon-only" type="button" data-open-modal="delete-contract-<?= (int) $contract['id'] ?>" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button><?php endif; ?>
           </td>
-          <?php endif; ?>
         </tr>
       <?php endforeach; ?>
-      <?php if (!$contracts): ?><tr><td colspan="<?= $readOnly ? 7 : 9 ?>" class="empty">قراردادی ثبت نشده است.</td></tr><?php endif; ?>
+      <?php if (!$contracts): ?><tr><td colspan="<?= $readOnly ? 8 : 9 ?>" class="empty">قراردادی ثبت نشده است.</td></tr><?php endif; ?>
       </tbody>
     </table>
   </div>

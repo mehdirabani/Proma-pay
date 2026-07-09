@@ -412,21 +412,22 @@ class User extends Model
     public static function create(array $data)
     {
         self::ensureProfileColumns();
+        $data = self::prepareUserData($data);
         self::assertUniqueIdentity($data);
         self::execute(
             'INSERT INTO users (role, username, full_name, father_name, issued_from, national_id, mobile, secondary_phone, email, password_hash, status, address, avatar_key, department, is_department_manager, created_at)
              VALUES (:role, :username, :full_name, :father_name, :issued_from, :national_id, :mobile, :secondary_phone, :email, :password_hash, :status, :address, :avatar_key, :department, :is_department_manager, NOW())',
             [
                 'role' => $data['role'],
-                'username' => $data['username'] ?: null,
+                'username' => trim(to_english_digits($data['username'] ?? '')) ?: null,
                 'full_name' => $data['full_name'],
                 'father_name' => trim((string) ($data['father_name'] ?? '')) ?: null,
                 'issued_from' => trim((string) ($data['issued_from'] ?? '')) ?: null,
                 'national_id' => trim(to_english_digits($data['national_id'] ?? '')) ?: null,
-                'mobile' => trim(to_english_digits($data['mobile'] ?? '')) ?: null,
-                'secondary_phone' => trim(to_english_digits($data['secondary_phone'] ?? '')) ?: null,
+                'mobile' => self::normalizePhoneValue($data['mobile'] ?? '') ?: null,
+                'secondary_phone' => self::normalizePhoneValue($data['secondary_phone'] ?? '') ?: null,
                 'email' => $data['email'] ?: null,
-                'password_hash' => password_hash($data['password'] ?: bin2hex(random_bytes(8)), PASSWORD_DEFAULT),
+                'password_hash' => password_hash(($data['password'] ?? '') ?: bin2hex(random_bytes(8)), PASSWORD_DEFAULT),
                 'status' => $data['status'] ?? 'active',
                 'address' => $data['address'] ?? '',
                 'avatar_key' => $data['avatar_key'] ?? null,
@@ -442,8 +443,8 @@ class User extends Model
         self::ensureProfileColumns();
         $checks = [];
         $nationalId = trim(to_english_digits($data['national_id'] ?? ''));
-        $mobile = trim(to_english_digits($data['mobile'] ?? ''));
-        $secondaryPhone = trim(to_english_digits($data['secondary_phone'] ?? ''));
+        $mobile = self::normalizePhoneValue($data['mobile'] ?? '');
+        $secondaryPhone = self::normalizePhoneValue($data['secondary_phone'] ?? '');
         $email = trim((string) ($data['email'] ?? ''));
 
         if ($nationalId !== '') {
@@ -488,17 +489,18 @@ class User extends Model
         if (!$user) {
             return false;
         }
+        $data = self::prepareUserData($data, $user);
         self::assertUniqueIdentity($data, (int) $id);
         $params = [
             'id' => $id,
             'role' => $data['role'] ?? $user['role'],
-            'username' => ($data['username'] ?? $user['username']) ?: null,
+            'username' => trim(to_english_digits($data['username'] ?? $user['username'] ?? '')) ?: null,
             'full_name' => $data['full_name'] ?? $user['full_name'],
             'father_name' => $data['father_name'] ?? ($user['father_name'] ?? null),
             'issued_from' => $data['issued_from'] ?? ($user['issued_from'] ?? null),
             'national_id' => trim(to_english_digits($data['national_id'] ?? $user['national_id'])) ?: null,
-            'mobile' => trim(to_english_digits($data['mobile'] ?? $user['mobile'])) ?: null,
-            'secondary_phone' => trim(to_english_digits($data['secondary_phone'] ?? $user['secondary_phone'])) ?: null,
+            'mobile' => self::normalizePhoneValue($data['mobile'] ?? $user['mobile']) ?: null,
+            'secondary_phone' => self::normalizePhoneValue($data['secondary_phone'] ?? $user['secondary_phone']) ?: null,
             'email' => ($data['email'] ?? $user['email']) ?: null,
             'status' => $data['status'] ?? $user['status'],
             'address' => $data['address'] ?? ($user['address'] ?? ''),
@@ -522,12 +524,88 @@ class User extends Model
         return true;
     }
 
+    protected static function prepareUserData(array $data, array $existing = null)
+    {
+        $role = $data['role'] ?? ($existing['role'] ?? '');
+        $nationalId = trim(to_english_digits($data['national_id'] ?? ($existing['national_id'] ?? '')));
+        $mobile = self::normalizePhoneValue($data['mobile'] ?? ($existing['mobile'] ?? ''));
+        $username = trim(to_english_digits($data['username'] ?? ($existing['username'] ?? '')));
+
+        if ($role === 'customer') {
+            if ($username === '' && $nationalId !== '') {
+                $data['username'] = $nationalId;
+            }
+            if ($existing === null && trim((string) ($data['password'] ?? '')) === '' && strlen($mobile) >= 4) {
+                $data['password'] = substr($mobile, -4);
+            }
+        }
+
+        if (array_key_exists('mobile', $data)) {
+            $data['mobile'] = $mobile;
+        }
+        if (array_key_exists('secondary_phone', $data)) {
+            $data['secondary_phone'] = self::normalizePhoneValue($data['secondary_phone'] ?? '');
+        }
+        if (array_key_exists('national_id', $data)) {
+            $data['national_id'] = $nationalId;
+        }
+        return $data;
+    }
+
+    protected static function normalizePhoneValue($value)
+    {
+        $digits = preg_replace('/\D+/', '', to_english_digits((string) $value));
+        if (strlen($digits) === 10 && strpos($digits, '9') === 0) {
+            $digits = '0' . $digits;
+        }
+        return $digits;
+    }
+
+    public static function syncCustomerLoginDefaults($id, array $user = null, $resetDefaultPassword = false)
+    {
+        self::ensureProfileColumns();
+        $user = $user ?: self::find((int) $id);
+        if (!$user || ($user['role'] ?? '') !== 'customer') {
+            return false;
+        }
+
+        $updates = [];
+        $params = [];
+        $nationalId = trim(to_english_digits($user['national_id'] ?? ''));
+        $mobile = self::normalizePhoneValue($user['mobile'] ?? '');
+        if (trim((string) ($user['username'] ?? '')) === '' && $nationalId !== '') {
+            $duplicate = self::fetch('SELECT id FROM users WHERE username = ? AND id != ? LIMIT 1', [$nationalId, (int) $id]);
+            if (!$duplicate) {
+                $updates[] = 'username = ?';
+                $params[] = $nationalId;
+            }
+        }
+        if ($resetDefaultPassword && strlen($mobile) >= 4) {
+            $defaultPassword = substr($mobile, -4);
+            if (!password_verify($defaultPassword, $user['password_hash'] ?? '')) {
+                $updates[] = 'password_hash = ?';
+                $params[] = password_hash($defaultPassword, PASSWORD_DEFAULT);
+            }
+        }
+        if (!$updates) {
+            return true;
+        }
+        $updates[] = 'updated_at = NOW()';
+        $params[] = (int) $id;
+        try {
+            self::execute('UPDATE users SET ' . implode(', ', $updates) . ' WHERE id = ?', $params);
+            return true;
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
     protected static function assertUniqueIdentity(array $data, $ignoreId = null)
     {
         $checks = [
             'username' => ['label' => 'نام کاربری', 'value' => trim((string) ($data['username'] ?? ''))],
             'national_id' => ['label' => 'کد ملی', 'value' => trim(to_english_digits($data['national_id'] ?? ''))],
-            'mobile' => ['label' => 'موبایل', 'value' => trim(to_english_digits($data['mobile'] ?? ''))],
+            'mobile' => ['label' => 'موبایل', 'value' => self::normalizePhoneValue($data['mobile'] ?? '')],
             'email' => ['label' => 'ایمیل', 'value' => trim((string) ($data['email'] ?? ''))],
         ];
         foreach ($checks as $column => $check) {

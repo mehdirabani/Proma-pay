@@ -4,7 +4,8 @@ class ContractsController extends Controller
 {
     public function index()
     {
-        $this->requireRole('admin');
+        $this->requireRole(['admin', 'operator']);
+        $readOnly = Auth::role() === 'operator';
         $today = date('Y-m-d');
         $result = Contract::paginated([
             'search' => $_GET['q'] ?? null,
@@ -12,14 +13,17 @@ class ContractsController extends Controller
             'per_page' => 24,
         ]);
         $this->render('contracts/index', [
-            'title' => 'مدیریت قراردادها',
+            'title' => $readOnly ? 'قراردادها' : 'مدیریت قراردادها',
             'contracts' => $result['items'],
             'pagination' => $result,
-            'customers' => User::customers(),
-            'operators' => User::all('operator'),
+            'customers' => $readOnly ? [] : User::customers(),
+            'operators' => $readOnly ? [] : User::all('operator'),
             'settings' => Settings::allKeyed(),
             'defaultStartDate' => jdate($today),
             'defaultFirstDueDate' => jdate(FinanceHelper::addMonths($today, 1)),
+            'readOnly' => $readOnly,
+            'contractsRoute' => 'contracts',
+            'readOnlyTitle' => 'فهرست قراردادها',
         ], is_ajax_request() ? null : 'app');
     }
 
@@ -447,7 +451,7 @@ class ContractsController extends Controller
 
     public function search()
     {
-        $this->requireRole('admin');
+        $this->requireRole(['admin', 'operator']);
         $query = trim(to_english_digits((string) ($_GET['q'] ?? '')));
         if (mb_strlen($query, 'UTF-8') < 2) {
             $this->json(['ok' => true, 'items' => []]);
@@ -484,7 +488,7 @@ class ContractsController extends Controller
             $this->render('errors/403', ['title' => 'دسترسی غیرمجاز'], 'app');
             return;
         }
-        if (Auth::role() !== 'admin' && Auth::role() !== 'customer') {
+        if (!in_array(Auth::role(), ['admin', 'operator', 'customer'], true)) {
             http_response_code(403);
             $this->render('errors/403', ['title' => 'دسترسی غیرمجاز'], 'app');
             return;
@@ -533,7 +537,7 @@ class ContractsController extends Controller
             'secondary_phone' => $_POST['new_customer_secondary_phone'] ?? '',
             'address' => $_POST['new_customer_address'] ?? '',
             'email' => '',
-            'password' => bin2hex(random_bytes(8)),
+            'password' => '',
             'status' => 'active',
         ];
         $existing = User::findDuplicateCustomer($payload);

@@ -56,7 +56,7 @@ class PreparedExcelImportService
                         'mobile' => $mobile,
                         'secondary_phone' => $secondary,
                         'email' => '',
-                        'password' => bin2hex(random_bytes(8)),
+                        'password' => '',
                         'status' => 'active',
                         'address' => '',
                     ]);
@@ -215,10 +215,12 @@ class PreparedExcelImportService
             }
         }
         if (!$updates) {
+            User::syncCustomerLoginDefaults((int) $id, $existing);
             return;
         }
         $params[] = (int) $id;
         Model::execute('UPDATE users SET ' . implode(', ', $updates) . ', updated_at = NOW() WHERE id = ?', $params);
+        User::syncCustomerLoginDefaults((int) $id);
     }
 
     protected static function resolveCustomerId(array $row, array $customerMap)

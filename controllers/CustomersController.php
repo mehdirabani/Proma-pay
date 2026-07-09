@@ -55,7 +55,7 @@ class CustomersController extends Controller
                 'mobile' => $_POST['mobile'] ?? '',
                 'secondary_phone' => $_POST['secondary_phone'] ?? '',
                 'email' => '',
-                'password' => bin2hex(random_bytes(8)),
+                'password' => '',
                 'status' => $_POST['status'] ?? 'active',
             ]);
             set_flash('success', 'مشتری با موفقیت ثبت شد.');

@@ -183,7 +183,7 @@ class AiController extends Controller
                         'mobile' => $payload['mobile'],
                         'secondary_phone' => $payload['secondary_phone'] ?? '',
                         'email' => '',
-                        'password' => bin2hex(random_bytes(8)),
+                        'password' => '',
                         'status' => 'active',
                     ]);
                     $applied[] = 'مشتری شماره ' . to_persian_digits($id) . ' ساخته شد.';

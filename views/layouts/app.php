@@ -48,6 +48,7 @@ if (Auth::role() === 'admin') {
         ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
         ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
+        ['contracts', 'قراردادها', 'stroke-project', 'fill-project'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
     ];
 } elseif (Auth::role() === 'lawyer') {

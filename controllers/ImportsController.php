@@ -543,7 +543,7 @@ class ImportsController extends Controller
                 'mobile' => $mobile,
                 'secondary_phone' => $customer['secondary_phone'] ?? '',
                 'email' => '',
-                'password' => bin2hex(random_bytes(8)),
+                'password' => '',
                 'status' => $customer['status'] ?? 'active',
             ]);
             if ($nationalId !== '') {
