@@ -2,8 +2,27 @@
 
 class OperatorCall extends Model
 {
+    protected static $schemaReady = false;
+
+    public static function ensureSchema()
+    {
+        if (self::$schemaReady) {
+            return;
+        }
+        try {
+            self::execute('ALTER TABLE operator_calls ADD COLUMN installment_id BIGINT UNSIGNED NULL AFTER contract_id');
+        } catch (Throwable $e) {
+        }
+        try {
+            self::execute('ALTER TABLE operator_calls ADD COLUMN promise_payment_date DATE NULL AFTER next_followup_date');
+        } catch (Throwable $e) {
+        }
+        self::$schemaReady = true;
+    }
+
     public static function all($operatorId = null)
     {
+        self::ensureSchema();
         $params = [];
         $where = '';
         if ($operatorId) {
@@ -21,16 +40,17 @@ class OperatorCall extends Model
         );
     }
 
-    public static function createCall($operatorId, $contractId, $result, $notes, $nextFollowupDate)
+    public static function createCall($operatorId, $contractId, $result, $notes, $nextFollowupDate = null, $promisePaymentDate = null, $installmentId = null)
     {
+        self::ensureSchema();
         $contract = Contract::find($contractId);
         if (!$contract) {
             return false;
         }
         self::execute(
-            'INSERT INTO operator_calls (operator_id, customer_id, contract_id, call_result, notes, next_followup_date, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, NOW())',
-            [(int) $operatorId, $contract['customer_id'], (int) $contractId, $result, $notes, $nextFollowupDate ?: null]
+            'INSERT INTO operator_calls (operator_id, customer_id, contract_id, installment_id, call_result, notes, next_followup_date, promise_payment_date, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+            [(int) $operatorId, $contract['customer_id'], (int) $contractId, $installmentId ?: null, trim((string) $result), trim((string) $notes), $nextFollowupDate ?: null, $promisePaymentDate ?: null]
         );
         return true;
     }

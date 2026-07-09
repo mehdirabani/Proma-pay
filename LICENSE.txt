@@ -1,0 +1,6 @@
+Proma Pay proprietary release package.
+
+Copyright (c) 2026 Mehdi Rabani.
+
+This package is prepared for marketplace distribution. Redistribution,
+resale, or reuse outside the purchased license terms is not permitted.

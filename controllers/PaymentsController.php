@@ -10,11 +10,12 @@ class PaymentsController extends Controller
             'date_to' => parse_jalali_date($_GET['date_to'] ?? '') ?: null,
             'contract_number' => $_GET['contract_number'] ?? null,
             'customer' => $_GET['customer'] ?? null,
+            'limit' => 80,
         ];
         $this->render('payments/index', [
             'title' => 'گزارش پرداخت‌ها',
             'payments' => Payment::logs($filters),
-        ]);
+        ], is_ajax_request() ? null : 'app');
     }
 
     public function zibal()
@@ -32,7 +33,7 @@ class PaymentsController extends Controller
             redirect('portal/installments');
         }
         $settings = Settings::allKeyed();
-        $base = rtrim($settings['callback_base_url'] ?: ((isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . dirname($_SERVER['SCRIPT_NAME'])), '/');
+        $base = rtrim($settings['callback_base_url'] ?: detected_base_url(), '/');
         $callback = $base . '/index.php?route=payments/callback';
         $client = new ZibalClient($settings['zibal_merchant']);
         $request = $client->request($amount, $callback, 'پرداخت قسط قرارداد ' . $installment['contract_number']);
@@ -42,6 +43,89 @@ class PaymentsController extends Controller
         }
         Payment::createPendingGateway($installment['id'], $installment['contract_id'], Auth::id(), $amount, $request['track_id']);
         redirect_raw($request['start_url']);
+    }
+
+    public function cardTransfer()
+    {
+        $this->requireRole('customer');
+        $this->onlyPost();
+        if ((string) Settings::get('card_transfer_enabled', '1') !== '1') {
+            set_flash('error', 'پرداخت کارت به کارت در حال حاضر فعال نیست.');
+            redirect('portal/installments');
+        }
+        $installment = Installment::find((int) ($_POST['installment_id'] ?? 0));
+        if (!$installment || (int) $installment['customer_id'] !== (int) Auth::id()) {
+            set_flash('error', 'قسط برای پرداخت پیدا نشد.');
+            redirect('portal/installments');
+        }
+        try {
+            $path = UploadHelper::storeImage($_FILES['receipt'] ?? [], 'payment_receipts/' . Auth::id());
+            if (!$path) {
+                throw new InvalidArgumentException('تصویر رسید پرداخت را انتخاب کنید.');
+            }
+            PaymentReceipt::submit((int) $installment['id'], Auth::id(), $_POST['amount'] ?? $installment['payable'], $path);
+            set_flash('success', 'رسید پرداخت برای بررسی مدیریت ثبت شد.');
+        } catch (Throwable $e) {
+            if (!empty($path)) {
+                UploadHelper::deleteRelative($path);
+            }
+            set_flash('error', $e->getMessage());
+        }
+        redirect('portal/installments');
+    }
+
+    public function receiptFile($id)
+    {
+        Auth::requireLogin();
+        $receipt = PaymentReceipt::find((int) $id);
+        if (!$receipt || empty($receipt['receipt_path'])) {
+            http_response_code(404);
+            echo 'فایل پیدا نشد.';
+            return;
+        }
+        if (Auth::role() !== 'admin' && (int) $receipt['customer_id'] !== (int) Auth::id()) {
+            http_response_code(403);
+            echo 'دسترسی غیرمجاز';
+            return;
+        }
+        $path = UploadHelper::absolutePath($receipt['receipt_path']);
+        if (!$path) {
+            http_response_code(404);
+            echo 'فایل پیدا نشد.';
+            return;
+        }
+        $mime = function_exists('mime_content_type') ? (mime_content_type($path) ?: 'application/octet-stream') : 'application/octet-stream';
+        header('Content-Type: ' . $mime);
+        header('Content-Disposition: inline; filename="' . basename($path) . '"');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
+    }
+
+    public function approveReceipt($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            PaymentReceipt::approve((int) $id, Auth::id(), $_POST['review_note'] ?? '', $_POST['approved_amount'] ?? null);
+            set_flash('success', 'رسید پرداخت تأیید و فایل آن حذف شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('review', ['tab' => 'receipts']);
+    }
+
+    public function rejectReceipt($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            PaymentReceipt::reject((int) $id, Auth::id(), $_POST['review_note'] ?? '');
+            set_flash('success', 'رسید پرداخت رد و فایل آن حذف شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('review', ['tab' => 'receipts']);
     }
 
     public function correct($id)

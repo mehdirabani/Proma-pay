@@ -11,8 +11,7 @@ class DashboardController extends Controller
             return;
         }
         if ($role === 'operator') {
-            $this->operator();
-            return;
+            redirect('overdue');
         }
         if ($role === 'lawyer') {
             $this->lawyer();

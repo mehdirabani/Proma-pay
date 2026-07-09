@@ -40,16 +40,57 @@ class PortalController extends Controller
         ]);
     }
 
+    public function history()
+    {
+        $this->requireRole('customer');
+        $customerId = Auth::id();
+        $contracts = Contract::all(['customer_id' => $customerId]);
+        $contractIds = array_map('intval', array_column($contracts, 'id'));
+        $statusCounts = [];
+        foreach ($contracts as $contract) {
+            $status = $contract['status'] ?? 'unknown';
+            $statusCounts[$status] = ($statusCounts[$status] ?? 0) + 1;
+        }
+        $itemCount = 0;
+        if ($contractIds) {
+            try {
+                $placeholders = implode(',', array_fill(0, count($contractIds), '?'));
+                $itemCount = (int) (Model::fetch("SELECT COUNT(*) AS total FROM contract_items WHERE contract_id IN ({$placeholders})", $contractIds)['total'] ?? 0);
+            } catch (Throwable $e) {
+                $itemCount = 0;
+            }
+        }
+        $this->render('portal/history', [
+            'title' => 'سوابق خرید',
+            'contracts' => $contracts,
+            'payments' => Payment::recentForCustomer($customerId, 30),
+            'timeline' => Installment::all(['customer_id' => $customerId]),
+            'summary' => [
+                'contracts' => count($contracts),
+                'purchases' => $itemCount ?: count($contracts),
+                'last_purchase' => $contracts[0] ?? null,
+                'statuses' => $statusCounts,
+            ],
+        ]);
+    }
+
     public function guaranteed()
     {
         $this->requireRole('customer');
+        $result = Contract::paginated([
+            'guarantor_id' => Auth::id(),
+            'search' => $_GET['q'] ?? null,
+            'page' => $_GET['page'] ?? 1,
+            'per_page' => 24,
+        ]);
         $this->render('contracts/index', [
             'title' => 'قراردادهای ضمانت شده',
-            'contracts' => Contract::all(['guarantor_id' => Auth::id(), 'search' => $_GET['q'] ?? null]),
+            'contracts' => $result['items'],
+            'pagination' => $result,
             'customers' => [],
             'operators' => [],
             'settings' => Settings::allKeyed(),
             'readOnly' => true,
-        ]);
+        ], is_ajax_request() ? null : 'app');
     }
 }

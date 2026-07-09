@@ -10,7 +10,7 @@ class Auth
             session_set_cookie_params([
                 'lifetime' => 0,
                 'path' => '/',
-                'secure' => !empty($_SERVER['HTTPS']),
+                'secure' => is_https_request(),
                 'httponly' => true,
                 'samesite' => 'Lax',
             ]);
@@ -42,7 +42,7 @@ class Auth
         $user = Model::fetch(
             "SELECT * FROM users
              WHERE status = 'active'
-             AND role IN ('admin','operator','lawyer')
+             AND role IN ('admin','operator','lawyer','customer')
              AND (username = :username OR mobile = :mobile OR national_id = :national_id OR email = :email)
              LIMIT 1",
             [
@@ -152,5 +152,10 @@ class Auth
             $controller->render('errors/403', ['title' => 'دسترسی غیرمجاز'], 'app');
             exit;
         }
+    }
+
+    public static function canViewUsers()
+    {
+        return current_user_can_view_users();
     }
 }

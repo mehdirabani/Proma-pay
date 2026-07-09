@@ -133,6 +133,21 @@ class Payment extends Model
         );
     }
 
+    public static function forLegalCase($contractId, $customerId)
+    {
+        self::ensureCorrectionSchema();
+        return self::fetchAll(
+            "SELECT p.*, c.customer_id, c.contract_number, u.full_name AS customer_name, i.installment_number
+             FROM payments p
+             JOIN contracts c ON c.id = p.contract_id
+             JOIN users u ON u.id = c.customer_id
+             LEFT JOIN installments i ON i.id = p.installment_id
+             WHERE p.contract_id = ? AND c.customer_id = ? AND COALESCE(p.is_corrected, 0) = 0
+             ORDER BY COALESCE(p.payment_date, DATE(p.paid_at), DATE(p.created_at)) DESC, p.id DESC",
+            [(int) $contractId, (int) $customerId]
+        );
+    }
+
     public static function monthlyTrendForContract($contractId, $months = 6)
     {
         self::ensureCorrectionSchema();
@@ -219,6 +234,9 @@ class Payment extends Model
                 LEFT JOIN users cu ON cu.id = p.corrected_by"
             . ($where ? ' WHERE ' . implode(' AND ', $where) : '')
             . ' ORDER BY COALESCE(p.payment_date, DATE(p.paid_at), DATE(p.created_at)) DESC, p.id DESC';
+        if (!empty($filters['limit'])) {
+            $sql .= ' LIMIT ' . max(1, min(200, (int) $filters['limit']));
+        }
         return self::fetchAll($sql, $params);
     }
 
@@ -363,7 +381,7 @@ class Payment extends Model
             );
             self::applyToInstallment($payment['installment_id']);
             self::storeSnapshot((int) $payment['id'], $before, self::installmentState((int) $payment['installment_id']));
-            Notification::create($payment['user_id'], 'پرداخت جدید ثبت شد', 'پرداخت شما با موفقیت تأیید شد.', 'payment', url('payments'));
+            Notification::create($payment['user_id'], 'پرداخت جدید ثبت شد', 'پرداخت شما با موفقیت تأیید شد.', 'payment', url('portal/installments'));
             self::commit();
             return ['ok' => true, 'message' => 'پرداخت با موفقیت ثبت شد.'];
         } catch (Throwable $e) {

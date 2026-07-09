@@ -87,10 +87,13 @@ $actionTypeLabels = [
 <?php endif; ?>
 
 <section class="card" style="margin-top:16px">
-  <div class="card-header"><h2>سوابق دستیار</h2></div>
+  <div class="card-header">
+    <h2>سوابق دستیار</h2>
+    <?php if (!empty($logs)): ?><button class="btn small danger" type="button" data-open-modal="clear-ai-logs">حذف همه سوابق</button><?php endif; ?>
+  </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>دستور</th><th>وضعیت</th><th>مدیر</th><th>تاریخ</th><th>نتیجه</th></tr></thead>
+      <thead><tr><th>دستور</th><th>وضعیت</th><th>مدیر</th><th>تاریخ</th><th>نتیجه</th><th>عملیات</th></tr></thead>
       <tbody>
       <?php foreach (($logs ?? []) as $log): ?>
         <tr>
@@ -99,10 +102,49 @@ $actionTypeLabels = [
           <td><?= e($log['full_name']) ?></td>
           <td><?= e(jdate($log['created_at'])) ?></td>
           <td><?= e($log['applied_summary'] ?: '-') ?></td>
+          <td><button class="btn small danger icon-only" type="button" data-open-modal="delete-ai-log-<?= (int) $log['id'] ?>" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button></td>
         </tr>
       <?php endforeach; ?>
-      <?php if (empty($logs)): ?><tr><td colspan="5" class="empty">هنوز تحلیلی ثبت نشده است.</td></tr><?php endif; ?>
+      <?php if (empty($logs)): ?><tr><td colspan="6" class="empty">هنوز تحلیلی ثبت نشده است.</td></tr><?php endif; ?>
       </tbody>
     </table>
   </div>
 </section>
+
+<?php foreach (($logs ?? []) as $log): ?>
+  <div class="modal" id="delete-ai-log-<?= (int) $log['id'] ?>">
+    <div class="modal-content">
+      <div class="modal-header"><h3>حذف تحلیل</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+      <form method="post" action="<?= e(url('ai/delete/' . (int) $log['id'])) ?>">
+        <div class="modal-body grid">
+          <?= csrf_field() ?>
+          <?php $deleteCode = ConfirmationCode::hint('ai_log_delete_' . (int) $log['id']); ?>
+          <div class="notice error">این تحلیل و داده JSON ذخیره‌شده آن حذف می‌شود. برای تایید عدد <strong class="ltr"><?= e($deleteCode) ?></strong> را وارد کنید.</div>
+          <label>عدد تایید<input name="confirm_text" required inputmode="numeric" autocomplete="off" placeholder="<?= e($deleteCode) ?>"></label>
+        </div>
+        <div class="modal-footer">
+          <button class="btn danger icon-only" type="submit" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button>
+          <button class="btn secondary" type="button" data-close-modal>بستن</button>
+        </div>
+      </form>
+    </div>
+  </div>
+<?php endforeach; ?>
+
+<div class="modal" id="clear-ai-logs">
+  <div class="modal-content">
+    <div class="modal-header"><h3>حذف همه سوابق هوش مصنوعی</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+    <form method="post" action="<?= e(url('ai/clear')) ?>">
+      <div class="modal-body grid">
+        <?= csrf_field() ?>
+        <?php $clearCode = ConfirmationCode::hint('ai_clear_logs'); ?>
+        <div class="notice error">همه تحلیل‌ها، داده‌های JSON و پیشنهادهای ذخیره‌شده دستیار حذف می‌شوند. برای تایید عدد <strong class="ltr"><?= e($clearCode) ?></strong> را وارد کنید.</div>
+        <label>عدد تایید<input name="clear_confirm_text" required inputmode="numeric" autocomplete="off" placeholder="<?= e($clearCode) ?>"></label>
+      </div>
+      <div class="modal-footer">
+        <button class="btn danger" type="submit">حذف همه</button>
+        <button class="btn secondary" type="button" data-close-modal>بستن</button>
+      </div>
+    </form>
+  </div>
+</div>

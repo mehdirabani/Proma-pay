@@ -102,37 +102,44 @@ class ContractDocument extends Model
 
     public static function variables()
     {
+        return array_keys(self::variableDescriptions());
+    }
+
+    public static function variableDescriptions()
+    {
         return [
-            '{{contract_number}}',
-            '{{contract_date}}',
-            '{{company_name}}',
-            '{{company_representative_name}}',
-            '{{company_representative_national_id}}',
-            '{{company_address}}',
-            '{{company_postal_code}}',
-            '{{company_phone}}',
-            '{{customer_full_name}}',
-            '{{customer_father_name}}',
-            '{{customer_national_id}}',
-            '{{customer_issued_from}}',
-            '{{customer_mobile}}',
-            '{{customer_secondary_phone}}',
-            '{{customer_address}}',
-            '{{items_table}}',
-            '{{installments_guarantees_table}}',
-            '{{guarantors_section}}',
-            '{{guarantee_type}}',
-            '{{guarantee_count}}',
-            '{{guarantee_serial}}',
-            '{{guarantee_description}}',
-            '{{installment_count}}',
-            '{{total_contract_amount}}',
-            '{{down_payment_amount}}',
-            '{{remaining_amount}}',
-            '{{monthly_penalty_rate}}',
-            '{{first_due_date}}',
-            '{{last_due_date}}',
-            '{{signature_section}}',
+            '{{contract_number}}' => 'شماره قرارداد',
+            '{{contract_date}}' => 'تاریخ قرارداد',
+            '{{company_name}}' => 'نام مجموعه',
+            '{{company_representative_name}}' => 'نام نماینده مجموعه',
+            '{{company_representative_national_id}}' => 'کد ملی نماینده مجموعه',
+            '{{company_address}}' => 'آدرس مجموعه',
+            '{{company_postal_code}}' => 'کد پستی مجموعه',
+            '{{company_phone}}' => 'شماره تماس مجموعه',
+            '{{customer_full_name}}' => 'نام و نام خانوادگی مشتری',
+            '{{customer_father_name}}' => 'نام پدر مشتری',
+            '{{customer_national_id}}' => 'کد ملی مشتری',
+            '{{customer_issued_from}}' => 'محل صدور مشتری',
+            '{{customer_mobile}}' => 'شماره موبایل مشتری',
+            '{{customer_secondary_phone}}' => 'شماره تماس دوم مشتری',
+            '{{customer_address}}' => 'آدرس مشتری',
+            '{{items_table}}' => 'جدول کالاهای قرارداد',
+            '{{installments_guarantees_table}}' => 'جدول اقساط و ضمانت',
+            '{{guarantors_section}}' => 'بخش مشخصات ضامن‌ها',
+            '{{guarantee_type}}' => 'نوع ضمانت',
+            '{{guarantee_count}}' => 'تعداد ضمانت',
+            '{{guarantee_serial}}' => 'شناسه چک یا سفته',
+            '{{guarantee_description}}' => 'توضیحات ضمانت',
+            '{{installment_count}}' => 'تعداد اقساط',
+            '{{total_contract_amount}}' => 'مبلغ اصل قرارداد',
+            '{{down_payment_amount}}' => 'مبلغ پیش‌پرداخت',
+            '{{remaining_amount}}' => 'مانده قابل تقسیط',
+            '{{monthly_penalty_rate}}' => 'نرخ جریمه عادی ماهانه',
+            '{{legal_monthly_penalty_rate}}' => 'نرخ جریمه حقوقی ماهانه',
+            '{{legal_penalty_clause}}' => 'متن تایید جریمه حقوقی',
+            '{{first_due_date}}' => 'تاریخ اولین سررسید',
+            '{{last_due_date}}' => 'تاریخ آخرین سررسید',
+            '{{signature_section}}' => 'محل امضاها',
         ];
     }
 
@@ -170,7 +177,9 @@ class ContractDocument extends Model
 
 ماده ۴ - شرایط تأخیر در پرداخت و عواقب آن
 
-- در صورت تأخیر در پرداخت هر قسط، بابت هر ماه دیرکرد، {{monthly_penalty_rate}} درصد مرکب از مبلغ قسط به عنوان جریمه تأخیر اضافه می‌شود.
+- در صورت تأخیر در پرداخت هر قسط، تا پیش از ارجاع یا ثبت پرونده حقوقی، بابت هر ماه دیرکرد، {{monthly_penalty_rate}} درصد از مانده قسط به عنوان جریمه تأخیر عادی محاسبه می‌شود.
+- در صورت ورود قرارداد به مرحله حقوقی یا شکایت، از همان تاریخ به بعد بابت هر ماه دیرکرد، {{legal_monthly_penalty_rate}} درصد از مانده قسط به عنوان جریمه تأخیر حقوقی محاسبه می‌شود.
+- {{legal_penalty_clause}}
 - در صورت تأخیر بیش از ۲۰ روز، موبایل پروما مجاز است کالای امانت را بازپس گیرد و ضمانت ارائه‌شده را وصول نماید.
 - اگر ظرف ۷ روز پس از اخطار رسمی، کالای امانت در شرایط اولیه بازگردانده نشود، موبایل پروما حق شکایت و اعلام سرقت را دارد.
 - در صورت نقص یا خسارت به کالای امانت، امانت‌دار موظف به جبران خسارت طبق نظر کارشناس رسمی می‌باشد.
@@ -368,6 +377,7 @@ TEXT;
         $firstGuarantee = $guarantees[0] ?? [];
         $lastInstallment = $installments ? end($installments) : null;
         $remaining = max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0));
+        $legalPenaltyClause = self::legalPenaltyClause($settings);
 
         $html = nl2br(e($template), false);
         $replace = [
@@ -398,6 +408,8 @@ TEXT;
             '{{down_payment_amount}}' => money_toman($contract['down_payment_amount'] ?? 0),
             '{{remaining_amount}}' => money_toman($remaining),
             '{{monthly_penalty_rate}}' => e(to_persian_digits($settings['monthly_penalty_rate'] ?? $contract['monthly_interest_rate'] ?? '0')),
+            '{{legal_monthly_penalty_rate}}' => e(to_persian_digits($settings['legal_monthly_penalty_rate'] ?? $settings['monthly_penalty_rate'] ?? '0')),
+            '{{legal_penalty_clause}}' => e($legalPenaltyClause),
             '{{first_due_date}}' => e(jdate($contract['first_due_date'])),
             '{{last_due_date}}' => e($lastInstallment ? jdate($lastInstallment['due_date']) : ''),
             '{{signature_section}}' => self::signatureSection($guarantorPeople),
@@ -405,7 +417,28 @@ TEXT;
         foreach ($replace as $placeholder => $value) {
             $html = str_replace($placeholder, $value, $html);
         }
+        if (!self::templateContainsLegalPenalty($template)) {
+            $html .= '<br><br>' . nl2br(e($legalPenaltyClause), false);
+        }
         return '<div class="contract-document-body">' . $html . '</div>';
+    }
+
+    protected static function legalPenaltyClause(array $settings)
+    {
+        $clause = trim((string) ($settings['contract_legal_penalty_clause'] ?? ''));
+        if ($clause === '') {
+            $clause = 'اینجانب امانت‌دار اعلام می‌کنم بند جریمه دیرکرد عادی و جریمه دیرکرد مرحله حقوقی را مطالعه کرده و می‌پذیرم. تا پیش از ثبت یا ارجاع پرونده حقوقی، جریمه دیرکرد با نرخ عادی ماهانه محاسبه می‌شود؛ از زمان ورود قرارداد به مرحله حقوقی یا شکایت، جریمه دیرکرد با نرخ حقوقی ماهانه محاسبه خواهد شد.';
+        }
+        return strtr($clause, [
+            '{{monthly_penalty_rate}}' => to_persian_digits($settings['monthly_penalty_rate'] ?? '0'),
+            '{{legal_monthly_penalty_rate}}' => to_persian_digits($settings['legal_monthly_penalty_rate'] ?? $settings['monthly_penalty_rate'] ?? '0'),
+        ]);
+    }
+
+    protected static function templateContainsLegalPenalty($template)
+    {
+        return strpos((string) $template, '{{legal_monthly_penalty_rate}}') !== false
+            || strpos((string) $template, '{{legal_penalty_clause}}') !== false;
     }
 
     public static function log($contractId, $type, $oldValue = null, $newValue = null, $reason = '', $userId = null)

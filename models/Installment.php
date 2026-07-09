@@ -10,6 +10,10 @@ class Installment extends Model
             return;
         }
         try {
+            self::execute('ALTER TABLE contracts ADD COLUMN legal_status VARCHAR(30) NULL AFTER assigned_operator_id');
+        } catch (Throwable $e) {
+        }
+        try {
             self::execute('ALTER TABLE installments ADD COLUMN notes TEXT NULL AFTER status');
         } catch (Throwable $e) {
         }
@@ -19,6 +23,14 @@ class Installment extends Model
         }
         try {
             self::execute('ALTER TABLE installments ADD COLUMN is_custom TINYINT(1) NOT NULL DEFAULT 0 AFTER guarantee_serial');
+        } catch (Throwable $e) {
+        }
+        try {
+            self::execute('ALTER TABLE installments ADD COLUMN custom_title VARCHAR(190) NULL AFTER is_custom');
+        } catch (Throwable $e) {
+        }
+        try {
+            self::execute('ALTER TABLE installments ADD COLUMN custom_description TEXT NULL AFTER custom_title');
         } catch (Throwable $e) {
         }
         self::$schemaReady = true;
@@ -46,10 +58,14 @@ class Installment extends Model
             $where[] = '(c.contract_number LIKE ? OR u.full_name LIKE ? OR u.national_id LIKE ? OR u.mobile LIKE ?)';
             array_push($params, $needle, $needle, $needle, $needle);
         }
+        self::appendAdvancedFilters($filters, $where, $params);
         $orderBy = !empty($filters['custom_last'])
             ? 'COALESCE(i.is_custom, 0) ASC, i.installment_number ASC, i.due_date ASC, i.id ASC'
             : 'i.due_date ASC, i.id ASC';
-        $sql = "SELECT i.*, c.contract_number, c.customer_id, u.full_name AS customer_name, u.mobile, u.national_id
+        $sql = "SELECT i.*, c.contract_number, c.customer_id, c.status AS contract_status, c.legal_status AS contract_legal_status,
+                u.full_name AS customer_name, u.mobile, u.national_id,
+                (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_case_count,
+                (SELECT MIN(DATE(lc.created_at)) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_started_at
                 FROM installments i
                 JOIN contracts c ON c.id = i.contract_id
                 JOIN users u ON u.id = c.customer_id"
@@ -59,11 +75,108 @@ class Installment extends Model
         return self::withPreview($rows);
     }
 
+    public static function filtered(array $filters = [])
+    {
+        self::ensureSchema();
+        $params = [];
+        $where = [];
+        if (!empty($filters['search'])) {
+            $needle = '%' . to_english_digits($filters['search']) . '%';
+            $where[] = '(c.contract_number LIKE ? OR u.full_name LIKE ? OR u.national_id LIKE ? OR u.mobile LIKE ? OR u.secondary_phone LIKE ?)';
+            array_push($params, $needle, $needle, $needle, $needle, $needle);
+        }
+        self::appendAdvancedFilters($filters, $where, $params);
+        $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+        $count = self::fetch(
+            "SELECT COUNT(*) AS total
+             FROM installments i
+             JOIN contracts c ON c.id = i.contract_id
+             JOIN users u ON u.id = c.customer_id
+             {$whereSql}",
+            $params
+        );
+        $total = (int) ($count['total'] ?? 0);
+        $perPage = max(10, min(100, (int) ($filters['per_page'] ?? 20)));
+        $page = max(1, (int) ($filters['page'] ?? 1));
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $pages);
+        $offset = ($page - 1) * $perPage;
+        $rows = self::fetchAll(
+            "SELECT i.*, c.contract_number, c.customer_id, c.assigned_operator_id, c.status AS contract_status, c.legal_status AS contract_legal_status,
+             u.full_name AS customer_name, u.mobile, u.national_id,
+             (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_case_count,
+             (SELECT MIN(DATE(lc.created_at)) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_started_at
+             FROM installments i
+             JOIN contracts c ON c.id = i.contract_id
+             JOIN users u ON u.id = c.customer_id
+             {$whereSql}
+             ORDER BY i.due_date ASC, i.id ASC
+             LIMIT {$perPage} OFFSET {$offset}",
+            $params
+        );
+        return [
+            'items' => self::withPreview($rows),
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'per_page' => $perPage,
+        ];
+    }
+
+    protected static function appendAdvancedFilters(array $filters, array &$where, array &$params)
+    {
+        foreach ([
+            'customer_name' => 'u.full_name',
+            'contract_number' => 'c.contract_number',
+            'mobile' => 'u.mobile',
+            'national_id' => 'u.national_id',
+        ] as $key => $column) {
+            if (!empty($filters[$key])) {
+                $where[] = "{$column} LIKE ?";
+                $params[] = '%' . to_english_digits($filters[$key]) . '%';
+            }
+        }
+        if (!empty($filters['status'])) {
+            $where[] = 'i.status = ?';
+            $params[] = $filters['status'];
+        }
+        if (!empty($filters['due_from'])) {
+            $where[] = 'i.due_date >= ?';
+            $params[] = $filters['due_from'];
+        }
+        if (!empty($filters['due_to'])) {
+            $where[] = 'i.due_date <= ?';
+            $params[] = $filters['due_to'];
+        }
+        if (isset($filters['amount_min']) && $filters['amount_min'] !== '') {
+            $where[] = 'i.base_amount >= ?';
+            $params[] = normalize_money($filters['amount_min']);
+        }
+        if (isset($filters['amount_max']) && $filters['amount_max'] !== '') {
+            $where[] = 'i.base_amount <= ?';
+            $params[] = normalize_money($filters['amount_max']);
+        }
+        if (!empty($filters['payment_state'])) {
+            if ($filters['payment_state'] === 'paid') {
+                $where[] = "i.status = 'paid'";
+            } elseif ($filters['payment_state'] === 'unpaid') {
+                $where[] = "i.status != 'paid'";
+            } elseif ($filters['payment_state'] === 'overdue') {
+                $where[] = "i.status != 'paid' AND i.due_date < CURDATE()";
+            } elseif ($filters['payment_state'] === 'custom') {
+                $where[] = 'COALESCE(i.is_custom, 0) = 1';
+            }
+        }
+    }
+
     public static function find($id)
     {
         self::ensureSchema();
         $row = self::fetch(
-            "SELECT i.*, c.contract_number, c.customer_id, u.full_name AS customer_name, u.mobile, u.national_id
+            "SELECT i.*, c.contract_number, c.customer_id, c.status AS contract_status, c.legal_status AS contract_legal_status,
+             u.full_name AS customer_name, u.mobile, u.national_id,
+             (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_case_count,
+             (SELECT MIN(DATE(lc.created_at)) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_started_at
              FROM installments i
              JOIN contracts c ON c.id = i.contract_id
              JOIN users u ON u.id = c.customer_id
@@ -77,7 +190,7 @@ class Installment extends Model
         return array_merge($row, $preview);
     }
 
-    public static function overdue($bucket = null, $search = null)
+    public static function overdue($bucket = null, $search = null, $operatorId = null, $limit = null)
     {
         self::ensureSchema();
         $today = date('Y-m-d');
@@ -101,30 +214,85 @@ class Installment extends Model
             $where .= ' AND (c.contract_number LIKE ? OR u.full_name LIKE ? OR u.national_id LIKE ? OR u.mobile LIKE ? OR u.secondary_phone LIKE ?)';
             array_push($params, $needle, $needle, $needle, $needle, $needle);
         }
+        if ($operatorId) {
+            $where .= ' AND c.assigned_operator_id = ?';
+            $params[] = (int) $operatorId;
+        }
         $rows = self::fetchAll(
             "SELECT i.*, c.contract_number, c.customer_id, c.assigned_operator_id, u.full_name AS customer_name,
+             c.status AS contract_status, c.legal_status AS contract_legal_status,
              u.mobile, u.secondary_phone, u.national_id,
-             (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id AND lc.status != 'closed') AS legal_case_count
+             (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_case_count,
+             (SELECT MIN(DATE(lc.created_at)) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_started_at
              FROM installments i
              JOIN contracts c ON c.id = i.contract_id
              JOIN users u ON u.id = c.customer_id
              WHERE {$where}
-             ORDER BY i.due_date ASC",
+             ORDER BY i.due_date ASC"
+             . ($limit ? ' LIMIT ' . max(1, min(100, (int) $limit)) : ''),
             $params
         );
         return self::withPreview($rows);
     }
 
-    public static function createCustom($contractId, $dueDate, $amount, $notes = '', $guaranteeSerial = '')
+    public static function createCustom($contractId, $dueDate, $amount, $notes = '', $guaranteeSerial = '', $title = '')
     {
         self::ensureSchema();
         $number = (int) self::fetch('SELECT COALESCE(MAX(installment_number), 0) + 1 AS n FROM installments WHERE contract_id = ?', [$contractId])['n'];
         $amount = normalize_money($amount);
         self::execute(
-            'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, notes, guarantee_serial, is_custom, created_at)
-             VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, 1, NOW())',
-            [(int) $contractId, $number, $dueDate, $amount, $amount, $dueDate < date('Y-m-d') ? 'overdue' : 'pending', trim((string) $notes), trim(to_english_digits($guaranteeSerial)) ?: null]
+            'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, notes, guarantee_serial, is_custom, custom_title, custom_description, created_at)
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, 1, ?, ?, NOW())',
+            [(int) $contractId, $number, $dueDate, $amount, $amount, $dueDate < date('Y-m-d') ? 'overdue' : 'pending', trim((string) $notes), trim(to_english_digits($guaranteeSerial)) ?: null, trim((string) $title) ?: null, trim((string) $notes) ?: null]
         );
+    }
+
+    public static function updateInstallment($id, array $data)
+    {
+        self::ensureSchema();
+        $row = self::find((int) $id);
+        if (!$row) {
+            throw new InvalidArgumentException('قسط پیدا نشد.');
+        }
+        $dueDate = parse_jalali_date($data['due_date'] ?? '') ?: ($data['due_date'] ?? null);
+        if (!$dueDate) {
+            throw new InvalidArgumentException('تاریخ سررسید معتبر نیست.');
+        }
+        $amount = normalize_money($data['base_amount'] ?? 0);
+        if ($amount <= 0) {
+            throw new InvalidArgumentException('مبلغ قسط معتبر نیست.');
+        }
+        $paid = min((float) ($row['paid_amount'] ?? 0), $amount);
+        $status = FinanceHelper::status($amount, $paid, $dueDate);
+        self::execute(
+            'UPDATE installments SET due_date = ?, base_amount = ?, paid_amount = ?, remaining_amount = ?, status = ?, notes = ?, guarantee_serial = ?, custom_title = ?, custom_description = ? WHERE id = ?',
+            [
+                $dueDate,
+                $amount,
+                $paid,
+                max(0, $amount - $paid),
+                $status,
+                trim((string) ($data['notes'] ?? $row['notes'] ?? '')) ?: null,
+                trim(to_english_digits($data['guarantee_serial'] ?? $row['guarantee_serial'] ?? '')) ?: null,
+                trim((string) ($data['custom_title'] ?? $row['custom_title'] ?? '')) ?: null,
+                trim((string) ($data['custom_description'] ?? $data['notes'] ?? $row['custom_description'] ?? '')) ?: null,
+                (int) $id,
+            ]
+        );
+    }
+
+    public static function deleteCustom($id)
+    {
+        self::ensureSchema();
+        $row = self::fetch('SELECT * FROM installments WHERE id = ?', [(int) $id]);
+        if (!$row) {
+            throw new InvalidArgumentException('قسط پیدا نشد.');
+        }
+        if ((int) ($row['is_custom'] ?? 0) !== 1) {
+            throw new InvalidArgumentException('فقط قسط دلخواه قابل حذف است.');
+        }
+        self::execute('DELETE FROM installments WHERE id = ?', [(int) $id]);
+        return (int) $row['contract_id'];
     }
 
     public static function adjust($id, $penalty, $reward)

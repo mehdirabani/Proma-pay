@@ -4,30 +4,48 @@ class UsersController extends Controller
 {
     public function index()
     {
-        $this->requireRole(['admin', 'operator', 'lawyer']);
+        Auth::requireLogin();
+        if (!Auth::canViewUsers()) {
+            http_response_code(403);
+            $this->render('errors/403', ['title' => 'دسترسی غیرمجاز'], 'app');
+            return;
+        }
+        $currentUser = Auth::user();
         $role = $_GET['role'] ?? null;
         $status = $_GET['status'] ?? null;
-        $allowedRoles = ['admin', 'operator', 'lawyer', 'customer'];
+        $allowedRoles = ['admin', 'operator', 'lawyer'];
         $role = in_array($role, $allowedRoles, true) ? $role : null;
         $status = in_array($status, ['active', 'inactive'], true) ? $status : null;
-        $users = User::all($role, $_GET['q'] ?? null, $status);
-        foreach ($users as $candidate) {
-            if (($candidate['role'] ?? '') === 'customer') {
-                User::syncAutomaticMedals((int) $candidate['id']);
+        $options = [];
+        if (Auth::role() !== 'admin') {
+            $options['department'] = $currentUser['department'] ?? '';
+            $options['roles'] = ['admin', 'operator', 'lawyer'];
+            if ($role === 'customer') {
+                $role = null;
             }
+        } elseif (isset($_GET['department']) && $_GET['department'] !== '') {
+            $options['department'] = $_GET['department'];
         }
-        $medals = User::medalsForUsers(array_column($users, 'id'));
+        $options['roles'] = $options['roles'] ?? $allowedRoles;
+        $options['per_page'] = 36;
+        $options['page'] = $_GET['page'] ?? 1;
+        $result = User::paginated($role, $_GET['q'] ?? null, $status, $options);
+        $users = $result['items'];
+        $verifiedDocuments = IdentityDocument::verifiedForUsers(array_column($users, 'id'));
         foreach ($users as &$user) {
-            $user['medals'] = $medals[(int) $user['id']] ?? [];
+            $user['identity_verified'] = !empty($verifiedDocuments[(int) $user['id']]);
         }
         unset($user);
         $this->render('users/index', [
             'title' => 'مدیریت کاربران',
             'users' => $users,
+            'pagination' => $result,
             'roles' => $allowedRoles,
+            'departments' => app_config('departments', []),
             'canManageUsers' => Auth::role() === 'admin',
             'profileRequests' => Auth::role() === 'admin' ? ProfileRequest::pending() : [],
-        ]);
+            'identityRequests' => [],
+        ], is_ajax_request() ? null : 'app');
     }
 
     public function store()
@@ -58,6 +76,8 @@ class UsersController extends Controller
                 'password' => $_POST['password'] ?? '',
                 'status' => $_POST['status'] ?? 'active',
                 'address' => $_POST['address'] ?? '',
+                'department' => array_key_exists($_POST['department'] ?? '', app_config('departments', [])) ? $_POST['department'] : null,
+                'is_department_manager' => !empty($_POST['is_department_manager']) ? 1 : 0,
                 'avatar_key' => in_array($_POST['avatar_key'] ?? '', ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6'], true) ? $_POST['avatar_key'] : null,
             ]);
             set_flash('success', 'کاربر با موفقیت ثبت شد.');
@@ -82,7 +102,7 @@ class UsersController extends Controller
             redirect('users');
         }
         try {
-            $role = in_array($_POST['role'] ?? '', ['admin', 'operator', 'lawyer', 'customer'], true) ? $_POST['role'] : $user['role'];
+            $role = in_array($_POST['role'] ?? '', ['admin', 'operator', 'lawyer'], true) ? $_POST['role'] : $user['role'];
             User::updateUser((int) $id, [
                 'role' => $role,
                 'username' => $_POST['username'] ?? '',
@@ -96,6 +116,8 @@ class UsersController extends Controller
                 'password' => $_POST['password'] ?? '',
                 'status' => $_POST['status'] ?? 'active',
                 'address' => $_POST['address'] ?? '',
+                'department' => array_key_exists($_POST['department'] ?? '', app_config('departments', [])) ? $_POST['department'] : null,
+                'is_department_manager' => !empty($_POST['is_department_manager']) ? 1 : 0,
                 'avatar_key' => in_array($_POST['avatar_key'] ?? '', ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6'], true) ? $_POST['avatar_key'] : null,
             ]);
             set_flash('success', 'اطلاعات کاربر به‌روزرسانی شد.');
@@ -109,6 +131,10 @@ class UsersController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
+        if (!ConfirmationCode::verify('user_delete_' . (int) $id, $_POST['confirm_text'] ?? '')) {
+            set_flash('error', 'عدد تأیید حذف کاربر درست وارد نشده است.');
+            redirect('users');
+        }
         $user = User::find((int) $id);
         if (!$user) {
             set_flash('error', 'کاربر پیدا نشد.');
@@ -127,30 +153,56 @@ class UsersController extends Controller
         redirect('users');
     }
 
+    public function search()
+    {
+        Auth::requireLogin();
+        $query = trim((string) ($_GET['q'] ?? ''));
+        $roles = array_filter(array_map('trim', explode(',', (string) ($_GET['roles'] ?? ''))));
+        if (Auth::role() === 'customer') {
+            $items = array_map(function ($unit) {
+                return [
+                    'id' => (int) $unit['id'],
+                    'full_name' => $unit['full_name'],
+                    'mobile' => '',
+                    'secondary_phone' => '',
+                    'national_id' => '',
+                    'role' => $unit['role'] ?? '',
+                    'role_label' => department_label($unit['department'] ?? ''),
+                    'department' => $unit['department'] ?? '',
+                    'department_label' => department_label($unit['department'] ?? ''),
+                    'status' => 'active',
+                ];
+            }, Chat::customerUnits(Auth::id()));
+            $this->json(['ok' => true, 'items' => $items]);
+        }
+        $items = array_map(function ($user) {
+            return [
+                'id' => (int) $user['id'],
+                'full_name' => $user['full_name'] ?? '',
+                'mobile' => $user['mobile'] ?? '',
+                'secondary_phone' => $user['secondary_phone'] ?? '',
+                'national_id' => $user['national_id'] ?? '',
+                'role' => $user['role'] ?? '',
+                'role_label' => role_label($user['role'] ?? ''),
+                'department' => $user['department'] ?? '',
+                'department_label' => department_label($user['department'] ?? ''),
+                'status' => $user['status'] ?? '',
+            ];
+        }, User::searchUsers($query, $roles, 12));
+        $this->json(['ok' => true, 'items' => $items]);
+    }
+
     public function medalStore($id)
     {
         $this->requireRole('admin');
         $this->onlyPost();
-        $user = User::find((int) $id);
-        if (!$user || $user['role'] !== 'customer') {
-            set_flash('error', 'مدال فقط برای مشتری قابل ثبت است.');
-            redirect('users');
-        }
-        if (trim($_POST['title'] ?? '') === '') {
-            set_flash('error', 'عنوان مدال الزامی است.');
-            redirect('users');
-        }
-        User::addMedal((int) $id, $_POST['title'], $_POST['description'] ?? '', $_POST['points'] ?? 0);
-        set_flash('success', 'مدال مشتری ثبت شد.');
-        redirect('users', ['role' => 'customer']);
+        redirect('customers');
     }
 
     public function medalDelete($id)
     {
         $this->requireRole('admin');
         $this->onlyPost();
-        User::deleteMedal((int) $id);
-        set_flash('success', 'مدال حذف شد.');
-        redirect('users', ['role' => 'customer']);
+        redirect('customers');
     }
 }

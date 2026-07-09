@@ -6,17 +6,18 @@
     </div>
   </div>
   <div class="card-body">
-    <form method="get" action="<?= e(url('payments')) ?>" class="form-grid four">
+    <form method="get" action="<?= e(url('payments')) ?>" class="form-grid four" data-ajax-filter data-ajax-target="[data-ajax-results='payments']">
       <input type="hidden" name="route" value="payments">
       <label>از تاریخ<input name="date_from" value="<?= e($_GET['date_from'] ?? '') ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
       <label>تا تاریخ<input name="date_to" value="<?= e($_GET['date_to'] ?? '') ?>" placeholder="۱۴۰۳/۱۲/۲۹"></label>
       <label>شماره قرارداد<input name="contract_number" value="<?= e($_GET['contract_number'] ?? '') ?>"></label>
       <label>مشتری<input name="customer" value="<?= e($_GET['customer'] ?? '') ?>" placeholder="نام، کد ملی یا موبایل"></label>
-      <div class="full actions"><button class="btn" type="submit">اعمال فیلتر</button></div>
+      <div class="full actions"><button class="btn" type="submit">اعمال فیلتر</button><span class="proma-ajax-status" data-ajax-status></span></div>
     </form>
   </div>
 </section>
 
+<div data-ajax-results="payments">
 <section class="card" style="margin-top:16px">
   <div class="card-header card-no-border">
     <div class="header-top">
@@ -115,3 +116,4 @@
     </div>
   </div>
 <?php endforeach; ?>
+</div>

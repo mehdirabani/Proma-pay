@@ -5,19 +5,22 @@ class CustomersController extends Controller
     public function index()
     {
         $this->requireRole('admin');
-        $customers = User::customerSummaries($_GET['q'] ?? null, $_GET['status'] ?? null);
+        $result = User::customerSummariesPaginated($_GET['q'] ?? null, $_GET['status'] ?? null, $_GET['page'] ?? 1, 24);
+        $customers = $result['items'];
         $ids = array_column($customers, 'id');
         foreach ($ids as $customerId) {
             User::syncAutomaticMedals((int) $customerId);
         }
         $medals = User::medalsForUsers($ids);
         $timelines = Payment::recentForCustomers($ids, 3);
+        $verifiedDocuments = IdentityDocument::verifiedForUsers($ids);
         foreach ($customers as &$customer) {
             $total = max(1, (int) ($customer['installment_count'] ?? 0));
             $paidScore = ((int) ($customer['paid_installments'] ?? 0) / $total) * 100;
             $penalty = min(70, ((int) ($customer['overdue_installments'] ?? 0)) * 9);
             $customer['good_score'] = max(0, min(100, (int) ceil($paidScore - $penalty)));
             $customer['medals'] = $medals[(int) $customer['id']] ?? [];
+            $customer['identity_verified'] = !empty($verifiedDocuments[(int) $customer['id']]);
             $customer['payment_timeline'] = $timelines[(int) $customer['id']] ?? [];
             $customer['payment_trend'] = Payment::monthlyTrendForCustomer((int) $customer['id']);
         }
@@ -25,7 +28,8 @@ class CustomersController extends Controller
         $this->render('customers/index', [
             'title' => 'مدیریت مشتریان',
             'customers' => $customers,
-        ]);
+            'pagination' => $result,
+        ], is_ajax_request() ? null : 'app');
     }
 
     public function store()
@@ -83,17 +87,30 @@ class CustomersController extends Controller
         redirect('customers');
     }
 
+    public function merge()
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            User::mergeCustomers($_POST['keep_customer_id'] ?? 0, $_POST['merge_customer_id'] ?? 0, Auth::id());
+            set_flash('success', 'ادغام مشتریان با حفظ اطلاعات انجام شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ادغام مشتریان انجام نشد.');
+        }
+        redirect('customers');
+    }
+
     public function delete($id)
     {
         $this->requireRole('admin');
         $this->onlyPost();
-        if (trim((string) ($_POST['confirm_text'] ?? '')) !== 'حذف مشتری') {
-            set_flash('error', 'عبارت تأیید حذف مشتری درست وارد نشده است.');
+        if (!ConfirmationCode::verify('customer_delete_' . (int) $id, $_POST['confirm_text'] ?? '')) {
+            set_flash('error', 'عدد تأیید حذف مشتری درست وارد نشده است.');
             redirect('customers');
         }
         $activeContracts = Model::fetch("SELECT COUNT(*) AS total FROM contracts WHERE customer_id = ? AND status = 'active'", [(int) $id]);
         if ((int) ($activeContracts['total'] ?? 0) > 0) {
-            set_flash('error', 'این مشتری قرارداد فعال دارد و قابل حذف نیست.');
+            set_flash('error', 'این مشتری دارای قرارداد فعال است و امکان حذف او وجود ندارد.');
             redirect('customers');
         }
         User::deleteUser((int) $id);
@@ -118,5 +135,45 @@ class CustomersController extends Controller
             'paymentTimeline' => Payment::recentForCustomer((int) $id),
             'medals' => User::medalsForUsers([(int) $id])[(int) $id] ?? [],
         ]);
+    }
+
+    public function medalStore($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $customer = User::find((int) $id);
+        if (!$customer || $customer['role'] !== 'customer') {
+            set_flash('error', 'مدال فقط برای مشتری قابل ثبت است.');
+            redirect('customers');
+        }
+        if (trim((string) ($_POST['title'] ?? '')) === '') {
+            set_flash('error', 'عنوان مدال الزامی است.');
+            redirect('customers');
+        }
+        User::addMedal((int) $id, $_POST['title'], $_POST['description'] ?? '', $_POST['points'] ?? 0);
+        set_flash('success', 'مدال مشتری ثبت شد.');
+        redirect('customers');
+    }
+
+    public function medalUpdate($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        if (trim((string) ($_POST['title'] ?? '')) === '') {
+            set_flash('error', 'عنوان مدال الزامی است.');
+            redirect('customers');
+        }
+        User::updateMedal((int) $id, $_POST);
+        set_flash('success', 'مدال به‌روزرسانی شد.');
+        redirect('customers');
+    }
+
+    public function medalDelete($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        User::deleteMedal((int) $id);
+        set_flash('success', 'مدال حذف شد.');
+        redirect('customers');
     }
 }

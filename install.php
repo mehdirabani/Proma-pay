@@ -47,25 +47,28 @@ if (is_post() && $step === 2) {
     } else {
         try {
             $pdo = installer_pdo($db);
+            ensure_installer_writable();
             create_schema($pdo);
-            write_database_config($db);
-            $stmt = $pdo->prepare("INSERT INTO users (role, username, full_name, national_id, mobile, email, password_hash, status, created_at)
-                VALUES ('admin', ?, ?, ?, ?, ?, ?, 'active', NOW())");
-            $stmt->execute([
-                $username,
-                $fullName,
-                to_english_digits($_POST['national_id'] ?? '') ?: null,
-                to_english_digits($_POST['mobile'] ?? '') ?: null,
-                trim($_POST['email'] ?? '') ?: null,
-                password_hash($password, PASSWORD_DEFAULT),
+            $adminId = create_or_update_initial_admin($pdo, [
+                'username' => $username,
+                'full_name' => $fullName,
+                'national_id' => to_english_digits($_POST['national_id'] ?? '') ?: null,
+                'mobile' => to_english_digits($_POST['mobile'] ?? '') ?: null,
+                'email' => trim($_POST['email'] ?? '') ?: null,
+                'password_hash' => password_hash($password, PASSWORD_DEFAULT),
             ]);
+            seed_system_announcements($pdo, $adminId);
             seed_settings($pdo);
-            file_put_contents(__DIR__ . '/installed.lock', 'installed=' . date('c'));
+            write_database_config($db);
+            if (file_put_contents(__DIR__ . '/installed.lock', 'installed=' . date('c')) === false) {
+                throw new RuntimeException('Cannot write installed.lock.');
+            }
             unset($_SESSION['install_db']);
             echo installer_page('نصب کامل شد', '<div class="notice success">سامانه با موفقیت نصب شد و حساب مدیر ساخته شد.</div><a class="btn" href="index.php?route=auth/login">ورود به سامانه</a>');
             exit;
         } catch (Throwable $e) {
-            $message = '<div class="notice error">نصب کامل نشد. دسترسی نوشتن فایل‌ها و اطلاعات پایگاه داده را بررسی کنید.</div>';
+            installer_log_error($e);
+            $message = '<div class="notice error">نصب کامل نشد. دسترسی نوشتن فایل‌ها و اطلاعات پایگاه داده را بررسی کنید. جزئیات خطا در storage/logs/install.log ثبت شد.</div>';
         }
     }
 }
@@ -97,11 +100,15 @@ echo installer_page('تنظیم پایگاه داده', $message . '
 function installer_pdo(array $db)
 {
     $dsn = 'mysql:host=' . $db['host'] . ';dbname=' . $db['database'] . ';charset=' . ($db['charset'] ?: 'utf8mb4');
-    return new PDO($dsn, $db['username'], $db['password'], [
+    $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
-    ]);
+    ];
+    if (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) {
+        $options[PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
+    }
+    return new PDO($dsn, $db['username'], $db['password'], $options);
 }
 
 function write_database_config(array $db)
@@ -113,7 +120,75 @@ function write_database_config(array $db)
         . "    'password' => " . var_export($db['password'], true) . ",\n"
         . "    'charset' => " . var_export($db['charset'], true) . ",\n"
         . "];\n";
-    file_put_contents(__DIR__ . '/config/database.php', $content);
+    if (file_put_contents(__DIR__ . '/config/database.php', $content) === false) {
+        throw new RuntimeException('Cannot write database config.');
+    }
+}
+
+function ensure_installer_writable()
+{
+    $configDir = __DIR__ . '/config';
+    $logDir = __DIR__ . '/storage/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0775, true);
+    }
+    if (!is_dir($configDir) || !is_writable($configDir)) {
+        throw new RuntimeException('Config directory is not writable.');
+    }
+    if (!is_writable(__DIR__)) {
+        throw new RuntimeException('Application root is not writable for installed.lock.');
+    }
+}
+
+function installer_log_error(Throwable $e)
+{
+    $logDir = __DIR__ . '/storage/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0775, true);
+    }
+    $line = '[' . date('c') . '] ' . get_class($e) . ': ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() . PHP_EOL;
+    @file_put_contents($logDir . '/install.log', $line, FILE_APPEND);
+    error_log($line);
+}
+
+function create_or_update_initial_admin(PDO $pdo, array $admin)
+{
+    $existing = $pdo->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
+    $existing->execute([$admin['username']]);
+    $adminId = (int) ($existing->fetchColumn() ?: 0);
+    $existing->closeCursor();
+
+    if ($adminId > 0) {
+        $stmt = $pdo->prepare(
+            "UPDATE users
+             SET role = 'admin', full_name = ?, national_id = ?, mobile = ?, email = ?,
+                 password_hash = ?, status = 'active', updated_at = NOW()
+             WHERE id = ?"
+        );
+        $stmt->execute([
+            $admin['full_name'],
+            $admin['national_id'],
+            $admin['mobile'],
+            $admin['email'],
+            $admin['password_hash'],
+            $adminId,
+        ]);
+        return $adminId;
+    }
+
+    $stmt = $pdo->prepare(
+        "INSERT INTO users (role, username, full_name, national_id, mobile, email, password_hash, status, created_at)
+         VALUES ('admin', ?, ?, ?, ?, ?, ?, 'active', NOW())"
+    );
+    $stmt->execute([
+        $admin['username'],
+        $admin['full_name'],
+        $admin['national_id'],
+        $admin['mobile'],
+        $admin['email'],
+        $admin['password_hash'],
+    ]);
+    return (int) $pdo->lastInsertId();
 }
 
 function create_schema(PDO $pdo)
@@ -144,6 +219,31 @@ function create_schema(PDO $pdo)
             UNIQUE KEY uq_users_national_id (national_id),
             UNIQUE KEY uq_users_mobile (mobile),
             KEY idx_users_role_status (role, status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS password_resets (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            user_id BIGINT UNSIGNED NOT NULL,
+            mobile VARCHAR(30) NOT NULL,
+            code_hash VARCHAR(255) NOT NULL,
+            attempts INT NOT NULL DEFAULT 0,
+            expires_at DATETIME NOT NULL,
+            used_at DATETIME NULL,
+            ip_address VARCHAR(45) NULL,
+            user_agent VARCHAR(255) NULL,
+            created_at DATETIME NOT NULL,
+            KEY idx_password_resets_user (user_id, used_at, expires_at),
+            KEY idx_password_resets_expiry (expires_at, used_at),
+            CONSTRAINT fk_password_resets_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS customer_merge_logs (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            keep_customer_id BIGINT UNSIGNED NOT NULL,
+            merged_customer_id BIGINT UNSIGNED NOT NULL,
+            merged_by BIGINT UNSIGNED NULL,
+            snapshot_json LONGTEXT NULL,
+            created_at DATETIME NOT NULL,
+            KEY idx_customer_merge_keep (keep_customer_id),
+            KEY idx_customer_merge_merged (merged_customer_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS contracts (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -307,6 +407,27 @@ function create_schema(PDO $pdo)
             CONSTRAINT fk_correction_payment FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE,
             CONSTRAINT fk_correction_admin FOREIGN KEY (corrected_by) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS payment_receipts (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            payment_id BIGINT UNSIGNED NOT NULL,
+            installment_id BIGINT UNSIGNED NOT NULL,
+            contract_id BIGINT UNSIGNED NOT NULL,
+            customer_id BIGINT UNSIGNED NOT NULL,
+            amount DECIMAL(18,2) NOT NULL,
+            receipt_path VARCHAR(255) NOT NULL,
+            status VARCHAR(30) NOT NULL DEFAULT 'pending',
+            review_note TEXT NULL,
+            reviewed_by BIGINT UNSIGNED NULL,
+            submitted_at DATETIME NOT NULL,
+            reviewed_at DATETIME NULL,
+            KEY idx_payment_receipts_status (status),
+            KEY idx_payment_receipts_customer (customer_id),
+            CONSTRAINT fk_payment_receipts_payment FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE,
+            CONSTRAINT fk_payment_receipts_installment FOREIGN KEY (installment_id) REFERENCES installments(id) ON DELETE CASCADE,
+            CONSTRAINT fk_payment_receipts_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
+            CONSTRAINT fk_payment_receipts_customer FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_payment_receipts_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS penalties (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             installment_id BIGINT UNSIGNED NOT NULL,
@@ -323,14 +444,17 @@ function create_schema(PDO $pdo)
             operator_id BIGINT UNSIGNED NOT NULL,
             customer_id BIGINT UNSIGNED NOT NULL,
             contract_id BIGINT UNSIGNED NOT NULL,
+            installment_id BIGINT UNSIGNED NULL,
             call_result VARCHAR(190) NOT NULL,
             notes TEXT NULL,
             next_followup_date DATE NULL,
+            promise_payment_date DATE NULL,
             created_at DATETIME NOT NULL,
             KEY idx_operator_calls_operator (operator_id),
             CONSTRAINT fk_call_operator FOREIGN KEY (operator_id) REFERENCES users(id) ON DELETE CASCADE,
             CONSTRAINT fk_call_customer FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
-            CONSTRAINT fk_call_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
+            CONSTRAINT fk_call_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
+            CONSTRAINT fk_call_installment FOREIGN KEY (installment_id) REFERENCES installments(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS legal_cases (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -340,6 +464,9 @@ function create_schema(PDO $pdo)
             status VARCHAR(30) NOT NULL,
             stage VARCHAR(190) NOT NULL,
             complaint_number VARCHAR(100) NULL,
+            notice_date DATE NULL,
+            court_date DATE NULL,
+            hearing_date DATE NULL,
             expense_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
             expense_reason TEXT NULL,
             notes TEXT NULL,
@@ -350,18 +477,75 @@ function create_schema(PDO $pdo)
             CONSTRAINT fk_legal_customer FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
             CONSTRAINT fk_legal_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS legal_case_logs (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            contract_id BIGINT UNSIGNED NOT NULL,
+            legal_case_id BIGINT UNSIGNED NULL,
+            action_stage VARCHAR(80) NOT NULL,
+            action_title VARCHAR(190) NOT NULL,
+            description TEXT NULL,
+            action_date DATE NOT NULL,
+            action_time TIME NULL,
+            registered_by BIGINT UNSIGNED NULL,
+            assigned_lawyer_id BIGINT UNSIGNED NULL,
+            next_status VARCHAR(80) NULL,
+            attachment_path VARCHAR(255) NULL,
+            cost_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
+            cost_type VARCHAR(80) NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NULL,
+            INDEX idx_legal_case_logs_contract (contract_id),
+            INDEX idx_legal_case_logs_case (legal_case_id),
+            INDEX idx_legal_case_logs_stage (action_stage),
+            INDEX idx_legal_case_logs_date (action_date),
+            CONSTRAINT fk_legal_case_logs_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
+            CONSTRAINT fk_legal_case_logs_case FOREIGN KEY (legal_case_id) REFERENCES legal_cases(id) ON DELETE SET NULL,
+            CONSTRAINT fk_legal_case_logs_registered_by FOREIGN KEY (registered_by) REFERENCES users(id) ON DELETE SET NULL,
+            CONSTRAINT fk_legal_case_logs_lawyer FOREIGN KEY (assigned_lawyer_id) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS chat_channels (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            title VARCHAR(190) NOT NULL,
+            slug VARCHAR(100) NOT NULL,
+            type VARCHAR(40) NOT NULL DEFAULT 'public',
+            is_pinned TINYINT(1) NOT NULL DEFAULT 0,
+            is_system TINYINT(1) NOT NULL DEFAULT 0,
+            created_at DATETIME NOT NULL,
+            UNIQUE KEY uq_chat_channels_slug (slug)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS messages (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             sender_id BIGINT UNSIGNED NOT NULL,
-            receiver_id BIGINT UNSIGNED NOT NULL,
+            receiver_id BIGINT UNSIGNED NULL,
+            channel_id BIGINT UNSIGNED NULL,
             body TEXT NOT NULL,
             is_read TINYINT(1) NOT NULL DEFAULT 0,
+            target_unit VARCHAR(80) NULL,
+            is_system TINYINT(1) NOT NULL DEFAULT 0,
             read_at DATETIME NULL,
             created_at DATETIME NOT NULL,
             KEY idx_message_pair (sender_id, receiver_id, id),
             KEY idx_message_unread (receiver_id, is_read),
+            KEY idx_message_channel (channel_id, id),
             CONSTRAINT fk_message_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-            CONSTRAINT fk_message_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+            CONSTRAINT fk_message_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_message_channel FOREIGN KEY (channel_id) REFERENCES chat_channels(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS chat_attachments (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            message_id BIGINT UNSIGNED NOT NULL,
+            file_path VARCHAR(255) NOT NULL,
+            file_type VARCHAR(40) NOT NULL,
+            status VARCHAR(30) NOT NULL DEFAULT 'pending',
+            reviewed_by BIGINT UNSIGNED NULL,
+            review_note TEXT NULL,
+            reviewed_at DATETIME NULL,
+            deleted_at DATETIME NULL,
+            created_at DATETIME NOT NULL,
+            KEY idx_chat_attachments_message (message_id),
+            KEY idx_chat_attachments_status (status),
+            CONSTRAINT fk_chat_attachment_message FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
+            CONSTRAINT fk_chat_attachment_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS notifications (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -390,6 +574,10 @@ function create_schema(PDO $pdo)
             description TEXT NULL,
             points INT NOT NULL DEFAULT 0,
             code VARCHAR(80) NULL,
+            icon_key VARCHAR(40) NULL DEFAULT 'award',
+            source VARCHAR(40) NOT NULL DEFAULT 'manual',
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            updated_at DATETIME NULL,
             created_at DATETIME NOT NULL,
             UNIQUE KEY uq_medals_user_code (user_id, code),
             CONSTRAINT fk_medal_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -397,12 +585,21 @@ function create_schema(PDO $pdo)
         "CREATE TABLE IF NOT EXISTS events (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             user_id BIGINT UNSIGNED NULL,
+            assigned_user_id BIGINT UNSIGNED NULL,
             title VARCHAR(190) NOT NULL,
             event_date DATE NOT NULL,
+            event_time TIME NULL,
+            event_type VARCHAR(40) NOT NULL DEFAULT 'general',
             description TEXT NULL,
             color VARCHAR(20) NOT NULL DEFAULT 'primary',
+            reminder_type VARCHAR(40) NULL,
+            reminder_at DATETIME NULL,
+            reminder_sent_at DATETIME NULL,
+            due_day_sent_at DATETIME NULL,
             created_at DATETIME NOT NULL,
             KEY idx_events_date (event_date),
+            KEY idx_events_assigned (assigned_user_id),
+            KEY idx_events_reminder (reminder_at, reminder_sent_at),
             CONSTRAINT fk_event_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS profile_update_requests (
@@ -419,6 +616,21 @@ function create_schema(PDO $pdo)
             CONSTRAINT fk_profile_request_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             CONSTRAINT fk_profile_request_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS identity_documents (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            user_id BIGINT UNSIGNED NOT NULL,
+            document_type VARCHAR(40) NOT NULL,
+            file_path VARCHAR(255) NOT NULL,
+            status VARCHAR(30) NOT NULL DEFAULT 'pending',
+            reviewed_by BIGINT UNSIGNED NULL,
+            review_note TEXT NULL,
+            uploaded_at DATETIME NOT NULL,
+            reviewed_at DATETIME NULL,
+            KEY idx_identity_documents_user (user_id),
+            KEY idx_identity_documents_status (status),
+            CONSTRAINT fk_identity_documents_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_identity_documents_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS import_batches (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             user_id BIGINT UNSIGNED NOT NULL,
@@ -433,7 +645,7 @@ function create_schema(PDO $pdo)
         "CREATE TABLE IF NOT EXISTS import_rows (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             batch_id BIGINT UNSIGNED NOT NULL,
-            row_number INT NOT NULL,
+            row_index INT NOT NULL,
             raw_json LONGTEXT NOT NULL,
             parsed_json LONGTEXT NULL,
             status VARCHAR(40) NOT NULL,
@@ -459,6 +671,118 @@ function create_schema(PDO $pdo)
     foreach ($statements as $sql) {
         $pdo->exec($sql);
     }
+    ensure_install_schema_compatibility($pdo);
+    $pdo->exec(
+        "INSERT IGNORE INTO chat_channels (title, slug, type, is_pinned, is_system, created_at)
+         VALUES ('اطلاع‌رسانی عمومی', 'public-announcements', 'public', 1, 1, NOW())"
+    );
+}
+
+function ensure_install_schema_compatibility(PDO $pdo)
+{
+    foreach ([
+        'channel_id' => 'BIGINT UNSIGNED NULL AFTER receiver_id',
+        'target_unit' => 'VARCHAR(80) NULL AFTER is_read',
+        'is_system' => 'TINYINT(1) NOT NULL DEFAULT 0 AFTER target_unit',
+    ] as $column => $definition) {
+        if (!installer_column_exists($pdo, 'messages', $column)) {
+            $pdo->exec("ALTER TABLE messages ADD COLUMN {$column} {$definition}");
+        }
+    }
+
+    try {
+        $pdo->exec('ALTER TABLE messages MODIFY receiver_id BIGINT UNSIGNED NULL');
+    } catch (Throwable $e) {
+        $receiverFk = installer_foreign_key_name($pdo, 'messages', 'receiver_id', 'users');
+        if (!$receiverFk) {
+            throw $e;
+        }
+        $pdo->exec('ALTER TABLE messages DROP FOREIGN KEY ' . installer_quote_identifier($receiverFk));
+        $pdo->exec('ALTER TABLE messages MODIFY receiver_id BIGINT UNSIGNED NULL');
+        if (!installer_foreign_key_name($pdo, 'messages', 'receiver_id', 'users')) {
+            $pdo->exec('ALTER TABLE messages ADD CONSTRAINT fk_message_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE');
+        }
+    }
+
+    if (!installer_index_exists($pdo, 'messages', 'idx_message_channel')) {
+        $pdo->exec('ALTER TABLE messages ADD INDEX idx_message_channel (channel_id, id)');
+    }
+    if (!installer_foreign_key_name($pdo, 'messages', 'channel_id', 'chat_channels')) {
+        $pdo->exec('ALTER TABLE messages ADD CONSTRAINT fk_message_channel FOREIGN KEY (channel_id) REFERENCES chat_channels(id) ON DELETE CASCADE');
+    }
+}
+
+function installer_column_exists(PDO $pdo, $table, $column)
+{
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(*) FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+    );
+    $stmt->execute([(string) $table, (string) $column]);
+    $exists = (int) $stmt->fetchColumn() > 0;
+    $stmt->closeCursor();
+    return $exists;
+}
+
+function installer_index_exists(PDO $pdo, $table, $index)
+{
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(*) FROM information_schema.STATISTICS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?'
+    );
+    $stmt->execute([(string) $table, (string) $index]);
+    $exists = (int) $stmt->fetchColumn() > 0;
+    $stmt->closeCursor();
+    return $exists;
+}
+
+function installer_foreign_key_name(PDO $pdo, $table, $column, $referencedTable)
+{
+    $stmt = $pdo->prepare(
+        'SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+           AND COLUMN_NAME = ?
+           AND REFERENCED_TABLE_NAME = ?
+         LIMIT 1'
+    );
+    $stmt->execute([(string) $table, (string) $column, (string) $referencedTable]);
+    $name = $stmt->fetchColumn();
+    $stmt->closeCursor();
+    return $name ? (string) $name : null;
+}
+
+function installer_quote_identifier($identifier)
+{
+    return '`' . str_replace('`', '``', (string) $identifier) . '`';
+}
+
+function seed_system_announcements(PDO $pdo, $adminId)
+{
+    if (!$adminId) {
+        return;
+    }
+    $channelStmt = $pdo->prepare("SELECT id, title FROM chat_channels WHERE slug = 'public-announcements' LIMIT 1");
+    $channelStmt->execute();
+    $channel = $channelStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$channel) {
+        return;
+    }
+    $exists = $pdo->prepare('SELECT id FROM messages WHERE channel_id = ? AND is_system = 1 LIMIT 1');
+    $exists->execute([(int) $channel['id']]);
+    if ($exists->fetch(PDO::FETCH_ASSOC)) {
+        return;
+    }
+    $stmt = $pdo->prepare(
+        'INSERT INTO messages (sender_id, receiver_id, channel_id, body, is_read, target_unit, is_system, created_at)
+         VALUES (?, NULL, ?, ?, 1, ?, 1, NOW())'
+    );
+    $stmt->execute([
+        (int) $adminId,
+        (int) $channel['id'],
+        'به کانال اطلاع‌رسانی عمومی خوش آمدید. اعلان‌های مهم سامانه در همین بخش منتشر می‌شود.',
+        $channel['title'],
+    ]);
 }
 
 function seed_settings(PDO $pdo)
@@ -466,7 +790,10 @@ function seed_settings(PDO $pdo)
     $defaults = [
         'system_name' => 'پرما پرداخت',
         'logo_text' => 'پرما پرداخت',
-        'footer_text' => 'پنل مدیریت مالی راست‌چین',
+        'logo_path' => '',
+        'logo_icon_path' => '',
+        'favicon_path' => '',
+        'footer_text' => 'توسعه‌دهنده: مهدی ربانی - pgm.mehdirabani@gmail.com - github.com/mehdirabani',
         'company_name' => 'موبایل پروما',
         'company_representative_name' => '',
         'company_representative_national_id' => '',
@@ -474,19 +801,40 @@ function seed_settings(PDO $pdo)
         'company_postal_code' => '',
         'company_phone' => '',
         'contract_prefix' => 'PR',
-        'contract_next_serial' => '1001',
+        'contract_next_serial' => '1',
         'contract_year' => substr(to_english_digits(jdate(date('Y-m-d'))), 0, 4) ?: '1404',
+        'contract_number_format' => 'PR-{SERIAL:6}',
         'contract_template_body' => '',
         'monthly_penalty_rate' => '2',
+        'legal_monthly_penalty_rate' => '4',
+        'contract_legal_penalty_clause' => 'اینجانب امانت‌دار اعلام می‌کنم بند جریمه دیرکرد عادی و جریمه دیرکرد مرحله حقوقی را مطالعه کرده و می‌پذیرم. تا پیش از ثبت یا ارجاع پرونده حقوقی، جریمه دیرکرد با نرخ عادی ماهانه محاسبه می‌شود؛ از زمان ورود قرارداد به مرحله حقوقی یا شکایت، جریمه دیرکرد با نرخ حقوقی ماهانه محاسبه خواهد شد.',
         'monthly_reward_rate' => '1',
         'zibal_merchant' => '',
         'callback_base_url' => '',
+        'card_transfer_enabled' => '1',
+        'card_transfer_account_name' => '',
+        'card_transfer_card_number' => '',
+        'card_transfer_sheba' => '',
+        'card_transfer_qr_text' => '',
+        'notifications_sound_enabled' => '1',
+        'notifications_sound_volume' => '0.45',
+        'chat_file_auto_delete_days' => '7',
+        'password_reset_enabled' => '1',
+        'ippanel_api_key' => '',
+        'ippanel_from_number' => '',
+        'ippanel_password_reset_pattern_code' => '',
+        'ippanel_password_reset_pattern_key' => 'code',
         'openrouter_api_key' => '',
         'openrouter_model' => 'openai/gpt-4.1-mini',
+        'calendar_notifications_enabled' => '1',
+        'calendar_default_reminder_type' => '1_day',
+        'calendar_notify_admin_without_user' => '1',
+        'calendar_due_day_repeat_enabled' => '1',
+        'calendar_cron_token' => bin2hex(random_bytes(24)),
     ];
     $stmt = $pdo->prepare('INSERT IGNORE INTO settings (setting_key, setting_value, is_secret) VALUES (?, ?, ?)');
     foreach ($defaults as $key => $value) {
-        $stmt->execute([$key, $value, in_array($key, ['zibal_merchant', 'openrouter_api_key'], true) ? 1 : 0]);
+        $stmt->execute([$key, $value, in_array($key, ['zibal_merchant', 'openrouter_api_key', 'calendar_cron_token', 'ippanel_api_key'], true) ? 1 : 0]);
     }
 }
 
@@ -498,5 +846,5 @@ function installer_page($title, $body)
         . '<link rel="stylesheet" href="' . e(template_asset_url('css/style.css')) . '">'
         . '<link rel="stylesheet" href="' . e(template_asset_url('css/responsive.css')) . '">'
         . '<link rel="stylesheet" href="' . e(asset_url('assets/css/app.css')) . '">'
-        . '</head><body class="installer-template"><main class="install-shell"><section class="install-panel"><span class="auth-logo-mark">پ</span><h1>' . e($title) . '</h1><p>راه‌اندازی سامانه مدیریت قرارداد و اقساط</p>' . $body . '</section></main><script src="' . e(asset_url('assets/js/app.js')) . '"></script></body></html>';
+        . '</head><body class="installer-template"><main class="install-shell"><section class="install-panel"><h1>' . e($title) . '</h1><p>راه‌اندازی سامانه مدیریت قرارداد و اقساط</p>' . $body . '</section></main><script src="' . e(asset_url('assets/js/app.js')) . '"></script></body></html>';
 }

@@ -63,7 +63,7 @@ $receivedGuarantees = $receivedGuarantees ?? [];
       <div class="card-body pt-0">
         <div class="table-responsive">
           <table class="table table-bordernone">
-            <thead><tr><th>شماره</th><th>مبلغ اصل</th><th>پیش‌پرداخت</th><th>مانده تقسیط</th><th>نوع سود</th><th>شروع</th><th>وضعیت</th><th>دفترچه</th></tr></thead>
+            <thead><tr><th>شماره</th><th>مبلغ اصل</th><th>پیش‌پرداخت</th><th>مانده تقسیط</th><th>شروع</th><th>وضعیت</th><th>قرارداد</th><th>دفترچه</th></tr></thead>
             <tbody>
             <?php foreach ($contracts as $contract): ?>
               <tr>
@@ -71,9 +71,9 @@ $receivedGuarantees = $receivedGuarantees ?? [];
                 <td><?= money_toman($contract['principal_amount']) ?></td>
                 <td><?= money_toman($contract['down_payment_amount'] ?? 0) ?></td>
                 <td><?= money_toman(max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0))) ?></td>
-                <td><?= $contract['interest_type'] === 'compound' ? 'مرکب ماهانه' : 'ساده ماهانه' ?></td>
                 <td><?= e(jdate($contract['start_date'])) ?></td>
                 <td><span class="badge badge-light-<?= e(badge_class($contract['status'])) ?>"><?= e(status_label($contract['status'])) ?></span></td>
+                <td><a class="btn small secondary" href="<?= e(url('contracts/show/' . $contract['id'])) ?>">مشاهده</a></td>
                 <td><a class="btn small secondary" href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank">چاپ</a></td>
               </tr>
             <?php endforeach; ?>
@@ -91,18 +91,20 @@ $receivedGuarantees = $receivedGuarantees ?? [];
       <div class="card-body pt-0">
         <div class="table-responsive">
           <table class="table table-bordernone">
-            <thead><tr><th>قسط</th><th>سررسید</th><th>جریمه</th><th>پاداش</th><th>قابل پرداخت</th></tr></thead>
+            <thead><tr><th>قسط</th><th>سررسید</th><th>مبلغ پایه</th><th>جریمه</th><th>پاداش</th><th>قابل پرداخت</th><th>وضعیت</th></tr></thead>
             <tbody>
             <?php foreach (array_slice($installments, 0, 8) as $item): ?>
               <tr>
                 <td><?= to_persian_digits($item['installment_number']) ?></td>
                 <td><?= e(jdate($item['due_date'])) ?></td>
-                <td><?= money_toman($item['penalty']) ?></td>
+                <td><?= money_toman($item['base_amount']) ?></td>
+                <td><?= penalty_display_html($item) ?></td>
                 <td><?= money_toman($item['reward']) ?></td>
                 <td><?= money_toman($item['payable']) ?></td>
+                <td><span class="badge <?= e(badge_class($item['status'])) ?>"><?= e(status_label($item['status'])) ?></span></td>
               </tr>
             <?php endforeach; ?>
-            <?php if (!$installments): ?><tr><td colspan="5" class="text-center f-light">قسطی ثبت نشده است.</td></tr><?php endif; ?>
+            <?php if (!$installments): ?><tr><td colspan="7" class="text-center f-light">قسطی ثبت نشده است.</td></tr><?php endif; ?>
             </tbody>
           </table>
         </div>
@@ -116,7 +118,7 @@ $receivedGuarantees = $receivedGuarantees ?? [];
       <div class="card-body pt-0">
         <div class="row">
           <div class="col-xl-6">
-            <h6 class="mb-3">من ضامن این قراردادها هستم</h6>
+            <h6 class="mb-3">قراردادهایی که من ضمانت کرده‌ام</h6>
             <div class="table-responsive">
               <table class="table table-bordernone">
                 <thead><tr><th>قرارداد</th><th>مشتری</th><th>تماس</th><th>وضعیت</th></tr></thead>
@@ -135,7 +137,7 @@ $receivedGuarantees = $receivedGuarantees ?? [];
             </div>
           </div>
           <div class="col-xl-6">
-            <h6 class="mb-3">ضامنان قراردادهای من</h6>
+            <h6 class="mb-3">ضمانت‌هایی که برای قراردادهای من ثبت شده‌اند</h6>
             <div class="table-responsive">
               <table class="table table-bordernone">
                 <thead><tr><th>قرارداد</th><th>ضامن</th><th>کد ملی</th><th>تماس</th></tr></thead>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>پاک‌سازی اتصال مرورگر</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f5f7fb;color:#202335;font-family:Tahoma,Arial,sans-serif;line-height:1.9}.panel{width:min(92vw,560px);background:#fff;border:1px solid #e6ebf5;border-radius:14px;padding:24px;box-shadow:0 18px 50px rgba(35,42,70,.08)}h1{margin:0 0 10px;font-size:24px}p{margin:0 0 14px;color:#5d6475}.status{border-radius:10px;background:#eef7ff;color:#175cd3;padding:10px 12px;margin-top:14px}.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:9px;background:#7366ff;color:#fff;padding:10px 16px;text-decoration:none}
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <h1>پاک‌سازی اتصال مرورگر</h1>
+    <p>در حال حذف Service Worker و cache قدیمی سامانه هستیم. چند ثانیه صبر کنید.</p>
+    <div class="status" id="status">شروع پاک‌سازی...</div>
+    <p><a class="btn" href="/index.php?route=auth/login">ورود دوباره</a></p>
+  </main>
+  <script>
+    (function () {
+      const status = document.getElementById('status');
+      const jobs = [];
+      if ('serviceWorker' in navigator) {
+        jobs.push(navigator.serviceWorker.getRegistrations().then(function (registrations) {
+          return Promise.all(registrations.map(function (registration) {
+            return registration.unregister();
+          }));
+        }));
+      }
+      if ('caches' in window) {
+        jobs.push(caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (key) {
+            return caches.delete(key);
+          }));
+        }));
+      }
+      Promise.all(jobs).then(function () {
+        status.textContent = 'پاک‌سازی انجام شد. تا چند ثانیه دیگر به صفحه ورود منتقل می‌شوید.';
+        setTimeout(function () {
+          window.location.href = '/index.php?route=auth/login&sw_reset=1';
+        }, 1200);
+      }).catch(function () {
+        status.textContent = 'پاک‌سازی کامل نشد. لطفاً یک بار Ctrl + F5 بزنید یا cache سایت را از تنظیمات مرورگر پاک کنید.';
+      });
+    })();
+  </script>
+</body>
+</html>
