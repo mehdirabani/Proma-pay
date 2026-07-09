@@ -21,6 +21,31 @@ $logoPath = trim((string) ($settings['logo_path'] ?? ''));
 $logoIconPath = trim((string) ($settings['logo_icon_path'] ?? ''));
 $faviconPath = trim((string) ($settings['favicon_path'] ?? ''));
 $appIconPath = $logoIconPath ?: $faviconPath;
+$compactLogoPath = $logoIconPath ?: $logoPath;
+$logoInitial = mb_substr($logoText ?: $systemName, 0, 1, 'UTF-8') ?: 'پ';
+$renderFullLogo = static function () use ($logoPath, $logoIconPath, $logoText, $logoInitial) {
+    ob_start();
+    if ($logoPath !== '') {
+        ?><img class="proma-uploaded-logo" src="<?= e(asset_url($logoPath)) ?>" alt="<?= e($logoText) ?>"><?php
+    } else {
+        if ($logoIconPath !== '') {
+            ?><img class="proma-uploaded-logo sm" src="<?= e(asset_url($logoIconPath)) ?>" alt="<?= e($logoText) ?>"><?php
+        } else {
+            ?><span class="proma-logo-mark"><?= e($logoInitial) ?></span><?php
+        }
+        ?><span><?= e($logoText) ?></span><?php
+    }
+    return trim(ob_get_clean());
+};
+$renderCompactLogo = static function () use ($compactLogoPath, $logoText, $logoInitial) {
+    ob_start();
+    if ($compactLogoPath !== '') {
+        ?><img class="proma-uploaded-logo sm" src="<?= e(asset_url($compactLogoPath)) ?>" alt="<?= e($logoText) ?>"><?php
+    } else {
+        ?><span class="proma-logo-mark sm"><?= e($logoInitial) ?></span><?php
+    }
+    return trim(ob_get_clean());
+};
 $footerText = $settings['footer_text'] ?? 'توسعه‌دهنده: مهدی ربانی - pgm.mehdirabani@gmail.com - github.com/mehdirabani';
 $sprite = template_asset_url('svg/icon-sprite.svg');
 $userInitial = mb_substr($user['full_name'] ?? 'ک', 0, 1, 'UTF-8');
@@ -128,8 +153,7 @@ if (Auth::role() === 'admin') {
         <div class="header-logo-wrapper col-auto p-0">
           <div class="logo-wrapper">
             <a class="proma-template-logo" href="<?= e(url('dashboard')) ?>">
-              <?php if ($logoIconPath): ?><img class="proma-uploaded-logo sm" src="<?= e(asset_url($logoIconPath)) ?>" alt="<?= e($logoText) ?>"><?php else: ?><span class="proma-logo-mark">پ</span><?php endif; ?>
-              <?php if ($logoPath): ?><img class="proma-uploaded-logo" src="<?= e(asset_url($logoPath)) ?>" alt="<?= e($logoText) ?>"><?php else: ?><span><?= e($logoText) ?></span><?php endif; ?>
+              <?= $renderFullLogo() ?>
             </a>
           </div>
           <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="align-center"></i></div>
@@ -225,22 +249,22 @@ if (Auth::role() === 'admin') {
       <div class="sidebar-wrapper" sidebar-layout="stroke-svg">
         <div>
           <div class="logo-wrapper">
-            <a class="proma-template-logo" href="<?= e(url('dashboard')) ?>">
-              <?php if ($logoIconPath): ?><img class="proma-uploaded-logo sm" src="<?= e(asset_url($logoIconPath)) ?>" alt="<?= e($logoText) ?>"><?php else: ?><span class="proma-logo-mark">پ</span><?php endif; ?>
-              <?php if ($logoPath): ?><img class="proma-uploaded-logo" src="<?= e(asset_url($logoPath)) ?>" alt="<?= e($logoText) ?>"><?php else: ?><span><?= e($logoText) ?></span><?php endif; ?>
+            <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="grid"></i></div>
+            <a class="proma-template-logo proma-sidebar-brand" href="<?= e(url('dashboard')) ?>">
+              <span class="proma-logo-full"><?= $renderFullLogo() ?></span>
+              <span class="proma-logo-compact"><?= $renderCompactLogo() ?></span>
             </a>
             <div class="back-btn"><i class="fa fa-angle-left"></i></div>
-            <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="grid"></i></div>
           </div>
           <div class="logo-icon-wrapper">
-            <a href="<?= e(url('dashboard')) ?>"><?php if ($logoIconPath): ?><img class="proma-uploaded-logo sm" src="<?= e(asset_url($logoIconPath)) ?>" alt="<?= e($logoText) ?>"><?php else: ?><span class="proma-logo-mark sm">پ</span><?php endif; ?></a>
+            <a href="<?= e(url('dashboard')) ?>"><?= $renderCompactLogo() ?></a>
           </div>
           <nav class="sidebar-main">
             <div class="left-arrow" id="left-arrow"><i data-feather="arrow-left"></i></div>
             <div id="sidebar-menu">
               <ul class="sidebar-links" id="simple-bar">
                 <li class="back-btn">
-                  <a href="<?= e(url('dashboard')) ?>"><?php if ($logoIconPath): ?><img class="proma-uploaded-logo sm" src="<?= e(asset_url($logoIconPath)) ?>" alt="<?= e($logoText) ?>"><?php else: ?><span class="proma-logo-mark sm">پ</span><?php endif; ?></a>
+                  <a href="<?= e(url('dashboard')) ?>"><?= $renderCompactLogo() ?></a>
                   <div class="mobile-back text-end"><span>برگشت</span><i class="fa fa-angle-right ps-2" aria-hidden="true"></i></div>
                 </li>
                 <li class="pin-title sidebar-main-title"><div><h6>پین شده</h6></div></li>

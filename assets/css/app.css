@@ -244,6 +244,18 @@ a {
   white-space: nowrap;
 }
 
+.proma-template-logo .proma-logo-full,
+.proma-template-logo .proma-logo-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.proma-template-logo .proma-logo-compact {
+  display: none;
+}
+
 .proma-login-logo {
   justify-content: center;
   width: 100%;
@@ -426,7 +438,6 @@ a {
     width: calc(100% - 88px) !important;
   }
 
-  .page-wrapper.compact-wrapper.proma-sidebar-icons .page-body-wrapper div.sidebar-wrapper .logo-wrapper .proma-template-logo span:not(.proma-logo-mark),
   .page-wrapper.compact-wrapper.proma-sidebar-icons .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-list .sidebar-link span,
   .page-wrapper.compact-wrapper.proma-sidebar-icons .page-body-wrapper div.sidebar-wrapper .sidebar-main-title,
   .page-wrapper.compact-wrapper.proma-sidebar-icons .page-body-wrapper div.sidebar-wrapper .pin-title,
@@ -449,6 +460,14 @@ a {
   .page-wrapper.compact-wrapper.proma-sidebar-icons .page-body-wrapper div.sidebar-wrapper .logo-wrapper {
     justify-content: center;
     padding-inline: 0 !important;
+  }
+
+  .page-wrapper.compact-wrapper.proma-sidebar-icons .page-body-wrapper div.sidebar-wrapper .logo-wrapper .proma-logo-full {
+    display: none !important;
+  }
+
+  .page-wrapper.compact-wrapper.proma-sidebar-icons .page-body-wrapper div.sidebar-wrapper .logo-wrapper .proma-logo-compact {
+    display: inline-flex !important;
   }
 
   .page-wrapper.compact-wrapper.proma-sidebar-icons .page-body-wrapper div.sidebar-wrapper .logo-wrapper .toggle-sidebar {
