@@ -330,7 +330,7 @@ if (!isset($tabs[$activeTab])) {
     <div class="card-body form-grid">
       <label class="full">عنوان چاپی قرارداد<input name="contract_document_title" value="<?= e($settings['contract_document_title'] ?? '') ?>" placeholder="مثلاً قرارداد اجاره به شرط تملیک / امانت‌داری"></label>
       <label class="full">هدر چاپی قرارداد<textarea name="contract_document_header" rows="4" placeholder="متن بالای برگه قرارداد؛ متغیرهای قرارداد قابل استفاده هستند."><?= e($settings['contract_document_header'] ?? '') ?></textarea></label>
-      <label class="full">متن کامل قرارداد<textarea class="proma-contract-editor" name="contract_template_body" rows="18" placeholder="اگر خالی بماند متن پیش‌فرض قرارداد استفاده می‌شود."><?= e($settings['contract_template_body'] ?? '') ?></textarea></label>
+      <label class="full">متن کامل قرارداد<textarea class="proma-contract-editor" name="contract_template_body" rows="18" data-rich-editor data-rich-editor-height="460" placeholder="اگر خالی بماند متن پیش‌فرض قرارداد استفاده می‌شود."><?= e($settings['contract_template_body'] ?? '') ?></textarea></label>
       <div class="full notice info">
         <strong>قالب فعال فعلی</strong>
         <div class="contract-document-preview" style="max-height:260px"><?= nl2br(e($activeContractTemplate), false) ?></div>

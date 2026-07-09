@@ -13,7 +13,7 @@ $socialLinks = $socialLinks ?? [];
             <div class="greeting-user">
               <h4 class="f-w-600">پیشخوان مشتری</h4>
               <p>قراردادها، اقساط و نشان‌های تشویقی شما در این بخش نمایش داده می‌شود.</p>
-              <div class="whatsnew-btn"><a class="btn btn-outline-white" href="<?= e(url('portal/installments')) ?>">پرداخت اقساط</a></div>
+              <div class="whatsnew-btn"><a class="btn btn-outline-white" href="<?= e(url('installments/panel')) ?>">پرداخت اقساط</a></div>
             </div>
           </div>
         </div>
@@ -110,7 +110,7 @@ $socialLinks = $socialLinks ?? [];
 
   <div class="col-xl-6 box-col-6">
     <div class="card">
-      <div class="card-header card-no-border"><div class="header-top"><h5>نمای مالی امروز</h5><a class="link-only" href="<?= e(url('portal/installments')) ?>">پرداخت</a></div></div>
+      <div class="card-header card-no-border"><div class="header-top"><h5>نمای مالی امروز</h5><a class="link-only" href="<?= e(url('installments/panel')) ?>">پرداخت</a></div></div>
       <div class="card-body pt-0">
         <div class="table-responsive">
           <table class="table table-bordernone">

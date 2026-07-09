@@ -25,22 +25,22 @@ class PaymentsController extends Controller
         $installment = Installment::find((int) ($_POST['installment_id'] ?? 0));
         if (!$installment || (int) $installment['customer_id'] !== (int) Auth::id()) {
             set_flash('error', 'قسط برای پرداخت پیدا نشد.');
-            redirect('portal/installments');
+            redirect('installments/panel');
         }
         $amount = normalize_money($_POST['amount'] ?? $installment['payable']);
         if ($amount <= 0 || $amount > $installment['payable']) {
             set_flash('error', 'مبلغ پرداخت معتبر نیست.');
-            redirect('portal/installments');
+            redirect('installments/panel');
         }
         $settings = Settings::allKeyed();
         if ((string) ($settings['zibal_enabled'] ?? '1') !== '1') {
             set_flash('error', 'پرداخت آنلاین در حال حاضر غیرفعال است.');
-            redirect('portal/installments');
+            redirect('installments/panel');
         }
         $zibalTestMode = (string) ($settings['zibal_test_mode'] ?? '0') === '1';
         if (!$zibalTestMode && trim((string) ($settings['zibal_merchant'] ?? '')) === '') {
             set_flash('error', 'مرچنت زیبال برای پرداخت آنلاین تنظیم نشده است.');
-            redirect('portal/installments');
+            redirect('installments/panel');
         }
         $base = rtrim($settings['callback_base_url'] ?: detected_base_url(), '/');
         $callback = $base . '/index.php?route=payments/callback';
@@ -48,7 +48,7 @@ class PaymentsController extends Controller
         $request = $client->request($amount, $callback, 'پرداخت قسط قرارداد ' . $installment['contract_number']);
         if (!$request['ok']) {
             set_flash('error', $request['message']);
-            redirect('portal/installments');
+            redirect('installments/panel');
         }
         Payment::createPendingGateway($installment['id'], $installment['contract_id'], Auth::id(), $amount, $request['track_id']);
         redirect_raw($request['start_url']);
@@ -60,12 +60,12 @@ class PaymentsController extends Controller
         $this->onlyPost();
         if ((string) Settings::get('card_transfer_enabled', '1') !== '1') {
             set_flash('error', 'پرداخت کارت به کارت در حال حاضر فعال نیست.');
-            redirect('portal/installments');
+            redirect('installments/panel');
         }
         $installment = Installment::find((int) ($_POST['installment_id'] ?? 0));
         if (!$installment || (int) $installment['customer_id'] !== (int) Auth::id()) {
             set_flash('error', 'قسط برای پرداخت پیدا نشد.');
-            redirect('portal/installments');
+            redirect('installments/panel');
         }
         try {
             $path = UploadHelper::storeImage($_FILES['receipt'] ?? [], 'payment_receipts/' . Auth::id());
@@ -80,7 +80,7 @@ class PaymentsController extends Controller
             }
             set_flash('error', $e->getMessage());
         }
-        redirect('portal/installments');
+        redirect('installments/panel');
     }
 
     public function receiptFile($id)
@@ -157,17 +157,17 @@ class PaymentsController extends Controller
         $trackId = to_english_digits($_GET['trackId'] ?? $_GET['trackid'] ?? '');
         if ($trackId === '') {
             set_flash('error', 'شناسه پیگیری پرداخت دریافت نشد.');
-            redirect('portal/installments');
+            redirect('installments/panel');
         }
         $settings = Settings::allKeyed();
         $client = new ZibalClient($settings['zibal_merchant'], (string) ($settings['zibal_test_mode'] ?? '0') === '1');
         $verify = $client->verify($trackId);
         if (!$verify['ok']) {
             set_flash('error', $verify['message']);
-            redirect('portal/installments');
+            redirect('installments/panel');
         }
         $result = Payment::completeGateway($trackId, $verify['ref_id'], $verify['amount_toman']);
         set_flash($result['ok'] ? 'success' : 'error', $result['message']);
-        redirect('portal/installments');
+        redirect('installments/panel');
     }
 }

@@ -381,7 +381,7 @@ class Payment extends Model
             );
             self::applyToInstallment($payment['installment_id']);
             self::storeSnapshot((int) $payment['id'], $before, self::installmentState((int) $payment['installment_id']));
-            Notification::create($payment['user_id'], 'پرداخت جدید ثبت شد', 'پرداخت شما با موفقیت تأیید شد.', 'payment', url('portal/installments'));
+            Notification::create($payment['user_id'], 'پرداخت جدید ثبت شد', 'پرداخت شما با موفقیت تأیید شد.', 'payment', url('installments/panel'));
             self::commit();
             return ['ok' => true, 'message' => 'پرداخت با موفقیت ثبت شد.'];
         } catch (Throwable $e) {

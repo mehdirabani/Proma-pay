@@ -1886,6 +1886,69 @@
     });
   };
 
+  const initPromaRichEditors = function () {
+    if (!window.Quill) return;
+    document.querySelectorAll('textarea[data-rich-editor]').forEach(function (textarea) {
+      if (textarea.dataset.richEditorReady === '1') return;
+      textarea.dataset.richEditorReady = '1';
+
+      const height = Number(textarea.getAttribute('data-rich-editor-height') || 360);
+      const shell = document.createElement('div');
+      shell.className = 'proma-rich-editor-shell';
+      shell.setAttribute('dir', 'rtl');
+
+      const editor = document.createElement('div');
+      editor.className = 'proma-rich-editor';
+      editor.style.minHeight = Math.max(220, height) + 'px';
+      shell.appendChild(editor);
+      textarea.parentNode.insertBefore(shell, textarea);
+      textarea.classList.add('proma-rich-source');
+
+      const quill = new window.Quill(editor, {
+        theme: 'snow',
+        placeholder: textarea.getAttribute('placeholder') || 'متن را وارد کنید...',
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ color: [] }, { background: [] }],
+            [{ align: [] }],
+            [{ list: 'ordered' }, { list: 'bullet' }],
+            ['blockquote', 'code-block'],
+            ['link', 'clean']
+          ]
+        }
+      });
+
+      const initial = textarea.value || '';
+      if (initial.trim() !== '') {
+        if (/<[a-z][\s\S]*>/i.test(initial)) {
+          quill.clipboard.dangerouslyPasteHTML(initial);
+        } else {
+          quill.clipboard.dangerouslyPasteHTML(initial.replace(/[&<>"']/g, function (char) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[char];
+          }).replace(/\r?\n/g, '<br>'));
+        }
+      }
+      quill.root.setAttribute('dir', 'rtl');
+      quill.root.classList.add('proma-quill-rtl');
+      try {
+        quill.format('direction', 'rtl');
+        quill.format('align', 'right');
+      } catch (error) {}
+
+      const sync = function () {
+        const html = quill.root.innerHTML.trim();
+        textarea.value = html === '<p><br></p>' ? '' : html;
+      };
+      quill.on('text-change', sync);
+      const form = textarea.closest('form');
+      if (form) {
+        form.addEventListener('submit', sync);
+      }
+    });
+  };
+
   const initCardLinks = function () {
     document.querySelectorAll('[data-card-href]').forEach(function (card) {
       if (card.dataset.cardHrefBound === '1') return;
@@ -1990,6 +2053,7 @@
     initChat();
     initCardLinks();
     initCopyShortcodes();
+    initPromaRichEditors();
     initTour();
     initServiceWorker();
   });

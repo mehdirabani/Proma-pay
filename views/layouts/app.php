@@ -61,6 +61,11 @@ if (Auth::role() === 'admin') {
         ['installments', 'اقساط', 'stroke-file', 'fill-file'],
         ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
         ['payments', 'پرداخت‌ها', 'stroke-ecommerce', 'fill-ecommerce'],
+        ['ecommerce', 'تجارت الکترونیک', 'stroke-ecommerce', 'fill-ecommerce', [
+            ['ecommerce/addProduct', 'افزودن محصول'],
+            ['ecommerce/products', 'فهرست محصولات'],
+            ['ecommerce/orders', 'فهرست سفارشات'],
+        ]],
         ['review', 'بررسی موارد ارسالی', 'stroke-task', 'fill-task'],
         ['legal', 'حقوقی و شکایت‌ها', 'stroke-file', 'fill-file'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
@@ -92,7 +97,9 @@ if (Auth::role() === 'admin') {
         ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
         ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['portal/contracts', 'قراردادها', 'stroke-project', 'fill-project'],
-        ['portal/installments', 'اقساط', 'stroke-file', 'fill-file'],
+        ['installments/panel', 'اقساط', 'stroke-file', 'fill-file'],
+        ['ecommerce/shop', 'فروشگاه', 'stroke-ecommerce', 'fill-ecommerce'],
+        ['ecommerce/cart', 'سبد خرید', 'stroke-board', 'fill-board'],
         ['portal/guaranteed', 'ضمانت‌ها', 'stroke-board', 'fill-board'],
         ['portal/history', 'سوابق خرید', 'stroke-ecommerce', 'fill-ecommerce'],
         ['calendar', 'تقویم', 'stroke-task', 'fill-task'],
@@ -118,6 +125,8 @@ if (Auth::role() === 'admin') {
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/slick.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/slick-theme.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/scrollbar.css')) ?>">
+  <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/quill.snow.css')) ?>">
+  <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/quill.bubble.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/animate.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/bootstrap.rtl.min.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/style.css')) ?>">
@@ -270,17 +279,42 @@ if (Auth::role() === 'admin') {
                 <li class="pin-title sidebar-main-title"><div><h6>پین شده</h6></div></li>
                 <li class="sidebar-main-title"><div><h6>منوی سامانه</h6></div></li>
                 <?php foreach ($nav as $item): ?>
-                  <?php $active = strpos($route, $item[0]) === 0 || ($route === 'dashboard' && $item[0] === 'dashboard'); ?>
+                  <?php
+                    $children = $item[4] ?? [];
+                    $active = strpos($route, $item[0]) === 0 || ($route === 'dashboard' && $item[0] === 'dashboard');
+                    if (!$active && $children) {
+                        foreach ($children as $child) {
+                            if (strpos($route, $child[0]) === 0) {
+                                $active = true;
+                                break;
+                            }
+                        }
+                    }
+                  ?>
                   <li class="sidebar-list">
                     <i class="fa fa-thumb-tack"></i>
                     <?php if ($item[0] === 'chat' && $unreadMessages): ?><label class="badge badge-light-primary"><?= to_persian_digits($unreadMessages) ?></label><?php endif; ?>
                     <?php if ($item[0] === 'notifications' && $unreadNotifications): ?><label class="badge badge-light-primary"><?= to_persian_digits($unreadNotifications) ?></label><?php endif; ?>
                     <?php if ($item[0] === 'review' && $pendingReviewCount): ?><label class="badge badge-light-danger"><?= to_persian_digits($pendingReviewCount) ?></label><?php endif; ?>
-                    <a class="sidebar-link sidebar-title link-nav <?= $active ? 'active' : '' ?>" href="<?= e(url($item[0])) ?>">
-                      <svg class="stroke-icon"><use href="<?= e($sprite) ?>#<?= e($item[2]) ?>"></use></svg>
-                      <svg class="fill-icon"><use href="<?= e($sprite) ?>#<?= e($item[3]) ?>"></use></svg>
-                      <span><?= e($item[1]) ?></span>
-                    </a>
+                    <?php if ($children): ?>
+                      <a class="sidebar-link sidebar-title <?= $active ? 'active' : '' ?>" href="javascript:void(0)">
+                        <svg class="stroke-icon"><use href="<?= e($sprite) ?>#<?= e($item[2]) ?>"></use></svg>
+                        <svg class="fill-icon"><use href="<?= e($sprite) ?>#<?= e($item[3]) ?>"></use></svg>
+                        <span><?= e($item[1]) ?></span>
+                      </a>
+                      <ul class="sidebar-submenu" style="<?= $active ? 'display:block;' : '' ?>">
+                        <?php foreach ($children as $child): ?>
+                          <?php $childActive = strpos($route, $child[0]) === 0; ?>
+                          <li><a class="<?= $childActive ? 'active' : '' ?>" href="<?= e(url($child[0])) ?>"><?= e($child[1]) ?></a></li>
+                        <?php endforeach; ?>
+                      </ul>
+                    <?php else: ?>
+                      <a class="sidebar-link sidebar-title link-nav <?= $active ? 'active' : '' ?>" href="<?= e(url($item[0])) ?>">
+                        <svg class="stroke-icon"><use href="<?= e($sprite) ?>#<?= e($item[2]) ?>"></use></svg>
+                        <svg class="fill-icon"><use href="<?= e($sprite) ?>#<?= e($item[3]) ?>"></use></svg>
+                        <span><?= e($item[1]) ?></span>
+                      </a>
+                    <?php endif; ?>
                   </li>
                 <?php endforeach; ?>
               </ul>
@@ -376,6 +410,7 @@ if (Auth::role() === 'admin') {
   <script src="<?= e(template_asset_url('js/header-slick.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/height-equal.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/script.js')) ?>"></script>
+  <script src="<?= e(template_asset_url('js/editors/quill.js')) ?>"></script>
   <script src="<?= e(asset_url('assets/js/app.js')) ?>"></script>
 </body>
 </html>

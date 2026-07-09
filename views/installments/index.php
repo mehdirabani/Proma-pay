@@ -22,11 +22,12 @@ $defaultPaymentMethod = $gatewayReady ? 'gateway' : ($cardTransferEnabled ? 'car
 $defaultPaymentDate = jdate(date('Y-m-d'));
 $defaultPaymentTime = date('H:i');
 $pagination = $pagination ?? ['total' => count($installments), 'page' => 1, 'pages' => 1, 'per_page' => count($installments) ?: 20];
-$pageUrl = function ($page) {
+$installmentsRoute = $installmentsRoute ?? ($customerMode ? 'installments/panel' : 'installments');
+$pageUrl = function ($page) use ($installmentsRoute) {
     $params = $_GET;
     unset($params['route']);
     $params['page'] = $page;
-    return url('installments', $params);
+    return url($installmentsRoute, $params);
 };
 ?>
 <?php if (!$customerMode): ?>

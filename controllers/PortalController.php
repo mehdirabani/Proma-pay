@@ -33,12 +33,7 @@ class PortalController extends Controller
     public function installments()
     {
         $this->requireRole('customer');
-        $this->render('installments/index', [
-            'title' => 'اقساط من',
-            'installments' => Installment::all(['customer_id' => Auth::id()]),
-            'contracts' => [],
-            'customerMode' => true,
-        ]);
+        redirect('installments/panel');
     }
 
     public function history()

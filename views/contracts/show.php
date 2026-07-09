@@ -103,7 +103,7 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
           <?= csrf_field() ?>
           <label class="full">عنوان چاپی قرارداد<input name="rendered_title" value="<?= e($renderedDocumentTitle) ?>" required></label>
           <label class="full">هدر چاپی قرارداد<textarea name="rendered_header" rows="4"><?= e($renderedDocumentHeader) ?></textarea></label>
-          <label class="full">ویرایش دستی متن قرارداد<textarea name="rendered_body" rows="18" required><?= e($document['rendered_body'] ?? ContractDocument::render((int) $contract['id'])) ?></textarea></label>
+          <label class="full">ویرایش دستی متن قرارداد<textarea name="rendered_body" rows="18" data-rich-editor data-rich-editor-height="520" required><?= e($document['rendered_body'] ?? ContractDocument::render((int) $contract['id'])) ?></textarea></label>
           <label class="full">دلیل ویرایش<input name="change_reason" required placeholder="علت ویرایش نسخه نهایی"></label>
           <div class="actions"><button class="btn" type="submit">ذخیره نسخه نهایی</button></div>
         </form>

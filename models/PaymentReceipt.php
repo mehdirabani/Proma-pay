@@ -61,7 +61,7 @@ class PaymentReceipt extends Model
                  VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
                 [$paymentId, (int) $installmentId, (int) $installment['contract_id'], (int) $customerId, $amount, $receiptPath, 'pending']
             );
-            Notification::create((int) $customerId, 'رسید پرداخت دریافت شد', 'رسید کارت به کارت شما ثبت شد و در صف بررسی قرار گرفت.', 'payment_receipt', url('portal/installments'));
+            Notification::create((int) $customerId, 'رسید پرداخت دریافت شد', 'رسید کارت به کارت شما ثبت شد و در صف بررسی قرار گرفت.', 'payment_receipt', url('installments/panel'));
             foreach (User::all('admin', null, 'active') as $admin) {
                 Notification::create(
                     (int) $admin['id'],
@@ -176,14 +176,14 @@ class PaymentReceipt extends Model
                     ]
                 );
                 Payment::applyToInstallment((int) $receipt['installment_id']);
-                Notification::create((int) $receipt['customer_id'], 'رسید پرداخت تأیید شد', 'رسید کارت به کارت شما تأیید شد و روی قسط اعمال شد.', 'payment', url('portal/installments'));
+                Notification::create((int) $receipt['customer_id'], 'رسید پرداخت تأیید شد', 'رسید کارت به کارت شما تأیید شد و روی قسط اعمال شد.', 'payment', url('installments/panel'));
                 $botBody = 'رسید کارت به کارت شما تایید شد و روی قسط اعمال شد.';
             } else {
                 self::execute(
                     "UPDATE payments SET status = 'failed', description = ? WHERE id = ?",
                     ['رسید کارت به کارت رد شد', (int) $receipt['payment_id']]
                 );
-                Notification::create((int) $receipt['customer_id'], 'رسید پرداخت رد شد', 'رسید کارت به کارت شما تأیید نشد.', 'payment', url('portal/installments'));
+                Notification::create((int) $receipt['customer_id'], 'رسید پرداخت رد شد', 'رسید کارت به کارت شما تأیید نشد.', 'payment', url('installments/panel'));
                 $botBody = 'رسید کارت به کارت شما تایید نشد. وضعیت پرداخت دوباره در انتظار پرداخت است.';
             }
             UploadHelper::deleteRelative($receipt['receipt_path']);
@@ -195,7 +195,7 @@ class PaymentReceipt extends Model
             );
             self::commit();
             try {
-                Chat::botMessage((int) $receipt['customer_id'], $botBody, url('portal/installments'));
+                Chat::botMessage((int) $receipt['customer_id'], $botBody, url('installments/panel'));
             } catch (Throwable $ignored) {
             }
         } catch (Throwable $e) {

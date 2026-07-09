@@ -17,6 +17,18 @@ class InstallmentsController extends Controller
         ], is_ajax_request() ? null : 'app');
     }
 
+    public function panel()
+    {
+        $this->requireRole('customer');
+        $this->render('installments/index', [
+            'title' => 'پنل اقساط من',
+            'installments' => Installment::all(['customer_id' => Auth::id()]),
+            'contracts' => [],
+            'customerMode' => true,
+            'installmentsRoute' => 'installments/panel',
+        ]);
+    }
+
     public function store()
     {
         $this->requireRole('admin');
@@ -64,7 +76,7 @@ class InstallmentsController extends Controller
         }
         $paymentDate = parse_jalali_date($_POST['payment_date'] ?? '') ?: date('Y-m-d');
         Payment::record((int) $id, $installment['contract_id'], Auth::id(), $_POST['amount'] ?? 0, 'manual', 'paid', null, null, $_POST['description'] ?? 'پرداخت دستی', $paymentDate, 'installment', $_POST['payment_time'] ?? null);
-        Notification::create($installment['customer_id'], 'پرداخت جدید ثبت شد', 'یک پرداخت برای قسط شما ثبت شد.', 'payment', url('portal/installments'));
+        Notification::create($installment['customer_id'], 'پرداخت جدید ثبت شد', 'یک پرداخت برای قسط شما ثبت شد.', 'payment', url('installments/panel'));
         set_flash('success', 'پرداخت دستی ثبت شد.');
         redirect($this->redirectRoute());
     }
