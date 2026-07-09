@@ -168,10 +168,13 @@ $pageUrl = function ($page) use ($viewMode) {
       <div class="modal-body form-grid three">
         <?= csrf_field() ?>
         <label>نام کامل<input name="full_name" required></label>
+        <label>نام پدر<input name="father_name"></label>
+        <label>محل صدور<input name="issued_from"></label>
         <label>کد ملی<input name="national_id" required inputmode="numeric"></label>
         <label>موبایل<input name="mobile" required inputmode="tel"></label>
         <label>تلفن دوم<input name="secondary_phone" inputmode="tel"></label>
         <label>وضعیت<select name="status"><option value="active">فعال</option><option value="inactive">غیرفعال</option></select></label>
+        <label class="full">آدرس<textarea name="address" rows="3"></textarea></label>
       </div>
       <div class="modal-footer"><button class="btn" type="submit">ثبت مشتری</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
     </form>
@@ -262,10 +265,13 @@ $pageUrl = function ($page) use ($viewMode) {
         <div class="modal-body form-grid three">
           <?= csrf_field() ?>
           <label>نام کامل<input name="full_name" value="<?= e($item['full_name']) ?>" required></label>
+          <label>نام پدر<input name="father_name" value="<?= e($item['father_name'] ?? '') ?>"></label>
+          <label>محل صدور<input name="issued_from" value="<?= e($item['issued_from'] ?? '') ?>"></label>
           <label>کد ملی<input name="national_id" value="<?= e($item['national_id']) ?>" required inputmode="numeric"></label>
           <label>موبایل<input name="mobile" value="<?= e($item['mobile']) ?>" required inputmode="tel"></label>
           <label>تلفن دوم<input name="secondary_phone" value="<?= e($item['secondary_phone']) ?>" inputmode="tel"></label>
           <label>وضعیت<select name="status"><option value="active"<?= selected($item['status'], 'active') ?>>فعال</option><option value="inactive"<?= selected($item['status'], 'inactive') ?>>غیرفعال</option></select></label>
+          <label class="full">آدرس<textarea name="address" rows="3"><?= e($item['address'] ?? '') ?></textarea></label>
         </div>
         <div class="modal-footer"><button class="btn" type="submit">ذخیره تغییرات</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
       </form>

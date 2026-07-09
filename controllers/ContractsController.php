@@ -148,6 +148,8 @@ class ContractsController extends Controller
             'title' => 'جزئیات قرارداد',
             'contract' => $contract,
             'document' => ContractDocument::document($contractId),
+            'documentTitle' => ContractDocument::renderTitle($contractId),
+            'documentHeader' => ContractDocument::renderHeader($contractId),
             'items' => ContractDocument::items($contractId),
             'guarantees' => ContractDocument::guarantees($contractId),
             'guarantorPeople' => ContractDocument::guarantorPeople($contractId),
@@ -369,7 +371,7 @@ class ContractsController extends Controller
         $this->requireRole('admin');
         $this->onlyPost();
         try {
-            ContractDocument::saveRenderedBody((int) $id, $_POST['rendered_body'] ?? '', Auth::id(), $_POST['change_reason'] ?? '');
+            ContractDocument::saveRenderedBody((int) $id, $_POST['rendered_body'] ?? '', Auth::id(), $_POST['change_reason'] ?? '', $_POST['rendered_title'] ?? '', $_POST['rendered_header'] ?? '');
             set_flash('success', 'نسخه نهایی قرارداد ذخیره شد.');
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ذخیره متن قرارداد انجام نشد.');
@@ -383,9 +385,13 @@ class ContractsController extends Controller
         $contract = Contract::find((int) $id);
         $this->authorizeContractAccess($contract);
         $document = ContractDocument::document((int) $id);
+        $settings = Settings::allKeyed();
         $this->render('contracts/print', [
             'title' => 'چاپ قرارداد',
             'contract' => $contract,
+            'settings' => $settings,
+            'documentTitle' => trim((string) ($document['rendered_title'] ?? '')) ?: ContractDocument::renderTitle((int) $id),
+            'documentHeader' => trim((string) ($document['rendered_header'] ?? '')) ?: ContractDocument::renderHeader((int) $id),
             'body' => $document['rendered_body'] ?? ContractDocument::render((int) $id),
         ], null);
     }

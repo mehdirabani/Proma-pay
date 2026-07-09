@@ -65,6 +65,8 @@ class ContractDocument extends Model
             "CREATE TABLE IF NOT EXISTS generated_contract_documents (
                 id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 contract_id BIGINT UNSIGNED NOT NULL,
+                rendered_title VARCHAR(190) NULL,
+                rendered_header TEXT NULL,
                 rendered_body LONGTEXT NOT NULL,
                 generated_by BIGINT UNSIGNED NULL,
                 created_at DATETIME NOT NULL,
@@ -96,6 +98,14 @@ class ContractDocument extends Model
             self::execute('ALTER TABLE installments ADD COLUMN guarantee_serial VARCHAR(190) NULL AFTER notes');
         } catch (Throwable $e) {
         }
+        try {
+            self::execute('ALTER TABLE generated_contract_documents ADD COLUMN rendered_title VARCHAR(190) NULL AFTER contract_id');
+        } catch (Throwable $e) {
+        }
+        try {
+            self::execute('ALTER TABLE generated_contract_documents ADD COLUMN rendered_header TEXT NULL AFTER rendered_title');
+        } catch (Throwable $e) {
+        }
 
         self::$schemaReady = true;
     }
@@ -110,6 +120,8 @@ class ContractDocument extends Model
         return [
             '{{contract_number}}' => 'شماره قرارداد',
             '{{contract_date}}' => 'تاریخ قرارداد',
+            '{{document_title}}' => 'عنوان چاپی قرارداد',
+            '{{document_header}}' => 'هدر چاپی قرارداد',
             '{{company_name}}' => 'نام مجموعه',
             '{{company_representative_name}}' => 'نام نماینده مجموعه',
             '{{company_representative_national_id}}' => 'کد ملی نماینده مجموعه',
@@ -147,8 +159,6 @@ class ContractDocument extends Model
     public static function defaultTemplate()
     {
         return <<<'TEXT'
-قرارداد اجاره به شرط تملیک
-
 این قرارداد فیمابین:
 
 موجر: {{company_representative_name}} به شماره ملی {{company_representative_national_id}} به نشانی {{company_address}}، کدپستی {{company_postal_code}} که از این پس "موبایل پروما" نامیده می‌شود.
@@ -179,7 +189,7 @@ class ContractDocument extends Model
 ماده ۴ - شرایط تأخیر در پرداخت و عواقب آن
 
 - در صورت تأخیر در پرداخت هر قسط، تا پیش از ارجاع یا ثبت پرونده حقوقی، بابت هر ماه دیرکرد، {{monthly_penalty_rate}} درصد از مانده قسط به عنوان جریمه تأخیر عادی محاسبه می‌شود.
-- در صورت ورود قرارداد به مرحله حقوقی یا شکایت، از همان تاریخ به بعد بابت هر ماه دیرکرد، {{legal_monthly_penalty_rate}} درصد از مانده قسط به عنوان جریمه تأخیر حقوقی محاسبه می‌شود.
+- در صورت تأخیر در پرداخت هر قسط، بابت هر ماه دیرکرد، {{legal_monthly_penalty_rate}} مرکب درصد از مانده قسط به عنوان جریمه تأخیر عادی محاسبه می‌شود.
 - تا {{late_penalty_grace_days}} روز پس از سررسید هر قسط، جریمه دیرکرد محاسبه نمی‌شود و پس از پایان این مهلت، جریمه از روز بعد محاسبه خواهد شد.
 - {{legal_penalty_clause}}
 - در صورت تأخیر بیش از ۲۰ روز، موبایل پروما مجاز است کالای امانت را بازپس گیرد و ضمانت ارائه‌شده را وصول نماید.
@@ -319,46 +329,71 @@ TEXT;
     {
         self::ensureSchema();
         $rendered = self::render((int) $contractId);
+        $title = self::renderTitle((int) $contractId);
+        $header = self::renderHeader((int) $contractId);
         $existing = self::document((int) $contractId);
         self::execute(
-            'INSERT INTO generated_contract_documents (contract_id, rendered_body, generated_by, created_at, updated_at)
-             VALUES (?, ?, ?, NOW(), NULL)
-             ON DUPLICATE KEY UPDATE rendered_body = VALUES(rendered_body), generated_by = VALUES(generated_by), updated_at = NOW()',
-            [(int) $contractId, $rendered, $generatedBy ? (int) $generatedBy : null]
+            'INSERT INTO generated_contract_documents (contract_id, rendered_title, rendered_header, rendered_body, generated_by, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, NOW(), NULL)
+             ON DUPLICATE KEY UPDATE rendered_title = VALUES(rendered_title), rendered_header = VALUES(rendered_header), rendered_body = VALUES(rendered_body), generated_by = VALUES(generated_by), updated_at = NOW()',
+            [(int) $contractId, $title, $header, $rendered, $generatedBy ? (int) $generatedBy : null]
         );
         self::log(
             (int) $contractId,
             $existing ? 'regenerate_document' : 'generate_document',
             $existing ? ['rendered_body' => $existing['rendered_body']] : null,
-            ['rendered_body' => $rendered],
+            ['rendered_title' => $title, 'rendered_header' => $header, 'rendered_body' => $rendered],
             $existing ? 'تولید مجدد متن قرارداد' : 'تولید متن قرارداد',
             $generatedBy
         );
         return $rendered;
     }
 
-    public static function saveRenderedBody($contractId, $body, $userId, $reason)
+    public static function saveRenderedBody($contractId, $body, $userId, $reason, $title = null, $header = null)
     {
         self::ensureSchema();
         $body = trim((string) $body);
         if ($body === '') {
             throw new InvalidArgumentException('متن قرارداد نمی‌تواند خالی باشد.');
         }
+        $title = trim((string) ($title ?? '')) ?: self::renderTitle((int) $contractId);
+        $header = trim((string) ($header ?? '')) ?: self::renderHeader((int) $contractId);
         $existing = self::document((int) $contractId);
         self::execute(
-            'INSERT INTO generated_contract_documents (contract_id, rendered_body, generated_by, created_at, updated_at)
-             VALUES (?, ?, ?, NOW(), NULL)
-             ON DUPLICATE KEY UPDATE rendered_body = VALUES(rendered_body), generated_by = VALUES(generated_by), updated_at = NOW()',
-            [(int) $contractId, $body, $userId ? (int) $userId : null]
+            'INSERT INTO generated_contract_documents (contract_id, rendered_title, rendered_header, rendered_body, generated_by, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, NOW(), NULL)
+             ON DUPLICATE KEY UPDATE rendered_title = VALUES(rendered_title), rendered_header = VALUES(rendered_header), rendered_body = VALUES(rendered_body), generated_by = VALUES(generated_by), updated_at = NOW()',
+            [(int) $contractId, $title, $header, $body, $userId ? (int) $userId : null]
         );
         self::log(
             (int) $contractId,
             'edit_document',
             $existing ? ['rendered_body' => $existing['rendered_body']] : null,
-            ['rendered_body' => $body],
+            ['rendered_title' => $title, 'rendered_header' => $header, 'rendered_body' => $body],
             $reason ?: 'ویرایش دستی متن قرارداد',
             $userId
         );
+    }
+
+    public static function renderTitle($contractId)
+    {
+        return self::renderPlainTemplate((int) $contractId, 'contract_document_title', 'قرارداد اجاره به شرط تملیک / امانت‌داری');
+    }
+
+    public static function renderHeader($contractId)
+    {
+        return self::renderPlainTemplate((int) $contractId, 'contract_document_header', "{{company_name}}\nشماره قرارداد: {{contract_number}} | تاریخ: {{contract_date}}\nامانت‌دار: {{customer_full_name}} | کد ملی: {{customer_national_id}}");
+    }
+
+    protected static function renderPlainTemplate($contractId, $settingKey, $fallback)
+    {
+        $contract = Contract::find((int) $contractId);
+        if (!$contract) {
+            throw new InvalidArgumentException('قرارداد پیدا نشد.');
+        }
+        $settings = Settings::allKeyed();
+        $template = trim((string) ($settings[$settingKey] ?? '')) ?: $fallback;
+        return trim(strtr($template, self::plainReplacements($contract, $settings)));
     }
 
     public static function render($contractId)
@@ -385,6 +420,8 @@ TEXT;
         $replace = [
             '{{contract_number}}' => e($contract['contract_number']),
             '{{contract_date}}' => e(jdate($contract['start_date'])),
+            '{{document_title}}' => e(self::renderTitle((int) $contractId)),
+            '{{document_header}}' => nl2br(e(self::renderHeader((int) $contractId)), false),
             '{{company_name}}' => e($settings['company_name'] ?? ''),
             '{{company_representative_name}}' => e($settings['company_representative_name'] ?? ''),
             '{{company_representative_national_id}}' => e(to_persian_digits($settings['company_representative_national_id'] ?? '')),
@@ -424,6 +461,30 @@ TEXT;
             $html .= '<br><br>' . nl2br(e($legalPenaltyClause), false);
         }
         return '<div class="contract-document-body">' . $html . '</div>';
+    }
+
+    protected static function plainReplacements(array $contract, array $settings)
+    {
+        return [
+            '{{contract_number}}' => (string) ($contract['contract_number'] ?? ''),
+            '{{contract_date}}' => jdate($contract['start_date'] ?? date('Y-m-d')),
+            '{{company_name}}' => (string) ($settings['company_name'] ?? ''),
+            '{{company_representative_name}}' => (string) ($settings['company_representative_name'] ?? ''),
+            '{{company_representative_national_id}}' => to_persian_digits($settings['company_representative_national_id'] ?? ''),
+            '{{company_address}}' => (string) ($settings['company_address'] ?? ''),
+            '{{company_postal_code}}' => to_persian_digits($settings['company_postal_code'] ?? ''),
+            '{{company_phone}}' => to_persian_digits($settings['company_phone'] ?? ''),
+            '{{customer_full_name}}' => (string) ($contract['customer_name'] ?? ''),
+            '{{customer_father_name}}' => (string) ($contract['customer_father_name'] ?? ''),
+            '{{customer_national_id}}' => to_persian_digits($contract['national_id'] ?? ''),
+            '{{customer_issued_from}}' => (string) ($contract['customer_issued_from'] ?? ''),
+            '{{customer_mobile}}' => to_persian_digits($contract['mobile'] ?? ''),
+            '{{customer_secondary_phone}}' => to_persian_digits($contract['secondary_phone'] ?? ''),
+            '{{customer_address}}' => (string) ($contract['customer_address'] ?? ''),
+            '{{monthly_penalty_rate}}' => to_persian_digits($settings['monthly_penalty_rate'] ?? '0'),
+            '{{legal_monthly_penalty_rate}}' => to_persian_digits($settings['legal_monthly_penalty_rate'] ?? $settings['monthly_penalty_rate'] ?? '0'),
+            '{{late_penalty_grace_days}}' => to_persian_digits($settings['late_penalty_grace_days'] ?? '0'),
+        ];
     }
 
     protected static function legalPenaltyClause(array $settings)

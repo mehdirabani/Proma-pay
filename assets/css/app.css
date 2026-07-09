@@ -95,6 +95,28 @@
   background: #fff;
 }
 
+.contract-document-preview-header {
+  border: 1px solid rgba(115, 102, 255, .24);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: rgba(115, 102, 255, .04);
+}
+
+.contract-document-preview-header strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--proma-text);
+  font-size: 15px;
+}
+
+.contract-document-preview-header p {
+  margin: 0;
+  color: var(--proma-muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
 .contract-print-table {
   width: 100%;
   border-collapse: collapse;
@@ -3885,6 +3907,10 @@ body.dark-only .proma-payment-card__qr-grid {
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 14px;
   margin-bottom: 18px;
+}
+
+.proma-customer-social-section .proma-social-card-grid {
+  margin-bottom: 0;
 }
 
 .proma-social-card {

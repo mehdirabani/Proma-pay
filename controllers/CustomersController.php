@@ -51,12 +51,15 @@ class CustomersController extends Controller
                 'role' => 'customer',
                 'username' => null,
                 'full_name' => $_POST['full_name'] ?? '',
+                'father_name' => $_POST['father_name'] ?? '',
+                'issued_from' => $_POST['issued_from'] ?? '',
                 'national_id' => $_POST['national_id'] ?? '',
                 'mobile' => $_POST['mobile'] ?? '',
                 'secondary_phone' => $_POST['secondary_phone'] ?? '',
                 'email' => '',
                 'password' => '',
                 'status' => $_POST['status'] ?? 'active',
+                'address' => $_POST['address'] ?? '',
             ]);
             set_flash('success', 'مشتری با موفقیت ثبت شد.');
         } catch (Throwable $e) {
@@ -78,11 +81,14 @@ class CustomersController extends Controller
             User::updateUser((int) $id, [
                 'role' => 'customer',
                 'full_name' => $_POST['full_name'] ?? '',
+                'father_name' => $_POST['father_name'] ?? '',
+                'issued_from' => $_POST['issued_from'] ?? '',
                 'national_id' => $_POST['national_id'] ?? '',
                 'mobile' => $_POST['mobile'] ?? '',
                 'secondary_phone' => $_POST['secondary_phone'] ?? '',
                 'email' => '',
                 'status' => $_POST['status'] ?? 'active',
+                'address' => $_POST['address'] ?? '',
             ]);
             set_flash('success', 'اطلاعات مشتری به‌روزرسانی شد.');
         } catch (Throwable $e) {

@@ -60,17 +60,22 @@ $socialLinks = $socialLinks ?? [];
 
   <?php if ($socialLinks): ?>
     <div class="col-xl-12">
-      <div class="proma-social-card-grid">
-        <?php foreach ($socialLinks as $social): ?>
-          <a class="proma-social-card proma-social-card--<?= e($social['class']) ?>" href="<?= e($social['url']) ?>" target="_blank" rel="noopener noreferrer">
-            <span class="proma-social-card__icon"><i data-feather="<?= e($social['icon']) ?>"></i></span>
-            <span>
-              <strong><?= e($social['label']) ?></strong>
-              <small><?= e(parse_url($social['url'], PHP_URL_HOST) ?: $social['url']) ?></small>
-            </span>
-            <em>مشاهده</em>
-          </a>
-        <?php endforeach; ?>
+      <div class="card proma-customer-social-section">
+        <div class="card-header card-no-border"><div class="header-top"><h5>شبکه‌های اجتماعی</h5></div></div>
+        <div class="card-body pt-0">
+          <div class="proma-social-card-grid">
+            <?php foreach ($socialLinks as $social): ?>
+              <a class="proma-social-card proma-social-card--<?= e($social['class']) ?>" href="<?= e($social['url']) ?>" target="_blank" rel="noopener noreferrer">
+                <span class="proma-social-card__icon"><i data-feather="<?= e($social['icon']) ?>"></i></span>
+                <span>
+                  <strong><?= e($social['label']) ?></strong>
+                  <small><?= e(parse_url($social['url'], PHP_URL_HOST) ?: $social['url']) ?></small>
+                </span>
+                <em>مشاهده</em>
+              </a>
+            <?php endforeach; ?>
+          </div>
+        </div>
       </div>
     </div>
   <?php endif; ?>

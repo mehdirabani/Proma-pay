@@ -12,6 +12,8 @@ $editableLegalLogIds = array_map('intval', $editableLegalLogIds ?? []);
 $deletableLegalLogIds = array_map('intval', $deletableLegalLogIds ?? []);
 $combinedLegalCost = (float) ($legalLogCostTotal ?? 0) + (float) ($legacyLegalCostTotal ?? 0);
 $isInternalViewer = Auth::role() !== 'customer';
+$renderedDocumentTitle = trim((string) ($document['rendered_title'] ?? '')) ?: ($documentTitle ?? '');
+$renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?: ($documentHeader ?? '');
 ?>
 
 <section class="card">
@@ -84,7 +86,13 @@ $isInternalViewer = Auth::role() !== 'customer';
     <div class="card-header card-no-border"><h2>متن قرارداد</h2></div>
     <div class="card-body">
       <?php if ($document): ?>
-        <div class="contract-document-preview"><?= $document['rendered_body'] ?></div>
+        <div class="contract-document-preview">
+          <div class="contract-document-preview-header">
+            <strong><?= e($renderedDocumentTitle) ?></strong>
+            <?php if ($renderedDocumentHeader !== ''): ?><p><?= nl2br(e($renderedDocumentHeader), false) ?></p><?php endif; ?>
+          </div>
+          <?= $document['rendered_body'] ?>
+        </div>
       <?php else: ?>
         <div class="empty">هنوز متن قرارداد تولید نشده است.</div>
       <?php endif; ?>
@@ -93,6 +101,8 @@ $isInternalViewer = Auth::role() !== 'customer';
       <div class="card-body">
         <form method="post" action="<?= e(url('contracts/saveDocument/' . $contract['id'])) ?>" class="form-grid">
           <?= csrf_field() ?>
+          <label class="full">عنوان چاپی قرارداد<input name="rendered_title" value="<?= e($renderedDocumentTitle) ?>" required></label>
+          <label class="full">هدر چاپی قرارداد<textarea name="rendered_header" rows="4"><?= e($renderedDocumentHeader) ?></textarea></label>
           <label class="full">ویرایش دستی متن قرارداد<textarea name="rendered_body" rows="18" required><?= e($document['rendered_body'] ?? ContractDocument::render((int) $contract['id'])) ?></textarea></label>
           <label class="full">دلیل ویرایش<input name="change_reason" required placeholder="علت ویرایش نسخه نهایی"></label>
           <div class="actions"><button class="btn" type="submit">ذخیره نسخه نهایی</button></div>
