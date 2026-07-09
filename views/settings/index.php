@@ -20,6 +20,7 @@ $tabGroups = [
         'template' => 'قالب قرارداد',
     ],
     'ارتباطات' => [
+        'social' => 'شبکه‌های اجتماعی',
         'notifications' => 'اعلان‌ها و چت',
         'sms' => 'پنل پیامکی',
         'calendar' => 'اعلان‌های تقویم',
@@ -66,21 +67,6 @@ if (!isset($tabs[$activeTab])) {
       <label>نام سامانه<input name="system_name" value="<?= e($settings['system_name']) ?>"></label>
       <label>متن نشان<input name="logo_text" value="<?= e($settings['logo_text']) ?>"></label>
       <label class="full">متن فوتر<input name="footer_text" value="<?= e($settings['footer_text'] ?? '') ?>"></label>
-      <div class="full proma-form-section">
-        <div class="proma-section-title">
-          <h5>لینک‌های اجتماعی مشتریان</h5>
-        </div>
-        <div class="form-grid four">
-          <label>اینستاگرام<input name="social_instagram_url" value="<?= e($settings['social_instagram_url'] ?? '') ?>" dir="ltr" placeholder="instagram.com/yourpage یا username"></label>
-          <label>تلگرام<input name="social_telegram_url" value="<?= e($settings['social_telegram_url'] ?? '') ?>" dir="ltr" placeholder="t.me/yourchannel یا username"></label>
-          <label>واتساپ<input name="social_whatsapp_url" value="<?= e($settings['social_whatsapp_url'] ?? '') ?>" dir="ltr" placeholder="wa.me/989... یا شماره"></label>
-          <label>وب‌سایت<input name="social_website_url" value="<?= e($settings['social_website_url'] ?? '') ?>" dir="ltr" placeholder="example.com"></label>
-          <label>فیسبوک<input name="social_facebook_url" value="<?= e($settings['social_facebook_url'] ?? '') ?>" dir="ltr" placeholder="facebook.com/yourpage"></label>
-          <label>ایکس<input name="social_x_url" value="<?= e($settings['social_x_url'] ?? '') ?>" dir="ltr" placeholder="x.com/yourpage یا username"></label>
-          <label>یوتیوب<input name="social_youtube_url" value="<?= e($settings['social_youtube_url'] ?? '') ?>" dir="ltr" placeholder="youtube.com/@yourchannel"></label>
-          <label>لینکدین<input name="social_linkedin_url" value="<?= e($settings['social_linkedin_url'] ?? '') ?>" dir="ltr" placeholder="linkedin.com/in/yourpage"></label>
-        </div>
-      </div>
       <label>لوگوی اصلی<input type="file" name="logo_file" accept=".jpg,.jpeg,.png,.webp,.svg,image/jpeg,image/png,image/webp,image/svg+xml"></label>
       <label>لوگوی کوچک / آیکن<input type="file" name="logo_icon_file" accept=".jpg,.jpeg,.png,.webp,.svg,image/jpeg,image/png,image/webp,image/svg+xml"></label>
       <label>فاوآیکن مرورگر<input type="file" name="favicon_file" accept=".ico,.jpg,.jpeg,.png,.webp,.svg,image/x-icon,image/vnd.microsoft.icon,image/jpeg,image/png,image/webp,image/svg+xml"></label>
@@ -96,6 +82,22 @@ if (!isset($tabs[$activeTab])) {
         <?php endif; ?>
       </div>
       <div class="full actions"><button class="btn" type="submit">ذخیره تنظیمات عمومی</button></div>
+    </div>
+  </section>
+
+  <section class="card proma-settings-panel <?= $activeTab === 'social' ? 'active' : '' ?>" data-settings-panel="social">
+    <div class="card-header"><h2>شبکه‌های اجتماعی مشتریان</h2></div>
+    <div class="card-body form-grid">
+      <div class="full notice info">این لینک‌ها به صورت کارت در پنل مشتری نمایش داده می‌شوند. می‌توانید آدرس کامل یا فقط نام کاربری را وارد کنید.</div>
+      <label>اینستاگرام<input name="social_instagram_url" value="<?= e($settings['social_instagram_url'] ?? '') ?>" dir="ltr" placeholder="instagram.com/yourpage یا username"></label>
+      <label>تلگرام<input name="social_telegram_url" value="<?= e($settings['social_telegram_url'] ?? '') ?>" dir="ltr" placeholder="t.me/yourchannel یا username"></label>
+      <label>واتساپ<input name="social_whatsapp_url" value="<?= e($settings['social_whatsapp_url'] ?? '') ?>" dir="ltr" placeholder="989121234567 یا wa.me/989..."></label>
+      <label>وب‌سایت<input name="social_website_url" value="<?= e($settings['social_website_url'] ?? '') ?>" dir="ltr" placeholder="example.com"></label>
+      <label>فیسبوک<input name="social_facebook_url" value="<?= e($settings['social_facebook_url'] ?? '') ?>" dir="ltr" placeholder="facebook.com/yourpage"></label>
+      <label>ایکس<input name="social_x_url" value="<?= e($settings['social_x_url'] ?? '') ?>" dir="ltr" placeholder="x.com/yourpage یا username"></label>
+      <label>یوتیوب<input name="social_youtube_url" value="<?= e($settings['social_youtube_url'] ?? '') ?>" dir="ltr" placeholder="youtube.com/@yourchannel"></label>
+      <label>لینکدین<input name="social_linkedin_url" value="<?= e($settings['social_linkedin_url'] ?? '') ?>" dir="ltr" placeholder="linkedin.com/in/yourpage"></label>
+      <div class="full actions"><button class="btn" type="submit">ذخیره شبکه‌های اجتماعی</button></div>
     </div>
   </section>
 
@@ -190,6 +192,14 @@ if (!isset($tabs[$activeTab])) {
       </label>
       <div class="full notice info">
         اگر کد پترن خالی باشد، پیامک معمولی با روش webservice ارسال می‌شود. کلید API از بخش Developers &gt; Access Keys در پنل IPPanel دریافت می‌شود.
+      </div>
+      <div class="full proma-pattern-help">
+        <strong>نمونه پیشنهادی پترن در IPPanel</strong>
+        <div class="proma-pattern-grid">
+          <code dir="rtl">کد بازیابی رمز عبور شما: %code%<br>پرما پرداخت</code>
+          <code dir="rtl">کد تایید شما %code% است. این کد تا ۱۰ دقیقه معتبر است.</code>
+        </div>
+        <small>در پنل IPPanel متغیر را با نام <span class="ltr">code</span> تعریف کنید و همین مقدار را در فیلد «نام متغیر کد در پترن» بگذارید.</small>
       </div>
       <div class="full actions"><button class="btn" type="submit">ذخیره تنظیمات پیامک</button></div>
     </div>

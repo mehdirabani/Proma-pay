@@ -50,7 +50,7 @@
       <label>تصویر کارت ملی<input type="file" name="national_card" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"></label>
       <label>تصویر شناسنامه<input type="file" name="birth_certificate" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"></label>
       <label>توضیحات<input name="identity_note" placeholder="در صورت نیاز"></label>
-      <div class="full notice info">حداکثر حجم هر تصویر ۱ مگابایت است. مدارک جدید تا زمان تأیید مدیریت جایگزین مدارک قبلی نمی‌شوند.</div>
+      <div class="full notice info">حداکثر حجم هر تصویر ۱۰ مگابایت است. مدارک جدید تا زمان تأیید مدیریت جایگزین مدارک قبلی نمی‌شوند.</div>
       <div class="full"><button class="btn" type="submit">ارسال برای بررسی</button></div>
     </form>
 

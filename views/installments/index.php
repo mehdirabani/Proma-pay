@@ -174,7 +174,7 @@ $pageUrl = function ($page) {
                   <div class="form-grid">
                     <label>مبلغ ثبت‌شده<input name="amount" data-money value="<?= e(number_format((float) $item['payable'], 0)) ?>" required></label>
                     <label>آپلود رسید<input type="file" name="receipt" accept=".jpg,.jpeg,.png,.webp,.pdf" required></label>
-                    <div class="notice info full">پس از ثبت رسید، درخواست شما برای بررسی در سامانه ثبت می‌شود.</div>
+                    <div class="notice info full">پس از ثبت رسید، درخواست شما برای بررسی در سامانه ثبت می‌شود. حداکثر حجم فایل رسید ۱۰ مگابایت است.</div>
                   </div>
                   <div class="modal-footer">
                     <button class="btn success" type="submit">ثبت رسید پرداخت</button>

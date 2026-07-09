@@ -6,8 +6,8 @@ class UploadHelper
     public const LOGO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'svg'];
     public const FAVICON_EXTENSIONS = ['ico', 'jpg', 'jpeg', 'png', 'webp', 'svg'];
     public const DOCUMENT_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
-    public const MAX_IMAGE_SIZE = 1048576;
-    public const MAX_DOCUMENT_SIZE = 5242880;
+    public const MAX_IMAGE_SIZE = 10485760;
+    public const MAX_DOCUMENT_SIZE = 10485760;
 
     public static function storeImage(array $upload, $subdir, array $extensions = self::IMAGE_EXTENSIONS)
     {
@@ -68,7 +68,7 @@ class UploadHelper
             throw new InvalidArgumentException('فایل به‌درستی بارگذاری نشد.');
         }
         if ((int) ($upload['size'] ?? 0) > self::MAX_IMAGE_SIZE) {
-            throw new InvalidArgumentException('حجم هر تصویر باید حداکثر ۱ مگابایت باشد.');
+            throw new InvalidArgumentException('حجم هر تصویر باید حداکثر ۱۰ مگابایت باشد.');
         }
         $extension = strtolower(pathinfo($upload['name'] ?? '', PATHINFO_EXTENSION));
         if (!in_array($extension, $extensions, true)) {

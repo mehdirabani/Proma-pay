@@ -3,7 +3,7 @@
 return [
     'app_name' => 'پروما',
     'version' => '1.0.1',
-    'asset_version' => '1.0.23',
+    'asset_version' => '1.0.24',
     'timezone' => 'Asia/Tehran',
     'base_url' => '',
     'session_name' => 'proma_pay_session',

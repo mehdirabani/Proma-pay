@@ -8,3 +8,6 @@
 /.env
 *.log
 *.tmp
+proma-pay_v*.zip
+proma-update-*.zip
+proma-update-*-manifest.json
