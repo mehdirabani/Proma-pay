@@ -60,7 +60,7 @@ class CustomersController extends Controller
             ]);
             set_flash('success', 'مشتری با موفقیت ثبت شد.');
         } catch (Throwable $e) {
-            set_flash('error', 'ثبت مشتری انجام نشد. کد ملی یا موبایل را بررسی کنید.');
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت مشتری انجام نشد. کد ملی یا موبایل را بررسی کنید.');
         }
         redirect('customers');
     }
@@ -74,16 +74,20 @@ class CustomersController extends Controller
             set_flash('error', implode(' ', $validator->errors()));
             redirect('customers');
         }
-        User::updateUser((int) $id, [
-            'role' => 'customer',
-            'full_name' => $_POST['full_name'] ?? '',
-            'national_id' => $_POST['national_id'] ?? '',
-            'mobile' => $_POST['mobile'] ?? '',
-            'secondary_phone' => $_POST['secondary_phone'] ?? '',
-            'email' => '',
-            'status' => $_POST['status'] ?? 'active',
-        ]);
-        set_flash('success', 'اطلاعات مشتری به‌روزرسانی شد.');
+        try {
+            User::updateUser((int) $id, [
+                'role' => 'customer',
+                'full_name' => $_POST['full_name'] ?? '',
+                'national_id' => $_POST['national_id'] ?? '',
+                'mobile' => $_POST['mobile'] ?? '',
+                'secondary_phone' => $_POST['secondary_phone'] ?? '',
+                'email' => '',
+                'status' => $_POST['status'] ?? 'active',
+            ]);
+            set_flash('success', 'اطلاعات مشتری به‌روزرسانی شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ویرایش مشتری انجام نشد.');
+        }
         redirect('customers');
     }
 

@@ -6,7 +6,7 @@ class ZibalClient
 
     public function __construct($merchant)
     {
-        $this->merchant = trim((string) $merchant);
+        $this->merchant = preg_replace('/\s+/', '', trim((string) $merchant));
     }
 
     public function request($amountToman, $callbackUrl, $description)
@@ -26,7 +26,12 @@ class ZibalClient
         }
         $body = $result['body'];
         if (($body['result'] ?? 0) !== 100) {
-            return ['ok' => false, 'message' => 'درگاه پرداخت درخواست را نپذیرفت.'];
+            $code = (int) ($body['result'] ?? 0);
+            return [
+                'ok' => false,
+                'message' => self::resultMessage($code, $body['message'] ?? ''),
+                'gateway_code' => $code,
+            ];
         }
         return ['ok' => true, 'track_id' => $body['trackId'], 'start_url' => 'https://gateway.zibal.ir/start/' . $body['trackId']];
     }
@@ -44,16 +49,21 @@ class ZibalClient
             return $result;
         }
         $body = $result['body'];
+        $code = (int) ($body['result'] ?? 0);
         return [
-            'ok' => (($body['result'] ?? 0) === 100),
-            'message' => (($body['result'] ?? 0) === 100) ? 'پرداخت تأیید شد.' : 'پرداخت تأیید نشد.',
+            'ok' => $code === 100,
+            'message' => $code === 100 ? 'پرداخت تأیید شد.' : self::resultMessage($code, $body['message'] ?? ''),
             'ref_id' => $body['refNumber'] ?? null,
             'amount_toman' => isset($body['amount']) ? ((float) $body['amount'] / 10) : null,
+            'gateway_code' => $code,
         ];
     }
 
     protected function postJson($url, array $payload)
     {
+        if (!function_exists('curl_init')) {
+            return ['ok' => false, 'message' => 'افزونه cURL روی PHP فعال نیست و اتصال به زیبال ممکن نیست.'];
+        }
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -64,14 +74,44 @@ class ZibalClient
         ]);
         $response = curl_exec($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
         if ($response === false || $status >= 400) {
-            return ['ok' => false, 'message' => 'ارتباط با درگاه پرداخت برقرار نشد.'];
+            $message = 'ارتباط با درگاه پرداخت برقرار نشد.';
+            if ($curlError !== '') {
+                $message .= ' خطای اتصال: ' . $curlError;
+            } elseif ($status >= 400) {
+                $message .= ' کد HTTP: ' . $status;
+            }
+            return ['ok' => false, 'message' => $message];
         }
         $body = json_decode($response, true);
         if (!is_array($body)) {
             return ['ok' => false, 'message' => 'پاسخ درگاه پرداخت قابل خواندن نیست.'];
         }
         return ['ok' => true, 'body' => $body];
+    }
+
+    protected static function resultMessage($code, $gatewayMessage = '')
+    {
+        $messages = [
+            102 => 'مرچنت زیبال پیدا نشد یا اشتباه وارد شده است.',
+            103 => 'مرچنت زیبال غیرفعال است.',
+            104 => 'مرچنت زیبال معتبر نیست.',
+            105 => 'مبلغ پرداخت برای زیبال معتبر نیست.',
+            106 => 'نشانی بازگشت درگاه معتبر نیست. نشانی پایه بازگشت را در تنظیمات درگاه بررسی کنید.',
+            113 => 'مبلغ تراکنش کمتر از حداقل مجاز زیبال است.',
+            201 => 'این تراکنش قبلاً تأیید شده است.',
+            202 => 'پرداخت توسط درگاه تأیید نشده است یا مشتری پرداخت را کامل نکرده است.',
+            203 => 'شناسه پیگیری زیبال معتبر نیست.',
+        ];
+        $message = $messages[(int) $code] ?? 'درگاه پرداخت درخواست را نپذیرفت.';
+        if (trim((string) $gatewayMessage) !== '') {
+            $message .= ' پیام زیبال: ' . trim((string) $gatewayMessage);
+        }
+        if ((int) $code !== 0) {
+            $message .= ' کد زیبال: ' . to_persian_digits((string) $code);
+        }
+        return $message;
     }
 }

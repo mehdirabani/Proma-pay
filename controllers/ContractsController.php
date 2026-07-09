@@ -27,14 +27,13 @@ class ContractsController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
-        $customerId = $this->resolveCustomer();
-        $startDate = parse_jalali_date($_POST['start_date'] ?? '') ?: date('Y-m-d');
-        $firstDue = parse_jalali_date($_POST['first_due_date'] ?? '') ?: FinanceHelper::addMonths($startDate, 1);
-        if (!$customerId || !$startDate || !$firstDue) {
-            set_flash('error', 'اطلاعات مشتری و تاریخ‌های قرارداد باید کامل و معتبر باشد.');
-            redirect('contracts');
-        }
         try {
+            $customerId = $this->resolveCustomer();
+            $startDate = parse_jalali_date($_POST['start_date'] ?? '') ?: date('Y-m-d');
+            $firstDue = parse_jalali_date($_POST['first_due_date'] ?? '') ?: FinanceHelper::addMonths($startDate, 1);
+            if (!$customerId || !$startDate || !$firstDue) {
+                throw new InvalidArgumentException('اطلاعات مشتری و تاریخ‌های قرارداد باید کامل و معتبر باشد.');
+            }
             Contract::createWithInstallments([
                 'customer_id' => $customerId,
                 'prefix' => $_POST['prefix'] ?? '',

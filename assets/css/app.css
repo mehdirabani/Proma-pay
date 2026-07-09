@@ -3613,6 +3613,101 @@ body.dark-only .proma-payment-card__qr-grid {
   font-size: 0.92rem;
 }
 
+.proma-social-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.proma-social-card {
+  min-height: 92px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--proma-line);
+  border-radius: 8px;
+  color: var(--proma-text);
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(34, 45, 67, .05);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.proma-social-card:hover {
+  color: var(--proma-text);
+  border-color: rgba(115, 102, 255, .34);
+  box-shadow: 0 12px 28px rgba(34, 45, 67, .08);
+  transform: translateY(-2px);
+}
+
+.proma-social-card__icon {
+  width: 46px;
+  height: 46px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--proma-primary);
+}
+
+.proma-social-card__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.proma-social-card strong,
+.proma-social-card small {
+  display: block;
+  min-width: 0;
+}
+
+.proma-social-card small {
+  overflow: hidden;
+  color: var(--proma-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proma-social-card em {
+  color: var(--proma-primary);
+  font-style: normal;
+  font-weight: 800;
+}
+
+.proma-social-card--instagram .proma-social-card__icon {
+  background: linear-gradient(135deg, #f58529, #dd2a7b 48%, #515bd4);
+}
+
+.proma-social-card--telegram .proma-social-card__icon {
+  background: #229ed9;
+}
+
+.proma-social-card--whatsapp .proma-social-card__icon {
+  background: #25d366;
+}
+
+.proma-social-card--facebook .proma-social-card__icon {
+  background: #1877f2;
+}
+
+.proma-social-card--x .proma-social-card__icon {
+  background: #111827;
+}
+
+.proma-social-card--youtube .proma-social-card__icon {
+  background: #ff0033;
+}
+
+.proma-social-card--linkedin .proma-social-card__icon {
+  background: #0a66c2;
+}
+
+.proma-social-card--website .proma-social-card__icon {
+  background: #0f766e;
+}
+
 @media (max-width: 1200px) {
   .grid.cols-4,
   .grid.cols-3,

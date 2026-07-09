@@ -674,7 +674,7 @@ function create_schema(PDO $pdo)
     ensure_install_schema_compatibility($pdo);
     $pdo->exec(
         "INSERT IGNORE INTO chat_channels (title, slug, type, is_pinned, is_system, created_at)
-         VALUES ('اطلاع‌رسانی عمومی', 'public-announcements', 'public', 1, 1, NOW())"
+         VALUES ('پرما پرداخت', 'public-announcements', 'public', 1, 1, NOW())"
     );
 }
 
@@ -780,7 +780,7 @@ function seed_system_announcements(PDO $pdo, $adminId)
     $stmt->execute([
         (int) $adminId,
         (int) $channel['id'],
-        'به کانال اطلاع‌رسانی عمومی خوش آمدید. اعلان‌های مهم سامانه در همین بخش منتشر می‌شود.',
+        'به ' . $channel['title'] . ' خوش آمدید. اعلان‌های مهم سامانه در همین بخش منتشر می‌شود.',
         $channel['title'],
     ]);
 }
@@ -831,6 +831,14 @@ function seed_settings(PDO $pdo)
         'calendar_notify_admin_without_user' => '1',
         'calendar_due_day_repeat_enabled' => '1',
         'calendar_cron_token' => bin2hex(random_bytes(24)),
+        'social_instagram_url' => '',
+        'social_telegram_url' => '',
+        'social_whatsapp_url' => '',
+        'social_facebook_url' => '',
+        'social_x_url' => '',
+        'social_youtube_url' => '',
+        'social_linkedin_url' => '',
+        'social_website_url' => '',
     ];
     $stmt = $pdo->prepare('INSERT IGNORE INTO settings (setting_key, setting_value, is_secret) VALUES (?, ?, ?)');
     foreach ($defaults as $key => $value) {

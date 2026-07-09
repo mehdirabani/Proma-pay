@@ -34,7 +34,13 @@ class SettingsController extends Controller
                 if (in_array($key, $digitFields, true)) {
                     $rawValue = to_english_digits($rawValue);
                 }
-                if ($key === 'card_transfer_sheba') {
+                if ($key === 'zibal_merchant') {
+                    $rawValue = preg_replace('/\s+/', '', $rawValue);
+                } elseif ($key === 'callback_base_url') {
+                    $rawValue = $this->normalizeBaseUrl($rawValue);
+                } elseif (strpos($key, 'social_') === 0) {
+                    $rawValue = $this->normalizeSocialUrl($key, $rawValue);
+                } elseif ($key === 'card_transfer_sheba') {
                     $rawValue = normalize_sheba($rawValue);
                 } elseif ($key === 'card_transfer_card_number') {
                     $rawValue = normalize_card_number($rawValue);
@@ -89,9 +95,59 @@ class SettingsController extends Controller
             unset($values['calendar_cron_token']);
         }
         Settings::saveMany($values);
+        try {
+            Chat::ensureSchema();
+        } catch (Throwable $e) {
+        }
         set_flash('success', 'تنظیمات ذخیره شد.');
         $tab = preg_replace('/[^a-z0-9_-]/i', '', $_POST['_active_tab'] ?? 'general') ?: 'general';
         redirect('settings', ['tab' => $tab]);
+    }
+
+    protected function normalizeBaseUrl($value)
+    {
+        $value = rtrim(trim((string) $value), '/');
+        if ($value === '') {
+            return '';
+        }
+        if (!preg_match('#^https?://#i', $value)) {
+            $value = 'https://' . ltrim($value, '/');
+        }
+        return filter_var($value, FILTER_VALIDATE_URL) ? $value : '';
+    }
+
+    protected function normalizeSocialUrl($key, $value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+        if (preg_match('#^https?://#i', $value)) {
+            return filter_var($value, FILTER_VALIDATE_URL) ? $value : '';
+        }
+        $username = ltrim($value, '@/ ');
+        if ($username === '') {
+            return '';
+        }
+        if ($key === 'social_whatsapp_url') {
+            $digits = preg_replace('/\D+/', '', to_english_digits($value));
+            return $digits !== '' ? 'https://wa.me/' . $digits : '';
+        }
+        if (preg_match('#[./]#', $username)) {
+            $url = 'https://' . ltrim($value, '/');
+            return filter_var($url, FILTER_VALIDATE_URL) ? $url : '';
+        }
+        $baseMap = [
+            'social_instagram_url' => 'https://instagram.com/',
+            'social_telegram_url' => 'https://t.me/',
+            'social_facebook_url' => 'https://facebook.com/',
+            'social_x_url' => 'https://x.com/',
+            'social_youtube_url' => 'https://youtube.com/',
+            'social_linkedin_url' => 'https://linkedin.com/in/',
+            'social_website_url' => 'https://',
+        ];
+        $url = ($baseMap[$key] ?? 'https://') . $username;
+        return filter_var($url, FILTER_VALIDATE_URL) ? $url : '';
     }
 
     public function testAi()

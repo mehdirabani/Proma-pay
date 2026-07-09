@@ -66,6 +66,21 @@ if (!isset($tabs[$activeTab])) {
       <label>نام سامانه<input name="system_name" value="<?= e($settings['system_name']) ?>"></label>
       <label>متن نشان<input name="logo_text" value="<?= e($settings['logo_text']) ?>"></label>
       <label class="full">متن فوتر<input name="footer_text" value="<?= e($settings['footer_text'] ?? '') ?>"></label>
+      <div class="full proma-form-section">
+        <div class="proma-section-title">
+          <h5>لینک‌های اجتماعی مشتریان</h5>
+        </div>
+        <div class="form-grid four">
+          <label>اینستاگرام<input name="social_instagram_url" value="<?= e($settings['social_instagram_url'] ?? '') ?>" dir="ltr" placeholder="instagram.com/yourpage یا username"></label>
+          <label>تلگرام<input name="social_telegram_url" value="<?= e($settings['social_telegram_url'] ?? '') ?>" dir="ltr" placeholder="t.me/yourchannel یا username"></label>
+          <label>واتساپ<input name="social_whatsapp_url" value="<?= e($settings['social_whatsapp_url'] ?? '') ?>" dir="ltr" placeholder="wa.me/989... یا شماره"></label>
+          <label>وب‌سایت<input name="social_website_url" value="<?= e($settings['social_website_url'] ?? '') ?>" dir="ltr" placeholder="example.com"></label>
+          <label>فیسبوک<input name="social_facebook_url" value="<?= e($settings['social_facebook_url'] ?? '') ?>" dir="ltr" placeholder="facebook.com/yourpage"></label>
+          <label>ایکس<input name="social_x_url" value="<?= e($settings['social_x_url'] ?? '') ?>" dir="ltr" placeholder="x.com/yourpage یا username"></label>
+          <label>یوتیوب<input name="social_youtube_url" value="<?= e($settings['social_youtube_url'] ?? '') ?>" dir="ltr" placeholder="youtube.com/@yourchannel"></label>
+          <label>لینکدین<input name="social_linkedin_url" value="<?= e($settings['social_linkedin_url'] ?? '') ?>" dir="ltr" placeholder="linkedin.com/in/yourpage"></label>
+        </div>
+      </div>
       <label>لوگوی اصلی<input type="file" name="logo_file" accept=".jpg,.jpeg,.png,.webp,.svg,image/jpeg,image/png,image/webp,image/svg+xml"></label>
       <label>لوگوی کوچک / آیکن<input type="file" name="logo_icon_file" accept=".jpg,.jpeg,.png,.webp,.svg,image/jpeg,image/png,image/webp,image/svg+xml"></label>
       <label>فاوآیکن مرورگر<input type="file" name="favicon_file" accept=".ico,.jpg,.jpeg,.png,.webp,.svg,image/x-icon,image/vnd.microsoft.icon,image/jpeg,image/png,image/webp,image/svg+xml"></label>
@@ -119,6 +134,7 @@ if (!isset($tabs[$activeTab])) {
       <div class="full notice info">
         <strong>نشانی نهایی بازگشت:</strong>
         <span class="ltr callback-url"><?= e($callbackUrl) ?></span>
+        <small class="d-block">اگر فقط دامنه وارد شود، سامانه هنگام ذخیره به صورت خودکار <span class="ltr">https://</span> را اضافه می‌کند.</small>
       </div>
       <div class="full">
         <span class="field-title">پرداخت کارت به کارت</span>

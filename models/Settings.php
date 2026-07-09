@@ -80,6 +80,14 @@ class Settings extends Model
             'calendar_notify_admin_without_user' => '1',
             'calendar_due_day_repeat_enabled' => '1',
             'calendar_cron_token' => '',
+            'social_instagram_url' => '',
+            'social_telegram_url' => '',
+            'social_whatsapp_url' => '',
+            'social_facebook_url' => '',
+            'social_x_url' => '',
+            'social_youtube_url' => '',
+            'social_linkedin_url' => '',
+            'social_website_url' => '',
         ];
     }
 

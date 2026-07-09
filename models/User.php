@@ -412,6 +412,7 @@ class User extends Model
     public static function create(array $data)
     {
         self::ensureProfileColumns();
+        self::assertUniqueIdentity($data);
         self::execute(
             'INSERT INTO users (role, username, full_name, father_name, issued_from, national_id, mobile, secondary_phone, email, password_hash, status, address, avatar_key, department, is_department_manager, created_at)
              VALUES (:role, :username, :full_name, :father_name, :issued_from, :national_id, :mobile, :secondary_phone, :email, :password_hash, :status, :address, :avatar_key, :department, :is_department_manager, NOW())',
@@ -443,6 +444,7 @@ class User extends Model
         if (!$user) {
             return false;
         }
+        self::assertUniqueIdentity($data, (int) $id);
         $params = [
             'id' => $id,
             'role' => $data['role'] ?? $user['role'],
@@ -474,6 +476,34 @@ class User extends Model
             $params
         );
         return true;
+    }
+
+    protected static function assertUniqueIdentity(array $data, $ignoreId = null)
+    {
+        $checks = [
+            'username' => ['label' => 'نام کاربری', 'value' => trim((string) ($data['username'] ?? ''))],
+            'national_id' => ['label' => 'کد ملی', 'value' => trim(to_english_digits($data['national_id'] ?? ''))],
+            'mobile' => ['label' => 'موبایل', 'value' => trim(to_english_digits($data['mobile'] ?? ''))],
+            'email' => ['label' => 'ایمیل', 'value' => trim((string) ($data['email'] ?? ''))],
+        ];
+        foreach ($checks as $column => $check) {
+            if ($check['value'] === '') {
+                continue;
+            }
+            $sql = "SELECT id, full_name, role FROM users WHERE {$column} = ?";
+            $params = [$check['value']];
+            if ($ignoreId) {
+                $sql .= ' AND id != ?';
+                $params[] = (int) $ignoreId;
+            }
+            $sql .= ' LIMIT 1';
+            $existing = self::fetch($sql, $params);
+            if ($existing) {
+                throw new InvalidArgumentException(
+                    $check['label'] . ' واردشده قبلاً برای «' . ($existing['full_name'] ?? 'کاربر') . '» ثبت شده است.'
+                );
+            }
+        }
     }
 
     public static function mergeCustomers($keepId, $mergeId, $adminId = null)

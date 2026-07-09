@@ -82,7 +82,7 @@ class UsersController extends Controller
             ]);
             set_flash('success', 'کاربر با موفقیت ثبت شد.');
         } catch (Throwable $e) {
-            set_flash('error', 'ثبت کاربر انجام نشد. داده‌های تکراری را بررسی کنید.');
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت کاربر انجام نشد. داده‌های تکراری را بررسی کنید.');
         }
         redirect('users');
     }
@@ -122,7 +122,7 @@ class UsersController extends Controller
             ]);
             set_flash('success', 'اطلاعات کاربر به‌روزرسانی شد.');
         } catch (Throwable $e) {
-            set_flash('error', 'ویرایش کاربر انجام نشد.');
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ویرایش کاربر انجام نشد.');
         }
         redirect('users');
     }

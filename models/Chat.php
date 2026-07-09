@@ -180,12 +180,12 @@ class Chat extends Model
 
     public static function botName()
     {
-        return self::BOT_NAME;
+        return self::communicationName();
     }
 
     public static function channelName()
     {
-        return self::CHANNEL_NAME;
+        return self::communicationName();
     }
 
     public static function botContact($userId = null)
@@ -375,8 +375,21 @@ class Chat extends Model
         self::insertSystemMessage(
             $channel,
             $adminId,
-            self::botName() . ' به کانال رسمی پروما خوش آمدید. اعلان‌های مهم سامانه در همین بخش منتشر می‌شود.'
+            'به ' . self::channelName() . ' خوش آمدید. اعلان‌های مهم سامانه در همین بخش منتشر می‌شود.'
         );
+    }
+
+    protected static function communicationName()
+    {
+        try {
+            $settings = Settings::allKeyed();
+            $name = trim((string) ($settings['system_name'] ?? ''));
+            if ($name !== '') {
+                return $name;
+            }
+        } catch (Throwable $e) {
+        }
+        return self::BOT_NAME;
     }
 
     protected static function botSenderId()
