@@ -7,7 +7,37 @@ class EcommerceController extends Controller
         if (Auth::check() && Auth::role() === 'admin') {
             redirect('ecommerce/products');
         }
-        redirect('ecommerce/shop');
+        redirect('ecommerce/landing');
+    }
+
+    public function landing()
+    {
+        $featured = Ecommerce::activeProducts([
+            'page' => 1,
+            'per_page' => 8,
+        ]);
+        $latest = Ecommerce::activeProducts([
+            'page' => 1,
+            'per_page' => 12,
+        ]);
+        $products = $latest['items'];
+        $heroProduct = null;
+        foreach (array_merge($featured['items'], $products) as $product) {
+            if (!empty($product['image_path'])) {
+                $heroProduct = $product;
+                break;
+            }
+        }
+
+        $this->render('ecommerce/landing', [
+            'title' => 'فروشگاه',
+            'products' => $products,
+            'featuredProducts' => $featured['items'],
+            'categories' => Ecommerce::activeCategories(10),
+            'heroProduct' => $heroProduct ?: ($products[0] ?? null),
+            'pagination' => $latest,
+            'cartSummary' => Ecommerce::cartSummary(),
+        ], $this->storeLayout());
     }
 
     public function addProduct()

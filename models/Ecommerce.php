@@ -147,6 +147,20 @@ class Ecommerce extends Model
         return self::products($filters);
     }
 
+    public static function activeCategories($limit = 12)
+    {
+        self::ensureSchema();
+        $limit = max(1, min(40, (int) $limit));
+        return self::fetchAll(
+            "SELECT category, COUNT(*) AS products_count
+             FROM ecommerce_products
+             WHERE status = 'active' AND category IS NOT NULL AND category != ''
+             GROUP BY category
+             ORDER BY products_count DESC, category ASC
+             LIMIT {$limit}"
+        );
+    }
+
     public static function findProduct($identifier)
     {
         self::ensureSchema();

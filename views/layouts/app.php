@@ -81,6 +81,7 @@ if (Auth::role() === 'admin') {
         ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
         ['payments', 'پرداخت‌ها', 'stroke-ecommerce', 'fill-ecommerce'],
         ['ecommerce', 'تجارت الکترونیک', 'stroke-ecommerce', 'fill-ecommerce', [
+            ['ecommerce/landing', 'صفحه لندینگ'],
             ['ecommerce/addProduct', 'افزودن محصول'],
             ['ecommerce/products', 'فهرست محصولات'],
             ['ecommerce/orders', 'فهرست سفارشات'],
@@ -98,6 +99,7 @@ if (Auth::role() === 'admin') {
         ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
         ['contracts', 'قراردادها', 'stroke-project', 'fill-project'],
+        ['ecommerce/landing', 'فروشگاه', 'stroke-ecommerce', 'fill-ecommerce'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
     ];
 } elseif (Auth::role() === 'lawyer') {
@@ -106,6 +108,7 @@ if (Auth::role() === 'admin') {
         ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
         ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['lawyer', 'پرونده‌ها', 'stroke-file', 'fill-file'],
+        ['ecommerce/landing', 'فروشگاه', 'stroke-ecommerce', 'fill-ecommerce'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
     ];
     if ($canViewUsers) {
@@ -117,7 +120,7 @@ if (Auth::role() === 'admin') {
         ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['portal/contracts', 'قراردادها', 'stroke-project', 'fill-project'],
         ['installments/panel', 'اقساط', 'stroke-file', 'fill-file'],
-        ['ecommerce/shop', 'فروشگاه', 'stroke-ecommerce', 'fill-ecommerce'],
+        ['ecommerce/landing', 'فروشگاه', 'stroke-ecommerce', 'fill-ecommerce'],
         ['ecommerce/cart', 'سبد خرید', 'stroke-board', 'fill-board'],
         ['ecommerce/myOrders', 'سفارش‌های من', 'stroke-ecommerce', 'fill-ecommerce'],
         ['portal/guaranteed', 'ضمانت‌ها', 'stroke-board', 'fill-board'],
