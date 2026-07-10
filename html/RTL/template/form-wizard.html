@@ -1,0 +1,1830 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Cuba admin is super flexible, powerful, clean &amp; modern responsive bootstrap 5 admin template with unlimited possibilities.">
+    <meta name="keywords" content="admin template, Cuba admin template, dashboard template, flat admin template, responsive admin template, web app">
+    <meta name="author" content="pixelstrap">
+    <link rel="icon" href="../assets/images/favicon.png" type="image/x-icon">
+    <link rel="shortcut icon" href="../assets/images/favicon.png" type="image/x-icon">
+    <title>قالب پنل مدیریت کوبا | Cuba - Premium Admin Template</title>
+    <!-- Google font-->
+    <!--    <link href="https://fonts.googleapis.com/css?family=Rubik:400,400i,500,500i,700,700i&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i,900&amp;display=swap" rel="stylesheet">-->
+    <link rel="stylesheet" type="text/css" href="../assets/css/font-awesome.css">
+    <!-- ico-font-->
+    <link rel="stylesheet" type="text/css" href="../assets/css/vendors/icofont.css">
+    <!-- Themify icon-->
+    <link rel="stylesheet" type="text/css" href="../assets/css/vendors/themify.css">
+    <!-- Flag icon-->
+    <link rel="stylesheet" type="text/css" href="../assets/css/vendors/flag-icon.css">
+    <!-- Feather icon-->
+    <link rel="stylesheet" type="text/css" href="../assets/css/vendors/feather-icon.css">
+    <!-- Plugins css start-->
+    <link rel="stylesheet" type="text/css" href="../assets/css/vendors/slick.css">
+    <link rel="stylesheet" type="text/css" href="../assets/css/vendors/slick-theme.css">
+    <link rel="stylesheet" type="text/css" href="../assets/css/vendors/scrollbar.css">
+    <link rel="stylesheet" type="text/css" href="../assets/css/vendors/animate.css">
+    <!-- Plugins css Ends-->
+    <!-- Bootstrap css-->
+    <link rel="stylesheet" type="text/css" href="../assets/css/vendors/bootstrap.css">
+    <!-- App css-->
+    <link rel="stylesheet" type="text/css" href="../assets/css/style.css">
+    <link id="color" rel="stylesheet" href="../assets/css/color-1.css" media="screen">
+    <!-- Responsive css-->
+    <link rel="stylesheet" type="text/css" href="../assets/css/responsive.css">
+<link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+   <style>
+      html,body {
+            font-family: Vazirmatn, sans-serif !important;
+      }
+   </style>
+  </head>
+  <body> 
+    <!-- loader starts-->
+    <div class="loader-wrapper">
+      <div class="loader-index"> <span></span></div>
+      <svg>
+        <defs></defs>
+        <filter id="goo">
+          <fegaussianblur in="SourceGraphic" stddeviation="11" result="blur"></fegaussianblur>
+          <fecolormatrix in="blur" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo"> </fecolormatrix>
+        </filter>
+      </svg>
+    </div>
+    <!-- loader ends-->
+    <!-- tap on top starts-->
+    <div class="tap-top"><i data-feather="chevrons-up"></i></div>
+    <!-- tap on tap ends-->
+    <!-- page-wrapper Start-->
+    <div class="page-wrapper compact-wrapper" id="pageWrapper">
+      <!-- Page Header Start-->
+      <div class="page-header">
+        <div class="header-wrapper row m-0">
+          <form class="form-inline search-full col" action="#" method="get">
+            <div class="form-group w-100">
+              <div class="Typeahead Typeahead--twitterUsers">
+                <div class="u-posRelative">
+                  <input class="demo-input Typeahead-input form-control-plaintext w-100" type="text" placeholder="جستجو .." name="q" title="" autofocus>
+                  <div class="spinner-border Typeahead-spinner" role="status"><span class="sr-only">در حال بارگزاری...</span></div><i class="close-search" data-feather="x"></i>
+                </div>
+                <div class="Typeahead-menu"></div>
+              </div>
+            </div>
+          </form>
+          <div class="header-logo-wrapper col-auto p-0">
+            <div class="logo-wrapper"><a href="dashboard-01.html"><img class="img-fluid" src="../assets/images/logo/logo.png" alt=""></a></div>
+            <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="align-center"></i></div>
+          </div>
+          <div class="left-header col-xxl-5 col-xl-6 col-lg-5 col-md-4 col-sm-3 p-0">
+            <div class="notification-slider">
+              <div class="d-flex h-100"> <img src="../assets/images/giftools.gif" alt="gif">
+                <h6 class="mb-0 f-w-400"><span class="font-primary">از دست ندهید! </span><span class="f-light">به‌روزرسانی جدید منتشر شده است.</span></h6><i class="icon-arrow-top-right f-light"></i>
+              </div>
+              <div class="d-flex h-100"><img src="../assets/images/giftools.gif" alt="gif">
+                <h6 class="mb-0 f-w-400"><span class="f-light">چیزی که دوست دارید اکنون در فروش است! </span></h6><a class="ms-1" href="https://www.zhaket.com/" target="_blank">هم اکنون بخرید!</a>
+              </div>
+            </div>
+          </div>
+          <div class="nav-right col-xxl-7 col-xl-6 col-md-7 col-8 pull-right right-header p-0 ms-auto">
+            <ul class="nav-menus">
+              <li class="language-nav">
+                <div class="translate_wrapper">
+                  <div class="current_lang">
+                    <div class="lang"><i class="flag-icon flag-icon-ir"></i><span class="lang-txt">FA</span></div>
+                  </div>
+                  <div class="more_lang">
+                    <div class="lang selected" data-value="fa"><i class="flag-icon flag-icon-ir"></i><span class="lang-txt">فارسی</span></div>
+                    <div class="lang" data-value="en"><i class="flag-icon flag-icon-us"></i><span class="lang-txt">English<span> (US)</span></span></div>
+                    <div class="lang" data-value="de"><i class="flag-icon flag-icon-de"></i><span class="lang-txt">Deutsch</span></div>
+                    <div class="lang" data-value="es"><i class="flag-icon flag-icon-es"></i><span class="lang-txt">Español</span></div>
+                    <div class="lang" data-value="fr"><i class="flag-icon flag-icon-fr"></i><span class="lang-txt">Français</span></div>
+                    <div class="lang" data-value="pt"><i class="flag-icon flag-icon-pt"></i><span class="lang-txt">Português<span> (BR)</span></span></div>
+                    <div class="lang" data-value="cn"><i class="flag-icon flag-icon-cn"></i><span class="lang-txt">简体中文</span></div>
+                    <div class="lang" data-value="ae"><i class="flag-icon flag-icon-ae"></i><span class="lang-txt">لعربية <span> (ae)</span></span></div>
+                  </div>
+                </div>
+              </li>
+              <li>                         <span class="header-search">
+                  <svg>
+                    <use href="../assets/svg/icon-sprite.svg#search"></use>
+                  </svg></span></li>
+              <li class="onhover-dropdown">
+                <svg>
+                  <use href="../assets/svg/icon-sprite.svg#star"></use>
+                </svg>
+<div class="onhover-show-div bookmark-flip">
+                   <div class="flip-card">
+                     <div class="flip-card-inner">
+                       <div class="front">
+                         <h6 class="f-18 mb-0 dropdown-title">نشانک</h6>
+                         <ul class="bookmark-dropdown">
+                           <li>
+                             <div class="row">
+                               <div class="col-4 text-center">
+                                 <div class="bookmark-content">
+                                   <div class="bookmark-icon"><i data-feather="file-text"></i></div><span>فرم‌ها</span>
+                                 </div>
+                               </div>
+                               <div class="col-4 text-center">
+                                 <div class="bookmark-content">
+                                   <div class="bookmark-icon"><i data-feather="user"></i></div><span>نمایه</span>
+                                 </div>
+                               </div>
+                               <div class="col-4 text-center">
+                                 <div class="bookmark-content">
+                                   <div class="bookmark-icon"><i data-feather="server"></i></div><span>جدول</span>
+                                 </div>
+                               </div>
+                             </div>
+                           </li>
+                           <li class="text-center"><a class="flip-btn f-w-700" id="flip-btn" href="javascript:void(0)">افزودن نشانک جدید</a></li >
+                         </ul>
+                       </div>
+                       <div class="back">
+                         <ul>
+                           <li>
+                             <div class="bookmark-dropdown flip-back-content">
+                               <input type="text" placeholder="جستجو...">
+                             </div>
+                           </li>
+                           <li><a class="f-w-700 d-block flip-back" id="flip-back" href="javascript:void(0)">برگشت</a></li>
+                         </ul>
+                       </div>
+                     </div>
+                   </div>
+                 </div>              </li>
+              <li>
+                <div class="mode">
+                  <svg>
+                    <use href="../assets/svg/icon-sprite.svg#moon"></use>
+                  </svg>
+                </div>
+              </li>
+              <li class="cart-nav onhover-dropdown">
+                 <div class="cart-box">
+                   <svg>
+                     <use href="../assets/svg/icon-sprite.svg#stroke-ecommerce"></use>
+                   </svg><span class="badge rounded-pill badge-success">2</span>
+                 </div>
+                 <div class="cart-dropdown onhover-show-div">
+                   <h6 class="f-18 mb-0 dropdown-title">سبد خرید</h6>
+                   <ul>
+                     <li>
+                       <div class="media"><img class="img-fluid b-r-5 me-3 img-60" src="../assets/images/other-images/cart-img.jpg" alt="" >
+                         <div class="media-body"><span>صندلی مبلمان منزل</span>
+                           <div class="qty-box">
+                             <div class="input-group"><span class="input-group-prepend">
+                                 <button class="btn quantity-left-minus" type="button" data-type="minus" data-field="">-</button></span>
+                               <input class="form-control input-number" type="text" name="quantity" value="1"><span class="input-group-prepend">
+                                 <button class="btn quantity-right-plus" type="button" data-type="plus" data-field="">+</button></span>
+                             </div>
+                           </div>
+                           <h6 class="font-primary">500 دلار</h6>
+                         </div>
+                         <div class="close-circle"><a class="bg-danger" href="#"><i data-feather="x"></i></a></div>
+                       </div>
+                     </li>
+                     <li>
+                       <div class="media"><img class="img-fluid b-r-5 me-3 img-60" src="../assets/images/other-images/cart-img.jpg" alt="" >
+                         <div class="media-body"><span>صندلی مبلمان منزل</span>
+                           <div class="qty-box">
+                             <div class="input-group"><span class="input-group-prepend">
+                                 <button class="btn quantity-left-minus" type="button" data-type="minus" data-field="">-</button></span>
+                               <input class="form-control input-number" type="text" name="quantity" value="1"><span class="input-group-prepend">
+                                 <button class="btn quantity-right-plus" type="button" data-type="plus" data-field="">+</button></span>
+                             </div>
+                           </div>
+                           <h6 class="font-primary">500.00 دلار</h6>
+                         </div>
+                         <div class="close-circle"><a class="bg-danger" href="#"><i data-feather="x"></i></a></div>
+                       </div>
+                     </li>
+                     <li class="total">
+                       <h6 class="mb-0">مجموع سفارش: <span class="f-right">1000.00 دلار</span></h6>
+                     </li>
+                     <li class="text-center"><a class="d-block mb-3 view-cart f-w-700" href="cart.html">به سبد خرید خود بروید</a><a class="btn btn-primary view-checkout" href="checkout.html">تسویه حساب</a></li>
+                   </ul>
+                 </div>
+               </li>
+              <li class="onhover-dropdown">
+                 <div class="notification-box">
+                   <svg>
+                     <use href="../assets/svg/icon-sprite.svg#notification"></use>
+                   </svg><span class="badge rounded-pill badge-secondary">4 </span>
+                 </div>
+                 <div class="onhover-show-div notification-dropdown">
+                   <h6 class="f-18 mb-0 dropdown-title">اعلان‌ها </h6>
+                   <ul>
+                     <li class="b-l-primary border-4">
+                       <p>پردازش تحویل <span class="font-danger">10 دقیقه.</span></p>
+                     </li>
+                     <li class="b-l-success border-4">
+                       <p>سفارش کامل شد<span class="font-success">1 ساعت</span></p>
+                     </li>
+                     <li class="b-l-secondary border-4">
+                       <p>بلیت‌های تولید شده<span class="font-secondary">3 ساعت</span></p>
+                     </li>
+                     <li class="b-l-warning border-4">
+                       <p>تحویل کامل<span class="font-warning">6 ساعت</span></p>
+                     </li>
+                     <li><a class="f-w-700" href="#">بررسی همه</a></li>
+                   </ul>
+                 </div>
+               </li>
+              <li class="profile-nav onhover-dropdown pe-0 py-0">
+                 <div class="media profile-media"><img class="b-r-10" src="../assets/images/dashboard/profile.png" alt="">
+                   <div class="media-body"><span>ایمی والتر</span>
+                     <p class="mb-0">ادمین <i class="middle fa fa-angle-down"></i></p>
+                   </div>
+                 </div>
+                 <ul class="profile-dropdown onhover-show-div">
+                   <li><a href="user-profile.html"><i data-feather="user"></i><span>حساب </span></a></li>
+                   <li><a href="letter-box.html"><i data-feather="mail"></i><span>صندوق ورودی</span></a></li>
+                   <li><a href="kanban.html"><i data-feather="file-text"></i><span>بورد کارها</span></a></li>
+                   <li><a href="#"><i data-feather="settings"></i><span>تنظیمات</span></a></li>
+                   <li><a href="login_one.html"><i data-feather="log-in"> </i><span>ورود به سیستم</span></a></li>
+                 </ul>
+               </li>
+            </ul>
+          </div>
+          <script class="result-template" type="text/x-handlebars-template">
+            <div class="ProfileCard u-cf">                        
+            <div class="ProfileCard-avatar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-airplay m-0"><path d="M5 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1"></path><polygon points="12 15 17 21 7 21 12 15"></polygon></svg></div>
+            <div class="ProfileCard-details">
+            <div class="ProfileCard-realName">{{name}}</div>
+            </div>
+            </div>
+          </script>
+          <script class="empty-template" type="text/x-handlebars-template"><div class="EmptyMessage">جستجوی شما 0 نتیجه یافت. این به احتمال زیاد به این معنی است که باطن از کار افتاده است، بله!</div></script>
+        </div>
+      </div>
+      <!-- Page Header Ends                              -->
+      <!-- Page Body Start-->
+      <div class="page-body-wrapper">
+        <!-- Page Sidebar Start-->
+        <div class="sidebar-wrapper" sidebar-layout="stroke-svg">
+          <div>
+            <div class="logo-wrapper"><a href="dashboard-01.html"><img class="img-fluid for-light" src="../assets/images/logo/logo.png" alt=""><img class="img-fluid for-dark" src="../assets/images/logo/logo_dark.png" alt=""></a>
+              <div class="back-btn"><i class="fa fa-angle-left"></i></div>
+              <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="grid"> </i></div>
+            </div>
+            <div class="logo-icon-wrapper"><a href="dashboard-01.html"><img class="img-fluid" src="../assets/images/logo/logo-icon.png" alt=""></a></div>
+            <nav class="sidebar-main">
+              <div class="left-arrow" id="left-arrow"><i data-feather="arrow-left"></i></div>
+              <div id="sidebar-menu">
+                <ul class="sidebar-links" id="simple-bar">                  <li class="back-btn"><a href="dashboard-01.html"><img class="img-fluid" src="../assets/images/logo/logo-icon.png" alt=" "></a>
+                     <div class="mobile-back text-end"><span>برگشت</span><i class="fa fa-angle-right ps-2" aria-hidden="true"></i></div>
+                   </li>
+                   <li class="pin-title sidebar-main-title">
+                     <div>
+                       <h6>پین شده</h6>
+                     </div>
+                   </li>
+                   <li class="sidebar-main-title">
+                     <div>
+                       <h6 class="lan-1">عمومی</h6>
+                     </div>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i>
+                     <label class="badge badge-light-primary">8</label><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-home"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-home"></use>
+                       </svg><span class="lan-3">داشبورد </span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a class="lan-4" href="dashboard-01.html">پیش‌فرض</a></li>
+                       <li><a class="lan-5" href="dashboard-02.html">تجارت الکترونیک</a></li>
+                       <li><a href="dashboard-03.html">دوره آنلاین</a></li>
+                       <li><a href="dashboard-04.html">کریپتوکارنسی</a></li>
+                       <li><a href="dashboard-05.html">اجتماعی</a></li>
+                       <li><a href="dashboard-06.html">NFT</a></li>
+                       <li> <a href="dashboard-07.html">مدیریت مدرسه</a></li>
+                       <li> <a href="dashboard-08.html">POS</a></li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-widget"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-widget"></use>
+                       </svg><span class="lan-6">ابزارک</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="general-widget.html">عمومی</a></li>
+                       <li><a href="chart-widget.html">نمودار</a></li>
+                     </ul>
+                   </li><li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-layout"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-layout"></use>
+                       </svg><span class="lan-7">طرح بندی صفحه</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="box-layout.html">جعبه‌دار</a></li>
+                       <li><a href="layout-rtl.html">RTL</a></li>
+                       <li><a href="layout-dark.html">طرح بندی تاریک</a></li>
+                       <li><a href="hide-on-scroll.html">پنهان کردن ناوبری با اسکرول</a></li>
+                       <li><a href="footer-light.html">فوتر روشن</a></li>
+                       <li><a href="footer-dark.html">فوتر تاریک</a></li>
+                       <li><a href="footer-fixed.html">فوتر ثابت</a></li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-main-title">
+                     <div>
+                       <h6 class="lan-8">برنامه ها</h6>
+                     </div>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"> </i>
+                     <label class="badge badge-light-secondary">جدید</label><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-project"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-project"></use>
+                       </svg><span>پروژه </span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="projects.html">فهرست پروژه</a></li>
+                       <li><a href="projectcreate.html">ایجاد جدید</a></li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="file-manager.html ">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-file"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-file"></use>
+                       </svg><span>مدیر فایل</span></a></li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i>
+                     <label class="badge badge-light-danger">جدیدترین </label><a class="sidebar-link sidebar-title link-nav" href="kanban.html">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-board"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-board"></use>
+                       </svg><span>بورد کانبان</span></a>
+                   </li>
+                  <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-ecommerce"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-ecommerce"></use>
+                       </svg><span>تجارت الکترونیک</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="add-products.html">افزودن محصولات</a></li>
+                       <li><a href="product.html">محصول</a></li>
+                       <li><a href="category.html">صفحه دسته</a></li>
+                       <li><a href="product-page.html">صفحه محصول</a></li>
+                       <li><a href="list-products.html">فهرست محصولات</a></li>
+                       <li><a href="payment-details.html">جزئیات پرداخت</a></li>
+                       <li><a href="order-history.html">سابقه سفارش</a></li>
+                       <li><a class="submenu-title" href="#">فاکتورها<span class="sub-arrow"><i class="fa fa-angle-right"></i></span> </a>
+                         <ul class="nav-sub-childmenu submenu-content">
+                           <li><a href="invoice-1.html">فاکتور-1</a></li>
+                           <li><a href="invoice-2.html">فاکتور-2</a></li>
+                           <li><a href="invoice-3.html">فاکتور-3</a></li>
+                           <li><a href="invoice-4.html">فاکتور-4</a></li>
+                           <li><a href="invoice-5.html">فاکتور-5</a></li>
+                           <li><a href="invoice-template.html">فاکتور-6</a></li>
+                         </ul>
+                       </li>
+                       <li><a href="cart.html">سبد خرید</a></li>
+                       <li><a href="list-wish.html">لیست آرزوها</a></li>
+                       <li><a href="checkout.html">تسویه حساب</a></li>
+                       <li><a href="pricing.html">قیمت </a></li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="letter-box.html ">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-email"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-email"></use>
+                       </svg><span>جعبه نامه</span></a></li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-chat"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-chat"></use>
+                       </svg><span>چت</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="private-chat.html">چت خصوصی</a></li>
+                       <li><a href="group-chat.html">چت گروهی</a></li>
+                     </ul>
+                   </li>
+                  <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-user"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-user"></use>
+                       </svg><span>کاربران</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="user-profile.html">نمایه کاربران</a></li>
+                       <li><a href="edit-profile.html">ویرایش کاربران</a></li>
+                       <li><a href="user-cards.html">کارت‌های کاربران</a></li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="bookmark.html">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-bookmark"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-bookmark"> </use>
+                       </svg><span>نشانک ها</span></a></li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="contacts.html">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-contact"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-contact"> </use>
+                       </svg><span>مخاطبین</span></a></li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="task.html">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-task"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-task"> </use>
+                       </svg><span>وظایف</span></a></li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="calendar-basic.html ">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-calendar"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-calender"></use>
+                       </svg><span>تقویم</span></a></li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="social-app.html ">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-social"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-social"> </use>
+                       </svg><span>برنامه اجتماعی</span></a></li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="to-do.html ">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-to-do"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-to-do"> </use>
+                       </svg><span>کارها</span></a></li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="search.html">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-search"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-search"> </use>
+                       </svg><span>نتیجه جستجو</span></a></li>
+                   <li class="sidebar-main-title">
+                     <div>
+                       <h6>فرم‌ها و جدول</h6>
+                     </div>
+                   </li>
+                  <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-form"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-form"> </use>
+                       </svg><span>فرم ها</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a class="submenu-title" href="#">کنترل‌های فرم<span class="sub-arrow"><i class="fa fa-angle-right"></i></span> </a>
+                         <ul class="nav-sub-childmenu submenu-content">
+                           <li><a href="form-validation.html">بررسی فرم</a></li>
+                           <li><a href="base-input.html">ورودی های پایه</a></li>
+                           <li><a href="radio-checkbox-control.html">چک و رادیو</a></li>
+                           <li><a href="input-group.html">گروه‌های ورودی</a></li>
+                           <li> <a href="input-mask.html">ماسک ورودی</a></li>
+                           <li><a href="megaoptions.html">گزینه‌های مگا</a></li>
+                         </ul>
+                       </li>
+                       <li><a class="submenu-title" href="#">ویجت‌های فرم<span class="sub-arrow"><i class="fa fa-angle-right"></i></span> </a>
+                         <ul class="nav-sub-childmenu submenu-content">
+                           <li><a href="datepicker.html">Datepicker</a></li>
+                           <li><a href="touchspin.html">تاچ اسپین</a></li>
+                           <li><a href="select2.html">Select2</a></li>
+                           <li><a href="switch.html">سوئیچ</a></li>
+                           <li><a href="typeahead.html">Typeahead</a></li>
+                           <li><a href="clipboard.html">بریده‌دان</a></li>
+                         </ul>
+                       </li>
+                       <li><a class="submenu-title" href="#">طرح بندی فرم<span class="sub-arrow"><i class="fa fa-angle-right"></i></span> </a>
+                         <ul class="nav-sub-childmenu submenu-content">
+                           <li><a href="form-wizard.html">فرم های مرحله ای 1</a></li>
+                           <li><a href="form-wizard-two.html">فرم های مرحله ای 2</a></li>
+                           <li><a href="two-factor.html">دو عامل</a></li>
+                         </ul>
+                       </li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-table"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-table"></use>
+                       </svg><span>جدول</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a class="submenu-title" href="#">جدول بوت استرپ<span class="sub-arrow"><i class="fa fa-angle-right"></i></span> </a>
+                         <ul class="nav-sub-childmenu submenu-content">
+                           <li><a href="bootstrap-basic-table.html">جدولهای اساسی</a></li>
+                           <li><a href="table-components.html">اجزای جدول</a></li>
+                         </ul>
+                       </li>
+                       <li><a class="submenu-title" href="#">جدول داده<span class="sub-arrow"><i class="fa fa-angle-right"></i></span> </a>
+                         <ul class="nav-sub-childmenu submenu-content">
+                           <li><a href="datatable-basic-init.html">آغاز اولیه</a></li>
+                           <li> <a href="datatable-advance.html">Advance Init </a></li>
+                           <li><a href="datatable-API.html">API</a></li>
+                           <li><a href="datatable-data-source.html">منابع داده</a></li>
+                         </ul>
+                       </li>
+                       <li><a href="datatable-ext-autofill.html">مثال جداول داده</a></li>
+                       <li><a href="jsgrid-table.html">جدول شبکه Js </a></li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-main-title">
+                     <div>
+                       <h6>کامپوننت ها</h6>
+                     </div>
+                   </li>
+                  <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-ui-kit"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-ui-kit"></use>
+                       </svg><span> کیت های رابط کاربری</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="typography.html">تایپوگرافی</a></li>
+                       <li><a href="avatars.html">آواتارها</a></li>
+                       <li><a href="helper-classes.html">کلاس های کمکی</a></li>
+                       <li><a href="grid.html">شبکه</a></li>
+                       <li><a href="tag-pills.html">برچسب و قرص</a></li>
+                       <li><a href="progress-bar.html">پیشرفت</a></li>
+                       <li><a href="modal.html">مدال</a></li>
+                       <li><a href="alert.html">هشدار</a></li>
+                       <li><a href="popover.html">پاپور</a></li>
+                       <li><a href="tooltip.html">ابزار نکات</a></li>
+                       <li><a href="dropdown.html">کشویی</a></li>
+                       <li><a href="according.html">آکاردئون</a></li>
+                       <li><a href="tab-bootstrap.html">برگه‌ها</a></li>
+                       <li><a href="list.html">فهرست‌ها</a></li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-bonus-kit"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-bonus-kit"></use>
+                       </svg><span>بوونوس رابط کاربری</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="scrollable.html">قابل پیمایش</a></li>
+                       <li><a href="tree.html">نمای درختی</a></li>
+                       <li><a href="toasts.html">نان تست</a></li>
+                       <li><a href="rating.html">رتبه‌بندی</a></li>
+                       <li><a href="dropzone.html">dropzone</a></li>
+                       <li><a href="tour.html">تور</a></li>
+                       <li><a href="sweet-alert2.html">SweetAlert2</a></li>
+                       <li><a href="modal-animated.html">مدال متحرک</a></li>
+                       <li><a href="owl-carousel.html">کروسل Owl</a></li>
+                       <li><a href="ribbons.html">روبان‌ها</a></li>
+                       <li><a href="pagination.html">صفحه بندی</a></li>
+                       <li><a href="breadcrumb.html">نوار پیمایش</a></li>
+                       <li><a href="range-slider.html">لغزنده محدوده</a></li>
+                       <li><a href="image-cropper.html">برش دهنده تصویر</a></li>
+                       <li><a href="basic-card.html">کارت پایه</a></li>
+                       <li><a href="creative-card.html">کارت خلاق</a></li>
+                       <li><a href="dragable-card.html">کارت قابل کشیدن</a></li>
+                       <li><a href="timeline-v-1.html">خط زمانی </a></li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-animation"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-animation"></use>
+                       </svg><span>انیمیشن</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="animate.html">متحرک</a></li>
+                       <li><a href="scroll-reval.html">پیمایش آشکار</a></li>
+                       <li><a href="AOS.html">پویانمایی AOS</a></li>
+                       <li><a href="tilt.html">انیمیشن شیب</a></li>
+                       <li><a href="wow.html">انیمیشن عجب</a></li>
+                     </ul>
+                   </li>
+                  <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-icons"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-icons"></use>
+                       </svg><span>نمادها</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="flag-icon.html">نماد پرچم</a></li>
+                       <li><a href="font-awesome.html">نماد شگفت انگیز</a></li>
+                       <li><a href="ico-icon.html">نماد Ico</a></li>
+                       <li><a href="themify-icon.html">نماد Themify</a></li>
+                       <li><a href="feather-icon.html">نماد Feather</a></li>
+                       <li><a href="whether-icon.html">نماد هواشناسی</a></li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-button"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-botton"></use>
+                       </svg><span>دکمه ها</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="buttons.html">سبک پیش‌فرض</a></li>
+                       <li><a href="buttons-flat.html">سبک تخت</a></li>
+                       <li><a href="buttons-edge.html">سبک لبه</a></li>
+                       <li><a href="raised-button.html">سبک برجسته</a></li>
+                       <li><a href="button-group.html">گروه دکمه</a></li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-charts"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-charts"></use>
+                       </svg><span>نمودارها</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="echarts.html">Echarts</a></li>
+                       <li><a href="chart-apex.html">نمودار Apex</a></li>
+                       <li><a href="chart-google.html">نمودار Google</a></li>
+                       <li><a href="chart-sparkline.html">نمودار Sparkline</a></li>
+                       <li><a href="chart-flot.html">نمودار فلوت</a></li>
+                       <li><a href="chart-knob.html">نمودار دستگیره</a></li>
+                       <li><a href="chart-morris.html">نمودار موریس</a></li>
+                       <li><a href="chartjs.html">نمودار Chatjs</a></li>
+                       <li><a href="chartist.html">نمودار chartist</a></li>
+                       <li><a href="chart-peity.html">نمودار peity</a></li>
+                     </ul>
+                   </li>
+                  <li class="sidebar-main-title">
+                     <div>
+                       <h6>صفحات</h6>
+                     </div>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="landing-page.html ">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-landing-page"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-landing-page"></use>
+                       </svg><span>لندینگ پیج</span></a></li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="sample-page.html ">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-sample-page"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-sample-page"></use>
+                       </svg><span>صفحه نمونه</span></a></li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="internationalization.html">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-internationalization"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-internationalization"></use>
+                       </svg><span>بین المللی شدن</span></a></li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="../starter-kit/index.html" target="_blank">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-starter-kit"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-starter-kit"></use>
+                       </svg><span>کیت استارت</span></a></li>
+                  <li class="mega-menu sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-others"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-others"></use>
+                       </svg><span>دیگر</span></a>
+                     <div class="mega-menu-container menu-content">
+                       <div class="container-fluid">
+                         <div class="row">
+                           <div class="col mega-box">
+                             <div class="link-section">
+                               <div class="submenu-title">
+                                 <h5>صفحه خطا</h5>
+                               </div>
+                               <ul class="submenu-content opensubmegamenu">
+                                 <li><a href="error-400.html">خطای 400</a></li>
+                                 <li><a href="error-401.html">خطای 401</a></li>
+                                 <li><a href="error-403.html">خطای 403</a></li>
+                                 <li><a href="error-404.html">خطای 404</a></li>
+                                 <li><a href="error-500.html">خطای 500</a></li>
+                                 <li><a href="error-503.html">خطای 503</a></li>
+                               </ul>
+                             </div>
+                           </div>
+                           <div class="col mega-box">
+                             <div class="link-section">
+                               <div class="submenu-title">
+                                 <h5> احراز هویت</h5>
+                               </div>
+                               <ul class="submenu-content opensubmegamenu">
+                                 <li><a href="login.html" target="_blank">ورود ساده</a></li>
+                                 <li><a href="login_one.html" target="_blank">ورود با تصویر bg</a></li>
+                                 <li><a href="login_two.html" target="_blank">با تصویر دو وارد شوید </a></li>
+                                 <li><a href="login-bs-validation.html" target="_blank">ورود به سیستم با اعتبارسنجی</a></li>
+                                 <li><a href="login-bs-tt-validation.html" target="_blank">ورود با راهنمای ابزار</a></li>
+                                 <li><a href="login-sa-validation.html" target="_blank">ورود با sweetalert</a></li>
+                                 <li><a href="sign-up.html" target="_blank">ثبت نام ساده</a></li>
+                                 <li><a href="sign-up-one.html" target="_blank">ثبت نام با Bg Image </a></li>
+                                 <li><a href="sign-up-two.html" target="_blank">ثبت نام با تصویر دو</a></li>
+                                 <li><a href="sign-up-wizard.html" target="_blank">ثبت نام جادوگر</a></li>
+                                 <li><a href="unlock.html">باز کردن قفل کاربر</a></li>
+                                 <li><a href="forget-password.html">فراموش کردن رمز عبور</a></li>
+                                 <li><a href="reset-password.html">بازنشانی رمز عبور</a></li>
+                                 <li><a href="maintenance.html">نگهداری</a></li>
+                               </ul>
+                             </div>
+                           </div>
+                          <div class="col mega-box">
+                             <div class="link-section">
+                               <div class="submenu-title">
+                                 <h5>به زودی</h5>
+                               </div>
+                               <ul class="submenu-content opensubmegamenu">
+                                 <li><a href="comingsoon.html">ساده آمدن</a></li>
+                                 <li><a href="comingsoon-bg-video.html"> همراه با ویدیوی Bg</a></li>
+                                 <li><a href="comingsoon-bg-img.html">دارای تصویر Bg</a></li>
+                               </ul>
+                             </div>
+                           </div>
+                           <div class="col mega-box">
+                             <div class="link-section">
+                               <div class="submenu-title">
+                                 <h5>الگوهای ایمیل</h5>
+                               </div>
+                               <ul class="submenu-content opensubmegamenu">
+                                 <li><a href="basic-template.html">ایمیل اصلی</a></li>
+                                 <li><a href="email-header.html">اصلی با سربرگ</a></li>
+                                 <li><a href="template-email.html">الگوی فروشگاهی</a></li>
+                                 <li><a href="template-email-2.html">الگوی ایمیل 2</a></li>
+                                 <li><a href="ecommerce-templates.html">ایمیل تجارت الکترونیک</a></li>
+                                 <li><a href="email-order-success.html">موفقیت سفارش</a></li>
+                               </ul>
+                             </div>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                   </li>
+                   <li class="sidebar-main-title">
+                     <div>
+                       <h6>متفرقه</h6>
+                     </div>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-gallery"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-gallery"></use>
+                       </svg><span>گالری</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="gallery.html">شبکه گالری</a></li>
+                       <li><a href="gallery-with-description.html">نموشی شبکه گالری</a></li>
+                       <li><a href="gallery-masonry.html">گالری ماسونری</a></li>
+                       <li><a href="masonry-gallery-with-disc.html">ماسونری با توضیحات</a></li>
+                       <li><a href="gallery-hover.html">اثرات شناور</a></li>
+                     </ul>
+                   </li>
+                  <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-blog"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-blog"></use>
+                       </svg><span>وبلاگ</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="blog.html">جزئیات وبلاگ</a></li>
+                       <li><a href="blog-single.html">تک وبلاگ</a></li>
+                       <li><a href="add-post.html">افزودن پست</a></li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="faq.html">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-faq"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-faq"></use>
+                       </svg><span>سؤالات متداول</span></a></li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-job-search"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-job-search"></use>
+                       </svg><span>جستجوی شغل</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="job-cards-view.html">نمایش کارت</a></li>
+                       <li><a href="job-list-view.html">نمایش فهرست</a></li>
+                       <li><a href="job-details.html">جزئیات شغل</a></li>
+                       <li><a href="job-apply.html">اعمال</a></li>
+                     </ul>
+                   </li>
+                  <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-learning"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-learning"></use>
+                       </svg><span>یادگیری</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="learning-list-view.html">فهرست یادگیری</a></li>
+                       <li><a href="learning-detailed.html">دوره مفصل</a></li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-maps"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-maps"></use>
+                       </svg><span>نقشه ها</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="map-js.html">Maps JS</a></li>
+                       <li><a href="vector-map.html">نقشه وکتور</a></li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title" href="#">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-editors"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-editors"></use>
+                       </svg><span>ویراستاران</span></a>
+                     <ul class="sidebar-submenu">
+                       <li><a href="quilleditor.html">ویرایشگر Quill</a></li>
+                       <li><a href="ace-code-editor.html">ویرایشگر کد ACE </a></li>
+                     </ul>
+                   </li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="knowledgebase.html">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-knowledgebase"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-knowledgebase"></use>
+                       </svg><span>پایگاه دانش</span></a></li>
+                   <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title link-nav" href="support-ticket.html ">
+                       <svg class="stroke-icon">
+                         <use href="../assets/svg/icon-sprite.svg#stroke-support-tickets"></use>
+                       </svg>
+                       <svg class="fill-icon">
+                         <use href="../assets/svg/icon-sprite.svg#fill-support-tickets"></use>
+                       </svg><span>تیکت پشتیبانی</span></a></li>
+                </ul>
+              </div>
+              <div class="right-arrow" id="right-arrow"><i data-feather="arrow-right"></i></div>
+            </nav>
+          </div>
+        </div>
+        <!-- Page Sidebar Ends-->
+        <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-title">
+              <div class="row">
+                <div class="col-6">
+                  <h4>Form Wizard</h4>
+                </div>
+                <div class="col-6">
+                  <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="dashboard-01.html">
+                        <svg class="stroke-icon">
+                          <use href="../assets/svg/icon-sprite.svg#stroke-home"></use>
+                        </svg></a></li>
+                    <li class="breadcrumb-item">Form Layout</li>
+                    <li class="breadcrumb-item active"> Form Wizard</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid starts-->
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-xl-6">
+                <div class="card height-equal">
+                  <div class="card-header">
+                    <h4>جادوگر شماره گذاری </h4>
+                    <p class="f-m-light mt-1">
+                      مشخصات خود را پر کنید و مراحل بعدی را ادامه دهید.</p>
+                  </div>
+                  <div class="card-body basic-wizard important-validation">
+                    <div class="stepper-horizontal" id="stepper1">
+                      <div class="stepper-one stepper step editing active">
+                        <div class="step-circle"><span>1</span></div>
+                        <div class="step-title">اطلاعات پایه</div>
+                        <div class="step-bar-left"></div>
+                        <div class="step-bar-right"></div>
+                      </div>
+                      <div class="stepper-two step">
+                        <div class="step-circle"><span>2</span></div>
+                        <div class="step-title">اطلاعات سبد خرید</div>
+                        <div class="step-bar-left"></div>
+                        <div class="step-bar-right"></div>
+                      </div>
+                      <div class="stepper-three step">
+                        <div class="step-circle"><span>3</span></div>
+                        <div class="step-title">بازخورد</div>
+                        <div class="step-bar-left"></div>
+                        <div class="step-bar-right"></div>
+                      </div>
+                      <div class="stepper-four step">
+                        <div class="step-circle"><span>4</span></div>
+                        <div class="step-title">پایان</div>
+                        <div class="step-bar-left"></div>
+                        <div class="step-bar-right"></div>
+                      </div>
+                    </div>
+                    <div id="msform">
+                      <form class="stepper-one row g-3 needs-validation custom-input" novalidate="">
+                        <div class="col-sm-6">
+                          <label class="form-label" for="email-basic-wizard">ایمیل<span class="txt-danger">*</span></label>
+                          <input class="form-control" id="email-basic-wizard" type="email" required="" placeholder="cuba@gmail.com">
+                        </div>
+                        <div class="col-sm-6">
+                          <label class="form-label" for="firstnamewizard">نام<span class="txt-danger">*</span></label>
+                          <input class="form-control" id="firstnamewizard" type="text" required="" placeholder="نام خود را وارد کنید">
+                        </div>
+                        <div class="col-12">
+                          <label class="col-sm-12 form-label" for="passwordwizard">پسورد<span class="txt-danger">*</span></label>
+                          <input class="form-control" id="passwordwizard" type="password" placeholder="پسورد خود را وارد کنید" required="">
+                        </div>
+                        <div class="col-12">
+                          <label class="col-sm-12 form-label" for="confirmpasswordwizard">تایید پسورد<span class="txt-danger">*</span></label>
+                          <input class="form-control" id="confirmpasswordwizard" type="password" placeholder="رمز عبور تایید را وارد کنید" required="">
+                        </div>
+                        <div class="col-12">
+                          <div class="form-check">
+                            <input class="form-check-input" id="inputcheckwizard" type="checkbox" value="" required="">
+                            <label class="form-check-label mb-0" for="inputcheckwizard">با شرایط و ضوابط موافقت کنید</label>
+                          </div>
+                        </div>
+                      </form>
+                      <form class="stepper-two row g-3 needs-validation custom-input" novalidate="">
+                        <div class="col-md-12"> 
+                          <label class="form-label" for="placeholdername1">Placeholder Name </label>
+                          <input class="form-control" id="placeholdername1" type="text" required="" placeholder="Placeholder name">
+                        </div>
+                        <div class="col-xxl-4 col-sm-6">
+                          <label class="form-label" for="cardNumber01">شماره کارت</label>
+                          <input class="form-control" id="cardNumber01" type="text" required="" placeholder="xxxx xxxx xxxx xxxx">
+                        </div>
+                        <div class="col-xxl-4 col-sm-6">
+                          <label class="form-label" for="expirationDates01">انقضا(MM/YY)</label>
+                          <input class="form-control" id="expirationDates01" type="number" required="" placeholder="xx/xx">
+                        </div>
+                        <div class="col-xxl-4">
+                          <label class="form-label" for="cvvNumber-a">شماره CVV</label>
+                          <input class="form-control" id="cvvNumber-a" type="text" required="">
+                        </div>
+                        <div class="col-12"> 
+                          <label class="form-label" for="formFileDocument">آپلود اسناد</label>
+                          <input class="form-control" id="formFileDocument" type="file" aria-label="file example" required="">
+                        </div>
+                        <div class="col-12">
+                          <div class="form-check">
+                            <input class="form-check-input" id="invalidCheck-a" type="checkbox" value="" required="">
+                            <label class="form-check-label" for="invalidCheck-a">تمام اطلاعات فوق صحیح است</label>
+                          </div>
+                        </div>
+                      </form>
+                      <form class="stepper-three row g-3 needs-validation custom-input" novalidate="">
+                        <div class="col-sm-6">
+                          <label class="form-label" for="email-basic">LinkedIn<span class="txt-danger">*</span></label>
+                          <input class="form-control" id="email-basic" type="url" required="" placeholder="https://linkedIn.com/cuba">
+                          <div class="invalid-feedback">لطفا لینک معتبر خود را وارد کنید</div>
+                          <div class="valid-feedback">
+                             به نظر خوب است!</div>
+                        </div>
+                        <div class="col-sm-6">
+                          <label class="form-label" for="validationCustom996">Github<span class="txt-danger">*</span></label>
+                          <input class="form-control" id="validationCustom996" type="url" required="" placeholder="https://github.com/cuba">
+                          <div class="invalid-feedback">لطفا لینک معتبر خود را وارد کنید</div>
+                          <div class="valid-feedback">
+                             به نظر خوب است!     </div>
+                        </div>
+                        <div class="col-12"> 
+                          <label class="form-label" for="validationCustom09">انتخاب استان<span class="txt-danger">*</span></label>
+                          <select class="form-select" id="validationCustom09" required="">
+                            <option selected="" disabled="" value="">انتخاب کنید...</option>
+                            <option>U.K </option>
+                            <option>U.S </option>
+                            <option>India</option>
+                          </select>
+                          <div class="invalid-feedback">لطفاً یک شهر معتبر انتخاب کنید.</div>
+                        </div>
+                        <div class="col-12"> 
+                          <label class="form-label" for="givefeedback">Give Feedback</label>
+                          <textarea class="form-control" id="givefeedback" required=""></textarea>
+                          <div class="invalid-feedback">لطفاً پیامی را در قسمت متنی وارد کنید.</div>
+                        </div>
+                        <div class="col-12">
+                          <div class="form-check">
+                            <input class="form-check-input" id="invalidCheck46" type="checkbox" value="" required="">
+                            <label class="form-check-label mb-0" for="invalidCheck46">با شرایط و ضوابط موافقت کنید</label>
+                            <div class="invalid-feedback">قبل از ارسال باید موافقت کنید.</div>
+                          </div>
+                        </div>
+                      </form>
+                      <form class="stepper-four row g-3 needs-validation" novalidate="">
+                        <div class="col-12 m-0">
+                          <div class="successful-form"><img class="img-fluid" src="../assets/images/gif/dashboard-8/successful.gif" alt="successful">
+                            <h6>تبریک می گویم</h6>
+                            <p>آفرین! شما با موفقیت تکمیل کردید.</p>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                    <div class="wizard-footer d-flex gap-2 justify-content-end">
+                      <button class="btn alert-light-primary" id="backbtn1" onclick="backStep()">قبلی</button>
+                      <button class="btn btn-primary" id="nextbtn1" onclick="nextStep()">بعدی</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-xl-6">
+                <div class="card height-equal">
+                  <div class="card-header">
+                    <h4>فرم اعتبار سنجی دانشجو</h4>
+                    <p class="f-m-light mt-1">لطفاً قبل از کلیک بر روی دکمه بعدی، مطمئن شوید که همه پرونده ها را پر کنید.</p>
+                  </div>
+                  <div class="card-body custom-input">
+                    <form class="form-wizard" id="regForm" action="#" method="POST">
+                      <div class="tab">
+                        <div class="row g-3">
+                          <div class="col-sm-6">
+                            <label for="name">نام</label>
+                            <input class="form-control" id="name" type="text" placeholder="نام خود را وارد کنید" required="required">
+                          </div>
+                          <div class="col-sm-6">
+                            <label class="form-label" for="student-email-wizard">ایمیل<span class="txt-danger">*</span></label>
+                            <input class="form-control" id="student-email-wizard" type="email" required="" placeholder="cuba@gmail.com">
+                          </div>
+                          <div class="col-12">
+                            <label class="col-sm-12 form-label" for="password-wizard">پسورد<span class="txt-danger">*</span></label>
+                            <input class="form-control" id="password-wizard" type="password" placeholder="پسورد خود را وارد کنید" required="">
+                          </div>
+                          <div class="col-12">
+                            <label class="col-sm-12 form-label" for="confirmpassowrd">تایید پسورد<span class="txt-danger">*</span></label>
+                            <input class="form-control" id="confirmpassowrd" type="password" placeholder="رمز عبور تایید را وارد کنید" required="">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="tab">
+                        <div class="row g-3 avatar-upload">
+                          <div class="col-12">
+                            <div>
+                              <div class="avatar-edit">
+                                <input id="imageUpload" type="file" accept=".png, .jpg, .jpeg">
+                                <label for="imageUpload"></label>
+                              </div>
+                              <div class="avatar-preview">
+                                <div id="image"></div>
+                              </div>
+                            </div>
+                            <h6>Add Profile</h6>
+                          </div>
+                          <div class="col-12">
+                            <label class="form-label" for="exampleFormControlInput1">Portfolio URL</label>
+                            <input class="form-control" id="exampleFormControlInput1" type="url" placeholder="https://cuba">
+                          </div>
+                          <div class="col-12"> 
+                            <label class="form-label" for="projectDescription">Project Description</label>
+                            <textarea class="form-control" id="projectDescription" rows="2"></textarea>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="tab">
+                        <h5 class="mb-2">Social Links </h5>
+                        <div class="row g-3">
+                          <div class="col-sm-6">
+                            <label class="form-label" for="twitterControlInput">Twitter</label>
+                            <input class="form-control" id="twitterControlInput" type="url" placeholder="https://twitter.com">
+                          </div>
+                          <div class="col-sm-6">
+                            <label class="form-label" for="githubControlInput">Github</label>
+                            <input class="form-control" id="githubControlInput" type="url" placeholder="https:/github.com">
+                          </div>
+                          <div class="col-12"> 
+                            <div class="input-group">
+                              <input class="form-control" id="inputGroupFile04" type="file" aria-describedby="inputGroupFileAddon04" aria-label="Upload">
+                              <button class="btn btn-outline-secondary" id="inputGroupFileAddon04" type="button">ارسال</button>
+                            </div>
+                          </div>
+                          <div class="col-12">
+                            <select class="form-select" aria-label="Default select example">
+                              <option selected="">Positions</option>
+                              <option value="1">Web Designer</option>
+                              <option value="2">Software Engineer</option>
+                              <option value="3">UI/UX Designer </option>
+                              <option value="3">Web Developer</option>
+                            </select>
+                          </div>
+                          <div class="col-12"> 
+                            <label class="form-label" for="quationsTextarea">Why do you want to take this position?</label>
+                            <textarea class="form-control" id="quationsTextarea" rows="2"></textarea>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <div class="text-end pt-3">
+                          <button class="btn btn-secondary" id="prevBtn2" type="button" onclick="nextPrev(-1)">قبلی</button>
+                          <button class="btn btn-primary" id="nextBtn2" type="button" onclick="nextPrev(1)">بعدی</button>
+                        </div>
+                      </div>
+                      <!-- Circles which indicates the steps of the form:-->
+                      <div class="text-center"><span class="step"></span><span class="step"></span><span class="step"></span><span class="step"></span></div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="card">
+                  <div class="card-header">
+                    <h4>Vertical validation wizard </h4>
+                    <p class="f-m-light mt-1">
+                       Fill up your true details and next proceed.</p>
+                  </div>
+                  <div class="card-body">
+                    <div class="vertical-main-wizard">
+                      <div class="row g-3">    
+                        <div class="col-xxl-3 col-xl-4 col-12">
+                          <div class="nav flex-column header-vertical-wizard" id="wizard-tab" role="tablist" aria-orientation="vertical"><a class="nav-link" id="wizard-contact-tab" data-bs-toggle="pill" href="#wizard-contact" role="tab" aria-controls="wizard-contact" aria-selected="true"> 
+                              <div class="vertical-wizard">
+                                <div class="stroke-icon-wizard"><i class="fa fa-user"></i></div>
+                                <div class="vertical-wizard-content"> 
+                                  <h6>Your Info</h6>
+                                  <p>Add your details </p>
+                                </div>
+                              </div></a><a class="nav-link" id="wizard-cart-tab" data-bs-toggle="pill" href="#wizard-cart" role="tab" aria-controls="wizard-cart" aria-selected="false"> 
+                              <div class="vertical-wizard">
+                                <div class="stroke-icon-wizard"><i class="fa fa-chain-broken"></i></div>
+                                <div class="vertical-wizard-content"> 
+                                  <h6>Cart Info</h6>
+                                  <p>Add your a/c details</p>
+                                </div>
+                              </div></a><a class="nav-link" id="wizard-banking-tab" data-bs-toggle="pill" href="#wizard-banking" role="tab" aria-controls="wizard-banking" aria-selected="false"> 
+                              <div class="vertical-wizard">
+                                <div class="stroke-icon-wizard"><i class="fa fa-group"></i></div>
+                                <div class="vertical-wizard-content"> 
+                                  <h6>Net Banking</h6>
+                                  <p>Choose your bank</p>
+                                </div>
+                              </div></a></div>
+                        </div>
+                        <div class="col-xxl-9 col-xl-8 col-12">
+                          <div class="tab-content" id="wizard-tabContent">
+                            <div class="tab-pane fade show active" id="wizard-contact" role="tabpanel" aria-labelledby="wizard-contact-tab">
+                              <form class="row g-3 needs-validation custom-input" novalidate="">
+                                <div class="col-xxl-4 col-sm-6">
+                                  <label class="form-label" for="validationCustom0-a">نام<span class="txt-danger">*</span></label>
+                                  <input class="form-control" id="validationCustom0-a" type="text" placeholder="نام خود را وارد کنید" required="">
+                                  <div class="valid-feedback">به نظر خوب است</div>
+                                </div>
+                                <div class="col-xxl-4 col-sm-6">
+                                  <label class="form-label" for="validationCustom-b">نام خانوادگی<span class="txt-danger">*</span></label>
+                                  <input class="form-control" id="validationCustom-b" type="text" placeholder="نام خانوادگی خود را وارد کنید" required="">
+                                  <div class="valid-feedback">به نظر خوب است</div>
+                                </div>
+                                <div class="col-xxl-4 col-sm-6">
+                                  <label class="form-label" for="validationemail-b">ایمیل<span class="txt-danger">*</span></label>
+                                  <input class="form-control" id="validationemail-b" type="email" required="" placeholder="cuba@example.com">
+                                  <div class="valid-feedback">به نظر خوب است</div>
+                                </div>
+                                <div class="col-xxl-5 col-sm-6">
+                                  <label class="form-label" for="validationCustom04">کشور</label>
+                                  <select class="form-select" id="validationCustom04" required="">
+                                    <option selected="" disabled="" value="">انتخاب کنید...</option>
+                                    <option>USA </option>
+                                    <option>U.K </option>
+                                    <option>U.S</option>
+                                  </select>
+                                  <div class="invalid-feedback">لطفاً یک شهر معتبر انتخاب کنید.</div>
+                                </div>
+                                <div class="col-xxl-3 col-sm-6">
+                                  <label class="form-label" for="validationCustom05">Zip Code</label>
+                                  <input class="form-control" id="validationCustom05" type="text" required="">
+                                  <div class="invalid-feedback">لطفا یک کدپستی معتبر ارائه دهید.</div>
+                                </div>
+                                <div class="col-xxl-4 col-sm-6">
+                                  <label class="form-label" for="contactnumber">شماره تماس</label>
+                                  <input class="form-control" id="contactnumber" type="number" placeholder="شماره تماس را وارد کنید" required="">
+                                  <div class="valid-feedback">به نظر خوب است</div>
+                                </div>
+                                <div class="col-12">
+                                  <div class="form-check">
+                                    <input class="form-check-input" id="invalidCheck-n" type="checkbox" value="" required="">
+                                    <label class="form-check-label" for="invalidCheck-n">با شرایط و ضوابط موافقت کنید</label>
+                                    <div class="invalid-feedback">قبل از ارسال باید موافقت کنید.</div>
+                                  </div>
+                                </div>
+                                <div class="col-12 text-end"> 
+                                  <button class="btn btn-primary">بعدی</button>
+                                </div>
+                              </form>
+                            </div>
+                            <div class="tab-pane fade" id="wizard-cart" role="tabpanel" aria-labelledby="wizard-cart-tab">
+                              <form class="row g-3 needs-validation custom-input" novalidate="">
+                                <div class="col-xxl-6">
+                                  <div class="card-wrapper border rounded-3 checkbox-checked">
+                                    <h6 class="sub-title">روش پرداخت خود را انتخاب کنید</h6>
+                                    <div class="radio-form">
+                                      <div class="form-check">
+                                        <input class="form-check-input" id="flexRadioDefault1" type="radio" name="flexRadioDefault-a">
+                                        <label class="form-check-label" for="flexRadioDefault1">Visa</label>
+                                      </div>
+                                      <div class="form-check">
+                                        <input class="form-check-input" id="flexRadioDefault2" type="radio" name="flexRadioDefault-a" checked="">
+                                        <label class="form-check-label" for="flexRadioDefault2">MasterCard</label>
+                                      </div>
+                                      <div class="form-check">
+                                        <input class="form-check-input" id="flexRadioDefault3" type="radio" name="flexRadioDefault-a" checked="">
+                                        <label class="form-check-label" for="flexRadioDefault3">Paypal</label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div class="col-xxl-6"> 
+                                  <div class="row"> 
+                                    <div class="col-12">
+                                      <div class="input-group mb-3">
+                                        <input class="form-control" type="text" placeholder="نام کاربری گیرنده" aria-label="Recipient's username" aria-describedby="button-addon2">
+                                        <button class="btn btn-outline-secondary" id="button-addon2" type="button">ارسال</button>
+                                      </div>
+                                    </div>
+                                    <div class="col-12"> 
+                                      <div class="input-group"><span class="input-group-text" id="basic-addon1">@</span>
+                                        <input class="form-control" type="text" placeholder="نام کاربری" aria-label="Username" aria-describedby="basic-addon1">
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div class="col-md-4 col-sm-6">
+                                  <label class="form-label" for="txtCardNumber1">شماره کارت</label>
+                                  <input class="form-control" id="txtCardNumber1" type="text" required="" placeholder="xxxx xxxx xxxx xxxx">
+                                  <div class="invalid-feedback">Please enter your valid number</div>
+                                  <div class="valid-feedback">
+                                     به نظر خوب است!</div>
+                                </div>
+                                <div class="col-md-4 col-sm-6">
+                                  <label class="form-label" for="validationDates">انقضا(MM/YY)</label>
+                                  <input class="form-control" id="validationDates" type="number" required="" placeholder="xx/xx">
+                                  <div class="invalid-feedback">Please enter your valid number</div>
+                                  <div class="valid-feedback">
+                                     به نظر خوب است!</div>
+                                </div>
+                                <div class="col-md-4 col-sm-6">
+                                  <label class="form-label" for="cvvNumber-b">CVV</label>
+                                  <input class="form-control" id="cvvNumber-b" type="text" required="">
+                                  <div class="invalid-feedback">Please enter your valid number</div>
+                                  <div class="valid-feedback">
+                                     به نظر خوب است!</div>
+                                </div>
+                                <div class="col-md-12 col-sm-6">
+                                  <label class="form-label" for="formFile2">آپلود اسناد</label>
+                                  <input class="form-control" id="formFile2" type="file" aria-label="file example" required="">
+                                  <div class="invalid-feedback">فایل فرم نامعتبر انتخاب شده است</div>
+                                </div>
+                                <div class="col-12">
+                                  <div class="form-check mb-0">
+                                    <input class="form-check-input" id="invalidCheck-b" type="checkbox" value="" required="">
+                                    <label class="form-check-label" for="invalidCheck-b">تمام اطلاعات فوق صحیح است</label>
+                                    <div class="invalid-feedback">قبل از ارسال باید موافقت کنید.</div>
+                                  </div>
+                                </div>
+                                <div class="col-12 text-end"> 
+                                  <button class="btn btn-primary">قبلی</button>
+                                  <button class="btn btn-primary">بعدی</button>
+                                </div>
+                              </form>
+                            </div>
+                            <div class="tab-pane fade custom-input" id="wizard-banking" role="tabpanel" aria-labelledby="wizard-banking-tab">
+                              <form class="row g-3 mb-3 needs-validation" novalidate="">
+                                <div class="col-md-12"> 
+                                  <div class="accordion dark-accordion" id="accordionExample-a">
+                                    <div class="accordion-item">
+                                      <h2 class="accordion-header" id="headingOne-a">
+                                        <button class="accordion-button collapsed accordion-light-primary txt-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne-a" aria-expanded="true" aria-controls="collapseOne-a">NET BANKING<i class="svg-color" data-feather="chevron-down"></i></button>
+                                      </h2>
+                                      <div class="accordion-collapse collapse" id="collapseOne-a" aria-labelledby="headingOne-a" data-bs-parent="#accordionExample-a">
+                                        <div class="accordion-body weight-title card-wrapper">
+                                          <h6 class="sub-title f-14">SELECT YOUR BANK</h6>
+                                          <div class="row choose-bank">
+                                            <div class="col-sm-6">
+                                              <div class="form-check radio radio-primary">
+                                                <input class="form-check-input" id="flexRadioDefault-z" type="radio" name="flexRadioDefault-v">
+                                                <label class="form-check-label" for="flexRadioDefault-z">Industrial & Commercial Bank</label>
+                                              </div>
+                                              <div class="form-check radio radio-primary">
+                                                <input class="form-check-input" id="flexRadioDefault-y" type="radio" name="flexRadioDefault-v">
+                                                <label class="form-check-label" for="flexRadioDefault-y">Agricultural Bank</label>
+                                              </div>
+                                              <div class="form-check radio radio-primary">
+                                                <input class="form-check-input" id="flexRadioDefault-x" type="radio" name="flexRadioDefault-v" checked="">
+                                                <label class="form-check-label" for="flexRadioDefault-x">JPMorgan Chase & Co.</label>
+                                              </div>
+                                            </div>
+                                            <div class="col-sm-6"> 
+                                              <div class="form-check radio radio-primary">
+                                                <input class="form-check-input" id="flexRadioDefault-w" type="radio" name="flexRadioDefault-v">
+                                                <label class="form-check-label" for="flexRadioDefault-w">Construction Bank Corp.</label>
+                                              </div>
+                                              <div class="form-check radio radio-primary">
+                                                <input class="form-check-input" id="flexRadioDefault-v" type="radio" name="flexRadioDefault-v">
+                                                <label class="form-check-label" for="flexRadioDefault-v">Bank of America</label>
+                                              </div>
+                                              <div class="form-check radio radio-primary">
+                                                <input class="form-check-input" id="flexRadioDefault-u" type="radio" name="flexRadioDefault-v">
+                                                <label class="form-check-label" for="flexRadioDefault-u">HDFC Bank</label>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div class="col-12"> 
+                                  <textarea class="form-control" id="validationTextarea24" placeholder="Your Feedback" required=""></textarea>
+                                  <div class="invalid-feedback">لطفاً پیامی را در قسمت متنی وارد کنید.</div>
+                                </div>
+                                <div class="col-12">
+                                  <div class="form-check mb-0">
+                                    <input class="form-check-input" id="invalidCheck67" type="checkbox" value="" required="">
+                                    <label class="form-check-label mb-0" for="invalidCheck67">با شرایط و ضوابط موافقت کنید</label>
+                                    <div class="invalid-feedback">قبل از ارسال باید موافقت کنید.</div>
+                                  </div>
+                                </div>
+                                <div class="col-12 text-end"> 
+                                  <button class="btn btn-success">Finish</button>
+                                </div>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="card">
+                  <div class="card-header">
+                    <h4>Shipping form</h4>
+                    <p class="f-m-light mt-1">
+                       Fill up your true details and next proceed.</p>
+                  </div>
+                  <div class="card-body">
+                    <div class="row shopping-wizard">
+                      <div class="col-12"> 
+                        <div class="row shipping-form g-5">
+                          <div class="col-xl-8 shipping-border">
+                            <div class="nav nav-pills horizontal-options shipping-options" id="cart-options-tab" role="tablist" aria-orientation="vertical"><a class="nav-link b-r-0 active" id="bill-wizard-tab" data-bs-toggle="pill" href="#bill-wizard" role="tab" aria-controls="bill-wizard" aria-selected="true"> 
+                                <div class="cart-options">
+                                  <div class="stroke-icon-wizard"><i class="fa fa-user"></i></div>
+                                  <div class="cart-options-content"> 
+                                    <h6>صورتحساب</h6>
+                                  </div>
+                                </div></a><a class="nav-link b-r-0" id="ship-wizard-tab" data-bs-toggle="pill" href="#ship-wizard" role="tab" aria-controls="ship-wizard" aria-selected="false"> 
+                                <div class="cart-options">
+                                  <div class="stroke-icon-wizard"><i class="fa fa-truck"></i></div>
+                                  <div class="cart-options-content"> 
+                                    <h6>حمل و نقل</h6>
+                                  </div>
+                                </div></a><a class="nav-link b-r-0" id="payment-wizard-tab" data-bs-toggle="pill" href="#payment-wizard" role="tab" aria-controls="payment-wizard" aria-selected="false"> 
+                                <div class="cart-options">
+                                  <div class="stroke-icon-wizard"><i class="fa fa-money"></i></div>
+                                  <div class="cart-options-content"> 
+                                    <h6>پرداخت</h6>
+                                  </div>
+                                </div></a><a class="nav-link b-r-0" id="finish-wizard-tab" data-bs-toggle="pill" href="#finish-wizard" role="tab" aria-controls="finish-wizard" aria-selected="false"> 
+                                <div class="cart-options">
+                                  <div class="stroke-icon-wizard"><i class="fa fa-check-square"></i></div>
+                                  <div class="cart-options-content"> 
+                                    <h6>پایان</h6>
+                                  </div>
+                                </div></a></div>
+                            <div class="tab-content dark-field shipping-content" id="cart-options-tabContent">
+                              <div class="tab-pane fade show active" id="bill-wizard" role="tabpanel" aria-labelledby="bill-wizard-tab">
+                                <h6>Billing Information </h6>
+                                <p class="f-light">Fill up the following information </p>
+                                <form class="row g-3 needs-validation" novalidate="">
+                                  <div class="col-sm-6">
+                                    <label class="form-label" for="customFirstname">نام<span class="txt-danger">*</span></label>
+                                    <input class="form-control" id="customFirstname" type="text" placeholder="نام خود را وارد کنید" required="">
+                                    <div class="valid-feedback">به نظر خوب است</div>
+                                  </div>
+                                  <div class="col-sm-6">
+                                    <label class="form-label" for="customLastname">نام خانوادگی<span class="txt-danger">*</span></label>
+                                    <input class="form-control" id="customLastname" type="text" placeholder="نام خانوادگی خود را وارد کنید" required="">
+                                    <div class="valid-feedback">به نظر خوب است</div>
+                                  </div>
+                                  <div class="col-sm-6">
+                                    <label class="form-label" for="customContact">شماره تماس</label>
+                                    <input class="form-control" id="customContact" type="number" placeholder="شماره تماس را وارد کنید" required="">
+                                    <div class="valid-feedback">به نظر خوب است</div>
+                                  </div>
+                                  <div class="col-sm-6">
+                                    <label class="form-label" for="customEmail">ایمیل<span class="txt-danger">*</span></label>
+                                    <input class="form-control" id="customEmail" type="email" required="" placeholder="cuba@example.com">
+                                    <div class="valid-feedback">به نظر خوب است</div>
+                                  </div>
+                                  <div class="col-12"> 
+                                    <label class="form-label" for="exampleFormControlTextarea1"نشانی/label>
+                                    <textarea class="form-control" id="exampleFormControlTextarea1" rows="3"></textarea>
+                                  </div>
+                                  <div class="col-sm-4">
+                                    <label class="form-label" for="customState-wizard">کشور</label>
+                                    <select class="form-select" id="customState-wizard" required="">
+                                      <option selected="" disabled="" value="">Select Country</option>
+                                      <option>Africa </option>
+                                      <option>India</option>
+                                      <option>Indonesia </option>
+                                      <option>Netherlands</option>
+                                      <option>U.K </option>
+                                      <option>U.S</option>
+                                    </select>
+                                    <div class="invalid-feedback">لطفاً یک شهر معتبر انتخاب کنید.</div>
+                                  </div>
+                                  <div class="col-sm-4"> 
+                                    <label class="form-label" for="customstate">کشور</label>
+                                    <input class="form-control" id="customstate" type="text" placeholder="Enter state" required="">
+                                  </div>
+                                  <div class="col-sm-4">
+                                    <label class="form-label" for="custom-zipcode">Zip Code</label>
+                                    <input class="form-control" id="custom-zipcode" type="text" required="">
+                                    <div class="invalid-feedback">لطفا یک کدپستی معتبر ارائه دهید.</div>
+                                  </div>
+                                  <div class="col-12">
+                                    <div class="form-check">
+                                      <input class="form-check-input" id="invalid-check-wizard" type="checkbox" value="" required="">
+                                      <label class="form-check-label mb-0 d-block" for="invalid-check-wizard">برای دفعه بعد مرا به خاطر بسپار</label>
+                                      <div class="invalid-feedback">قبل از ارسال باید موافقت کنید.</div>
+                                    </div>
+                                  </div>
+                                  <div class="col-12"> 
+                                    <label class="form-label" for="exampleFormControlTextarea-01">یادداشت سفارش</label>
+                                    <textarea class="form-control" id="exampleFormControlTextarea-01" rows="3" placeholder="سوالات خود را وارد کنید..."></textarea>
+                                  </div>
+                                  <div class="col-12 text-end">
+                                    <button class="btn btn-primary">به ادامه مطلب بروید<i class="fa fa-truck proceed-next pe-2"></i></button>
+                                  </div>
+                                </form>
+                              </div>
+                              <div class="tab-pane fade shipping-wizard" id="ship-wizard" role="tabpanel" aria-labelledby="ship-wizard-tab">
+                                <h6>Shipping Information</h6>
+                                <p class="f-light">Fill up the following information to send you the order</p>
+                                <div class="shipping-title">
+                                  <h6 class="mb-2">Saved Address</h6>
+                                  <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#exampleModalgetbootstrap" data-whatever="@getbootstrap"> <i class="fa fa-plus-square f-20"></i></button>
+                                  <div class="modal fade" id="exampleModalgetbootstrap" tabindex="-1" role="dialog" aria-labelledby="exampleModalgetbootstrap" aria-hidden="true">
+                                    <div class="modal-dialog" role="document">
+                                      <div class="modal-content">
+                                        <div class="modal-header">
+                                          <h5>Information</h5>
+                                          <button class="btn-close py-0" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                          <form class="row g-3 needs-validation" novalidate="">
+                                            <div class="col-12">
+                                              <label class="form-label" for="validationCustom01">نام</label>
+                                              <input class="form-control" id="validationCustom01" type="text" placeholder="نام خود را وارد کنید" required="">
+                                              <div class="valid-feedback">به نظر خوب است</div>
+                                            </div>
+                                            <div class="col-12">
+                                              <label class="form-label" for="validationAddress-a">آدرس</label>
+                                              <textarea class="form-control" id="validationAddress-a" rows="3" placeholder="Enter your address..."></textarea>
+                                              <div class="valid-feedback">به نظر خوب است</div>
+                                            </div>
+                                            <div class="col-12"> 
+                                              <label class="form-label w-100" for="addressType-a">Address Type
+                                                <select class="form-select" id="addressType-a" required="">
+                                                  <option selected="" value="">Home</option>
+                                                  <option>Office</option>
+                                                </select>
+                                              </label>
+                                            </div>
+                                            <div class="col-12">
+                                              <label for="contact">Contact No</label>
+                                              <input class="form-control" id="contact" type="number" placeholder="123456789">
+                                            </div>
+                                          </form>
+                                        </div>
+                                        <div class="modal-footer">
+                                          <button class="btn m-0" type="button" data-bs-dismiss="modal">بستن</button>
+                                          <button class="btn btn-primary m-0" type="button">ذخیره</button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div class="row g-3">
+                                  <div class="col-xxl-4 col-sm-6"> 
+                                    <div class="card-wrapper border rounded-3 h-100 light-card">
+                                      <div class="collect-address">
+                                        <div class="d-flex gap-2 align-items-center">
+                                          <div class="form-check radio radio-primary">
+                                            <input class="form-check-input" id="shipping-choose1" type="radio" name="radio1" value="option1" checked="">
+                                            <label class="form-check-label mb-0" for="shipping-choose1">Home</label>
+                                          </div>
+                                        </div>
+                                        <div class="card-icon"><i class="fa fa-pencil"></i><i class="fa fa-trash-o"></i></div>
+                                      </div>
+                                      <div class="shipping-address">
+                                        <h6>Filomena Green </h6><span>
+                                          Address: 2211 Fruitville Rd, Sarasota, Florida, US 34237</span><span>
+                                          Contact: (941) 321-5643</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div class="col-xxl-4 col-sm-6"> 
+                                    <div class="card-wrapper border rounded-3 h-100 light-card">
+                                      <div class="collect-address">
+                                        <div class="d-flex gap-2 align-items-center">
+                                          <div class="form-check radio radio-primary">
+                                            <input class="form-check-input" id="shipping-choose2" type="radio" name="radio1" value="option1" checked="">
+                                            <label class="form-check-label mb-0" for="shipping-choose2">کار</label>
+                                          </div>
+                                        </div>
+                                        <div class="card-icon"><i class="fa fa-pencil"></i><i class="fa fa-trash-o"></i></div>
+                                      </div>
+                                      <div class="shipping-address">
+                                        <h6>Ms. Ila Runte DDS</h6><span>
+                                          Address: 1531 E 23rd St S, Independence, Mississippi, US 64055</span><span>
+                                          Contact: (816) 252-4500</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <h6 class="mt-4 mb-2">Shipping Method</h6>
+                                <div class="row shipping-method g-3">
+                                  <div class="col-sm-6">
+                                    <div class="card-wrapper border rounded-3 h-100 light-card">
+                                      <div class="form-check radio radio-primary">
+                                        <input class="form-check-input" id="shipping-choose3" type="radio" name="radio2" value="option1" checked="">
+                                        <label class="form-check-label mb-0" for="shipping-choose3">Standard Delivery - Free</label>
+                                      </div>
+                                      <p>Estimated 5-7 days shipping</p>
+                                    </div>
+                                  </div>
+                                  <div class="col-sm-6">
+                                    <div class="card-wrapper border rounded-3 h-100 light-card">
+                                      <div class="form-check radio radio-primary">
+                                        <input class="form-check-input" id="shipping-choose4" type="radio" name="radio2" value="option1" checked="">
+                                        <label class="form-check-label mb-0" for="shipping-choose4">Express Delivery - $24</label>
+                                      </div>
+                                      <P>Estimated 1-2 days shipping</P>
+                                    </div>
+                                  </div>
+                                  <div class="col-12 text-end">
+                                    <button class="btn btn-primary">Proceed to Next<i class="fa fa-truck proceed-next pe-2"></i></button>
+                                  </div>
+                                </div>
+                              </div>
+                              <div class="tab-pane fade shipping-wizard" id="payment-wizard" role="tabpanel" aria-labelledby="payment-wizard-tab">
+                                <h6>Payment Information</h6>
+                                <p class="f-light">Fill up the following information to send you the order</p>
+                                <div class="payment-info-wrapper">
+                                  <div class="row shipping-method g-3">
+                                    <div class="col-12">
+                                      <div class="card-wrapper border rounded-3 light-card">
+                                        <div>
+                                          <div class="form-check radio radio-primary">
+                                            <input class="form-check-input" id="shipping-choose5" type="radio" name="radio3" value="option1" checked="">
+                                            <label class="form-check-label mb-0 f-w-500" for="shipping-choose5">Paypal</label>
+                                          </div>
+                                          <p>You will be taken to the paypal website to finish your transaction safely</p>
+                                        </div>
+                                        <div> <img src="../assets/images/checkout/paypal.png" alt="paypal"></div>
+                                      </div>
+                                    </div>
+                                    <div class="col-12">
+                                      <div class="card-wrapper border rounded-3 pay-info light-card">
+                                        <div>
+                                          <div>
+                                            <div class="form-check radio radio-primary">
+                                              <input class="form-check-input" id="shipping-choose6" type="radio" name="radio3" value="option1">
+                                              <label class="form-check-label mb-0 f-w-500" for="shipping-choose6">Credit Card</label>
+                                            </div>
+                                            <P>Transferring money securely through your bank account. Mastercard, Visa, Discover, and Stripe are all accepted</P>
+                                          </div>
+                                          <div> <img src="../assets/images/forms/credit-card.png" alt="card"></div>
+                                        </div>
+                                        <form class="row g-3 needs-validation" novalidate="">
+                                          <div class="col-md-12"> 
+                                            <label class="form-label" for="placeholdername">Card Holder</label>
+                                            <input class="form-control" id="placeholdername" type="text" required="" placeholder="Enter card holder name">
+                                          </div>
+                                          <div class="col-md-4">
+                                            <label class="form-label" for="holdernumber">شماره کارت</label>
+                                            <input class="form-control" id="holdernumber" type="text" required="" placeholder="xxxx xxxx xxxx xxxx">
+                                            <div class="invalid-feedback">Please enter your valid number</div>
+                                            <div class="valid-feedback">
+                                               به نظر خوب است!</div>
+                                          </div>
+                                          <div class="col-md-4">
+                                            <label class="form-label" for="expirationdates">انقضا(MM/YY)</label>
+                                            <input class="form-control" id="expirationdates" type="number" required="" placeholder="xx/xx">
+                                            <div class="invalid-feedback">Please enter your valid number</div>
+                                            <div class="valid-feedback">
+                                               به نظر خوب است!</div>
+                                          </div>
+                                          <div class="col-md-4">
+                                            <label class="form-label" for="cvvNumber-c">CVV</label>
+                                            <input class="form-control" id="cvvNumber-c" type="text" required="">
+                                            <div class="invalid-feedback">Please enter your valid number</div>
+                                            <div class="valid-feedback">
+                                               به نظر خوب است!</div>
+                                          </div>
+                                          <div class="col-12"> 
+                                            <label class="form-label" for="formFile3">آپلود اسناد</label>
+                                            <input class="form-control" id="formFile3" type="file" aria-label="file example" required="">
+                                            <div class="invalid-feedback">فایل فرم نامعتبر انتخاب شده است</div>
+                                          </div>
+                                          <div class="col-12">
+                                            <div class="form-check">
+                                              <input class="form-check-input" id="invalidCheck-c" type="checkbox" value="" required="">
+                                              <label class="form-check-label" for="invalidCheck-c">تمام اطلاعات فوق صحیح است</label>
+                                              <div class="invalid-feedback">قبل از ارسال باید موافقت کنید.</div>
+                                            </div>
+                                          </div>
+                                        </form>
+                                      </div>
+                                    </div>
+                                    <div class="col-12">
+                                      <div class="card-wrapper border rounded-3 light-card">
+                                        <div>
+                                          <div class="form-check radio radio-primary">
+                                            <input class="form-check-input" id="shipping-choose7" type="radio" name="radio3" value="option1">
+                                            <label class="form-check-label mb-0 f-w-500" for="shipping-choose7">Cash On Delivery</label>
+                                          </div>
+                                          <p>After your order is delivered, make a cash payment</p>
+                                        </div>
+                                        <div> <img src="../assets/images/forms/delivery.png" alt="delivery"></div>
+                                      </div>
+                                    </div>
+                                    <div class="col-12 text-end">
+                                      <button class="btn btn-primary">Proceed to Next<i class="fa fa-truck proceed-next pe-2"></i></button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div class="tab-pane fade shipping-wizard finish-wizard1" id="finish-wizard" role="tabpanel" aria-labelledby="finish-wizard-tab">
+                                <div class="order-confirm"><img src="../assets/images/gif/dashboard-8/successful.gif" alt="popper">
+                                  <h5>Thank you! Your order is confirmed.</h5>
+                                  <p class="mb-0">An email with your order's specifics will be sent to you as order confirmation.</p>
+                                  <p class="text-center f-w-500 mt-2">Order ID: <a class="text-decoration-underline" href="javascript:void(0)">GE34598 </a></p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="col-xl-4"> 
+                            <div class="shipping-info">
+                              <h5>سبد خرید فعلی</h5>
+                              <div class="overflow-auto">
+                                <table class="table table-striped">
+                                  <thead>
+                                    <tr>
+                                      <th scope="col">محصول</th>
+                                      <th scope="col">جزئیات محصول</th>
+                                      <th scope="col">قیمت </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr>
+                                      <td> <img src="../assets/images/product/13.png" alt="t-shirt"></td>
+                                      <td> 
+                                        <div> 
+                                          <h6>تی شرت </h6><span>$98 * 2</span>
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <p>$400</p>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td> <img src="../assets/images/email-template/4.png" alt="headphone"></td>
+                                      <td> 
+                                        <div> 
+                                          <h6>Headphone</h6><span>$4*2</span>
+                                        </div>
+                                      </td>
+                                      <td> 
+                                        <p>$450</p>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td> <img src="../assets/images/product/2.png" alt="headphone"></td>
+                                      <td> 
+                                        <div> 
+                                          <h6>تی شرت </h6><span>$10 * 2</span>
+                                        </div>
+                                      </td>
+                                      <td> 
+                                        <p>$234</p>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td> <img src="../assets/images/dashboard-2/product/2.png" alt="headphone"></td>
+                                      <td> 
+                                        <div> 
+                                          <h6>Chairs</h6><span>$98 * 2</span>
+                                        </div>
+                                      </td>
+                                      <td> 
+                                        <p>$200</p>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                  <tfoot>
+                                  <tr>
+                                    <td>مجموع فرعی:</td>
+                                    <td colspan="2">1284.00 دلار </td>
+                                  </tr>
+                                  <tr>
+                                    <td>تخفیف:</td>
+                                    <td colspan="2">20.00 دلار</td>
+                                  </tr>
+                                  <tr>
+                                    <td>هزینه حمل و نقل:</td>
+                                    <td colspan="2">100.78 دلار</td>
+                                  </tr>
+                                  <tr>
+                                    <td>مالیات:</td>
+                                    <td colspan="2">205.34 دلار</td>
+                                  </tr>
+                                  <tr>
+                                    <td>مجموع (USD) :</td>
+                                    <td colspan="2">1569.7 دلار</td>
+                                  </tr>
+                                  </tfoot>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Container-fluid Ends-->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- footer start-->
+        <footer class="footer">
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-md-12 footer-copyright text-center">
+                <p class="mb-0">حق نشر 2023 © فروش قالب کوبا فقط در ژاکت </p>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <!-- latest jquery-->
+    <script src="../assets/js/jquery.min.js"></script>
+    <!-- Bootstrap js-->
+    <script src="../assets/js/bootstrap/bootstrap.bundle.min.js"></script>
+    <!-- feather icon js-->
+    <script src="../assets/js/icons/feather-icon/feather.min.js"></script>
+    <script src="../assets/js/icons/feather-icon/feather-icon.js"></script>
+    <!-- scrollbar js-->
+    <script src="../assets/js/scrollbar/simplebar.js"></script>
+    <script src="../assets/js/scrollbar/custom.js"></script>
+    <!-- Sidebar jquery-->
+    <script src="../assets/js/config.js"></script>
+    <!-- Plugins JS start-->
+    <script src="../assets/js/sidebar-menu.js"></script>
+    <script src="../assets/js/sidebar-pin.js"></script>
+    <script src="../assets/js/slick/slick.min.js"></script>
+    <script src="../assets/js/slick/slick.js"></script>
+    <script src="../assets/js/header-slick.js"></script>
+    <script src="../assets/js/form-wizard/form-wizard.js"></script>
+    <script src="../assets/js/form-wizard/image-upload.js"></script>
+    <script src="../assets/js/height-equal.js"></script>
+    <!-- Plugins JS Ends-->
+    <!-- Theme js-->
+    <script src="../assets/js/script.js"></script>
+    <script src="../assets/js/theme-customizer/customizer.js"></script>
+  </body>
+</html>
