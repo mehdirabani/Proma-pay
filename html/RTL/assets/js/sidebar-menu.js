@@ -431,19 +431,21 @@
 
   if ($(window).width() <= 1199) {
     $(".left-header .link-section").children("ul").css("display", "none");
-    $(this).parent().children("ul").toggleClass("d-block").slideToggle();
   }
 
   // active link
   if (
-    $(".simplebar-wrapper .simplebar-content-wrapper") &&
+    $(".simplebar-wrapper .simplebar-content-wrapper").length &&
     $("#pageWrapper").hasClass("compact-wrapper")
   ) {
+    var $activeLink = $(".simplebar-wrapper .simplebar-content-wrapper a.active");
+    if (!$activeLink.length || !$activeLink.offset()) {
+      return;
+    }
     $(".simplebar-wrapper .simplebar-content-wrapper").animate(
       {
         scrollTop:
-          $(".simplebar-wrapper .simplebar-content-wrapper a.active").offset()
-            .top - 400,
+          $activeLink.offset().top - 400,
       },
       1000
     );
