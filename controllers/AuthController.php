@@ -55,13 +55,18 @@ class AuthController extends Controller
                 set_flash('error', 'ایمیل واردشده معتبر نیست.');
                 redirect('auth/register');
             }
-            if (strlen($password) < 6) {
-                set_flash('error', 'رمز عبور باید حداقل ۶ کاراکتر باشد.');
-                redirect('auth/register');
-            }
-            if ($password !== $confirm) {
-                set_flash('error', 'تکرار رمز عبور با رمز اصلی یکسان نیست.');
-                redirect('auth/register');
+            $passwordProvided = $password !== '' || $confirm !== '';
+            if ($passwordProvided) {
+                if (strlen($password) < 4) {
+                    set_flash('error', 'رمز عبور باید حداقل ۴ کاراکتر باشد.');
+                    redirect('auth/register');
+                }
+                if ($password !== $confirm) {
+                    set_flash('error', 'تکرار رمز عبور با رمز اصلی یکسان نیست.');
+                    redirect('auth/register');
+                }
+            } else {
+                $password = substr($mobile, -4);
             }
 
             $payload = [
@@ -77,8 +82,15 @@ class AuthController extends Controller
 
             try {
                 if ($duplicate = User::findDuplicateCustomer($payload)) {
+                    if (($duplicate['status'] ?? '') === 'active' && Auth::unifiedLogin($nationalId, $password)) {
+                        set_flash('success', 'حساب مشتری قبلاً وجود داشت و شما وارد سامانه شدید.');
+                        if (!empty($_SESSION['proma_ecommerce_cart'])) {
+                            redirect('ecommerce/checkout');
+                        }
+                        redirect('dashboard');
+                    }
                     set_flash('error', 'حساب مشتری با این مشخصات قبلاً برای «' . ($duplicate['full_name'] ?? 'مشتری') . '» ثبت شده است. از صفحه ورود یا بازیابی رمز استفاده کنید.');
-                    redirect('auth/login');
+                    redirect('auth/register');
                 }
                 User::create($payload);
                 Auth::unifiedLogin($nationalId, $password);

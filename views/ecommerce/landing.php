@@ -9,28 +9,48 @@ $heroProduct = $heroProduct ?? ($products[0] ?? null);
 $heroImage = !empty($heroProduct['image_path'])
     ? asset_url($heroProduct['image_path'])
     : template_asset_url('images/dashboard-2/discover.png');
+$landingText = function ($key, $fallback = '') use ($settings, $systemName) {
+    $value = trim((string) ($settings[$key] ?? ''));
+    $value = $value !== '' ? $value : $fallback;
+    return str_replace('{{system_name}}', $systemName, $value);
+};
+$showcaseProducts = array_slice($featuredProducts ?: $products, 0, 3);
 ?>
 
 <section class="proma-landing-hero" style="--proma-landing-hero-image: url('<?= e($heroImage) ?>')">
   <div class="proma-landing-hero__content">
-    <span class="proma-landing-kicker">فروشگاه <?= e($systemName) ?></span>
-    <h1>فروشگاه <?= e($systemName) ?></h1>
-    <p>محصولات فعال را ببینید، سفارش نقدی ثبت کنید یا برای خرید اقساطی درخواست بفرستید.</p>
+    <span class="proma-landing-kicker"><?= e($landingText('landing_kicker', 'فروشگاه {{system_name}}')) ?></span>
+    <h1><?= e($landingText('landing_title', 'خرید نقدی و اقساطی با {{system_name}}')) ?></h1>
+    <p><?= e($landingText('landing_subtitle', 'محصولات منتخب را ببینید، سفارش نقدی ثبت کنید یا درخواست خرید اقساطی بفرستید.')) ?></p>
     <div class="proma-landing-actions">
-      <a class="btn btn-primary" href="<?= e(url('ecommerce/shop')) ?>">مشاهده محصولات</a>
-      <a class="btn btn-light" href="<?= e(url('ecommerce/installmentRequest')) ?>">درخواست خرید اقساطی</a>
+      <a class="btn btn-primary" href="<?= e(url('ecommerce/shop')) ?>"><?= e($landingText('landing_primary_cta', 'مشاهده محصولات')) ?></a>
+      <a class="btn btn-light" href="<?= e(url('ecommerce/installmentRequest')) ?>"><?= e($landingText('landing_secondary_cta', 'درخواست خرید اقساطی')) ?></a>
       <?php if (Auth::check()): ?>
         <a class="btn btn-outline-light" href="<?= e(url('dashboard')) ?>">ورود به پنل</a>
       <?php else: ?>
         <a class="btn btn-outline-light" href="<?= e(url('auth/register')) ?>">ثبت‌نام مشتری</a>
       <?php endif; ?>
     </div>
+    <div class="proma-landing-hero__chips">
+      <span><i data-feather="shield"></i> پرداخت امن</span>
+      <span><i data-feather="file-text"></i> درخواست اقساطی</span>
+      <span><i data-feather="truck"></i> پیگیری سفارش</span>
+    </div>
   </div>
-  <a class="proma-landing-cart" href="<?= e(url('ecommerce/cart')) ?>">
-    <i data-feather="shopping-cart"></i>
-    <span><?= to_persian_digits($cartSummary['quantity'] ?? 0) ?> کالا</span>
-    <strong><?= money_toman($cartSummary['total'] ?? 0) ?></strong>
-  </a>
+  <div class="proma-landing-hero__visual">
+    <?php if ($heroProduct): ?>
+      <a class="proma-landing-spotlight" href="<?= e(url('ecommerce/product/' . $heroProduct['slug'])) ?>">
+        <span>محصول شاخص</span>
+        <strong><?= e($heroProduct['title']) ?></strong>
+        <em><?= money_toman($heroProduct['display_price'] ?? $heroProduct['price'] ?? 0) ?></em>
+      </a>
+    <?php endif; ?>
+    <a class="proma-landing-cart" href="<?= e(url('ecommerce/cart')) ?>">
+      <i data-feather="shopping-cart"></i>
+      <span><?= to_persian_digits($cartSummary['quantity'] ?? 0) ?> کالا</span>
+      <strong><?= money_toman($cartSummary['total'] ?? 0) ?></strong>
+    </a>
+  </div>
 </section>
 
 <?php if ($categories): ?>
@@ -48,8 +68,8 @@ $heroImage = !empty($heroProduct['image_path'])
 <section class="proma-landing-section">
   <div class="proma-landing-section__head">
     <div>
-      <span class="proma-landing-eyebrow">محصولات منتخب</span>
-      <h2>آماده برای خرید</h2>
+      <span class="proma-landing-eyebrow"><?= e($landingText('landing_featured_eyebrow', 'پیشنهادهای فروشگاه')) ?></span>
+      <h2><?= e($landingText('landing_featured_title', 'محصولات آماده خرید')) ?></h2>
     </div>
     <a class="link-only" href="<?= e(url('ecommerce/shop')) ?>">مشاهده همه</a>
   </div>
@@ -96,8 +116,8 @@ $heroImage = !empty($heroProduct['image_path'])
 
 <section class="proma-landing-band">
   <div>
-    <span class="proma-landing-eyebrow">مسیر خرید</span>
-    <h2>از انتخاب محصول تا ثبت سفارش</h2>
+    <span class="proma-landing-eyebrow"><?= e($landingText('landing_steps_eyebrow', 'مسیر خرید')) ?></span>
+    <h2><?= e($landingText('landing_steps_title', 'از انتخاب محصول تا پیگیری سفارش')) ?></h2>
   </div>
   <div class="proma-landing-steps">
     <a href="<?= e(url('ecommerce/shop')) ?>"><i data-feather="grid"></i><span>انتخاب محصول</span></a>
@@ -106,3 +126,15 @@ $heroImage = !empty($heroProduct['image_path'])
     <a href="<?= e(Auth::check() ? url('ecommerce/myOrders') : url('auth/register')) ?>"><i data-feather="user-check"></i><span>پیگیری سفارش</span></a>
   </div>
 </section>
+
+<?php if ($showcaseProducts): ?>
+  <section class="proma-landing-mini-vitrine" aria-label="ویترین سریع محصولات">
+    <?php foreach ($showcaseProducts as $item): ?>
+      <a href="<?= e(url('ecommerce/product/' . $item['slug'])) ?>">
+        <?php if (!empty($item['image_path'])): ?><img src="<?= e(asset_url($item['image_path'])) ?>" alt="<?= e($item['title']) ?>"><?php endif; ?>
+        <span><?= e($item['category'] ?: 'پیشنهاد ویژه') ?></span>
+        <strong><?= e($item['title']) ?></strong>
+      </a>
+    <?php endforeach; ?>
+  </section>
+<?php endif; ?>

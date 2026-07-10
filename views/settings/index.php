@@ -20,6 +20,7 @@ $tabGroups = [
         'template' => 'قالب قرارداد',
     ],
     'ارتباطات' => [
+        'ecommerce' => 'لندینگ فروشگاه',
         'social' => 'شبکه‌های اجتماعی',
         'notifications' => 'اعلان‌ها و چت',
         'email' => 'ایمیل',
@@ -83,6 +84,23 @@ if (!isset($tabs[$activeTab])) {
         <?php endif; ?>
       </div>
       <div class="full actions"><button class="btn" type="submit">ذخیره تنظیمات عمومی</button></div>
+    </div>
+  </section>
+
+  <section class="card proma-settings-panel <?= $activeTab === 'ecommerce' ? 'active' : '' ?>" data-settings-panel="ecommerce">
+    <div class="card-header"><h2>لندینگ فروشگاه</h2></div>
+    <div class="card-body form-grid">
+      <div class="full notice info">متن‌های صفحه نخست فروشگاه از این بخش خوانده می‌شوند. برای نمایش نام سامانه از <span dir="ltr">{{system_name}}</span> استفاده کنید.</div>
+      <label>نشان بالای هدر<input name="landing_kicker" value="<?= e($settings['landing_kicker'] ?? '') ?>"></label>
+      <label>عنوان اصلی<input name="landing_title" value="<?= e($settings['landing_title'] ?? '') ?>"></label>
+      <label class="full">متن معرفی<textarea name="landing_subtitle" rows="3"><?= e($settings['landing_subtitle'] ?? '') ?></textarea></label>
+      <label>متن دکمه اصلی<input name="landing_primary_cta" value="<?= e($settings['landing_primary_cta'] ?? '') ?>"></label>
+      <label>متن دکمه اقساطی<input name="landing_secondary_cta" value="<?= e($settings['landing_secondary_cta'] ?? '') ?>"></label>
+      <label>برچسب بخش محصولات<input name="landing_featured_eyebrow" value="<?= e($settings['landing_featured_eyebrow'] ?? '') ?>"></label>
+      <label>عنوان بخش محصولات<input name="landing_featured_title" value="<?= e($settings['landing_featured_title'] ?? '') ?>"></label>
+      <label>برچسب مسیر خرید<input name="landing_steps_eyebrow" value="<?= e($settings['landing_steps_eyebrow'] ?? '') ?>"></label>
+      <label>عنوان مسیر خرید<input name="landing_steps_title" value="<?= e($settings['landing_steps_title'] ?? '') ?>"></label>
+      <div class="full actions"><button class="btn" type="submit">ذخیره لندینگ فروشگاه</button></div>
     </div>
   </section>
 

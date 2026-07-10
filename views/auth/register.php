@@ -43,13 +43,14 @@ $logoIconPath = trim((string) ($settings['logo_icon_path'] ?? ''));
               <div class="form-group">
                 <label class="col-form-label">رمز عبور</label>
                 <div class="form-input position-relative">
-                  <input class="form-control" name="password" type="password" required autocomplete="new-password">
+                  <input class="form-control" name="password" type="password" autocomplete="new-password">
                   <div class="show-hide"><span class="show"></span></div>
                 </div>
+                <small class="text-muted">در صورت تمایل رمز دلخواه وارد کنید.</small>
               </div>
               <div class="form-group">
                 <label class="col-form-label">تکرار رمز عبور</label>
-                <input class="form-control" name="password_confirmation" type="password" required autocomplete="new-password">
+                <input class="form-control" name="password_confirmation" type="password" autocomplete="new-password">
               </div>
               <div class="form-group mb-0">
                 <button class="btn btn-primary btn-block w-100" type="submit">ساخت حساب مشتری</button>
