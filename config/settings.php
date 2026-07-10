@@ -2,8 +2,8 @@
 
 return [
     'app_name' => 'پروما',
-    'version' => '1.0.17',
-    'asset_version' => '1.0.31',
+    'version' => '1.0.18',
+    'asset_version' => '1.0.32',
     'timezone' => 'Asia/Tehran',
     'base_url' => '',
     'session_name' => 'proma_pay_session',
