@@ -83,6 +83,9 @@ class Ecommerce extends Model
                 mobile VARCHAR(30) NOT NULL,
                 product_needed VARCHAR(255) NOT NULL,
                 notes TEXT NULL,
+                review_note TEXT NULL,
+                reviewed_by INT UNSIGNED NULL,
+                reviewed_at DATETIME NULL,
                 status VARCHAR(30) NOT NULL DEFAULT 'new',
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME NULL DEFAULT NULL,
@@ -91,6 +94,17 @@ class Ecommerce extends Model
                 KEY idx_ecommerce_installment_requests_status (status)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
         );
+
+        foreach ([
+            'review_note' => 'TEXT NULL',
+            'reviewed_by' => 'INT UNSIGNED NULL',
+            'reviewed_at' => 'DATETIME NULL',
+        ] as $column => $definition) {
+            try {
+                self::execute("ALTER TABLE ecommerce_installment_requests ADD COLUMN {$column} {$definition}");
+            } catch (Throwable $e) {
+            }
+        }
 
         self::$schemaReady = true;
     }
@@ -215,6 +229,9 @@ class Ecommerce extends Model
         ];
 
         if ($id && $existing) {
+            $updatePayload = $payload;
+            unset($updatePayload['created_by']);
+            $updatePayload['id'] = $id;
             self::execute(
                 "UPDATE ecommerce_products
                  SET title = :title, slug = :slug, sku = :sku, category = :category, brand = :brand,
@@ -222,7 +239,7 @@ class Ecommerce extends Model
                      short_description = :short_description, description = :description, image_path = :image_path,
                      status = :status, is_featured = :is_featured, updated_at = NOW()
                  WHERE id = :id",
-                $payload + ['id' => $id]
+                $updatePayload
             );
             return $id;
         }
@@ -243,11 +260,9 @@ class Ecommerce extends Model
         $limit = max(1, min(300, (int) $limit));
         return self::fetchAll(
             "SELECT o.*,
-                    COUNT(oi.id) AS item_count,
-                    COALESCE(SUM(oi.quantity), 0) AS quantity_total
+                    (SELECT COUNT(*) FROM ecommerce_order_items oi WHERE oi.order_id = o.id) AS item_count,
+                    COALESCE((SELECT SUM(oi.quantity) FROM ecommerce_order_items oi WHERE oi.order_id = o.id), 0) AS quantity_total
              FROM ecommerce_orders o
-             LEFT JOIN ecommerce_order_items oi ON oi.order_id = o.id
-             GROUP BY o.id
              ORDER BY o.id DESC
              LIMIT {$limit}"
         );
@@ -259,16 +274,79 @@ class Ecommerce extends Model
         $limit = max(1, min(200, (int) $limit));
         return self::fetchAll(
             "SELECT o.*,
-                    COUNT(oi.id) AS item_count,
-                    COALESCE(SUM(oi.quantity), 0) AS quantity_total
+                    (SELECT COUNT(*) FROM ecommerce_order_items oi WHERE oi.order_id = o.id) AS item_count,
+                    COALESCE((SELECT SUM(oi.quantity) FROM ecommerce_order_items oi WHERE oi.order_id = o.id), 0) AS quantity_total
              FROM ecommerce_orders o
-             LEFT JOIN ecommerce_order_items oi ON oi.order_id = o.id
              WHERE o.customer_id = ?
-             GROUP BY o.id
              ORDER BY o.id DESC
              LIMIT {$limit}",
             [(int) $customerId]
         );
+    }
+
+    public static function orderStatusOptions()
+    {
+        return [
+            'pending' => 'در انتظار بررسی',
+            'processing' => 'در حال پردازش',
+            'completed' => 'تکمیل شده',
+            'cancelled' => 'لغو شده',
+        ];
+    }
+
+    public static function paymentStatusOptions()
+    {
+        return [
+            'pending' => 'در انتظار پرداخت',
+            'partial' => 'پرداخت جزئی',
+            'paid' => 'پرداخت شده',
+            'failed' => 'ناموفق',
+            'cancelled' => 'لغو شده',
+        ];
+    }
+
+    public static function installmentRequestStatusOptions()
+    {
+        return [
+            'new' => 'جدید',
+            'reviewing' => 'در حال بررسی',
+            'approved' => 'تأیید شده',
+            'rejected' => 'رد شده',
+            'completed' => 'تکمیل شده',
+            'cancelled' => 'لغو شده',
+        ];
+    }
+
+    public static function updateOrder($id, array $data)
+    {
+        self::ensureSchema();
+        $id = (int) $id;
+        $order = self::findOrder($id);
+        if (!$order) {
+            throw new InvalidArgumentException('سفارش پیدا نشد.');
+        }
+
+        $orderStatus = (string) ($data['order_status'] ?? $order['order_status']);
+        $paymentStatus = (string) ($data['payment_status'] ?? $order['payment_status']);
+        if (!array_key_exists($orderStatus, self::orderStatusOptions())) {
+            throw new InvalidArgumentException('وضعیت سفارش معتبر نیست.');
+        }
+        if (!array_key_exists($paymentStatus, self::paymentStatusOptions())) {
+            throw new InvalidArgumentException('وضعیت پرداخت معتبر نیست.');
+        }
+
+        self::execute(
+            "UPDATE ecommerce_orders
+             SET order_status = ?, payment_status = ?, notes = ?, updated_at = NOW()
+             WHERE id = ?",
+            [
+                $orderStatus,
+                $paymentStatus,
+                trim((string) ($data['notes'] ?? $order['notes'] ?? '')) ?: null,
+                $id,
+            ]
+        );
+        return true;
     }
 
     public static function findOrder($id)
@@ -294,13 +372,42 @@ class Ecommerce extends Model
         self::ensureSchema();
         $limit = max(1, min(300, (int) $limit));
         return self::fetchAll(
-            "SELECT r.*, p.title AS product_title, u.full_name AS customer_name
+            "SELECT r.*, p.title AS product_title, u.full_name AS customer_name, reviewer.full_name AS reviewer_name
              FROM ecommerce_installment_requests r
              LEFT JOIN ecommerce_products p ON p.id = r.product_id
              LEFT JOIN users u ON u.id = r.customer_id
+             LEFT JOIN users reviewer ON reviewer.id = r.reviewed_by
              ORDER BY r.id DESC
              LIMIT {$limit}"
         );
+    }
+
+    public static function updateInstallmentRequest($id, array $data, $reviewerId = null)
+    {
+        self::ensureSchema();
+        $id = (int) $id;
+        $request = self::fetch('SELECT * FROM ecommerce_installment_requests WHERE id = ?', [$id]);
+        if (!$request) {
+            throw new InvalidArgumentException('درخواست خرید اقساطی پیدا نشد.');
+        }
+
+        $status = (string) ($data['status'] ?? $request['status']);
+        if (!array_key_exists($status, self::installmentRequestStatusOptions())) {
+            throw new InvalidArgumentException('وضعیت درخواست معتبر نیست.');
+        }
+
+        self::execute(
+            "UPDATE ecommerce_installment_requests
+             SET status = ?, review_note = ?, reviewed_by = ?, reviewed_at = NOW(), updated_at = NOW()
+             WHERE id = ?",
+            [
+                $status,
+                trim((string) ($data['review_note'] ?? '')) ?: null,
+                $reviewerId ? (int) $reviewerId : null,
+                $id,
+            ]
+        );
+        return true;
     }
 
     public static function createInstallmentRequest(array $data, $customerId = null)

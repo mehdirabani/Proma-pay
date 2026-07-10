@@ -100,7 +100,36 @@ class EcommerceController extends Controller
             'title' => 'فهرست سفارشات',
             'orders' => Ecommerce::orders(),
             'installmentRequests' => Ecommerce::installmentRequests(),
+            'orderStatusOptions' => Ecommerce::orderStatusOptions(),
+            'paymentStatusOptions' => Ecommerce::paymentStatusOptions(),
+            'installmentStatusOptions' => Ecommerce::installmentRequestStatusOptions(),
         ]);
+    }
+
+    public function updateOrder($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            Ecommerce::updateOrder((int) $id, $_POST);
+            set_flash('success', 'وضعیت سفارش به‌روزرسانی شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('ecommerce/orders');
+    }
+
+    public function updateInstallmentRequest($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            Ecommerce::updateInstallmentRequest((int) $id, $_POST, Auth::id());
+            set_flash('success', 'وضعیت درخواست خرید اقساطی به‌روزرسانی شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('ecommerce/orders');
     }
 
     public function myOrders()
