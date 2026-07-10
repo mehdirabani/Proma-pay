@@ -4,6 +4,11 @@
   const MINUTEHAND = document.querySelector("#minute");
   const SECONDHAND = document.querySelector("#second");
 
+  // The template loads this asset globally, but most pages do not render a clock.
+  if (!HOURHAND || !MINUTEHAND || !SECONDHAND) {
+    return;
+  }
+
   // gets the current time and adds hours / mins / secs to individual let varriables
   var date = new Date();
   let hr = date.getHours();

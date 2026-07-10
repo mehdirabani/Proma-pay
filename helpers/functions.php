@@ -116,7 +116,10 @@ function app_base_url()
         return '/' . trim($configured, '/');
     }
     $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
-    $dir = rtrim(dirname($script), '/');
+    // Windows PHP may return a backslash for dirname('/index.php'). Normalize
+    // the directory again so generated redirects stay valid on every OS.
+    $dir = str_replace('\\', '/', dirname($script));
+    $dir = rtrim($dir, '/');
     return ($dir === '' || $dir === '.') ? '' : $dir;
 }
 

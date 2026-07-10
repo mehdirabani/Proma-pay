@@ -217,7 +217,9 @@ function installer_split_sql($sql)
             $buffer .= "\n";
             continue;
         }
-        if ($quote === null && $char === '/' && $next === '*') {
+        // Keep MySQL executable comments such as /*!40101 SET ... */; dumps
+        // use them for foreign-key and session settings during import.
+        if ($quote === null && $char === '/' && $next === '*' && substr($sql, $i, 3) !== '/*!') {
             $i += 2;
             while ($i + 1 < $length && !($sql[$i] === '*' && $sql[$i + 1] === '/')) {
                 $i++;
