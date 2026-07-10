@@ -4,9 +4,9 @@ class Router
 {
     public function dispatch()
     {
-        $route = trim($_GET['route'] ?? 'dashboard', '/');
+        $route = trim($_GET['route'] ?? '', '/');
         if ($route === '') {
-            $route = 'dashboard';
+            $route = Auth::check() ? 'dashboard' : 'ecommerce/landing';
         }
         $parts = array_values(array_filter(explode('/', $route), 'strlen'));
         $controllerPart = $parts[0] ?? 'dashboard';
