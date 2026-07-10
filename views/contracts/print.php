@@ -36,7 +36,7 @@ $documentHeader = trim((string) ($documentHeader ?? ''));
       background: #eef1f6;
       color: #111827;
       font-family: "YekanBakh", Tahoma, sans-serif;
-      line-height: 1.58;
+      line-height: 1.34;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -44,23 +44,33 @@ $documentHeader = trim((string) ($documentHeader ?? ''));
       width: 210mm;
       min-height: 297mm;
       margin: 0 auto;
-      padding: 10mm 11mm;
+      padding: 8mm 9mm;
       background: #fff;
     }
     .contract-print-header {
+      position: relative;
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      gap: 9px 12px;
+      grid-template-columns: 60px minmax(0, 1fr) 60px;
+      gap: 6px 10px;
       align-items: center;
-      border: 1.2px solid #1f2937;
-      border-radius: 7px;
-      padding: 8px 10px;
-      margin-bottom: 8px;
+      overflow: hidden;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      padding: 6px 8px 7px;
+      margin-bottom: 6px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
       page-break-inside: avoid;
     }
+    .contract-print-header::before {
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 3px;
+      background: linear-gradient(90deg, #7366ff, #16c7f9, #54ba4a);
+      content: "";
+    }
     .contract-print-logo {
-      width: 54px;
-      height: 54px;
+      width: 50px;
+      height: 50px;
       display: inline-grid;
       place-items: center;
       border: 1px solid #d8dee9;
@@ -78,38 +88,66 @@ $documentHeader = trim((string) ($documentHeader ?? ''));
     }
     .contract-print-title {
       display: grid;
-      gap: 3px;
+      grid-column: 2;
+      gap: 2px;
       min-width: 0;
+      text-align: center;
     }
     .contract-print-title h1 {
       margin: 0;
-      font-size: 15px;
-      line-height: 1.35;
+      color: #111827;
+      font-size: 16px;
+      line-height: 1.22;
       font-weight: 700;
     }
     .contract-print-title p {
       margin: 0;
       color: #4b5563;
-      font-size: 9.2px;
-      line-height: 1.55;
+      font-size: 8.4px;
+      line-height: 1.32;
       white-space: pre-line;
+    }
+    .contract-print-side-note {
+      justify-self: end;
+      width: 50px;
+      min-height: 50px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #e5e7eb;
+      border-radius: 7px;
+      color: #374151;
+      background: #fff;
+      font-size: 8px;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.45;
     }
     .contract-print-meta {
       grid-column: 1 / -1;
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 4px;
-      padding-top: 5px;
+      gap: 4px 6px;
+      padding-top: 4px;
       border-top: 1px dashed #d1d5db;
       color: #374151;
-      font-size: 8.8px;
+      font-size: 8.4px;
+      line-height: 1.25;
+    }
+    .contract-print-meta span {
+      min-height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      padding: 2px 4px;
+      background: #fff;
     }
     .contract-print-body,
     .contract-document-body {
       direction: rtl;
       color: #111827;
-      font-size: 9.6px;
-      line-height: 1.58;
+      font-size: 9px;
+      line-height: 1.32;
     }
     .contract-print-body h1,
     .contract-print-body h2,
@@ -117,20 +155,47 @@ $documentHeader = trim((string) ($documentHeader ?? ''));
     .contract-print-body strong {
       font-weight: 700;
     }
+    .contract-document-body p,
+    .contract-document-body div,
+    .contract-document-body li,
+    .contract-document-body blockquote {
+      line-height: 1.32;
+    }
+    .contract-document-body p,
+    .contract-document-body div {
+      margin-top: 0;
+      margin-bottom: 2px;
+    }
+    .contract-document-body ul,
+    .contract-document-body ol {
+      margin: 2px 0 3px;
+      padding-inline-start: 18px;
+    }
+    .contract-document-body li {
+      margin-bottom: 1px;
+    }
+    .contract-document-body h1,
+    .contract-document-body h2,
+    .contract-document-body h3,
+    .contract-document-body h4 {
+      margin: 4px 0 2px;
+      line-height: 1.22;
+    }
     .contract-document-body br {
-      line-height: 1.28;
+      line-height: 1.08;
     }
     .contract-print-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 5px 0 7px;
-      font-size: 8.7px;
+      margin: 3px 0 5px;
+      font-size: 8px;
+      line-height: 1.24;
       page-break-inside: avoid;
     }
     .contract-print-table th,
     .contract-print-table td {
       border: .8px solid #1f2937;
-      padding: 2px 4px;
+      padding: 1.5px 3px;
       text-align: center;
       vertical-align: top;
     }
@@ -143,18 +208,19 @@ $documentHeader = trim((string) ($documentHeader ?? ''));
       page-break-inside: avoid;
     }
     .contract-guarantors-section h3 {
-      margin: 6px 0 4px;
-      font-size: 10px;
+      margin: 4px 0 2px;
+      font-size: 9px;
     }
     .contract-guarantor-box {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 3px 10px;
+      gap: 2px 8px;
       border: 1px solid #d1d5db;
       border-radius: 6px;
-      padding: 6px;
-      margin: 5px 0;
-      font-size: 8.8px;
+      padding: 4px 5px;
+      margin: 3px 0;
+      font-size: 8px;
+      line-height: 1.28;
     }
     .contract-guarantor-box .full {
       grid-column: 1 / -1;
@@ -162,25 +228,25 @@ $documentHeader = trim((string) ($documentHeader ?? ''));
     .contract-signature-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 9px;
-      margin-top: 18px;
+      gap: 7px;
+      margin-top: 12px;
     }
     .contract-signature-box {
-      min-height: 58px;
+      min-height: 42px;
       border-top: 1px solid #111827;
-      padding-top: 5px;
+      padding-top: 4px;
       text-align: center;
-      font-size: 8.8px;
+      font-size: 8px;
     }
     .contract-empty {
       color: #6b7280;
       border: 1px dashed #d1d5db;
       border-radius: 6px;
-      padding: 6px;
-      margin: 5px 0;
-      font-size: 8.8px;
+      padding: 4px;
+      margin: 3px 0;
+      font-size: 8px;
     }
-    @page { size: A4 portrait; margin: 8mm; }
+    @page { size: A4 portrait; margin: 6mm; }
     @media print {
       body { background: #fff; }
       .contract-print-page {
@@ -188,6 +254,21 @@ $documentHeader = trim((string) ($documentHeader ?? ''));
         min-height: auto;
         margin: 0;
         padding: 0;
+      }
+      .contract-print-body,
+      .contract-document-body {
+        font-size: 8.7px;
+        line-height: 1.26;
+      }
+      .contract-document-body p,
+      .contract-document-body div,
+      .contract-document-body li,
+      .contract-document-body blockquote {
+        line-height: 1.26;
+      }
+      .contract-document-body p,
+      .contract-document-body div {
+        margin-bottom: 1.5px;
       }
       .contract-print-table,
       .contract-guarantors-section,
@@ -213,6 +294,7 @@ $documentHeader = trim((string) ($documentHeader ?? ''));
         <h1><?= e($documentTitle) ?></h1>
         <?php if ($documentHeader !== ''): ?><p><?= e($documentHeader) ?></p><?php endif; ?>
       </div>
+      <span class="contract-print-side-note">نسخه چاپی<br>قرارداد</span>
       <div class="contract-print-meta">
         <span>شماره قرارداد: <?= e($contract['contract_number']) ?></span>
         <span>تاریخ قرارداد: <?= e(jdate($contract['start_date'])) ?></span>
