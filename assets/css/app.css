@@ -4366,6 +4366,23 @@ label:has(> input[data-select-filter="customer-select"]) {
   overflow: hidden;
 }
 
+.proma-avatar > img,
+.proma-avatar-choice > img,
+.proma-customer-avatar > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  object-position: center;
+}
+
+.proma-avatar.avatar-image-fallback > img,
+.proma-avatar-choice.avatar-image-fallback > img,
+.proma-customer-avatar.avatar-image-fallback > img {
+  display: none;
+}
+
 .proma-avatar.avatar-1,
 .proma-avatar-choice.avatar-1,
 .proma-customer-avatar.avatar-1 { background-image: url('../images/avatars/avatar-1.png'); }

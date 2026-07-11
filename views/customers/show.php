@@ -10,7 +10,7 @@ $medals = $medals ?? [];
   <section class="card proma-customer-card">
     <div class="card-body">
       <?php $customerAvatar = avatar_key_for($customer['avatar_key'] ?? null, $customer['id'] ?? $customer['full_name']); ?>
-      <div class="proma-customer-avatar <?= e($customerAvatar) ?>" style="background-image:url('<?= e(avatar_asset_url($customerAvatar)) ?>')" aria-label="<?= e($customer['full_name']) ?>"></div>
+      <div class="proma-customer-avatar <?= e($customerAvatar) ?>" aria-label="<?= e($customer['full_name']) ?>"><img data-avatar-image src="<?= e(avatar_asset_url($customerAvatar)) ?>" alt="آواتار <?= e($customer['full_name']) ?>"></div>
       <h4><?= e($customer['full_name']) ?></h4>
       <p><?= to_persian_digits($customer['mobile']) ?> · <?= to_persian_digits($customer['national_id']) ?></p>
       <div class="proma-medal-row proma-medal-center">

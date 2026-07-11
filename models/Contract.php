@@ -280,7 +280,7 @@ class Contract extends Model
                     'start_date' => $data['start_date'],
                     'first_due_date' => $data['first_due_date'],
                     'status' => 'active',
-                    'assigned_operator_id' => $data['assigned_operator_id'] ?: null,
+                    'assigned_operator_id' => $data['assigned_operator_id'] ?? null,
                     'notes' => $data['notes'] ?? '',
                 ]
             );
@@ -341,7 +341,7 @@ class Contract extends Model
                     'months' => (int) to_english_digits($data['months']),
                     'start_date' => $data['start_date'],
                     'first_due_date' => $data['first_due_date'],
-                    'assigned_operator_id' => $data['assigned_operator_id'] ?: null,
+                    'assigned_operator_id' => $data['assigned_operator_id'] ?? null,
                     'notes' => $data['notes'] ?? '',
                 ]
             );
@@ -354,7 +354,7 @@ class Contract extends Model
             if (($current['status'] ?? '') === 'closed') {
                 self::execute(
                     "UPDATE contracts SET status = 'active', updated_at = NOW()
-                     WHERE id = ? AND status = 'closed'
+                     WHERE id = ? AND status IN ('closed', 'completed')
                      AND EXISTS (SELECT 1 FROM installments WHERE contract_id = ? AND status NOT IN ('paid', 'cancelled'))",
                     [(int) $id, (int) $id]
                 );
@@ -399,7 +399,7 @@ class Contract extends Model
             }
             self::assertActiveOperator($fromOperatorId);
         }
-        $status = in_array($data['status'] ?? '', ['active', 'referred', 'closed'], true) ? $data['status'] : null;
+        $status = in_array($data['status'] ?? '', ['active', 'referred', 'completed', 'closed'], true) ? $data['status'] : null;
         $reason = trim((string) ($data['change_reason'] ?? 'ویرایش دسته‌جمعی قراردادها'));
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         $params = $ids;
@@ -464,7 +464,7 @@ class Contract extends Model
         throw new InvalidArgumentException('قراردادها حذف نمی‌شوند؛ برای حفظ سوابق از گزینه «لغو قرارداد» استفاده کنید.');
     }
 
-    public static function cancel($id, $reason, $adminId, $correctCustomerPayments = false)
+    public static function cancel($id, $reason, $adminId, $correctContractPayments = false)
     {
         self::ensureSchema();
         $contractId = (int) $id;
@@ -487,9 +487,9 @@ class Contract extends Model
             }
 
             $correctedPayments = 0;
-            if ($correctCustomerPayments) {
-                $correctedPayments = Payment::correctAllForCustomer(
-                    (int) $contract['customer_id'],
+            if ($correctContractPayments) {
+                $correctedPayments = Payment::correctForContract(
+                    $contractId,
                     'اصلاحیه مالی هنگام لغو قرارداد ' . ($contract['contract_number'] ?? '') . ': ' . $reason,
                     $adminId
                 );
@@ -497,13 +497,13 @@ class Contract extends Model
             $summary = self::cancellationSummary($contractId);
             if ((int) $summary['confirmed_payment_count'] > 0 || (float) $summary['confirmed_payment_amount'] > 0 || (int) $summary['paid_installments'] > 0) {
                 throw new InvalidArgumentException(
-                    'این قرارداد دارای پرداخت ثبت‌شده است. مبلغ پرداختی ' . money_toman($summary['confirmed_payment_amount']) . ' است؛ پیش از لغو باید وضعیت استرداد وجه یا اصلاحیه مالی مشخص شود.'
+                    'این قرارداد دارای پرداخت مؤثر است. مبلغ پرداختی ' . money_toman($summary['confirmed_payment_amount']) . ' است؛ برای ادامه باید گزینه اصلاحیه مالی همین قرارداد را فعال کنید.'
                 );
             }
 
             $installments = self::fetchAll(
                 "SELECT id FROM installments
-                 WHERE contract_id = ? AND status NOT IN ('paid', 'cancelled')
+                 WHERE contract_id = ? AND status != 'cancelled'
                  FOR UPDATE",
                 [$contractId]
             );
@@ -517,7 +517,7 @@ class Contract extends Model
                 self::execute(
                     "UPDATE installments
                      SET status = 'cancelled', cancelled_at = NOW(), cancelled_by = ?, cancellation_reason = ?, updated_at = NOW()
-                     WHERE contract_id = ? AND status NOT IN ('paid', 'cancelled')",
+                     WHERE contract_id = ? AND status != 'cancelled'",
                     [(int) $adminId, $reason, $contractId]
                 );
             }
@@ -563,22 +563,48 @@ class Contract extends Model
 
     public static function syncCompletionStatuses($contractId = null)
     {
-        $params = [];
-        $scope = '';
         if ($contractId !== null && (int) $contractId > 0) {
-            $scope = ' AND c.id = ?';
-            $params[] = (int) $contractId;
+            $contractId = (int) $contractId;
+            $contract = self::fetch('SELECT status FROM contracts WHERE id = ? LIMIT 1', [$contractId]);
+            if (!$contract || ($contract['status'] ?? '') === 'cancelled') {
+                return;
+            }
+            $stats = self::fetch(
+                "SELECT COUNT(*) AS total_installments,
+                        SUM(CASE WHEN status NOT IN ('paid', 'cancelled') OR GREATEST(COALESCE(remaining_amount, base_amount - paid_amount), 0) > 0 THEN 1 ELSE 0 END) AS open_installments
+                 FROM installments WHERE contract_id = ?",
+                [$contractId]
+            ) ?: [];
+            $total = (int) ($stats['total_installments'] ?? 0);
+            $open = (int) ($stats['open_installments'] ?? 0);
+            if ($total > 0 && $open === 0) {
+                self::execute("UPDATE contracts SET status = 'completed', updated_at = NOW() WHERE id = ? AND status != 'cancelled'", [$contractId]);
+            } elseif ($open > 0 && in_array(($contract['status'] ?? ''), ['completed', 'closed'], true)) {
+                self::execute("UPDATE contracts SET status = 'active', updated_at = NOW() WHERE id = ? AND status != 'cancelled'", [$contractId]);
+            }
+            return;
         }
+
         self::execute(
             "UPDATE contracts c
-             SET status = 'closed', updated_at = NOW()
-             WHERE c.status IN ('active', 'referred', 'processing', 'pending'){$scope}
+             SET status = 'completed', updated_at = NOW()
+             WHERE c.status IN ('active', 'referred', 'processing', 'pending', 'closed')
              AND EXISTS (SELECT 1 FROM installments i1 WHERE i1.contract_id = c.id)
              AND NOT EXISTS (
                 SELECT 1 FROM installments i2
-                WHERE i2.contract_id = c.id AND i2.status NOT IN ('paid', 'cancelled')
-             )",
-            $params
+                WHERE i2.contract_id = c.id
+                  AND (i2.status NOT IN ('paid', 'cancelled') OR GREATEST(COALESCE(i2.remaining_amount, i2.base_amount - i2.paid_amount), 0) > 0)
+             )"
+        );
+        self::execute(
+            "UPDATE contracts c
+             SET status = 'active', updated_at = NOW()
+             WHERE c.status IN ('completed', 'closed')
+             AND EXISTS (
+                SELECT 1 FROM installments i
+                WHERE i.contract_id = c.id
+                  AND (i.status NOT IN ('paid', 'cancelled') OR GREATEST(COALESCE(i.remaining_amount, i.base_amount - i.paid_amount), 0) > 0)
+             )"
         );
     }
 

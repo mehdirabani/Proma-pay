@@ -3,7 +3,7 @@
     <section class="card proma-profile-card">
       <div class="card-body">
         <?php $profileAvatar = avatar_key_for($user['avatar_key'] ?? null, $user['id'] ?? $user['full_name']); ?>
-        <div class="proma-avatar-choice <?= e($profileAvatar) ?>" style="background-image:url('<?= e(avatar_asset_url($profileAvatar)) ?>')" aria-label="<?= e($user['full_name']) ?>"></div>
+        <div class="proma-avatar-choice <?= e($profileAvatar) ?>" aria-label="<?= e($user['full_name']) ?>"><img data-avatar-image src="<?= e(avatar_asset_url($profileAvatar)) ?>" alt="آواتار <?= e($user['full_name']) ?>"></div>
         <h4><?= e($user['full_name']) ?> <?php if (!empty($identityVerified)): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓ آبی</span><?php endif; ?></h4>
         <p><?= e(role_label($user['role'])) ?></p>
         <?php if ($latestRequest): ?>
@@ -30,7 +30,7 @@
               <?php foreach ($avatars as $avatar): ?>
                 <label>
                   <input type="radio" name="avatar_key" value="<?= e($avatar) ?>"<?= checked($user['avatar_key'] ?? 'avatar-1', $avatar) ?>>
-                  <span class="proma-avatar-choice <?= e($avatar) ?>" style="background-image:url('<?= e(avatar_asset_url($avatar)) ?>')" aria-label="<?= e($avatar) ?>"></span>
+                  <span class="proma-avatar-choice <?= e($avatar) ?>" aria-label="<?= e($avatar) ?>"><img data-avatar-image src="<?= e(avatar_asset_url($avatar)) ?>" alt="<?= e($avatar) ?>"></span>
                 </label>
               <?php endforeach; ?>
             </div>

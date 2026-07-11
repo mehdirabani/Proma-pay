@@ -588,10 +588,10 @@ class ContractsController extends Controller
             redirect('contracts');
         }
         try {
-            $result = Contract::cancel((int) $id, $_POST['cancellation_reason'] ?? '', Auth::id(), !empty($_POST['correct_customer_payments']));
+            $result = Contract::cancel((int) $id, $_POST['cancellation_reason'] ?? '', Auth::id(), !empty($_POST['correct_contract_payments']));
             $message = 'قرارداد و اقساط فعال آن با موفقیت لغو شدند. سوابق مالی و تاریخی حفظ شده است.';
             if (!empty($result['corrected_payments'])) {
-                $message .= ' تعداد ' . to_persian_digits($result['corrected_payments']) . ' پرداخت مشتری نیز با اصلاحیه مالی صفر شد.';
+                $message .= ' تعداد ' . to_persian_digits($result['corrected_payments']) . ' پرداخت همین قرارداد نیز با اصلاحیه مالی صفر شد.';
             }
             set_flash('success', $message);
         } catch (Throwable $e) {

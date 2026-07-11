@@ -51,9 +51,21 @@ function app_version_label()
     return 'v' . ltrim($version, 'vV');
 }
 
+function avatar_catalog()
+{
+    return [
+        'avatar-1' => ['label' => 'آواتار ۱', 'file' => 'assets/images/avatars/avatar-1.png'],
+        'avatar-2' => ['label' => 'آواتار ۲', 'file' => 'assets/images/avatars/avatar-2.png'],
+        'avatar-3' => ['label' => 'آواتار ۳', 'file' => 'assets/images/avatars/avatar-3.png'],
+        'avatar-4' => ['label' => 'آواتار ۴', 'file' => 'assets/images/avatars/avatar-4.png'],
+        'avatar-5' => ['label' => 'آواتار ۵', 'file' => 'assets/images/avatars/avatar-5.png'],
+        'avatar-6' => ['label' => 'آواتار ۶', 'file' => 'assets/images/avatars/avatar-6.png'],
+    ];
+}
+
 function avatar_options()
 {
-    return ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6'];
+    return array_keys(avatar_catalog());
 }
 
 function normalize_avatar_key($value)
@@ -76,7 +88,8 @@ function avatar_key_for($value = null, $seed = null)
 
 function avatar_asset_url($value)
 {
-    return asset_url('assets/images/avatars/' . avatar_key_for($value) . '.png');
+    $key = avatar_key_for($value);
+    return asset_url(avatar_catalog()[$key]['file']);
 }
 
 function e($value)
