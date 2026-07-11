@@ -371,6 +371,67 @@ class Installment extends Model
         return (int) $row['contract_id'];
     }
 
+    public static function bulkAction($contractId, array $ids, $action, $reason, $userId)
+    {
+        $contractId = (int) $contractId;
+        $reason = trim((string) $reason);
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        if ($contractId <= 0 || !$ids || $reason === '') {
+            throw new InvalidArgumentException('اقساط و علت عملیات دسته‌جمعی را کامل کنید.');
+        }
+        if (!in_array($action, ['cancel', 'restore_pending', 'recalculate'], true)) {
+            throw new InvalidArgumentException('عملیات دسته‌جمعی اقساط معتبر نیست.');
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        self::begin();
+        try {
+            $rows = self::fetchAll("SELECT * FROM installments WHERE contract_id = ? AND id IN ({$placeholders}) FOR UPDATE", array_merge([$contractId], $ids));
+            if (count($rows) !== count($ids)) {
+                throw new InvalidArgumentException('یکی از اقساط انتخاب‌شده به این قرارداد تعلق ندارد.');
+            }
+            $old = $rows;
+            $updated = 0;
+            foreach ($rows as $row) {
+                if ($action === 'cancel') {
+                    $effective = (int) (self::fetch("SELECT COUNT(*) AS total FROM payments WHERE installment_id = ? AND status = 'paid' AND COALESCE(is_corrected, 0) = 0", [(int) $row['id']])['total'] ?? 0);
+                    if ($effective > 0 || (float) ($row['paid_amount'] ?? 0) > 0) {
+                        throw new InvalidArgumentException('قسط دارای پرداخت مؤثر است و بدون اصلاحیه قابل لغو نیست.');
+                    }
+                    self::execute('UPDATE installments SET status = \'cancelled\', cancelled_at = NOW(), cancelled_by = ?, cancellation_reason = ?, updated_at = NOW() WHERE id = ?', [(int) $userId, $reason, (int) $row['id']]);
+                } elseif ($action === 'restore_pending') {
+                    if (($row['status'] ?? '') === 'paid' || (float) ($row['paid_amount'] ?? 0) > 0) {
+                        throw new InvalidArgumentException('قسط پرداخت‌شده قابل بازگردانی مستقیم نیست.');
+                    }
+                    $status = ($row['due_date'] ?? '') < date('Y-m-d') ? 'overdue' : 'pending';
+                    self::execute('UPDATE installments SET status = ?, cancelled_at = NULL, cancelled_by = NULL, cancellation_reason = NULL, updated_at = NOW() WHERE id = ?', [$status, (int) $row['id']]);
+                } else {
+                    if (($row['status'] ?? '') === 'cancelled') {
+                        continue;
+                    }
+                    $status = FinanceHelper::status((float) $row['base_amount'], (float) $row['paid_amount'], $row['due_date']);
+                    self::execute('UPDATE installments SET status = ?, remaining_amount = ?, updated_at = NOW() WHERE id = ?', [$status, max(0, (float) $row['base_amount'] - (float) $row['paid_amount']), (int) $row['id']]);
+                }
+                $updated++;
+            }
+            $new = self::fetchAll("SELECT * FROM installments WHERE contract_id = ? AND id IN ({$placeholders}) ORDER BY installment_number", array_merge([$contractId], $ids));
+            $number = 'BIO-' . date('YmdHis') . '-' . strtoupper(bin2hex(random_bytes(3)));
+            self::execute('INSERT INTO installment_bulk_operations (operation_number, contract_id, operation_type, installment_ids_json, old_snapshot_json, new_snapshot_json, reason, performed_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())', [$number, $contractId, $action, json_encode($ids), json_encode($old, JSON_UNESCAPED_UNICODE), json_encode($new, JSON_UNESCAPED_UNICODE), $reason, (int) $userId]);
+            $operationId = (int) self::lastInsertId();
+            if (class_exists('AuditLog')) {
+                AuditLog::record('installment', 'bulk_updated', 'installment_bulk_operation', $operationId, ['actor_user_id' => $userId, 'contract_id' => $contractId, 'new_values' => ['action' => $action, 'ids' => $ids, 'reason' => $reason]]);
+            }
+            if (class_exists('PluginManager')) {
+                PluginManager::fire('installment.bulk_updated', ['contract_id' => $contractId, 'installment_ids' => $ids, 'actor_user_id' => $userId, 'action' => $action], true);
+            }
+            Contract::syncCompletionStatuses($contractId);
+            self::commit();
+            return ['updated' => $updated, 'operation_id' => $operationId];
+        } catch (Throwable $e) {
+            self::rollBack();
+            throw $e;
+        }
+    }
+
     public static function adjust($id, $penalty, $reward)
     {
         $row = self::fetch('SELECT status FROM installments WHERE id = ?', [(int) $id]);

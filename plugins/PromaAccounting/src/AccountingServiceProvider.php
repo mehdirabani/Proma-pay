@@ -40,6 +40,11 @@ class AccountingServiceProvider implements \PluginServiceProviderInterface
         \PluginHooks::listen('contract.cancelled', function (array $payload) {
             CommissionService::reverseForContract((int) ($payload['contract_id'] ?? 0), (int) ($payload['actor_user_id'] ?? 0), 'لغو قرارداد');
         }, 20);
+        \PluginHooks::listen('contract.deleted', function (array $payload) {
+            $contractId = (int) ($payload['contract_id'] ?? 0);
+            \Model::execute('UPDATE plugin_accounting_sales SET status = \'deleted\', updated_by = ?, updated_at = NOW() WHERE contract_id = ?', [(int) ($payload['actor_user_id'] ?? 0), $contractId]);
+            CommissionService::reverseForContract($contractId, (int) ($payload['actor_user_id'] ?? 0), 'حذف دائمی قرارداد');
+        }, 20);
         \PluginHooks::listen('payment.completed', function (array $payload) {
             CommissionService::refreshForContract((int) ($payload['contract_id'] ?? 0), (int) ($payload['actor_user_id'] ?? 0));
         }, 30);

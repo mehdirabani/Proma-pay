@@ -1697,6 +1697,19 @@
     });
   };
 
+  const initCheckAll = function () {
+    document.querySelectorAll('[data-check-all]').forEach(function (master) {
+      if (master.dataset.checkAllBound === '1') return;
+      master.dataset.checkAllBound = '1';
+      const name = master.getAttribute('data-check-all');
+      master.addEventListener('change', function () {
+        document.querySelectorAll('[data-check-item="' + name + '"]').forEach(function (item) {
+          item.checked = master.checked;
+        });
+      });
+    });
+  };
+
   const initAiConnectionTest = function () {
     document.querySelectorAll('[data-ai-test-url]').forEach(function (button) {
       const form = button.closest('form');
@@ -2283,6 +2296,7 @@
     initCalendarReminderFields();
     initLoadingForms();
     initRequiredLabels();
+    initCheckAll();
     initAiConnectionTest();
     initSidebarCollapse();
     initNotificationCenter();

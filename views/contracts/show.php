@@ -12,6 +12,7 @@ $editableLegalLogIds = array_map('intval', $editableLegalLogIds ?? []);
 $deletableLegalLogIds = array_map('intval', $deletableLegalLogIds ?? []);
 $combinedLegalCost = (float) ($legalLogCostTotal ?? 0) + (float) ($legacyLegalCostTotal ?? 0);
 $cancellationSummary = $cancellationSummary ?? Contract::cancellationSummary((int) $contract['id']);
+$deletionPreview = Contract::deletionPreview((int) $contract['id']);
 $isInternalViewer = Auth::role() !== 'customer';
 $renderedDocumentTitle = trim((string) ($document['rendered_title'] ?? '')) ?: ($documentTitle ?? '');
 $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?: ($documentHeader ?? '');
@@ -30,7 +31,8 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
         <a class="btn success" href="<?= e(url('contracts/printDocument/' . $contract['id'])) ?>" target="_blank">چاپ قرارداد</a>
         <?php if ($canManageDocument): ?>
           <a class="btn secondary icon-only" href="<?= e(url('contracts', ['open' => 'edit-contract-' . (int) $contract['id']])) ?>" title="ویرایش" aria-label="ویرایش"><i data-feather="edit-2"></i></a>
-          <?php if (($contract['status'] ?? '') !== 'cancelled'): ?><button class="btn danger" type="button" data-open-modal="cancel-contract-show-<?= (int) $contract['id'] ?>"><i data-feather="slash"></i> لغو قرارداد</button><?php endif; ?>
+           <?php if (($contract['status'] ?? '') !== 'cancelled'): ?><button class="btn danger" type="button" data-open-modal="cancel-contract-show-<?= (int) $contract['id'] ?>"><i data-feather="slash"></i> لغو قرارداد</button><?php endif; ?>
+           <button class="btn danger" type="button" data-open-modal="delete-contract-show-<?= (int) $contract['id'] ?>"><i data-feather="trash-2"></i> حذف دائمی</button>
           <form method="post" action="<?= e(url('contracts/generateDocument/' . $contract['id'])) ?>">
             <?= csrf_field() ?>
             <button class="btn" type="submit"><?= $document ? 'تولید مجدد قرارداد' : 'تولید قرارداد' ?></button>
@@ -70,6 +72,27 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
           <label class="full proma-confirm-check proma-danger-check"><input type="checkbox" name="correct_contract_payments" value="1"> برای پرداخت‌های موفق همین قرارداد، اصلاحیه مالی ثبت شود و اثر آن‌ها در محاسبات داخلی صفر شود. این عملیات بازگشت وجه بانکی انجام نمی‌دهد.</label>
         </div>
         <div class="modal-footer"><button class="btn danger" type="submit">تأیید و لغو قرارداد</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
+      </form>
+    </div>
+  </div>
+<?php endif; ?>
+<?php if ($canManageDocument): ?>
+  <?php $deleteCode = ConfirmationCode::hint('contract_delete_' . (int) $contract['id']); ?>
+  <div class="modal" id="delete-contract-show-<?= (int) $contract['id'] ?>">
+    <div class="modal-content proma-modal-lg">
+      <div class="modal-header"><h3>حذف دائمی قرارداد</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+      <form method="post" action="<?= e(url('contracts/delete/' . (int) $contract['id'])) ?>">
+        <div class="modal-body form-grid two">
+          <?= csrf_field() ?>
+          <div class="notice error full">این عملیات فقط برای قرارداد اشتباه یا آزمایشی است. آرشیو snapshot ذخیره می‌شود و مشتری حذف نخواهد شد.</div>
+          <div class="proma-cancellation-summary full"><span><small>پرداخت مؤثر</small><strong><?= to_persian_digits($deletionPreview['effective_payment_count'] ?? 0) ?></strong></span><span><small>پرونده حقوقی</small><strong><?= to_persian_digits($deletionPreview['legal_case_count'] ?? 0) ?></strong></span><span><small>پرداخت درگاه</small><strong><?= to_persian_digits($deletionPreview['gateway_payment_count'] ?? 0) ?></strong></span></div>
+          <label class="full">علت حذف<textarea name="deletion_reason" required minlength="5" rows="4"></textarea></label>
+          <label class="full proma-confirm-check proma-danger-check"><input type="checkbox" name="correct_contract_payments" value="1"> اصلاحیه مالی همین قرارداد برای پرداخت‌های مؤثر ثبت شود.</label>
+          <label class="full proma-confirm-check proma-danger-check"><input type="checkbox" name="confirm_gateway_risk" value="1"> می‌دانم این عملیات بازگشت وجه بانکی انجام نمی‌دهد.</label>
+          <p class="full small text-muted">عدد تأیید: <strong class="ltr"><?= e($deleteCode) ?></strong></p>
+          <label class="full">عدد تأیید<input name="confirm_text" required inputmode="numeric" autocomplete="off"></label>
+        </div>
+        <div class="modal-footer"><button class="btn danger" type="submit">آرشیو و حذف</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
       </form>
     </div>
   </div>
@@ -131,9 +154,14 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
           <label class="full">هدر چاپی قرارداد<textarea name="rendered_header" rows="4"><?= e($renderedDocumentHeader) ?></textarea></label>
           <label class="full">ویرایش دستی متن قرارداد<textarea name="rendered_body" rows="18" data-rich-editor data-rich-editor-height="520" required><?= e($document['rendered_body'] ?? ContractDocument::render((int) $contract['id'])) ?></textarea></label>
           <label class="full">دلیل ویرایش<input name="change_reason" required placeholder="علت ویرایش نسخه نهایی"></label>
-          <div class="actions"><button class="btn" type="submit">ذخیره نسخه نهایی</button></div>
-        </form>
-      </div>
+           <div class="actions"><button class="btn" type="submit">ذخیره نسخه نهایی</button></div>
+         </form>
+         <?php if (!empty($documentVersions)): ?>
+           <div class="table-wrap mt-3"><table><thead><tr><th>نسخه</th><th>منبع</th><th>تاریخ</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>
+           <?php foreach ($documentVersions as $documentVersion): ?><tr><td>v<?= to_persian_digits($documentVersion['version_number']) ?></td><td><?= e($documentVersion['source']) ?></td><td><?= e(jdatetime($documentVersion['created_at'])) ?></td><td><?= !empty($documentVersion['is_finalized']) ? 'نهایی' : (!empty($documentVersion['is_published']) ? 'منتشرشده' : 'پیش‌نویس') ?></td><td class="actions"><?php if (empty($documentVersion['is_published'])): ?><form method="post" action="<?= e(url('contracts/publishDocumentVersion/' . (int) $documentVersion['id'])) ?>"><?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $contract['id'] ?>"><button class="btn small secondary" type="submit">انتشار</button></form><?php endif; ?><?php if (empty($documentVersion['is_finalized'])): ?><form method="post" action="<?= e(url('contracts/finalizeDocumentVersion/' . (int) $documentVersion['id'])) ?>" onsubmit="return confirm('این نسخه نهایی شود و دیگر بازنویسی خودکار نشود؟')"><?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $contract['id'] ?>"><button class="btn small warning" type="submit">نهایی‌سازی</button></form><?php endif; ?></td></tr><?php endforeach; ?>
+           </tbody></table></div>
+         <?php endif; ?>
+       </div>
     <?php endif; ?>
   </section>
 
@@ -199,12 +227,14 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
         <?php if ($canManageDocument): ?><button class="btn small" type="button" data-open-modal="add-contract-installment">افزودن قسط</button><?php endif; ?>
       </div>
     </div>
+    <?php if ($canManageDocument): ?><form method="post" action="<?= e(url('contracts/bulkInstallmentAction/' . (int) $contract['id'])) ?>" id="installment-bulk-form"><?= csrf_field() ?><?php endif; ?>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>قسط</th><th>سررسید</th><th>مبلغ</th><th>شناسه ضمانت</th><th>وضعیت</th><?php if ($canManageDocument): ?><th>عملیات</th><?php endif; ?></tr></thead>
+        <thead><tr><?php if ($canManageDocument): ?><th><input type="checkbox" data-check-all="installment_ids" aria-label="انتخاب همه اقساط"></th><?php endif; ?><th>قسط</th><th>سررسید</th><th>مبلغ</th><th>شناسه ضمانت</th><th>وضعیت</th><?php if ($canManageDocument): ?><th>عملیات</th><?php endif; ?></tr></thead>
         <tbody>
         <?php foreach ($installments as $installment): ?>
           <tr>
+            <?php if ($canManageDocument): ?><td><input type="checkbox" name="installment_ids[]" value="<?= (int) $installment['id'] ?>" data-check-item="installment_ids" aria-label="انتخاب قسط <?= e($installment['installment_number']) ?>"></td><?php endif; ?>
             <td><?= to_persian_digits($installment['installment_number']) ?></td>
             <td><?= e(jdate($installment['due_date'])) ?></td>
             <td><?= money_toman($installment['base_amount']) ?></td>
@@ -217,10 +247,11 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
             <?php endif; ?>
           </tr>
         <?php endforeach; ?>
-        <?php if (!$installments): ?><tr><td colspan="<?= $canManageDocument ? 6 : 5 ?>" class="empty">قسطی ثبت نشده است.</td></tr><?php endif; ?>
+        <?php if (!$installments): ?><tr><td colspan="<?= $canManageDocument ? 7 : 5 ?>" class="empty">قسطی ثبت نشده است.</td></tr><?php endif; ?>
         </tbody>
       </table>
     </div>
+    <?php if ($canManageDocument): ?><div class="form-grid four mt-3"><label>علت عملیات<input name="bulk_reason" required placeholder="برای هر عملیات علت مشخص کنید"></label><label>مبلغ پرداخت گروهی<input name="group_amount" inputmode="numeric" placeholder="برای پرداخت گروهی"></label><label>روش پرداخت<select name="payment_method"><option value="manual">دستی</option><option value="card_transfer">کارت به کارت</option></select></label><label class="check"><input type="checkbox" name="allocate_to_next" value="1" checked><span>تخصیص مانده به اقساط بعدی</span></label><div class="actions full"><button class="btn success" type="submit" name="bulk_action" value="payment_group">پرداخت گروهی</button><button class="btn danger" type="submit" name="bulk_action" value="cancel">لغو اقساط انتخاب‌شده</button><button class="btn secondary" type="submit" name="bulk_action" value="restore_pending">بازگردانی به در انتظار</button><button class="btn secondary" type="submit" name="bulk_action" value="recalculate">محاسبه مجدد وضعیت</button></div></div></form><?php endif; ?>
   </section>
 </div>
 

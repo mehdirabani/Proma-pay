@@ -148,6 +148,7 @@ class ContractsController extends Controller
             'title' => 'جزئیات قرارداد',
             'contract' => $contract,
             'document' => ContractDocument::document($contractId),
+            'documentVersions' => ContractDocument::versions($contractId),
             'documentTitle' => ContractDocument::renderTitle($contractId),
             'documentHeader' => ContractDocument::renderHeader($contractId),
             'items' => ContractDocument::items($contractId),
@@ -380,6 +381,82 @@ class ContractsController extends Controller
         redirect('contracts/show/' . (int) $id);
     }
 
+    public function publishDocumentVersion($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            ContractDocument::publishVersion((int) $id, Auth::id());
+            set_flash('success', 'نسخه قرارداد منتشر شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'انتشار نسخه قرارداد انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) ($_POST['contract_id'] ?? 0));
+    }
+
+    public function finalizeDocumentVersion($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            ContractDocument::finalizeVersion((int) $id, Auth::id());
+            set_flash('success', 'نسخه قرارداد نهایی شد و دیگر با تولید خودکار بازنویسی نمی‌شود.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'نهایی‌سازی نسخه قرارداد انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) ($_POST['contract_id'] ?? 0));
+    }
+
+    public function paymentGroup($id)
+    {
+        $this->requireRole(['admin', 'operator']);
+        $this->onlyPost();
+        try {
+            $group = PaymentGroupService::create(
+                (int) $id,
+                $_POST['installment_ids'] ?? [],
+                $_POST['group_amount'] ?? 0,
+                Auth::id(),
+                $_POST['payment_method'] ?? 'manual',
+                $_POST['group_description'] ?? '',
+                !empty($_POST['allocate_to_next']),
+                'manual-group:' . hash('sha256', (int) $id . '|' . implode(',', array_map('intval', (array) ($_POST['installment_ids'] ?? []))) . '|' . ($_POST['group_amount'] ?? '') . '|' . ($_POST['_csrf'] ?? ''))
+            );
+            set_flash('success', 'پرداخت گروهی ' . ($group['group_number'] ?? '') . ' ثبت شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'پرداخت گروهی انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) $id);
+    }
+
+    public function bulkInstallmentAction($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            $bulkAction = $_POST['bulk_action'] ?? '';
+            if ($bulkAction === 'payment_group') {
+                $group = PaymentGroupService::create(
+                    (int) $id,
+                    $_POST['installment_ids'] ?? [],
+                    $_POST['group_amount'] ?? 0,
+                    Auth::id(),
+                    $_POST['payment_method'] ?? 'manual',
+                    $_POST['group_description'] ?? '',
+                    !empty($_POST['allocate_to_next']),
+                    'manual-group:' . hash('sha256', (int) $id . '|' . implode(',', array_map('intval', (array) ($_POST['installment_ids'] ?? []))) . '|' . ($_POST['group_amount'] ?? '') . '|' . ($_POST['_csrf'] ?? ''))
+                );
+                $result = ['updated' => count($_POST['installment_ids'] ?? []), 'group_number' => $group['group_number'] ?? ''];
+            } else {
+                $result = Installment::bulkAction((int) $id, $_POST['installment_ids'] ?? [], $bulkAction, $_POST['bulk_reason'] ?? '', Auth::id());
+            }
+            set_flash('success', $bulkAction === 'payment_group' ? 'پرداخت گروهی ' . ($result['group_number'] ?? '') . ' ثبت شد.' : 'عملیات دسته‌جمعی روی ' . to_persian_digits($result['updated']) . ' قسط اعمال شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'عملیات دسته‌جمعی اقساط انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) $id);
+    }
+
     public function printDocument($id)
     {
         Auth::requireLogin();
@@ -571,8 +648,21 @@ class ContractsController extends Controller
             redirect('contracts');
         }
         try {
-            Contract::deleteContract((int) $id);
-            set_flash('success', 'قرارداد حذف شد.');
+            $result = Contract::deleteContractSafely(
+                (int) $id,
+                Auth::id(),
+                $_POST['deletion_reason'] ?? '',
+                !empty($_POST['correct_contract_payments']),
+                !empty($_POST['confirm_gateway_risk'])
+            );
+            $message = 'قرارداد پس از ثبت آرشیو حذف شد.';
+            if (!empty($result['corrected_payments'])) {
+                $message .= ' تعداد ' . to_persian_digits($result['corrected_payments']) . ' پرداخت با اصلاحیه scoped صفر شد.';
+            }
+            if (!empty($result['gateway_warning'])) {
+                $message .= ' ' . $result['gateway_warning'];
+            }
+            set_flash('success', $message);
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'حذف قرارداد انجام نشد.');
         }

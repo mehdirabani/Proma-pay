@@ -99,8 +99,9 @@ for ($i = 0; $i < 6; $i++) {
                 <button class="btn small warning" type="button" data-open-modal="contract-timeline-<?= (int) $cardContract['id'] ?>">تایم‌لاین</button>
                 <a class="btn small success" href="<?= e(url('contracts/printDocument/' . $cardContract['id'])) ?>" target="_blank" rel="noopener"><i data-feather="printer"></i> چاپ قرارداد</a>
                 <a class="btn small success" href="<?= e(url('contracts/booklet/' . $cardContract['id'])) ?>" target="_blank">دفترچه</a>
-                <?php if (!$readOnly): ?>
+                  <?php if (!$readOnly): ?>
                   <?php if (($cardContract['status'] ?? '') !== 'cancelled'): ?><button class="btn small danger" type="button" data-open-modal="cancel-contract-<?= (int) $cardContract['id'] ?>"><i data-feather="slash"></i> لغو</button><?php endif; ?>
+                  <button class="btn small danger" type="button" data-open-modal="delete-contract-<?= (int) $cardContract['id'] ?>" title="حذف دائمی قرارداد"><i data-feather="trash-2"></i> حذف</button>
                 <?php endif; ?>
               </div>
             </div>
@@ -138,6 +139,7 @@ for ($i = 0; $i < 6; $i++) {
             <?php if (!$readOnly): ?><button class="btn small info" type="button" data-open-modal="custom-installment-<?= (int) $contract['id'] ?>">قسط دلخواه</button><?php endif; ?>
             <a class="btn small success" href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank">چاپ دفترچه</a>
             <?php if (!$readOnly && ($contract['status'] ?? '') !== 'cancelled'): ?><button class="btn small danger" type="button" data-open-modal="cancel-contract-<?= (int) $contract['id'] ?>"><i data-feather="slash"></i> لغو</button><?php endif; ?>
+            <?php if (!$readOnly): ?><button class="btn small danger" type="button" data-open-modal="delete-contract-<?= (int) $contract['id'] ?>" title="حذف دائمی قرارداد"><i data-feather="trash-2"></i></button><?php endif; ?>
           </td>
         </tr>
       <?php endforeach; ?>
@@ -651,6 +653,25 @@ for ($i = 0; $i < 6; $i++) {
           <label class="proma-confirm-check proma-danger-check"><input type="checkbox" name="correct_contract_payments" value="1"> برای پرداخت‌های موفق همین قرارداد، اصلاحیه مالی ثبت شود و اثر آن‌ها در محاسبات داخلی صفر شود. این عملیات بازگشت وجه بانکی انجام نمی‌دهد.</label>
         </div>
         <div class="modal-footer"><button class="btn danger" type="submit">تأیید و لغو قرارداد</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
+      </form>
+    </div>
+  </div>
+  <?php $deleteCode = ConfirmationCode::hint('contract_delete_' . (int) $contract['id']); $deletionPreview = Contract::deletionPreview((int) $contract['id']); ?>
+  <div class="modal" id="delete-contract-<?= (int) $contract['id'] ?>">
+    <div class="modal-content">
+      <div class="modal-header"><h3>حذف دائمی قرارداد آزمایشی/اشتباه</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+      <form method="post" action="<?= e(url('contracts/delete/' . $contract['id'])) ?>">
+        <div class="modal-body form-grid">
+          <?= csrf_field() ?>
+          <div class="notice error full">این عملیات فقط برای قرارداد اشتباه یا آزمایشی است. قبل از حذف snapshot کامل قرارداد در آرشیو ثبت می‌شود و مشتری حذف نخواهد شد.</div>
+          <div class="proma-cancellation-summary full"><span><small>پرداخت مؤثر</small><strong><?= to_persian_digits($deletionPreview['effective_payment_count'] ?? 0) ?></strong></span><span><small>پرونده حقوقی</small><strong><?= to_persian_digits($deletionPreview['legal_case_count'] ?? 0) ?></strong></span><span><small>پرداخت درگاه</small><strong><?= to_persian_digits($deletionPreview['gateway_payment_count'] ?? 0) ?></strong></span></div>
+          <label class="full">علت حذف<textarea name="deletion_reason" required minlength="5" rows="3" placeholder="مثلاً قرارداد آزمایشی اشتباه ثبت شده است"></textarea></label>
+          <label class="proma-confirm-check proma-danger-check"><input type="checkbox" name="correct_contract_payments" value="1"> اگر پرداخت مؤثر وجود دارد، اصلاحیه مالی همین قرارداد ثبت و اثر داخلی آن صفر شود.</label>
+          <label class="proma-confirm-check proma-danger-check"><input type="checkbox" name="confirm_gateway_risk" value="1"> می‌دانم حذف سوابق سامانه به معنی بازگشت وجه بانکی تراکنش‌های زیبال نیست.</label>
+          <p class="full small text-muted">برای تأیید، عدد <strong class="ltr"><?= e($deleteCode) ?></strong> را وارد کنید.</p>
+          <label class="full">عدد تأیید<input name="confirm_text" required inputmode="numeric" autocomplete="off"></label>
+        </div>
+        <div class="modal-footer"><button class="btn danger" type="submit">آرشیو و حذف دائمی</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
       </form>
     </div>
   </div>

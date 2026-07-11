@@ -233,7 +233,36 @@ TEXT;
     public static function document($contractId)
     {
         self::ensureSchema();
+        try {
+            $version = self::fetch(
+                'SELECT id AS document_version_id, contract_id, version_number, rendered_title, rendered_header, rendered_body, source, checksum, is_published, is_finalized, generated_by, created_at
+                 FROM contract_document_versions
+                 WHERE contract_id = ? AND is_published = 1
+                 ORDER BY version_number DESC, id DESC LIMIT 1',
+                [(int) $contractId]
+            );
+            if ($version) {
+                return $version;
+            }
+        } catch (Throwable $e) {
+            if (!self::missingVersionTable($e)) {
+                throw $e;
+            }
+        }
         return self::fetch('SELECT * FROM generated_contract_documents WHERE contract_id = ?', [(int) $contractId]);
+    }
+
+    public static function versions($contractId)
+    {
+        self::ensureSchema();
+        try {
+            return self::fetchAll('SELECT v.*, u.full_name AS generated_by_name FROM contract_document_versions v LEFT JOIN users u ON u.id = v.generated_by WHERE v.contract_id = ? ORDER BY v.version_number DESC, v.id DESC', [(int) $contractId]);
+        } catch (Throwable $e) {
+            if (!self::missingVersionTable($e)) {
+                throw $e;
+            }
+            return [];
+        }
     }
 
     public static function logs($contractId)
@@ -338,6 +367,7 @@ TEXT;
              ON DUPLICATE KEY UPDATE rendered_title = VALUES(rendered_title), rendered_header = VALUES(rendered_header), rendered_body = VALUES(rendered_body), generated_by = VALUES(generated_by), updated_at = NOW()',
             [(int) $contractId, $title, $header, $rendered, $generatedBy ? (int) $generatedBy : null]
         );
+        self::recordVersion((int) $contractId, $title, $header, $rendered, 'generated', $generatedBy);
         self::log(
             (int) $contractId,
             $existing ? 'regenerate_document' : 'generate_document',
@@ -366,6 +396,7 @@ TEXT;
              ON DUPLICATE KEY UPDATE rendered_title = VALUES(rendered_title), rendered_header = VALUES(rendered_header), rendered_body = VALUES(rendered_body), generated_by = VALUES(generated_by), updated_at = NOW()',
             [(int) $contractId, $title, $header, $body, $userId ? (int) $userId : null]
         );
+        self::recordVersion((int) $contractId, $title, $header, $body, 'manual', $userId);
         self::log(
             (int) $contractId,
             'edit_document',
@@ -374,6 +405,77 @@ TEXT;
             $reason ?: 'ویرایش دستی متن قرارداد',
             $userId
         );
+    }
+
+    public static function publishVersion($versionId, $userId = null)
+    {
+        self::ensureSchema();
+        $version = self::fetch('SELECT * FROM contract_document_versions WHERE id = ? LIMIT 1', [(int) $versionId]);
+        if (!$version) {
+            throw new InvalidArgumentException('نسخه قرارداد پیدا نشد.');
+        }
+        self::begin();
+        try {
+            self::execute('UPDATE contract_document_versions SET is_published = 0 WHERE contract_id = ?', [(int) $version['contract_id']]);
+            self::execute('UPDATE contract_document_versions SET is_published = 1 WHERE id = ?', [(int) $versionId]);
+            self::log((int) $version['contract_id'], 'publish_document_version', null, ['version_id' => (int) $versionId], 'انتشار نسخه قرارداد', $userId);
+            self::commit();
+        } catch (Throwable $e) {
+            self::rollBack();
+            throw $e;
+        }
+    }
+
+    public static function finalizeVersion($versionId, $userId = null)
+    {
+        self::ensureSchema();
+        $version = self::fetch('SELECT * FROM contract_document_versions WHERE id = ? LIMIT 1', [(int) $versionId]);
+        if (!$version) {
+            throw new InvalidArgumentException('نسخه قرارداد پیدا نشد.');
+        }
+        self::begin();
+        try {
+            self::execute('UPDATE contract_document_versions SET is_published = 0 WHERE contract_id = ?', [(int) $version['contract_id']]);
+            self::execute('UPDATE contract_document_versions SET is_published = 1, is_finalized = 1 WHERE id = ?', [(int) $versionId]);
+            self::log((int) $version['contract_id'], 'finalize_document_version', null, ['version_id' => (int) $versionId], 'نهایی‌سازی نسخه قرارداد', $userId);
+            self::commit();
+        } catch (Throwable $e) {
+            self::rollBack();
+            throw $e;
+        }
+    }
+
+    protected static function recordVersion($contractId, $title, $header, $body, $source, $userId = null)
+    {
+        try {
+            $checksum = hash('sha256', (string) $title . "\0" . (string) $header . "\0" . (string) $body);
+            $latest = self::fetch('SELECT * FROM contract_document_versions WHERE contract_id = ? ORDER BY version_number DESC, id DESC LIMIT 1', [(int) $contractId]);
+            if ($latest && hash_equals((string) $latest['checksum'], $checksum)) {
+                return (int) $latest['id'];
+            }
+            $versionNumber = ((int) ($latest['version_number'] ?? 0)) + 1;
+            $finalized = self::fetch('SELECT id FROM contract_document_versions WHERE contract_id = ? AND is_finalized = 1 LIMIT 1', [(int) $contractId]);
+            $published = $finalized ? 0 : 1;
+            if ($published) {
+                self::execute('UPDATE contract_document_versions SET is_published = 0 WHERE contract_id = ?', [(int) $contractId]);
+            }
+            self::execute(
+                'INSERT INTO contract_document_versions (contract_id, version_number, rendered_title, rendered_header, rendered_body, source, checksum, is_published, is_finalized, generated_by, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, NOW())',
+                [(int) $contractId, $versionNumber, $title, $header, $body, trim((string) $source) ?: 'generated', $checksum, $published, $userId ? (int) $userId : null]
+            );
+            return (int) self::lastInsertId();
+        } catch (Throwable $e) {
+            if (!self::missingVersionTable($e)) {
+                throw $e;
+            }
+            return null;
+        }
+    }
+
+    protected static function missingVersionTable(Throwable $e)
+    {
+        return $e instanceof PDOException && (int) ($e->errorInfo[1] ?? 0) === 1146;
     }
 
     public static function renderTitle($contractId)

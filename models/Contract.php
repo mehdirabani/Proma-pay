@@ -291,6 +291,7 @@ class Contract extends Model
             ContractDocument::saveGuarantorPeople($contractId, $guarantorPeople);
             self::generateInstallments($contractId, $data);
             Payment::syncDownPayment($contractId, $data['created_by'] ?? null, normalize_money($data['down_payment_amount'] ?? 0), $data['start_date']);
+            ContractDocument::generate($contractId, $data['created_by'] ?? null);
             Settings::set('contract_next_serial', (string) ($serial + 1));
             ContractDocument::log($contractId, 'create_contract', null, [
                 'contract' => $data,
@@ -475,7 +476,103 @@ class Contract extends Model
 
     public static function deleteContract($id)
     {
-        throw new InvalidArgumentException('قراردادها حذف نمی‌شوند؛ برای حفظ سوابق از گزینه «لغو قرارداد» استفاده کنید.');
+        throw new InvalidArgumentException('برای حذف قرارداد باید شناسه مدیر و علت حذف ثبت شود.');
+    }
+
+    public static function deletionPreview($id)
+    {
+        $contractId = (int) $id;
+        $contract = self::fetch('SELECT * FROM contracts WHERE id = ? LIMIT 1', [$contractId]);
+        if (!$contract) {
+            throw new InvalidArgumentException('قرارداد پیدا نشد.');
+        }
+        $payments = self::fetch(
+            "SELECT COUNT(*) AS total,
+                    SUM(CASE WHEN status = 'paid' AND COALESCE(is_corrected, 0) = 0 THEN 1 ELSE 0 END) AS effective,
+                    COALESCE(SUM(CASE WHEN status = 'paid' AND COALESCE(is_corrected, 0) = 0 THEN amount ELSE 0 END), 0) AS effective_amount,
+                    SUM(CASE WHEN method = 'zibal' AND status IN ('paid','pending') THEN 1 ELSE 0 END) AS gateway_count
+             FROM payments WHERE contract_id = ?",
+            [$contractId]
+        ) ?: [];
+        $installments = self::fetch('SELECT COUNT(*) AS total, SUM(CASE WHEN status = \'paid\' OR paid_amount > 0 THEN 1 ELSE 0 END) AS paid FROM installments WHERE contract_id = ?', [$contractId]) ?: [];
+        $legal = (int) (self::fetch('SELECT COUNT(*) AS total FROM legal_cases WHERE contract_id = ?', [$contractId])['total'] ?? 0);
+        return [
+            'contract' => $contract,
+            'payment_count' => (int) ($payments['total'] ?? 0),
+            'effective_payment_count' => (int) ($payments['effective'] ?? 0),
+            'effective_payment_amount' => (string) ($payments['effective_amount'] ?? '0'),
+            'gateway_payment_count' => (int) ($payments['gateway_count'] ?? 0),
+            'installment_count' => (int) ($installments['total'] ?? 0),
+            'paid_installment_count' => (int) ($installments['paid'] ?? 0),
+            'legal_case_count' => $legal,
+        ];
+    }
+
+    public static function deleteContractSafely($id, $adminId, $reason, $correctPayments = false, $gatewayAcknowledged = false)
+    {
+        $contractId = (int) $id;
+        $reason = trim((string) $reason);
+        if ($contractId <= 0 || $reason === '') {
+            throw new InvalidArgumentException('علت حذف قرارداد الزامی است.');
+        }
+        self::begin();
+        try {
+            $contract = self::fetch('SELECT * FROM contracts WHERE id = ? FOR UPDATE', [$contractId]);
+            if (!$contract) {
+                throw new InvalidArgumentException('قرارداد پیدا نشد.');
+            }
+            $legalCount = (int) (self::fetch('SELECT COUNT(*) AS total FROM legal_cases WHERE contract_id = ?', [$contractId])['total'] ?? 0);
+            if ($legalCount > 0) {
+                throw new InvalidArgumentException('قرارداد دارای سابقه حقوقی است و برای حفظ سوابق قابل حذف دائمی نیست.');
+            }
+            $gateway = (int) (self::fetch("SELECT COUNT(*) AS total FROM payments WHERE contract_id = ? AND method = 'zibal' AND status IN ('paid','pending')", [$contractId])['total'] ?? 0);
+            if ($gateway > 0 && !$gatewayAcknowledged) {
+                throw new InvalidArgumentException('این قرارداد پرداخت درگاه دارد. هشدار عدم بازگشت وجه بانکی را تایید کنید.');
+            }
+            $summary = self::deletionPreview($contractId);
+            $corrected = 0;
+            if ((int) $summary['effective_payment_count'] > 0) {
+                if (!$correctPayments) {
+                    throw new InvalidArgumentException('قرارداد پرداخت مؤثر دارد. برای حذف آزمایشی باید اصلاحیه مالی همین قرارداد را تایید کنید.');
+                }
+                $corrected = Payment::correctForContract($contractId, 'اصلاحیه مالی حذف قرارداد: ' . $reason, $adminId);
+            }
+            $after = self::deletionPreview($contractId);
+            if ((int) $after['effective_payment_count'] > 0 || (int) $after['paid_installment_count'] > 0) {
+                throw new InvalidArgumentException('پس از اصلاحیه هنوز پرداخت مؤثر باقی مانده است. حذف متوقف شد.');
+            }
+            $snapshot = [
+                'contract' => $contract,
+                'installments' => self::fetchAll('SELECT * FROM installments WHERE contract_id = ?', [$contractId]),
+                'payments' => self::fetchAll('SELECT * FROM payments WHERE contract_id = ?', [$contractId]),
+                'documents' => self::fetchAll('SELECT * FROM generated_contract_documents WHERE contract_id = ?', [$contractId]),
+                'document_versions' => self::fetchAll('SELECT * FROM contract_document_versions WHERE contract_id = ?', [$contractId]),
+                'change_logs' => self::fetchAll('SELECT * FROM contract_change_logs WHERE contract_id = ?', [$contractId]),
+                'gateway_warning' => $gateway > 0 ? 'حذف قرارداد تراکنش درگاه را از بانک برنمی‌گرداند.' : null,
+            ];
+            self::execute(
+                'INSERT INTO contract_deletion_archives (contract_id, contract_number, customer_id, deletion_reason, gateway_warning, corrected_payment_count, snapshot_json, deleted_by, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+                [$contractId, $contract['contract_number'], (int) $contract['customer_id'], $reason, $snapshot['gateway_warning'], $corrected, json_encode($snapshot, JSON_UNESCAPED_UNICODE), (int) $adminId]
+            );
+            AuditLog::record('contract', 'deleted', 'contract', $contractId, [
+                'actor_user_id' => $adminId,
+                'customer_id' => (int) $contract['customer_id'],
+                'contract_id' => $contractId,
+                'description' => 'حذف دائمی قرارداد پس از آرشیو',
+                'old_values' => ['contract_number' => $contract['contract_number']],
+                'new_values' => ['reason' => $reason, 'corrected_payment_count' => $corrected, 'gateway_warning' => $snapshot['gateway_warning']],
+            ]);
+            if (class_exists('PluginManager')) {
+                PluginManager::fire('contract.deleted', ['contract_id' => $contractId, 'customer_id' => (int) $contract['customer_id'], 'actor_user_id' => (int) $adminId], true);
+            }
+            self::execute('DELETE FROM contracts WHERE id = ?', [$contractId]);
+            self::commit();
+            return ['corrected_payments' => $corrected, 'gateway_warning' => $snapshot['gateway_warning']];
+        } catch (Throwable $e) {
+            self::rollBack();
+            throw $e;
+        }
     }
 
     public static function cancel($id, $reason, $adminId, $correctContractPayments = false)
