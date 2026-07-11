@@ -6,7 +6,7 @@ class Router
     {
         $route = trim($_GET['route'] ?? '', '/');
         if ($route === '') {
-            $route = Auth::check() ? 'dashboard' : 'ecommerce/landing';
+            $route = Auth::check() ? 'dashboard' : (ecommerce_is_enabled() ? 'ecommerce/landing' : 'auth/login');
         }
         $parts = array_values(array_filter(explode('/', $route), 'strlen'));
         $controllerPart = $parts[0] ?? 'dashboard';

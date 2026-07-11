@@ -46,11 +46,18 @@ if (!isset($tabs[$activeTab])) {
 }
 ?>
 
-<form method="post" action="<?= e(url('settings/update')) ?>" enctype="multipart/form-data" class="grid proma-settings-form">
+<form method="post" action="<?= e(url('settings/update')) ?>" enctype="multipart/form-data" class="grid proma-settings-form proma-settings-shell">
   <?= csrf_field() ?>
   <input type="hidden" name="_active_tab" value="<?= e($activeTab) ?>" data-settings-active-tab>
 
   <nav class="proma-settings-tabs" aria-label="تنظیمات">
+    <div class="proma-settings-version">
+      <div>
+        <strong>نسخه نصب‌شده: <?= e(app_version_label()) ?></strong>
+        <small>نسخه اسکریپت و فایل‌های فعلی سامانه</small>
+      </div>
+      <span class="badge badge-light-success">فعال</span>
+    </div>
     <?php foreach ($tabGroups as $groupTitle => $groupTabs): ?>
       <div class="proma-settings-tab-group">
         <span><?= e($groupTitle) ?></span>
@@ -90,6 +97,20 @@ if (!isset($tabs[$activeTab])) {
   <section class="card proma-settings-panel <?= $activeTab === 'ecommerce' ? 'active' : '' ?>" data-settings-panel="ecommerce">
     <div class="card-header"><h2>لندینگ فروشگاه</h2></div>
     <div class="card-body form-grid">
+      <div class="full proma-feature-toggle">
+        <div>
+          <strong>تجارت الکترونیک</strong>
+          <small>فروشگاه، سبد خرید، سفارش‌ها، درخواست خرید اقساطی و منوی مرتبط را فعال یا غیرفعال می‌کند.</small>
+        </div>
+        <label><input type="checkbox" name="ecommerce_enabled" value="1"<?= checked($settings['ecommerce_enabled'] ?? '1', '1') ?>><span>فعال</span></label>
+      </div>
+      <div class="full proma-feature-toggle">
+        <div>
+          <strong>صفحه لندینگ فروشگاه</strong>
+          <small>در صورت خاموش بودن، مسیر اصلی مهمان به فهرست محصولات هدایت می‌شود و لینک لندینگ حذف خواهد شد.</small>
+        </div>
+        <label><input type="checkbox" name="landing_enabled" value="1"<?= checked($settings['landing_enabled'] ?? '1', '1') ?>><span>فعال</span></label>
+      </div>
       <div class="full notice info">متن‌های صفحه نخست فروشگاه از این بخش خوانده می‌شوند. برای نمایش نام سامانه از <span dir="ltr">{{system_name}}</span> استفاده کنید.</div>
       <label>نشان بالای هدر<input name="landing_kicker" value="<?= e($settings['landing_kicker'] ?? '') ?>"></label>
       <label>عنوان اصلی<input name="landing_title" value="<?= e($settings['landing_title'] ?? '') ?>"></label>

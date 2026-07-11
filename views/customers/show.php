@@ -9,7 +9,7 @@ $medals = $medals ?? [];
 <div class="proma-customer-summary">
   <section class="card proma-customer-card">
     <div class="card-body">
-      <div class="proma-customer-avatar"><?= e(mb_substr($customer['full_name'], 0, 1, 'UTF-8')) ?></div>
+      <div class="proma-customer-avatar <?= e(normalize_avatar_key($customer['avatar_key'] ?? 'avatar-1')) ?>" aria-label="<?= e($customer['full_name']) ?>"></div>
       <h4><?= e($customer['full_name']) ?></h4>
       <p><?= to_persian_digits($customer['mobile']) ?> · <?= to_persian_digits($customer['national_id']) ?></p>
       <div class="proma-medal-row proma-medal-center">

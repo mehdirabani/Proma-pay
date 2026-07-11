@@ -4357,6 +4357,260 @@ label:has(> input[data-select-filter="customer-select"]) {
 .proma-avatar-choice.avatar-5 { background: linear-gradient(135deg, #16c7f9, #7366ff); }
 .proma-avatar-choice.avatar-6 { background: linear-gradient(135deg, #ffaa05, #54ba4a); }
 
+.proma-avatar,
+.proma-avatar-choice,
+.proma-customer-avatar {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  overflow: hidden;
+}
+
+.proma-avatar.avatar-1,
+.proma-avatar-choice.avatar-1,
+.proma-customer-avatar.avatar-1 { background-image: url('../images/avatars/avatar-1.png'); }
+.proma-avatar.avatar-2,
+.proma-avatar-choice.avatar-2,
+.proma-customer-avatar.avatar-2 { background-image: url('../images/avatars/avatar-2.png'); }
+.proma-avatar.avatar-3,
+.proma-avatar-choice.avatar-3,
+.proma-customer-avatar.avatar-3 { background-image: url('../images/avatars/avatar-3.png'); }
+.proma-avatar.avatar-4,
+.proma-avatar-choice.avatar-4,
+.proma-customer-avatar.avatar-4 { background-image: url('../images/avatars/avatar-4.png'); }
+.proma-avatar.avatar-5,
+.proma-avatar-choice.avatar-5,
+.proma-customer-avatar.avatar-5 { background-image: url('../images/avatars/avatar-5.png'); }
+.proma-avatar.avatar-6,
+.proma-avatar-choice.avatar-6,
+.proma-customer-avatar.avatar-6 { background-image: url('../images/avatars/avatar-6.png'); }
+
+.proma-role-dashboard {
+  --role-accent: #7366ff;
+  --role-accent-soft: #f0efff;
+}
+
+.proma-role-dashboard .proma-role-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--proma-line);
+  background: linear-gradient(135deg, #ffffff 0%, var(--role-accent-soft) 100%);
+}
+
+.proma-role-hero .card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 168px;
+}
+
+.proma-role-hero h4,
+.proma-role-hero p {
+  margin: 0;
+}
+
+.proma-role-hero p {
+  max-width: 680px;
+  margin-top: 10px;
+  color: var(--proma-muted);
+}
+
+.proma-role-hero-actions,
+.proma-role-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.proma-role-hero-actions {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+}
+
+.proma-role-kpi {
+  height: 100%;
+  border: 1px solid var(--proma-line);
+}
+
+.proma-role-kpi .card-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.proma-role-kpi-icon {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 42px;
+  border-radius: 12px;
+  color: var(--role-accent);
+  background: var(--role-accent-soft);
+}
+
+.proma-role-kpi small,
+.proma-role-kpi strong,
+.proma-role-kpi em {
+  display: block;
+}
+
+.proma-role-kpi small,
+.proma-role-kpi em {
+  color: var(--proma-muted);
+  font-size: 12px;
+}
+
+.proma-role-kpi strong {
+  margin: 3px 0;
+  color: var(--proma-text);
+  font-size: 24px;
+}
+
+.proma-role-panel {
+  height: 100%;
+  border: 1px solid var(--proma-line);
+}
+
+.proma-role-list {
+  display: grid;
+  gap: 8px;
+}
+
+.proma-role-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 1px solid var(--proma-line);
+  border-radius: 8px;
+  color: var(--proma-text);
+  background: #fff;
+}
+
+.proma-role-list-item:hover {
+  border-color: rgba(115, 102, 255, .34);
+  background: var(--role-accent-soft);
+}
+
+.proma-role-list-item strong,
+.proma-role-list-item small {
+  display: block;
+}
+
+.proma-role-list-item small {
+  margin-top: 3px;
+  color: var(--proma-muted);
+}
+
+.proma-role-dashboard .table-wrap {
+  margin-top: 0;
+}
+
+.proma-settings-shell {
+  grid-template-columns: minmax(210px, 280px) minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.proma-settings-shell > .proma-settings-tabs {
+  grid-column: 1;
+  position: sticky;
+  top: 18px;
+  align-self: start;
+}
+
+.proma-settings-panel {
+  grid-column: 2;
+  min-width: 0;
+  border: 1px solid var(--proma-line);
+  box-shadow: 0 12px 30px rgba(38, 43, 58, .05);
+}
+
+.proma-settings-panel .card-header {
+  border-bottom: 1px solid var(--proma-line);
+  background: linear-gradient(135deg, #fff, #f8f9fc);
+}
+
+.proma-settings-version {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--proma-line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.proma-settings-version strong,
+.proma-settings-version small {
+  display: block;
+}
+
+.proma-settings-version small {
+  margin-top: 4px;
+  color: var(--proma-muted);
+}
+
+.proma-feature-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 62px;
+  padding: 12px 14px;
+  border: 1px solid var(--proma-line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.proma-feature-toggle strong,
+.proma-feature-toggle small {
+  display: block;
+}
+
+.proma-feature-toggle small {
+  margin-top: 4px;
+  color: var(--proma-muted);
+}
+
+.proma-feature-toggle input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--proma-primary);
+}
+
+.proma-settings-tabs .proma-settings-version {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 980px) {
+  .proma-settings-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .proma-settings-shell > .proma-settings-tabs,
+  .proma-settings-shell > .proma-settings-panel {
+    grid-column: 1;
+  }
+
+  .proma-settings-shell > .proma-settings-tabs {
+    position: static;
+  }
+
+  .proma-role-hero .card-body {
+    display: grid;
+  }
+
+  .proma-role-hero-actions {
+    justify-content: flex-start;
+  }
+}
+
 .proma-profile-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

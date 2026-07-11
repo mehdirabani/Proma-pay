@@ -877,6 +877,8 @@ function seed_settings(PDO $pdo)
         'social_youtube_url' => '',
         'social_linkedin_url' => '',
         'social_website_url' => '',
+        'ecommerce_enabled' => '1',
+        'landing_enabled' => '1',
     ];
     $stmt = $pdo->prepare('INSERT IGNORE INTO settings (setting_key, setting_value, is_secret) VALUES (?, ?, ?)');
     foreach ($defaults as $key => $value) {

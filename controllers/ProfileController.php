@@ -12,7 +12,7 @@ class ProfileController extends Controller
             'latestRequest' => ProfileRequest::latestForUser(Auth::id()),
             'identityDocuments' => IdentityDocument::forUser(Auth::id()),
             'identityVerified' => IdentityDocument::isVerified(Auth::id()),
-            'avatars' => ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6'],
+            'avatars' => avatar_options(),
         ]);
     }
 
@@ -26,7 +26,7 @@ class ProfileController extends Controller
             'secondary_phone' => to_english_digits($_POST['secondary_phone'] ?? ''),
             'email' => trim($_POST['email'] ?? ''),
             'address' => trim($_POST['address'] ?? ''),
-            'avatar_key' => in_array($_POST['avatar_key'] ?? '', ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6'], true) ? $_POST['avatar_key'] : null,
+            'avatar_key' => normalize_avatar_key($_POST['avatar_key'] ?? 'avatar-1'),
             'password' => $_POST['password'] ?? '',
         ];
         if ($payload['full_name'] === '' || $payload['mobile'] === '') {
