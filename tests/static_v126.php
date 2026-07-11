@@ -15,7 +15,7 @@ $assert = static function ($condition, string $message): void {
 };
 
 $version = require $root . '/config/version.php';
-$assert(($version['application'] ?? '') === '1.0.25', 'Application version must remain stable before final acceptance.');
+$assert(($version['application'] ?? '') === '1.0.26', 'Application version must remain at the QA checkpoint before final acceptance.');
 $assert((bool) preg_match('/^\d+\.\d+\.\d+$/', (string) ($version['application'] ?? '')), 'Central version is not semantic.');
 
 $manifest = PluginManifest::read($root . '/plugins/PromaAccounting');

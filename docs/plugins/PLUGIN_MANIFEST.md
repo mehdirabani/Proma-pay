@@ -10,7 +10,7 @@
   "version": "1.0.0",
   "author": "Proma Pay",
   "plugin_api_version": "1.0",
-  "requires_core": "1.0.25",
+  "requires_core": "1.2.6",
   "requires_php": ">=8.1",
   "provider": "Example\\Plugin\\Provider",
   "permissions": [],
