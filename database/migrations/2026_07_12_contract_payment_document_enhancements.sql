@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS payment_groups (
     gateway_track_id VARCHAR(100) NULL,
     idempotency_key VARCHAR(120) NULL,
     description TEXT NULL,
+    selection_json LONGTEXT NULL,
     created_at DATETIME NOT NULL,
     completed_at DATETIME NULL,
     UNIQUE KEY uq_payment_groups_number (group_number),
@@ -53,6 +54,23 @@ CREATE TABLE IF NOT EXISTS payment_groups (
     KEY idx_payment_groups_customer (customer_id),
     KEY idx_payment_groups_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET @payment_group_id_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'payment_group_id');
+SET @payment_group_id_sql := IF(@payment_group_id_exists = 0, 'ALTER TABLE payments ADD COLUMN payment_group_id BIGINT UNSIGNED NULL AFTER installment_id', 'SELECT 1');
+PREPARE payment_group_id_stmt FROM @payment_group_id_sql;
+EXECUTE payment_group_id_stmt;
+DEALLOCATE PREPARE payment_group_id_stmt;
+SET @payment_group_id_index_exists := (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND INDEX_NAME = 'idx_payment_group_id');
+SET @payment_group_id_index_sql := IF(@payment_group_id_index_exists = 0, 'ALTER TABLE payments ADD INDEX idx_payment_group_id (payment_group_id)', 'SELECT 1');
+PREPARE payment_group_id_index_stmt FROM @payment_group_id_index_sql;
+EXECUTE payment_group_id_index_stmt;
+DEALLOCATE PREPARE payment_group_id_index_stmt;
+
+SET @selection_json_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payment_groups' AND COLUMN_NAME = 'selection_json');
+SET @selection_json_sql := IF(@selection_json_exists = 0, 'ALTER TABLE payment_groups ADD COLUMN selection_json LONGTEXT NULL AFTER description', 'SELECT 1');
+PREPARE selection_json_stmt FROM @selection_json_sql;
+EXECUTE selection_json_stmt;
+DEALLOCATE PREPARE selection_json_stmt;
 
 CREATE TABLE IF NOT EXISTS payment_allocations (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

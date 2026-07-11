@@ -395,16 +395,29 @@ class Payment extends Model
                 self::commit();
                 return ['ok' => true, 'message' => 'این پرداخت قبلاً ثبت شده است.'];
             }
+            $verifiedAmount = normalize_money($amountToman ?: 0);
+            $expectedAmount = normalize_money($payment['amount'] ?? 0);
+            if ($verifiedAmount <= 0 || $expectedAmount <= 0 || $verifiedAmount !== $expectedAmount) {
+                self::rollBack();
+                if (class_exists('AuditLog')) {
+                    AuditLog::record('payment', 'gateway_amount_mismatch', 'payment', (int) $payment['id'], [
+                        'actor_user_id' => $payment['user_id'] ? (int) $payment['user_id'] : null,
+                        'contract_id' => (int) $payment['contract_id'],
+                        'new_values' => ['expected_amount' => $expectedAmount, 'verified_amount' => $verifiedAmount],
+                    ]);
+                }
+                return ['ok' => false, 'message' => 'مبلغ تأییدشده درگاه با مبلغ درخواست‌شده یکسان نیست و پرداخت ثبت نشد.'];
+            }
             $paymentDate = date('Y-m-d');
             $installment = Installment::find((int) $payment['installment_id']);
-            $preview = FinanceHelper::paymentPreview($installment, self::forInstallment((int) $payment['installment_id']), Settings::allKeyed(), $amountToman ?: $payment['amount'], $paymentDate);
+            $preview = FinanceHelper::paymentPreview($installment, self::forInstallment((int) $payment['installment_id']), Settings::allKeyed(), $verifiedAmount, $paymentDate);
             $before = self::installmentState((int) $payment['installment_id']);
             self::execute(
                 'UPDATE payments SET status = ?, gateway_ref_id = ?, amount = ?, payment_date = ?, calculated_penalty = ?, calculated_reward = ?, remaining_before_payment = ?, remaining_after_payment = ?, paid_at = NOW() WHERE id = ?',
                 [
                     'paid',
                     $refId,
-                    normalize_money($amountToman ?: $payment['amount']),
+                    $verifiedAmount,
                     $paymentDate,
                     $preview['calculated_penalty'],
                     $preview['calculated_reward'],

@@ -78,6 +78,36 @@ $pageUrl = function ($page) use ($installmentsRoute) {
 </section>
 <?php endif; ?>
 <div data-ajax-results="installments">
+<?php if ($customerMode && !empty($installmentGroups)): ?>
+<section class="card proma-installment-group-payment">
+  <div class="card-header card-no-border"><div><h2>پرداخت آنلاین چند قسطی</h2><p class="text-muted">اقساط هر قرارداد جداگانه پرداخت می‌شوند و مبلغ اضافه به قسط بعدی همان قرارداد می‌رود.</p></div></div>
+  <div class="card-body">
+    <?php if (!$gatewayReady): ?><div class="notice warning">درگاه آنلاین برای پرداخت گروهی فعال یا تنظیم نشده است.</div><?php endif; ?>
+    <?php foreach ($installmentGroups as $group): ?>
+      <form method="post" action="<?= e(url('payments/zibalGroup')) ?>" class="proma-installment-group-form" data-payment-group-form>
+        <?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $group['contract_id'] ?>">
+        <div class="proma-installment-group-head"><strong>قرارداد <?= e($group['contract_number']) ?></strong><span data-group-total><?= money_toman($group['total']) ?></span></div>
+        <div class="proma-installment-group-items">
+          <?php foreach ($group['items'] as $groupItem): ?><label class="proma-group-check"><input type="checkbox" name="installment_ids[]" value="<?= (int) $groupItem['id'] ?>" data-group-item data-amount="<?= e((string) (float) ($groupItem['payable'] ?? 0)) ?>" checked><span>قسط <?= to_persian_digits($groupItem['installment_number']) ?> - <?= e(jdate($groupItem['due_date'])) ?></span><strong><?= money_toman($groupItem['payable']) ?></strong></label><?php endforeach; ?>
+        </div>
+        <label class="proma-group-amount">مبلغ پرداخت<input name="amount" data-group-amount value="<?= e((string) (int) round($group['total'])) ?>" inputmode="numeric" required></label>
+        <button class="btn success" type="submit"<?= !$gatewayReady ? ' disabled' : '' ?>><i data-feather="credit-card"></i> پرداخت انتخاب‌شده‌ها با زیبال</button>
+      </form>
+    <?php endforeach; ?>
+  </div>
+</section>
+<script>
+document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
+  var amount = form.querySelector('[data-group-amount]');
+  var refresh = function () {
+    var total = 0;
+    form.querySelectorAll('[data-group-item]:checked').forEach(function (item) { total += Number(item.getAttribute('data-amount') || 0); });
+    amount.value = String(Math.round(total));
+  };
+  form.querySelectorAll('[data-group-item]').forEach(function (item) { item.addEventListener('change', refresh); });
+});
+</script>
+<?php endif; ?>
 <section class="card">
   <div class="card-header card-no-border">
     <div class="header-top">

@@ -20,9 +20,23 @@ class InstallmentsController extends Controller
     public function panel()
     {
         $this->requireRole('customer');
+        $customerInstallments = Installment::all(['customer_id' => Auth::id()]);
+        $installmentGroups = [];
+        foreach ($customerInstallments as $item) {
+            if ((float) ($item['payable'] ?? 0) <= 0) {
+                continue;
+            }
+            $contractId = (int) ($item['contract_id'] ?? 0);
+            if (!isset($installmentGroups[$contractId])) {
+                $installmentGroups[$contractId] = ['contract_id' => $contractId, 'contract_number' => $item['contract_number'] ?? '', 'items' => [], 'total' => 0];
+            }
+            $installmentGroups[$contractId]['items'][] = $item;
+            $installmentGroups[$contractId]['total'] += (float) ($item['payable'] ?? 0);
+        }
         $this->render('installments/index', [
             'title' => 'پنل اقساط من',
-            'installments' => Installment::all(['customer_id' => Auth::id()]),
+            'installments' => $customerInstallments,
+            'installmentGroups' => array_values($installmentGroups),
             'contracts' => [],
             'customerMode' => true,
             'installmentsRoute' => 'installments/panel',

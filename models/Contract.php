@@ -593,7 +593,8 @@ class Contract extends Model
                 throw new InvalidArgumentException('قرارداد پیدا نشد.');
             }
             if (($contract['status'] ?? '') === 'cancelled') {
-                throw new InvalidArgumentException('این قرارداد قبلاً لغو شده است.');
+                self::commit();
+                return ['corrected_payments' => 0, 'already_cancelled' => true];
             }
             if (in_array(($contract['status'] ?? ''), ['completed', 'closed'], true)) {
                 throw new InvalidArgumentException('قرارداد تسویه‌شده از مسیر لغو عادی قابل لغو نیست.');
@@ -622,10 +623,16 @@ class Contract extends Model
             );
             $oldStatus = $contract['status'];
             $cancelledInstallmentIds = array_map('intval', array_column($installments, 'id'));
-            self::execute(
+            $updatedRows = self::execute(
                 'UPDATE contracts SET status = ?, cancelled_at = NOW(), cancelled_by = ?, cancellation_reason = ?, updated_at = NOW() WHERE id = ?',
                 ['cancelled', (int) $adminId, $reason, $contractId]
             );
+            if ($updatedRows < 1) {
+                $fresh = self::fetch('SELECT status FROM contracts WHERE id = ? LIMIT 1', [$contractId]);
+                if (!$fresh || ($fresh['status'] ?? '') !== 'cancelled') {
+                    throw new RuntimeException('وضعیت لغو قرارداد در پایگاه داده تغییر نکرد.');
+                }
+            }
             if ($cancelledInstallmentIds) {
                 self::execute(
                     "UPDATE installments
