@@ -21,18 +21,23 @@ class AccountingServiceProvider implements \PluginServiceProviderInterface
                 'auth' => true,
             ]);
         }
-        $manager->registerMenu($manifest['id'], [
-            'route' => 'plugin/accounting/dashboard',
-            'label' => 'حسابداری',
-            'icon' => 'briefcase',
-            'permission' => 'plugin.proma-accounting.view',
-        ]);
+        foreach ([
+            ['route' => 'plugin/accounting/dashboard', 'label' => 'داشبورد حسابداری', 'permission' => 'plugin.proma-accounting.view_accounting_dashboard'],
+            ['route' => 'plugin/accounting/accounts', 'label' => 'حساب کاربران', 'permission' => 'plugin.proma-accounting.view_user_accounting'],
+            ['route' => 'plugin/accounting/sales', 'label' => 'فروش‌ها', 'permission' => 'plugin.proma-accounting.view'],
+            ['route' => 'plugin/accounting/commissions', 'label' => 'کمیسیون فروش', 'permission' => 'plugin.proma-accounting.view_commissions'],
+            ['route' => 'plugin/accounting/rules', 'label' => 'قوانین کمیسیون', 'permission' => 'plugin.proma-accounting.manage_commission_rules'],
+            ['route' => 'plugin/accounting/backfill', 'label' => 'بازسازی فروش‌های قبلی', 'permission' => 'plugin.proma-accounting.backfill_sales'],
+            ['route' => 'plugin/accounting/settings', 'label' => 'تنظیمات حسابداری', 'permission' => 'plugin.proma-accounting.manage_accounting_settings'],
+        ] as $menu) {
+            $manager->registerMenu($manifest['id'], array_merge(['icon' => 'briefcase'], $menu));
+        }
     }
 
     public function boot(\PluginManager $manager, array $manifest)
     {
         \PluginHooks::listen('contract.created', function (array $payload) {
-            SalesService::recordFromContract((int) ($payload['contract_id'] ?? 0), (int) ($payload['actor_user_id'] ?? 0));
+            SalesService::recordFromContract((int) ($payload['contract_id'] ?? 0), (int) ($payload['actor_user_id'] ?? 0), (int) ($payload['seller_user_id'] ?? 0));
         }, 20);
         \PluginHooks::listen('contract.updated', function (array $payload) {
             SalesService::syncFromContract((int) ($payload['contract_id'] ?? 0), (int) ($payload['actor_user_id'] ?? 0));
@@ -74,8 +79,9 @@ class AccountingServiceProvider implements \PluginServiceProviderInterface
     public function healthCheck(\PluginManager $manager, array $manifest)
     {
         try {
-            \Model::fetch('SELECT id FROM plugin_accounting_accounts LIMIT 1');
-            \Model::fetch('SELECT id FROM plugin_accounting_ledger_entries LIMIT 1');
+            \Model::fetch('SELECT id FROM accounting_user_accounts LIMIT 1');
+            \Model::fetch('SELECT id FROM accounting_ledger_entries LIMIT 1');
+            \Model::fetch('SELECT setting_key FROM plugin_accounting_settings LIMIT 1');
             return true;
         } catch (\Throwable $e) {
             return false;

@@ -37,6 +37,24 @@ class PluginHooks
         return $safePayload;
     }
 
+    public static function filter($hook, $value, array $context = [])
+    {
+        $payload = ['value' => $value, 'context' => $context];
+        foreach (self::$listeners[$hook] ?? [] as $item) {
+            try {
+                $result = call_user_func($item['listener'], self::sanitize($payload));
+                if ($result !== null) {
+                    $payload['value'] = $result;
+                }
+            } catch (Throwable $e) {
+                if (class_exists('PluginRegistry')) {
+                    PluginRegistry::logRuntimeError($hook, $e);
+                }
+            }
+        }
+        return $payload['value'];
+    }
+
     protected static function sanitize($value, $key = '')
     {
         $blocked = ['password', 'password_hash', 'token', 'secret', 'api_key', 'session', 'credential'];

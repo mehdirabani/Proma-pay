@@ -13,52 +13,54 @@ class PaymentGroupService
         if (!$installmentIds) {
             throw new InvalidArgumentException('حداقل یک قسط را انتخاب کنید.');
         }
-        if ($idempotencyKey) {
-            $existing = Model::fetch('SELECT * FROM payment_groups WHERE idempotency_key = ? LIMIT 1', [(string) $idempotencyKey]);
-            if ($existing) {
-                return $existing;
-            }
-        }
-        $contract = Model::fetch('SELECT * FROM contracts WHERE id = ? FOR UPDATE', [$contractId]);
-        if (!$contract || ($contract['status'] ?? '') === 'cancelled') {
-            throw new InvalidArgumentException('قرارداد برای پرداخت گروهی معتبر نیست.');
-        }
-        $placeholders = implode(',', array_fill(0, count($installmentIds), '?'));
-        $params = array_merge([$contractId], $installmentIds);
-        $selected = Model::fetchAll(
-            "SELECT * FROM installments
-             WHERE contract_id = ? AND id IN ({$placeholders}) AND status NOT IN ('paid', 'cancelled')
-             ORDER BY installment_number ASC FOR UPDATE",
-            $params
-        );
-        if (count($selected) !== count($installmentIds)) {
-            throw new InvalidArgumentException('یکی از اقساط انتخاب‌شده قابل پرداخت نیست یا به این قرارداد تعلق ندارد.');
-        }
-        if ($allocateToNext) {
-            $selectedIds = array_map('intval', array_column($selected, 'id'));
-            $next = Model::fetchAll(
-                "SELECT * FROM installments
-                 WHERE contract_id = ? AND status NOT IN ('paid', 'cancelled')
-                 AND id NOT IN ({$placeholders})
-                 ORDER BY installment_number ASC FOR UPDATE",
-                array_merge([$contractId], $selectedIds)
-            );
-            $selected = array_merge($selected, $next);
-        }
-        $totalOutstanding = 0;
-        foreach ($selected as $row) {
-            $totalOutstanding += max(0, self::moneyInteger($row['base_amount']) - self::moneyInteger($row['paid_amount']));
-        }
-        if ($amount > $totalOutstanding) {
-            throw new InvalidArgumentException('مبلغ پرداخت از مجموع بدهی قابل تخصیص این قرارداد بیشتر است.');
-        }
-
         $started = false;
         if (!Model::db()->inTransaction()) {
             Model::begin();
             $started = true;
         }
         try {
+            if ($idempotencyKey) {
+                $existing = Model::fetch('SELECT * FROM payment_groups WHERE idempotency_key = ? LIMIT 1 FOR UPDATE', [(string) $idempotencyKey]);
+                if ($existing) {
+                    if ($started) {
+                        Model::commit();
+                    }
+                    return $existing;
+                }
+            }
+            $contract = Model::fetch('SELECT * FROM contracts WHERE id = ? FOR UPDATE', [$contractId]);
+            if (!$contract || ($contract['status'] ?? '') === 'cancelled') {
+                throw new InvalidArgumentException('قرارداد برای پرداخت گروهی معتبر نیست.');
+            }
+            $placeholders = implode(',', array_fill(0, count($installmentIds), '?'));
+            $params = array_merge([$contractId], $installmentIds);
+            $selected = Model::fetchAll(
+                "SELECT * FROM installments
+                 WHERE contract_id = ? AND id IN ({$placeholders}) AND status NOT IN ('paid', 'cancelled')
+                 ORDER BY installment_number ASC FOR UPDATE",
+                $params
+            );
+            if (count($selected) !== count($installmentIds)) {
+                throw new InvalidArgumentException('یکی از اقساط انتخاب‌شده قابل پرداخت نیست یا به این قرارداد تعلق ندارد.');
+            }
+            if ($allocateToNext) {
+                $selectedIds = array_map('intval', array_column($selected, 'id'));
+                $next = Model::fetchAll(
+                    "SELECT * FROM installments
+                     WHERE contract_id = ? AND status NOT IN ('paid', 'cancelled')
+                     AND id NOT IN ({$placeholders})
+                     ORDER BY installment_number ASC FOR UPDATE",
+                    array_merge([$contractId], $selectedIds)
+                );
+                $selected = array_merge($selected, $next);
+            }
+            $totalOutstanding = 0;
+            foreach ($selected as $row) {
+                $totalOutstanding += max(0, self::moneyInteger($row['base_amount']) - self::moneyInteger($row['paid_amount']));
+            }
+            if ($amount > $totalOutstanding) {
+                throw new InvalidArgumentException('مبلغ پرداخت از مجموع بدهی قابل تخصیص این قرارداد بیشتر است.');
+            }
             $groupNumber = 'PG-' . date('YmdHis') . '-' . strtoupper(bin2hex(random_bytes(3)));
             Model::execute(
                 'INSERT INTO payment_groups (group_number, contract_id, customer_id, created_by, requested_amount, method, status, idempotency_key, description, created_at, completed_at)

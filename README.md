@@ -12,9 +12,9 @@
 
 ## نیازمندی‌ها
 
-- PHP >= 7.4
-- Recommended PHP: 8.1
-- Tested up to: PHP 8.2
+- PHP >= 8.1
+- Recommended PHP: 8.2+
+- Tested up to: PHP 8.4
 - MySQL >= 5.7 یا MariaDB >= 10.3
 - افزونه‌های PHP: PDO, pdo_mysql, mbstring, openssl, json, fileinfo, curl
 - افزونه‌های اختیاری: zip, gd

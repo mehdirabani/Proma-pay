@@ -63,6 +63,14 @@ class PluginRegistry extends Model
         self::execute('UPDATE system_plugins SET ' . implode(', ', $fields) . ' WHERE plugin_id = ?', $params);
     }
 
+    public static function updateManifest(array $manifest)
+    {
+        self::execute(
+            'UPDATE system_plugins SET name = ?, description = ?, version = ?, path = ?, manifest_json = ?, updated_at = NOW(), last_error = NULL WHERE plugin_id = ?',
+            [$manifest['name'], trim((string) ($manifest['description'] ?? '')), $manifest['version'], str_replace('\\', '/', $manifest['_root']), json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $manifest['id']]
+        );
+    }
+
     public static function migrationDone($pluginId, $migrationName)
     {
         return (bool) self::fetch('SELECT id FROM system_plugin_migrations WHERE plugin_id = ? AND migration_name = ? AND status = ? LIMIT 1', [(string) $pluginId, (string) $migrationName, 'success']);

@@ -91,4 +91,18 @@ class PluginsController extends Controller
         set_flash($result['ok'] ? 'success' : 'error', $result['message']);
         redirect('plugins');
     }
+
+    public function update($pluginId)
+    {
+        $this->requireRole('admin');
+        PluginManager::requirePermission('update_plugins');
+        $this->onlyPost();
+        try {
+            PluginManager::instance()->update($pluginId, Auth::id());
+            set_flash('success', 'افزونه با migrationهای جدید به‌روزرسانی شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'به‌روزرسانی افزونه انجام نشد.');
+        }
+        redirect('plugins');
+    }
 }

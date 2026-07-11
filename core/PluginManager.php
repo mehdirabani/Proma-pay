@@ -171,6 +171,9 @@ class PluginManager
         if ($purge && trim((string) $confirmation) !== 'حذف کامل اطلاعات افزونه') {
             throw new InvalidArgumentException('تایید حذف کامل افزونه صحیح نیست.');
         }
+        if ($purge && Auth::role() !== 'admin') {
+            throw new InvalidArgumentException('حذف کامل داده‌های افزونه فقط برای مدیر ارشد مجاز است.');
+        }
         $manifest = $this->manifestFromRegistered($registered);
         $provider = $this->loadProvider($registered, false);
         if (method_exists($provider, 'uninstall')) {
@@ -181,6 +184,27 @@ class PluginManager
             $this->removePluginFiles($registered['path']);
         }
         $this->audit('plugin', $purge ? 'purged' : 'uninstalled', $manifest['id'], $userId);
+    }
+
+    public function update($pluginId, $userId = null)
+    {
+        $registered = PluginRegistry::find($pluginId);
+        if (!$registered) {
+            throw new InvalidArgumentException('افزونه نصب نشده است.');
+        }
+        $manifest = PluginManifest::read($registered['path']);
+        $current = trim((string) ($registered['version'] ?? '0.0.0'));
+        if (version_compare($manifest['version'], $current, '<=')) {
+            throw new InvalidArgumentException('نسخه جدیدتری برای این افزونه پیدا نشد.');
+        }
+        $this->assertRequirements($manifest);
+        $provider = $this->loadProvider($registered, false);
+        $this->runMigrations($manifest);
+        if (method_exists($provider, 'update')) {
+            $provider->update($this, $manifest);
+        }
+        PluginRegistry::updateManifest($manifest);
+        $this->audit('plugin', 'updated', $manifest['id'], $userId, ['from' => $current, 'to' => $manifest['version']]);
     }
 
     public function healthCheck($pluginId)
@@ -310,6 +334,15 @@ class PluginManager
         ];
     }
 
+    public function registerHook($pluginId, $hook, callable $listener, $priority = 10)
+    {
+        $hook = trim((string) $hook);
+        if ($hook === '' || strpos($hook, '..') !== false) {
+            throw new InvalidArgumentException('نام hook افزونه معتبر نیست.');
+        }
+        PluginHooks::listen($hook, $listener, $priority);
+    }
+
     public function menus()
     {
         return $this->menus;
@@ -336,6 +369,12 @@ class PluginManager
     {
         self::boot();
         return PluginHooks::dispatch($event, $payload, $critical);
+    }
+
+    public static function filter($hook, $value, array $context = [])
+    {
+        self::boot();
+        return PluginHooks::filter($hook, $value, $context);
     }
 
     public function dispatchRoute($route)

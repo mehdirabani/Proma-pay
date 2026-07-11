@@ -346,7 +346,7 @@ function installer_ensure_writable()
 function installer_requirements_html()
 {
     $checks = [
-        'PHP >= 7.4' => version_compare(PHP_VERSION, '7.4.0', '>='),
+        'PHP >= 8.1' => version_compare(PHP_VERSION, '8.1.0', '>='),
         'PDO' => extension_loaded('pdo'),
         'pdo_mysql' => extension_loaded('pdo_mysql'),
         'mbstring' => extension_loaded('mbstring'),

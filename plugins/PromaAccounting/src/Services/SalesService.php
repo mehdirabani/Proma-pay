@@ -4,13 +4,13 @@ namespace Proma\Plugins\Accounting\Services;
 
 class SalesService
 {
-    public static function recordFromContract($contractId, $actorId = null)
+    public static function recordFromContract($contractId, $actorId = null, $sellerId = null)
     {
         $contract = \Contract::find((int) $contractId);
         if (!$contract) {
             return null;
         }
-        $sellerId = self::eligibleSeller($actorId);
+        $sellerId = self::eligibleSeller($sellerId ?: $actorId);
         $status = $sellerId ? 'active' : 'needs_assignment';
         $data = self::amounts($contract);
         \Model::execute(
@@ -56,22 +56,58 @@ class SalesService
         if (!$sellerId) {
             throw new \InvalidArgumentException('فروشنده انتخاب‌شده معتبر یا فعال نیست.');
         }
+        $started = false;
+        if (!\Model::db()->inTransaction()) {
+            \Model::begin();
+            $started = true;
+        }
         $sale = \Model::fetch('SELECT * FROM plugin_accounting_sales WHERE id = ? FOR UPDATE', [(int) $saleId]);
         if (!$sale) {
+            if ($started) {
+                \Model::rollBack();
+            }
             throw new \InvalidArgumentException('فروش پیدا نشد.');
         }
-        \Model::begin();
         try {
+            if ((int) ($sale['seller_user_id'] ?? 0) !== (int) $sellerId) {
+                CommissionService::reverseForSale((int) $sale['id'], $actorId, 'تغییر فروشنده');
+            }
             \Model::execute('UPDATE plugin_accounting_sales SET seller_user_id = ?, status = \'active\', updated_by = ?, updated_at = NOW() WHERE id = ?', [$sellerId, (int) $actorId, (int) $saleId]);
             $updated = \Model::fetch('SELECT * FROM plugin_accounting_sales WHERE id = ?', [(int) $saleId]);
             self::log($updated, 'seller_assigned', $sale, $updated, $actorId);
             CommissionService::refreshForSale($updated, $actorId);
-            \Model::commit();
+            if ($started) {
+                \Model::commit();
+            }
             return $updated;
         } catch (\Throwable $e) {
-            \Model::rollBack();
+            if ($started) {
+                \Model::rollBack();
+            }
             throw $e;
         }
+    }
+
+    public static function backfillPreview()
+    {
+        return \Model::fetch('SELECT COUNT(*) AS total, SUM(CASE WHEN c.status = \'cancelled\' THEN 1 ELSE 0 END) AS cancelled FROM contracts c LEFT JOIN plugin_accounting_sales s ON s.contract_id = c.id WHERE s.id IS NULL') ?: ['total' => 0, 'cancelled' => 0];
+    }
+
+    public static function backfill($batchSize, $actorId)
+    {
+        $batchSize = max(1, min(100, (int) $batchSize));
+        $contracts = \Model::fetchAll(
+            "SELECT c.id FROM contracts c LEFT JOIN plugin_accounting_sales s ON s.contract_id = c.id WHERE s.id IS NULL ORDER BY c.id ASC LIMIT {$batchSize}"
+        );
+        $processed = 0;
+        foreach ($contracts as $contract) {
+            self::recordFromContract((int) $contract['id'], null, null);
+            $processed++;
+        }
+        if (class_exists('AuditLog') && $processed > 0) {
+            \AuditLog::record('accounting', 'sales_backfill', 'plugin_accounting_sales', 0, ['actor_user_id' => $actorId, 'new_values' => ['processed' => $processed]]);
+        }
+        return ['processed' => $processed];
     }
 
     protected static function amounts(array $contract)

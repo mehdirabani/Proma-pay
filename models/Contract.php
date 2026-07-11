@@ -304,6 +304,7 @@ class Contract extends Model
                     'contract_id' => $contractId,
                     'customer_id' => (int) $data['customer_id'],
                     'actor_user_id' => !empty($data['created_by']) ? (int) $data['created_by'] : null,
+                    'seller_user_id' => !empty($data['seller_user_id']) ? (int) $data['seller_user_id'] : null,
                 ], true);
             }
             self::commit();
@@ -380,6 +381,7 @@ class Contract extends Model
                     'contract_id' => (int) $id,
                     'customer_id' => (int) $data['customer_id'],
                     'actor_user_id' => !empty($data['updated_by']) ? (int) $data['updated_by'] : null,
+                    'seller_user_id' => !empty($data['seller_user_id']) ? (int) $data['seller_user_id'] : null,
                 ], true);
             }
             self::commit();

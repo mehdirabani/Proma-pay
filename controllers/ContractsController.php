@@ -50,6 +50,7 @@ class ContractsController extends Controller
                 'start_date' => $startDate,
                 'first_due_date' => $firstDue,
                 'assigned_operator_id' => $_POST['assigned_operator_id'] ?? null,
+                'seller_user_id' => $_POST['seller_user_id'] ?? null,
                 'notes' => $_POST['notes'] ?? '',
                 'created_by' => Auth::id(),
             ], $_POST['guarantors'] ?? [], $_POST['items'] ?? [], $_POST['guarantee'] ?? [], $_POST['guarantor_people'] ?? []);
@@ -795,6 +796,7 @@ class ContractsController extends Controller
             'start_date' => $startDate,
             'first_due_date' => $firstDue,
             'assigned_operator_id' => $assignedOperatorId,
+            'seller_user_id' => array_key_exists('seller_user_id', $input) && trim((string) $input['seller_user_id']) !== '' ? (int) $input['seller_user_id'] : null,
             'notes' => array_key_exists('notes', $input) ? $input['notes'] : ($contract['notes'] ?? ''),
             'updated_by' => Auth::id(),
             'change_reason' => trim((string) ($input['change_reason'] ?? '')) ?: 'ویرایش قرارداد',
