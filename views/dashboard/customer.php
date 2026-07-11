@@ -159,7 +159,7 @@ $ecommerceEnabled = ecommerce_is_enabled();
       <div class="card-body pt-0">
         <div class="proma-role-list">
           <?php foreach (array_slice($medals, 0, 6) as $medal): ?>
-            <div class="proma-role-list-item"><span><strong><?= e($medal['title']) ?></strong><small><?= e($medal['description']) ?></small></span><span class="badge badge-light-warning"><?= to_persian_digits($medal['points']) ?> امتیاز</span></div>
+            <div class="proma-role-list-item" title="<?= e($medal['how_to_earn'] ?? $medal['description'] ?? '') ?>"><span><strong><?= e($medal['title']) ?></strong><small><?= e($medal['description'] ?? '') ?></small></span><span class="badge badge-light-warning"><?= to_persian_digits($medal['points']) ?> امتیاز</span></div>
           <?php endforeach; ?>
           <?php if (!$medals): ?><div class="empty">هنوز نشانی برای شما ثبت نشده است.</div><?php endif; ?>
         </div>

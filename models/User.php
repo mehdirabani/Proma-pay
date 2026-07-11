@@ -343,6 +343,9 @@ class User extends Model
         foreach ($rows as $row) {
             $grouped[(int) $row['user_id']][] = $row;
         }
+        if (class_exists('Medal')) {
+            $grouped = Medal::mergeLegacy($grouped, $userIds);
+        }
         return $grouped;
     }
 
@@ -426,7 +429,7 @@ class User extends Model
 
     public static function deleteMedal($id)
     {
-        self::execute('DELETE FROM medals WHERE id = ?', [(int) $id]);
+        self::execute('UPDATE medals SET is_active = 0, updated_at = NOW() WHERE id = ?', [(int) $id]);
     }
 
     public static function updateMedal($id, array $data)
@@ -470,9 +473,11 @@ class User extends Model
         $data = self::prepareUserData($data);
         self::assertUniqueIdentity($data);
         $avatarKey = avatar_key_for($data['avatar_key'] ?? null, ($data['national_id'] ?? '') . '|' . ($data['mobile'] ?? '') . '|' . ($data['full_name'] ?? ''));
+        $avatarSuggestion = avatar_suggestion_for($data['full_name'] ?? '', $data['role'] ?? '');
+        $avatarExplicit = !empty($data['avatar_key']) && in_array((string) $data['avatar_key'], avatar_options(), true);
         self::execute(
-            'INSERT INTO users (role, username, full_name, father_name, issued_from, national_id, mobile, secondary_phone, email, password_hash, status, address, avatar_key, department, is_department_manager, created_at)
-             VALUES (:role, :username, :full_name, :father_name, :issued_from, :national_id, :mobile, :secondary_phone, :email, :password_hash, :status, :address, :avatar_key, :department, :is_department_manager, NOW())',
+            'INSERT INTO users (role, username, full_name, father_name, issued_from, national_id, mobile, secondary_phone, email, password_hash, status, address, avatar_key, avatar_category, avatar_source, avatar_locked, avatar_suggestion_reason, department, is_department_manager, created_at)
+             VALUES (:role, :username, :full_name, :father_name, :issued_from, :national_id, :mobile, :secondary_phone, :email, :password_hash, :status, :address, :avatar_key, :avatar_category, :avatar_source, :avatar_locked, :avatar_suggestion_reason, :department, :is_department_manager, NOW())',
             [
                 'role' => $data['role'],
                 'username' => trim(to_english_digits($data['username'] ?? '')) ?: null,
@@ -486,12 +491,20 @@ class User extends Model
                 'password_hash' => password_hash(($data['password'] ?? '') ?: bin2hex(random_bytes(8)), PASSWORD_DEFAULT),
                 'status' => $data['status'] ?? 'active',
                 'address' => $data['address'] ?? '',
-                'avatar_key' => $avatarKey,
+                'avatar_key' => $avatarExplicit ? $avatarKey : $avatarSuggestion['key'],
+                'avatar_category' => $avatarSuggestion['category'],
+                'avatar_source' => $avatarExplicit ? 'manual' : $avatarSuggestion['source'],
+                'avatar_locked' => $avatarExplicit ? 1 : 0,
+                'avatar_suggestion_reason' => $avatarExplicit ? 'انتخاب دستی کاربر.' : $avatarSuggestion['reason'],
                 'department' => $data['department'] ?? null,
                 'is_department_manager' => !empty($data['is_department_manager']) ? 1 : 0,
             ]
         );
-        return (int) self::lastInsertId();
+        $userId = (int) self::lastInsertId();
+        if (class_exists('PluginManager')) {
+            PluginManager::fire('user.created', ['user_id' => $userId, 'role' => $data['role'] ?? '', 'actor_user_id' => Auth::id() ?: null], true);
+        }
+        return $userId;
     }
 
     public static function findDuplicateCustomer(array $data)
@@ -548,6 +561,8 @@ class User extends Model
         $data = self::prepareUserData($data, $user);
         self::assertUniqueIdentity($data, (int) $id);
         $avatarKey = avatar_key_for($data['avatar_key'] ?? null, (string) $id . '|' . ($data['full_name'] ?? ($user['full_name'] ?? '')));
+        $avatarExplicit = !empty($data['avatar_key']) && in_array((string) $data['avatar_key'], avatar_options(), true);
+        $avatarSuggestion = avatar_suggestion_for($data['full_name'] ?? ($user['full_name'] ?? ''), $data['role'] ?? ($user['role'] ?? ''));
         $params = [
             'id' => $id,
             'role' => $data['role'] ?? $user['role'],
@@ -561,7 +576,11 @@ class User extends Model
             'email' => ($data['email'] ?? $user['email']) ?: null,
             'status' => $data['status'] ?? $user['status'],
             'address' => $data['address'] ?? ($user['address'] ?? ''),
-            'avatar_key' => $avatarKey,
+            'avatar_key' => $avatarExplicit ? $avatarKey : ($user['avatar_key'] ?? $avatarSuggestion['key']),
+            'avatar_category' => $avatarExplicit ? ($user['avatar_category'] ?? 'manual') : $avatarSuggestion['category'],
+            'avatar_source' => $avatarExplicit ? 'manual' : ($user['avatar_source'] ?? $avatarSuggestion['source']),
+            'avatar_locked' => $avatarExplicit ? 1 : (int) ($user['avatar_locked'] ?? 0),
+            'avatar_suggestion_reason' => $avatarExplicit ? 'انتخاب دستی کاربر.' : ($user['avatar_suggestion_reason'] ?? $avatarSuggestion['reason']),
             'department' => $data['department'] ?? ($user['department'] ?? null),
             'is_department_manager' => array_key_exists('is_department_manager', $data) ? (!empty($data['is_department_manager']) ? 1 : 0) : (int) ($user['is_department_manager'] ?? 0),
         ];
@@ -575,9 +594,14 @@ class User extends Model
              father_name = :father_name, issued_from = :issued_from,
              national_id = :national_id, mobile = :mobile, secondary_phone = :secondary_phone,
              email = :email, status = :status, address = :address, avatar_key = :avatar_key,
+             avatar_category = :avatar_category, avatar_source = :avatar_source, avatar_locked = :avatar_locked,
+             avatar_suggestion_reason = :avatar_suggestion_reason,
              department = :department, is_department_manager = :is_department_manager {$passwordSql} WHERE id = :id",
             $params
         );
+        if (class_exists('PluginManager')) {
+            PluginManager::fire('user.updated', ['user_id' => (int) $id, 'role' => $params['role'] ?? '', 'actor_user_id' => Auth::id() ?: null], true);
+        }
         return true;
     }
 

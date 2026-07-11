@@ -5,6 +5,7 @@ foreach ($contracts as $contract) {
 }
 $contracts = array_values($uniqueContracts);
 $medals = $medals ?? [];
+$medalDefinitions = $medalDefinitions ?? [];
 ?>
 <div class="proma-customer-summary">
   <section class="card proma-customer-card">
@@ -14,7 +15,7 @@ $medals = $medals ?? [];
       <h4><?= e($customer['full_name']) ?></h4>
       <p><?= to_persian_digits($customer['mobile']) ?> · <?= to_persian_digits($customer['national_id']) ?></p>
       <div class="proma-medal-row proma-medal-center">
-        <?php foreach (array_slice($medals, 0, 4) as $medal): ?><span class="badge badge-light-warning"><?= e($medal['title']) ?></span><?php endforeach; ?>
+        <?php foreach (array_slice($medals, 0, 4) as $medal): ?><span class="badge badge-light-warning" title="<?= e($medal['how_to_earn'] ?? $medal['description'] ?? '') ?>"><i data-feather="<?= e($medal['icon_key'] ?? 'award') ?>"></i><?= e($medal['title']) ?></span><?php endforeach; ?>
         <?php if (!$medals): ?><span class="badge muted">بدون مدال</span><?php endif; ?>
       </div>
       <div class="proma-customer-stats">
@@ -35,6 +36,13 @@ $medals = $medals ?? [];
     </div>
   </section>
 </div>
+
+<?php if ($medalDefinitions): ?>
+<section class="card" style="margin-top:16px">
+  <div class="card-header"><h2>مدال‌های مشتری</h2><span class="text-muted">اعطا و لغو مدال، تاریخچه را حذف نمی‌کند.</span></div>
+  <div class="card-body"><form method="post" action="<?= e(url('medals/award/' . (int) $customer['id'])) ?>" class="form-grid three"><?= csrf_field() ?><label>مدال<select name="slug" required><option value="">انتخاب مدال</option><?php foreach ($medalDefinitions as $definition): ?><option value="<?= e($definition['slug']) ?>"><?= e($definition['title']) ?> · <?= to_persian_digits($definition['points']) ?> امتیاز</option><?php endforeach; ?></select></label><label class="full">یادداشت<input name="note" placeholder="علت یا توضیح اعطا"></label><div class="align-self-end"><button class="btn btn-primary" type="submit">اعطای مدال</button></div></form><div class="proma-medal-row" style="margin-top:12px"><?php foreach ($medals as $medal): ?><span class="badge badge-light-warning" title="<?= e($medal['how_to_earn'] ?? $medal['description'] ?? '') ?>"><i data-feather="<?= e($medal['icon_key'] ?? 'award') ?>"></i><?= e($medal['title']) ?><?php if (array_key_exists('slug', $medal)): ?><form method="post" action="<?= e(url('medals/revoke/' . (int) $medal['id'])) ?>" style="display:inline;margin-inline-start:6px"><?= csrf_field() ?><input type="hidden" name="reason" value="لغو دستی مدال"><button class="icon-btn" type="submit" aria-label="لغو مدال" title="لغو مدال"><i data-feather="x"></i></button></form><?php endif; ?></span><?php endforeach; ?></div></div>
+</section>
+<?php endif; ?>
 
 <section class="card" style="margin-top:16px">
   <div class="card-header card-no-border">

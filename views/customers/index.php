@@ -76,7 +76,7 @@ $pageUrl = function ($page) use ($viewMode) {
 
         <div class="proma-medal-row">
           <?php foreach (array_slice($item['medals'] ?? [], 0, 3) as $medal): ?>
-            <span class="badge badge-light-warning proma-medal-badge"><i data-feather="<?= e($medal['icon_key'] ?: 'award') ?>"></i><?= e($medal['title']) ?></span>
+            <span class="badge badge-light-warning proma-medal-badge" title="<?= e($medal['description'] ?? '') ?>"><i data-feather="<?= e($medal['icon_key'] ?: 'award') ?>"></i><?= e($medal['title']) ?></span>
           <?php endforeach; ?>
           <?php if (empty($item['medals'])): ?><span class="badge muted">بدون مدال</span><?php endif; ?>
         </div>

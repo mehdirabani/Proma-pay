@@ -10,6 +10,9 @@ class CustomersController extends Controller
         $ids = array_column($customers, 'id');
         foreach ($ids as $customerId) {
             User::syncAutomaticMedals((int) $customerId);
+            if (class_exists('Medal')) {
+                Medal::evaluateCustomer((int) $customerId, Auth::id());
+            }
         }
         $medals = User::medalsForUsers($ids);
         $timelines = Payment::recentForCustomers($ids, 3);
@@ -144,6 +147,7 @@ class CustomersController extends Controller
             'payments' => Payment::logs(['customer' => $customer['national_id']]),
             'paymentTimeline' => Payment::recentForCustomer((int) $id),
             'medals' => User::medalsForUsers([(int) $id])[(int) $id] ?? [],
+            'medalDefinitions' => class_exists('Medal') ? Medal::definitions() : [],
         ]);
     }
 

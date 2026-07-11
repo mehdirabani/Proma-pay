@@ -310,6 +310,9 @@ class DashboardController extends Controller
     {
         $customerId = Auth::id();
         User::syncAutomaticMedals((int) $customerId);
+        if (class_exists('Medal')) {
+            Medal::evaluateCustomer((int) $customerId, Auth::id());
+        }
         $contracts = Contract::all(['customer_id' => $customerId]);
         $installments = Installment::all(['customer_id' => $customerId]);
         $activeInstallments = array_filter($installments, static fn ($item) => !in_array(($item['status'] ?? ''), ['paid', 'cancelled'], true));
@@ -318,7 +321,7 @@ class DashboardController extends Controller
             'contracts' => $contracts,
             'installments' => $installments,
             'payments' => Payment::recentForCustomer($customerId, 9),
-            'medals' => Model::fetchAll('SELECT * FROM medals WHERE user_id = ? ORDER BY id DESC', [$customerId]),
+            'medals' => User::medalsForUsers([(int) $customerId])[(int) $customerId] ?? [],
             'socialLinks' => configured_social_links(Settings::allKeyed()),
             'ecommerceOrders' => ecommerce_is_enabled() ? Ecommerce::ordersForCustomer($customerId, 6) : [],
             'metrics' => [

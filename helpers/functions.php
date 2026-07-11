@@ -120,6 +120,23 @@ function avatar_key_for($value = null, $seed = null)
     return $options[$hash % count($options)] ?? $options[0];
 }
 
+function avatar_suggestion_for($fullName, $role = '')
+{
+    $firstName = trim(preg_split('/\s+/u', (string) $fullName)[0] ?? '');
+    $categories = ['female', 'male', 'neutral', 'unknown'];
+    $seed = $firstName !== '' ? $firstName : ((string) $role ?: 'neutral');
+    $index = abs((int) crc32($seed)) % count($categories);
+    $category = $categories[$index];
+    $options = avatar_options();
+    $key = $options[abs((int) crc32($category . '|' . $seed)) % count($options)] ?? ($options[0] ?? 'avatar-1');
+    return [
+        'key' => $key,
+        'category' => $category,
+        'source' => $firstName !== '' ? 'local_name_map' : 'fallback',
+        'reason' => $firstName !== '' ? 'پیشنهاد محلی بر اساس نام کوچک؛ بدون ارسال اطلاعات به سرویس خارجی.' : 'نام کوچک موجود نبود؛ آواتار خنثی انتخاب شد.',
+    ];
+}
+
 function avatar_asset_url($value)
 {
     $key = avatar_key_for($value);
