@@ -17,7 +17,7 @@
 - Tested up to: PHP 8.4
 - MySQL >= 5.7 یا MariaDB >= 10.3
 - افزونه‌های PHP: PDO, pdo_mysql, mbstring, openssl, json, fileinfo, curl
-- افزونه‌های اختیاری: zip, gd
+- افزونه اختیاری: gd
 - Apache mod_rewrite برای مسیرهای تمیزتر پیشنهاد می‌شود.
 
 ## نکته امنیتی

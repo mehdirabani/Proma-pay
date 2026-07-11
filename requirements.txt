@@ -10,6 +10,6 @@ openssl
 json
 fileinfo
 curl
-zip optional
+zip
 gd optional
 mod_rewrite recommended

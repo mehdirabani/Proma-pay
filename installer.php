@@ -354,6 +354,7 @@ function installer_requirements_html()
         'json' => extension_loaded('json'),
         'fileinfo' => extension_loaded('fileinfo'),
         'curl' => extension_loaded('curl'),
+        'zip' => extension_loaded('zip'),
     ];
     $html = '<div class="requirements">';
     foreach ($checks as $label => $ok) {
