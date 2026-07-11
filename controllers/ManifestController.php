@@ -31,6 +31,7 @@ class ManifestController extends Controller
         echo json_encode([
             'name' => $systemName,
             'short_name' => $shortName,
+            'version' => app_version_label(),
             'description' => 'سامانه مدیریت قرارداد، اقساط و پرداخت',
             'start_url' => rtrim(detected_base_url(), '/') . '/index.php',
             'display' => 'standalone',

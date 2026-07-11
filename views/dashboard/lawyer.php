@@ -1,81 +1,84 @@
-<?php $sprite = template_asset_url('svg/icon-sprite.svg'); ?>
-<div class="row widget-grid">
-  <div class="col-xxl-4 col-sm-6 box-col-6">
-    <div class="card profile-box">
+<?php
+$metrics = $metrics ?? [];
+$cases = $cases ?? [];
+$eligible = $eligible ?? [];
+?>
+<div class="row widget-grid proma-role-dashboard proma-role-dashboard--lawyer" style="--role-accent:#e07a19;--role-accent-soft:#fff4e8">
+  <div class="col-12">
+    <section class="card proma-role-hero">
       <div class="card-body">
-        <div class="media media-wrapper justify-content-between">
-          <div class="media-body">
-            <div class="greeting-user">
-              <h4 class="f-w-600">پنل حقوقی</h4>
-              <p>پرونده‌های حقوقی، قراردادهای آماده شکایت و وضعیت ارجاع‌ها اینجا دیده می‌شود.</p>
-              <div class="whatsnew-btn"><a class="btn btn-outline-white" href="<?= e(url('lawyer')) ?>">مدیریت پرونده‌ها</a></div>
-            </div>
-          </div>
+        <div>
+          <span class="badge badge-light-warning">پیشخوان حقوقی</span>
+          <h4>نمای متمرکز پرونده‌های حقوقی</h4>
+          <p>پرونده‌های در جریان، قراردادهای آماده شکایت و هزینه‌های ثبت‌شده را سریع بررسی کنید.</p>
         </div>
-        <div class="cartoon"><img class="img-fluid" src="<?= e(template_asset_url('images/dashboard/cartoon.svg')) ?>" alt=""></div>
+        <div class="proma-role-hero-actions">
+          <a class="btn warning" href="<?= e(url('lawyer')) ?>"><i data-feather="briefcase"></i> مدیریت پرونده‌ها</a>
+          <a class="btn secondary" href="<?= e(url('legal')) ?>"><i data-feather="file-text"></i> همه حقوقی</a>
+          <a class="btn secondary" href="<?= e(url('calendar')) ?>"><i data-feather="calendar"></i> تقویم</a>
+        </div>
       </div>
-    </div>
+    </section>
   </div>
 
-  <div class="col-xxl-4 col-sm-6 box-col-6">
-    <div class="card widget-1">
-      <div class="card-body">
-        <div class="widget-content">
-          <div class="widget-round warning"><div class="bg-round"><svg class="svg-fill"><use href="<?= e($sprite) ?>#return-box"></use></svg><svg class="half-circle svg-fill"><use href="<?= e($sprite) ?>#halfcircle"></use></svg></div></div>
-          <div><h4><?= to_persian_digits(count($cases)) ?></h4><span class="f-light">پرونده حقوقی</span></div>
+  <?php foreach ([
+      ['پرونده‌های شما', $metrics['cases'] ?? 0, 'کل پرونده‌های تخصیص‌یافته', 'folder'],
+      ['پرونده‌های باز', $metrics['open_cases'] ?? 0, 'نیازمند اقدام', 'activity'],
+      ['آماده شکایت', $metrics['eligible'] ?? 0, 'قرارداد واجد شرایط', 'alert-octagon'],
+      ['هزینه ثبت‌شده', money_toman($metrics['expenses'] ?? 0), 'جمع هزینه پرونده‌ها', 'credit-card'],
+  ] as $item): ?>
+    <div class="col-xxl-3 col-md-6">
+      <article class="card proma-role-kpi">
+        <div class="card-body">
+          <span class="proma-role-kpi-icon"><i data-feather="<?= e($item[3]) ?>"></i></span>
+          <div><small><?= e($item[0]) ?></small><strong><?= is_numeric($item[1]) ? to_persian_digits($item[1]) : $item[1] ?></strong><em><?= e($item[2]) ?></em></div>
         </div>
-        <div class="font-warning f-w-500"><i class="icon-arrow-up icon-rotate me-1"></i><span>در جریان</span></div>
-      </div>
+      </article>
     </div>
-  </div>
+  <?php endforeach; ?>
 
-  <div class="col-xxl-4 col-sm-6 box-col-6">
-    <div class="card widget-1">
-      <div class="card-body">
-        <div class="widget-content">
-          <div class="widget-round secondary"><div class="bg-round"><svg class="svg-fill"><use href="<?= e($sprite) ?>#new-order"></use></svg><svg class="half-circle svg-fill"><use href="<?= e($sprite) ?>#halfcircle"></use></svg></div></div>
-          <div><h4><?= to_persian_digits(count($eligible)) ?></h4><span class="f-light">آماده شکایت</span></div>
-        </div>
-        <div class="font-secondary f-w-500"><i class="icon-arrow-up icon-rotate me-1"></i><span>قابل ارجاع</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-xl-7 box-col-7">
-    <div class="card">
-      <div class="card-header card-no-border"><div class="header-top"><h5>پرونده‌های حقوقی</h5><a class="link-only" href="<?= e(url('lawyer')) ?>">مدیریت پرونده‌ها</a></div></div>
+  <div class="col-xxl-7 col-xl-12">
+    <section class="card proma-role-panel">
+      <div class="card-header card-no-border"><div class="header-top"><h5>پرونده‌های حقوقی اخیر</h5><a class="link-only" href="<?= e(url('lawyer')) ?>">مشاهده همه</a></div></div>
       <div class="card-body pt-0">
         <div class="table-responsive">
           <table class="table table-bordernone">
-            <thead><tr><th>قرارداد</th><th>مشتری</th><th>مرحله</th><th>وضعیت</th></tr></thead>
+            <thead><tr><th>قرارداد</th><th>مشتری</th><th>مرحله</th><th>وضعیت</th><th>عملیات</th></tr></thead>
             <tbody>
-            <?php foreach ($cases as $case): ?>
-              <tr><td><?= e($case['contract_number']) ?></td><td><?= e($case['customer_name']) ?></td><td><?= e($case['stage']) ?></td><td><span class="badge badge-light-<?= e(badge_class($case['status'])) ?>"><?= e(status_label($case['status'])) ?></span></td></tr>
+            <?php foreach (array_slice($cases, 0, 10) as $case): ?>
+              <tr>
+                <td><?= e($case['contract_number']) ?></td>
+                <td><?= e($case['customer_name']) ?></td>
+                <td><?= e($case['stage']) ?></td>
+                <td><span class="badge <?= e(badge_class($case['status'])) ?>"><?= e(status_label($case['status'])) ?></span></td>
+                <td class="actions">
+                  <a class="btn small secondary" href="<?= e(url('legal/show/' . (int) $case['id'])) ?>">جزئیات</a>
+                  <a class="btn small success" href="<?= e(url('contracts/printDocument/' . (int) $case['contract_id'])) ?>" target="_blank" rel="noopener"><i data-feather="printer"></i> چاپ</a>
+                </td>
+              </tr>
             <?php endforeach; ?>
-            <?php if (!$cases): ?><tr><td colspan="4" class="text-center f-light">پرونده‌ای ثبت نشده است.</td></tr><?php endif; ?>
+            <?php if (!$cases): ?><tr><td colspan="5" class="text-center f-light">پرونده‌ای برای نمایش وجود ندارد.</td></tr><?php endif; ?>
             </tbody>
           </table>
         </div>
       </div>
-    </div>
+    </section>
   </div>
 
-  <div class="col-xl-5 box-col-5">
-    <div class="card">
-      <div class="card-header card-no-border"><div class="header-top"><h5>قراردادهای آماده شکایت</h5></div></div>
+  <div class="col-xxl-5 col-xl-12">
+    <section class="card proma-role-panel">
+      <div class="card-header card-no-border"><div class="header-top"><h5>قراردادهای آماده شکایت</h5><a class="link-only" href="<?= e(url('legal')) ?>">بررسی حقوقی</a></div></div>
       <div class="card-body pt-0">
-        <div class="table-responsive">
-          <table class="table table-bordernone">
-            <thead><tr><th>قرارداد</th><th>مشتری</th><th>موبایل</th></tr></thead>
-            <tbody>
-            <?php foreach (array_slice($eligible, 0, 10) as $contract): ?>
-              <tr><td><?= e($contract['contract_number']) ?></td><td><?= e($contract['customer_name']) ?></td><td><?= to_persian_digits($contract['mobile']) ?></td></tr>
-            <?php endforeach; ?>
-            <?php if (!$eligible): ?><tr><td colspan="3" class="text-center f-light">قرارداد واجد شرایط وجود ندارد.</td></tr><?php endif; ?>
-            </tbody>
-          </table>
+        <div class="proma-role-list">
+          <?php foreach (array_slice($eligible, 0, 8) as $contract): ?>
+            <a class="proma-role-list-item" href="<?= e(url('contracts/show/' . (int) $contract['id'])) ?>">
+              <span><strong><?= e($contract['customer_name']) ?></strong><small><?= e($contract['contract_number']) ?> · <?= to_persian_digits($contract['overdue_count'] ?? 0) ?> قسط معوق</small></span>
+              <i data-feather="chevron-left"></i>
+            </a>
+          <?php endforeach; ?>
+          <?php if (!$eligible): ?><div class="empty">قرارداد واجد شرایطی برای ارجاع وجود ندارد.</div><?php endif; ?>
         </div>
       </div>
-    </div>
+    </section>
   </div>
 </div>

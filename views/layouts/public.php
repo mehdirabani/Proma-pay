@@ -6,6 +6,8 @@ $logoPath = trim((string) ($layoutSettings['logo_path'] ?? ''));
 $logoIconPath = trim((string) ($layoutSettings['logo_icon_path'] ?? ''));
 $faviconPath = trim((string) ($layoutSettings['favicon_path'] ?? ''));
 $appIconPath = $logoIconPath ?: $faviconPath;
+$landingEnabled = landing_is_enabled();
+$publicHomeRoute = $landingEnabled ? 'ecommerce/landing' : 'ecommerce/shop';
 $publicCartSummary = ['quantity' => 0, 'total' => 0];
 try {
     $publicCartSummary = Ecommerce::cartSummary();
@@ -35,12 +37,12 @@ try {
 </head>
 <body class="proma-public-body">
   <header class="proma-public-header">
-    <a class="proma-template-logo" href="<?= e(url('ecommerce/landing')) ?>">
+    <a class="proma-template-logo" href="<?= e(url($publicHomeRoute)) ?>">
       <?php if ($logoIconPath): ?><img class="proma-uploaded-logo sm" src="<?= e(asset_url($logoIconPath)) ?>" alt="<?= e($logoText) ?>"><?php endif; ?>
       <?php if ($logoPath): ?><img class="proma-uploaded-logo" src="<?= e(asset_url($logoPath)) ?>" alt="<?= e($logoText) ?>"><?php else: ?><span><?= e($logoText) ?></span><?php endif; ?>
     </a>
     <nav>
-      <a href="<?= e(url('ecommerce/landing')) ?>">صفحه نخست</a>
+      <?php if ($landingEnabled): ?><a href="<?= e(url('ecommerce/landing')) ?>">صفحه نخست</a><?php endif; ?>
       <a href="<?= e(url('ecommerce/shop')) ?>">فروشگاه</a>
       <a href="<?= e(url('ecommerce/cart')) ?>">سبد خرید <strong><?= to_persian_digits($publicCartSummary['quantity'] ?? 0) ?></strong></a>
       <a href="<?= e(url('auth/login')) ?>">ورود</a>

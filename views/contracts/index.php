@@ -75,7 +75,7 @@ for ($i = 0; $i < 6; $i++) {
             <?php endif; ?>
             <div class="proma-contract-card-main">
               <span class="proma-progress-avatar" style="--progress: <?= $progress ?>">
-                <span class="proma-avatar-choice <?= e($cardContract['avatar_key'] ?? 'avatar-1') ?>"><?= e(mb_substr($cardContract['customer_name'], 0, 1, 'UTF-8')) ?></span>
+                <span class="proma-avatar-choice <?= e(normalize_avatar_key($cardContract['avatar_key'] ?? 'avatar-1')) ?>" aria-label="<?= e($cardContract['customer_name']) ?>"></span>
               </span>
               <div>
                 <span class="proma-contract-badge"><?= e($cardContract['contract_number']) ?></span>

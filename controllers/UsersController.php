@@ -79,7 +79,7 @@ class UsersController extends Controller
                 'address' => $_POST['address'] ?? '',
                 'department' => array_key_exists($_POST['department'] ?? '', app_config('departments', [])) ? $_POST['department'] : null,
                 'is_department_manager' => !empty($_POST['is_department_manager']) ? 1 : 0,
-                'avatar_key' => in_array($_POST['avatar_key'] ?? '', ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6'], true) ? $_POST['avatar_key'] : null,
+                'avatar_key' => normalize_avatar_key($_POST['avatar_key'] ?? 'avatar-1'),
             ]);
             set_flash('success', 'کاربر با موفقیت ثبت شد.');
         } catch (Throwable $e) {
@@ -119,7 +119,7 @@ class UsersController extends Controller
                 'address' => $_POST['address'] ?? '',
                 'department' => array_key_exists($_POST['department'] ?? '', app_config('departments', [])) ? $_POST['department'] : null,
                 'is_department_manager' => !empty($_POST['is_department_manager']) ? 1 : 0,
-                'avatar_key' => in_array($_POST['avatar_key'] ?? '', ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6'], true) ? $_POST['avatar_key'] : null,
+                'avatar_key' => normalize_avatar_key($_POST['avatar_key'] ?? 'avatar-1'),
             ]);
             set_flash('success', 'اطلاعات کاربر به‌روزرسانی شد.');
         } catch (Throwable $e) {

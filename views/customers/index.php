@@ -58,7 +58,7 @@ $pageUrl = function ($page) use ($viewMode) {
       <div class="card-body">
         <div class="proma-profile-head">
           <span class="proma-progress-avatar" style="--progress: <?= (int) ($item['good_score'] ?? 0) ?>">
-            <span class="proma-avatar-choice <?= e($item['avatar_key'] ?: 'avatar-1') ?>"><?= e(mb_substr($item['full_name'], 0, 1, 'UTF-8')) ?></span>
+            <span class="proma-avatar-choice <?= e(normalize_avatar_key($item['avatar_key'] ?? 'avatar-1')) ?>" aria-label="<?= e($item['full_name']) ?>"></span>
           </span>
           <div>
             <h5><?= e($item['full_name']) ?> <?php if (!empty($item['identity_verified'])): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓</span><?php endif; ?></h5>

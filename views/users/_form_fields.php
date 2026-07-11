@@ -3,7 +3,7 @@ $userFormMode = $userFormMode ?? 'create';
 $userFormData = is_array($userFormData ?? null) ? $userFormData : [];
 $userFormRoles = $userFormRoles ?? [];
 $userFormDepartments = $userFormDepartments ?? [];
-$userFormAvatarKeys = $userFormAvatarKeys ?? ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6'];
+$userFormAvatarKeys = $userFormAvatarKeys ?? avatar_options();
 $value = function ($key, $default = '') use ($userFormData) {
     return e($userFormData[$key] ?? $default);
 };
@@ -72,7 +72,7 @@ $isEdit = $userFormMode === 'edit';
     <?php foreach ($userFormAvatarKeys as $avatar): ?>
       <label>
         <input type="radio" name="avatar_key" value="<?= e($avatar) ?>"<?= checked($currentAvatar ?: 'avatar-1', $avatar) ?>>
-        <span class="proma-avatar-choice <?= e($avatar) ?>"><?= e(mb_substr((string) ($userFormData['full_name'] ?? 'پ'), 0, 1, 'UTF-8')) ?></span>
+        <span class="proma-avatar-choice <?= e($avatar) ?>" aria-label="<?= e($avatar) ?>"></span>
       </label>
     <?php endforeach; ?>
   </div>
