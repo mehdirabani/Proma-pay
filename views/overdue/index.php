@@ -1,11 +1,13 @@
 <?php
 $bucket = $bucket ?? ($_GET['bucket'] ?? null);
 $search = trim((string) ($search ?? ($_GET['q'] ?? '')));
+$sort = $sort ?? ($_GET['sort'] ?? 'oldest');
 $pagination = $pagination ?? ['total' => count($installments ?? []), 'page' => 1, 'pages' => 1, 'per_page' => count($installments ?? []) ?: 40];
-$pageUrl = function ($page) use ($bucket, $search) {
+$pageUrl = function ($page) use ($bucket, $search, $sort) {
     return url('overdue', array_filter([
         'bucket' => $bucket ?: null,
         'q' => $search ?: null,
+        'sort' => $sort ?: null,
         'page' => (int) $page > 1 ? (int) $page : null,
     ]));
 };
@@ -21,14 +23,24 @@ $singleOperator = count($operators ?? []) === 1 ? $operators[0] : null;
       <label class="full">جستجو در مشتری و قرارداد
         <input name="q" value="<?= e($search) ?>" placeholder="نام مشتری، شماره قرارداد، کد ملی یا شماره تماس">
       </label>
+      <label>مرتب‌سازی
+        <select name="sort">
+          <option value="oldest"<?= selected($sort, 'oldest') ?>>قدیمی‌ترین سررسید</option>
+          <option value="newest"<?= selected($sort, 'newest') ?>>جدیدترین سررسید</option>
+          <option value="amount_desc"<?= selected($sort, 'amount_desc') ?>>بیشترین مبلغ قابل پرداخت</option>
+          <option value="amount_asc"<?= selected($sort, 'amount_asc') ?>>کمترین مبلغ قابل پرداخت</option>
+          <option value="name_asc"<?= selected($sort, 'name_asc') ?>>نام مشتری: الف تا ی</option>
+          <option value="name_desc"<?= selected($sort, 'name_desc') ?>>نام مشتری: ی تا الف</option>
+        </select>
+      </label>
       <div class="actions"><button class="btn secondary" type="submit">جستجو</button><span class="proma-ajax-status" data-ajax-status></span></div>
     </form>
     <div class="tabs">
-      <a class="tab-link <?= !$bucket ? 'active' : '' ?>" href="<?= e(url('overdue', array_filter(['q' => $search ?: null]))) ?>">همه</a>
-      <a class="tab-link <?= $bucket === 'today' ? 'active' : '' ?>" href="<?= e(url('overdue', array_filter(['bucket' => 'today', 'q' => $search ?: null]))) ?>">امروز</a>
-      <a class="tab-link <?= $bucket === '1-7' ? 'active' : '' ?>" href="<?= e(url('overdue', array_filter(['bucket' => '1-7', 'q' => $search ?: null]))) ?>">۱ تا ۷ روز گذشته</a>
-      <a class="tab-link <?= $bucket === '8-30' ? 'active' : '' ?>" href="<?= e(url('overdue', array_filter(['bucket' => '8-30', 'q' => $search ?: null]))) ?>">۸ تا ۳۰ روز گذشته</a>
-      <a class="tab-link <?= $bucket === '30+' ? 'active' : '' ?>" href="<?= e(url('overdue', array_filter(['bucket' => '30+', 'q' => $search ?: null]))) ?>">بیش از ۳۰ روز گذشته</a>
+      <a class="tab-link <?= !$bucket ? 'active' : '' ?>" href="<?= e(url('overdue', array_filter(['q' => $search ?: null, 'sort' => $sort]))) ?>">همه</a>
+      <a class="tab-link <?= $bucket === 'today' ? 'active' : '' ?>" href="<?= e(url('overdue', array_filter(['bucket' => 'today', 'q' => $search ?: null, 'sort' => $sort]))) ?>">امروز</a>
+      <a class="tab-link <?= $bucket === '1-7' ? 'active' : '' ?>" href="<?= e(url('overdue', array_filter(['bucket' => '1-7', 'q' => $search ?: null, 'sort' => $sort]))) ?>">۱ تا ۷ روز گذشته</a>
+      <a class="tab-link <?= $bucket === '8-30' ? 'active' : '' ?>" href="<?= e(url('overdue', array_filter(['bucket' => '8-30', 'q' => $search ?: null, 'sort' => $sort]))) ?>">۸ تا ۳۰ روز گذشته</a>
+      <a class="tab-link <?= $bucket === '30+' ? 'active' : '' ?>" href="<?= e(url('overdue', array_filter(['bucket' => '30+', 'q' => $search ?: null, 'sort' => $sort]))) ?>">بیش از ۳۰ روز گذشته</a>
     </div>
   </div>
 </section>

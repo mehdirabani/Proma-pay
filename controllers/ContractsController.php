@@ -588,8 +588,12 @@ class ContractsController extends Controller
             redirect('contracts');
         }
         try {
-            Contract::cancel((int) $id, $_POST['cancellation_reason'] ?? '', Auth::id());
-            set_flash('success', 'قرارداد و اقساط فعال آن با موفقیت لغو شدند. سوابق مالی و تاریخی حفظ شده است.');
+            $result = Contract::cancel((int) $id, $_POST['cancellation_reason'] ?? '', Auth::id(), !empty($_POST['correct_customer_payments']));
+            $message = 'قرارداد و اقساط فعال آن با موفقیت لغو شدند. سوابق مالی و تاریخی حفظ شده است.';
+            if (!empty($result['corrected_payments'])) {
+                $message .= ' تعداد ' . to_persian_digits($result['corrected_payments']) . ' پرداخت مشتری نیز با اصلاحیه مالی صفر شد.';
+            }
+            set_flash('success', $message);
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'لغو قرارداد انجام نشد.');
         }

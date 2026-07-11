@@ -424,6 +424,76 @@ class Payment extends Model
         }
         $status = FinanceHelper::status((float) $row['base_amount'], $paid, $row['due_date']);
         self::execute('UPDATE installments SET paid_amount = ?, remaining_amount = ?, last_payment_date = (SELECT MAX(payment_date) FROM payments WHERE installment_id = ? AND status = ? AND COALESCE(is_corrected, 0) = 0), status = ? WHERE id = ?', [$paid, max(0, (float) $row['base_amount'] - $paid), (int) $installmentId, 'paid', $status, (int) $installmentId]);
+        if (class_exists('Contract')) {
+            Contract::syncCompletionStatuses();
+        }
+    }
+
+    public static function correctAllForCustomer($customerId, $reason, $adminId)
+    {
+        self::ensureCorrectionSchema();
+        $customerId = (int) $customerId;
+        $reason = trim((string) $reason);
+        if ($customerId <= 0 || $reason === '') {
+            return 0;
+        }
+        $startedTransaction = false;
+        if (!self::db()->inTransaction()) {
+            self::begin();
+            $startedTransaction = true;
+        }
+        try {
+            $payments = self::fetchAll(
+                "SELECT p.*, c.customer_id
+                 FROM payments p
+                 JOIN contracts c ON c.id = p.contract_id
+                 WHERE c.customer_id = ? AND p.status = 'paid' AND COALESCE(p.is_corrected, 0) = 0
+                 ORDER BY p.id ASC FOR UPDATE",
+                [$customerId]
+            );
+            $corrected = 0;
+            foreach ($payments as $payment) {
+                $installmentId = !empty($payment['installment_id']) ? (int) $payment['installment_id'] : null;
+                $before = $installmentId ? self::installmentState($installmentId) : null;
+                if ($installmentId) {
+                    self::fetch('SELECT id FROM installments WHERE id = ? FOR UPDATE', [$installmentId]);
+                }
+                $snapshot = $payment['correction_snapshot_json'] ?: json_encode([
+                    'payment_id' => (int) $payment['id'],
+                    'installment_id' => $installmentId,
+                    'contract_id' => (int) $payment['contract_id'],
+                    'customer_id' => $customerId,
+                    'amount' => (float) $payment['amount'],
+                    'payment_date' => $payment['payment_date'] ?: ($payment['paid_at'] ?: $payment['created_at']),
+                    'before' => $before,
+                ], JSON_UNESCAPED_UNICODE);
+                self::execute(
+                    "UPDATE payments
+                     SET is_corrected = 1, status = 'corrected', correction_reason = ?, corrected_at = NOW(), corrected_by = ?, correction_snapshot_json = ?
+                     WHERE id = ? AND COALESCE(is_corrected, 0) = 0",
+                    [$reason, (int) $adminId, $snapshot, (int) $payment['id']]
+                );
+                if ($installmentId) {
+                    self::execute(
+                        'INSERT INTO payment_corrections
+                         (payment_id, installment_id, contract_id, customer_id, reason, snapshot_json, corrected_by, created_at)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
+                        [(int) $payment['id'], $installmentId, (int) $payment['contract_id'], $customerId, $reason, $snapshot, (int) $adminId]
+                    );
+                    self::applyToInstallment($installmentId);
+                }
+                $corrected++;
+            }
+            if ($startedTransaction) {
+                self::commit();
+            }
+            return $corrected;
+        } catch (Throwable $e) {
+            if ($startedTransaction) {
+                self::rollBack();
+            }
+            throw $e;
+        }
     }
 
     public static function correct($paymentId, $reason, $adminId)

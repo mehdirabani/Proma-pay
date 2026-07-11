@@ -2,7 +2,8 @@
   <div class="col-xl-4">
     <section class="card proma-profile-card">
       <div class="card-body">
-        <div class="proma-avatar-choice <?= e(normalize_avatar_key($user['avatar_key'] ?? 'avatar-1')) ?>" style="background-image:url('<?= e(avatar_asset_url($user['avatar_key'] ?? 'avatar-1')) ?>')" aria-label="<?= e($user['full_name']) ?>"></div>
+        <?php $profileAvatar = avatar_key_for($user['avatar_key'] ?? null, $user['id'] ?? $user['full_name']); ?>
+        <div class="proma-avatar-choice <?= e($profileAvatar) ?>" style="background-image:url('<?= e(avatar_asset_url($profileAvatar)) ?>')" aria-label="<?= e($user['full_name']) ?>"></div>
         <h4><?= e($user['full_name']) ?> <?php if (!empty($identityVerified)): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓ آبی</span><?php endif; ?></h4>
         <p><?= e(role_label($user['role'])) ?></p>
         <?php if ($latestRequest): ?>

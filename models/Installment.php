@@ -190,7 +190,7 @@ class Installment extends Model
         return array_merge($row, $preview);
     }
 
-    public static function overdue($bucket = null, $search = null, $operatorId = null, $limit = null)
+    public static function overdue($bucket = null, $search = null, $operatorId = null, $limit = null, $sort = 'oldest')
     {
         self::ensureSchema();
         [$where, $params] = self::overdueWhere($bucket, $search, $operatorId);
@@ -204,7 +204,7 @@ class Installment extends Model
              JOIN contracts c ON c.id = i.contract_id
              JOIN users u ON u.id = c.customer_id
              WHERE {$where}
-             ORDER BY i.due_date ASC, i.id ASC"
+             ORDER BY " . self::overdueOrderBy($sort) . ""
              . ($limit ? ' LIMIT ' . max(1, min(100, (int) $limit)) : ''),
             $params
         );
@@ -215,6 +215,7 @@ class Installment extends Model
     {
         self::ensureSchema();
         [$where, $params] = self::overdueWhere($bucket, $search, $operatorId);
+        $sort = self::overdueSort($options['sort'] ?? 'oldest');
         $count = self::fetch(
             "SELECT COUNT(*) AS total
              FROM installments i
@@ -239,7 +240,7 @@ class Installment extends Model
              JOIN contracts c ON c.id = i.contract_id
              JOIN users u ON u.id = c.customer_id
              WHERE {$where}
-             ORDER BY i.due_date ASC, i.id ASC
+             ORDER BY " . self::overdueOrderBy($sort) . "
              LIMIT {$perPage} OFFSET {$offset}",
             $params
         );
@@ -280,6 +281,24 @@ class Installment extends Model
             $params[] = (int) $operatorId;
         }
         return [$where, $params];
+    }
+
+    protected static function overdueSort($sort)
+    {
+        $allowed = ['oldest', 'newest', 'amount_desc', 'amount_asc', 'name_asc', 'name_desc'];
+        return in_array($sort, $allowed, true) ? $sort : 'oldest';
+    }
+
+    protected static function overdueOrderBy($sort)
+    {
+        switch (self::overdueSort($sort)) {
+            case 'newest': return 'i.due_date DESC, i.id DESC';
+            case 'amount_desc': return '(GREATEST(i.base_amount - i.paid_amount, 0) + COALESCE(i.penalty, 0)) DESC, i.id DESC';
+            case 'amount_asc': return '(GREATEST(i.base_amount - i.paid_amount, 0) + COALESCE(i.penalty, 0)) ASC, i.id ASC';
+            case 'name_asc': return 'u.full_name ASC, i.due_date ASC, i.id ASC';
+            case 'name_desc': return 'u.full_name DESC, i.due_date DESC, i.id DESC';
+            default: return 'i.due_date ASC, i.id ASC';
+        }
     }
 
     public static function createCustom($contractId, $dueDate, $amount, $notes = '', $guaranteeSerial = '', $title = '')

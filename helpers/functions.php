@@ -62,9 +62,21 @@ function normalize_avatar_key($value)
     return in_array($value, avatar_options(), true) ? $value : 'avatar-1';
 }
 
+function avatar_key_for($value = null, $seed = null)
+{
+    $value = trim((string) $value);
+    if (in_array($value, avatar_options(), true)) {
+        return $value;
+    }
+    $seed = trim((string) $seed);
+    $hash = $seed === '' ? 0 : abs((int) crc32($seed));
+    $options = avatar_options();
+    return $options[$hash % count($options)] ?? $options[0];
+}
+
 function avatar_asset_url($value)
 {
-    return asset_url('assets/images/avatars/' . normalize_avatar_key($value) . '.png');
+    return asset_url('assets/images/avatars/' . avatar_key_for($value) . '.png');
 }
 
 function e($value)
