@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS plugin_accounting_commissions (
     reversal_reason TEXT NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NULL,
-    UNIQUE KEY uq_plugin_accounting_commission_sale (sale_id),
+    KEY idx_plugin_accounting_commissions_sale (sale_id),
     KEY idx_plugin_accounting_commissions_seller (seller_user_id),
     KEY idx_plugin_accounting_commissions_status (status),
     KEY idx_plugin_accounting_commissions_contract (contract_id)
@@ -241,3 +241,9 @@ INSERT IGNORE INTO plugin_accounting_settings (setting_key, setting_value, updat
     ('minimum_commission', '0', NOW()),
     ('maximum_commission', '0', NOW()),
     ('rounding_rule', 'nearest_toman', NOW());
+
+SET @commission_sale_unique_exists := (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'plugin_accounting_commissions' AND INDEX_NAME = 'uq_plugin_accounting_commission_sale');
+SET @commission_sale_unique_sql := IF(@commission_sale_unique_exists > 0, 'ALTER TABLE plugin_accounting_commissions DROP INDEX uq_plugin_accounting_commission_sale', 'SELECT 1');
+PREPARE commission_sale_unique_stmt FROM @commission_sale_unique_sql;
+EXECUTE commission_sale_unique_stmt;
+DEALLOCATE PREPARE commission_sale_unique_stmt;

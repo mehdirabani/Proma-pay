@@ -32,7 +32,15 @@ class CommissionService
         if ($maximum !== null && $maximum > 0) {
             $amount = min($amount, $maximum);
         }
-        $existing = \Model::fetch('SELECT * FROM plugin_accounting_commissions WHERE sale_id = ? LIMIT 1', [(int) $sale['id']]);
+        $existing = \Model::fetch("SELECT * FROM plugin_accounting_commissions WHERE sale_id = ? AND status NOT IN ('reversed', 'cancelled') ORDER BY id DESC LIMIT 1", [(int) $sale['id']]);
+        if ($existing && !in_array($existing['status'], ['pending', 'payable'], true)) {
+            $basisChanged = Money::integer($existing['basis_amount'] ?? 0) !== $basis;
+            $ruleChanged = (string) ($existing['commission_value'] ?? '') !== (string) ($rule['commission_value'] ?? '');
+            if ($basisChanged || $ruleChanged) {
+                self::reverseRow($existing, $actorId, 'تعدیل کمیسیون به علت تغییر مبلغ یا قانون قرارداد');
+                $existing = null;
+            }
+        }
         if (!$existing) {
             \Model::execute(
                 'INSERT INTO plugin_accounting_commissions

@@ -731,6 +731,46 @@ CREATE TABLE `system_plugin_logs` (
   KEY `idx_system_plugin_logs_level` (`log_level`),
   KEY `idx_system_plugin_logs_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `system_plugin_permissions` (`plugin_id`,`permission_key`,`label`,`is_active`,`created_at`) VALUES
+('core','view_plugins','مشاهده پلاگین‌ها',1,NOW()),
+('core','manage_plugins','مدیریت پلاگین‌ها',1,NOW()),
+('core','install_plugins','نصب پلاگین‌ها',1,NOW()),
+('core','activate_plugins','فعال‌سازی پلاگین‌ها',1,NOW()),
+('core','deactivate_plugins','غیرفعال‌سازی پلاگین‌ها',1,NOW()),
+('core','update_plugins','بروزرسانی پلاگین‌ها',1,NOW()),
+('core','uninstall_plugins','حذف پلاگین‌ها',1,NOW()),
+('core','purge_plugin_data','حذف کامل داده پلاگین',1,NOW());
+DROP TABLE IF EXISTS `user_medal_history`;
+DROP TABLE IF EXISTS `user_medals`;
+DROP TABLE IF EXISTS `medal_definitions`;
+DROP TABLE IF EXISTS `installment_bulk_operations`;
+DROP TABLE IF EXISTS `payment_allocations`;
+DROP TABLE IF EXISTS `payment_groups`;
+DROP TABLE IF EXISTS `contract_document_versions`;
+DROP TABLE IF EXISTS `contract_deletion_archives`;
+CREATE TABLE `contract_deletion_archives` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `contract_id` bigint(20) unsigned NOT NULL, `contract_number` varchar(80) NOT NULL, `customer_id` bigint(20) unsigned NOT NULL, `deletion_reason` text NOT NULL, `gateway_warning` text DEFAULT NULL, `corrected_payment_count` int(10) unsigned NOT NULL DEFAULT 0, `snapshot_json` longtext NOT NULL, `deleted_by` bigint(20) unsigned DEFAULT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_contract_deletion_archive` (`contract_id`,`created_at`), KEY `idx_contract_deletion_archives_customer` (`customer_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `contract_document_versions` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `contract_id` bigint(20) unsigned NOT NULL, `version_number` int(10) unsigned NOT NULL, `rendered_title` varchar(190) DEFAULT NULL, `rendered_header` text DEFAULT NULL, `rendered_body` longtext NOT NULL, `source` varchar(30) NOT NULL DEFAULT 'generated', `checksum` char(64) NOT NULL, `is_published` tinyint(1) NOT NULL DEFAULT 1, `is_finalized` tinyint(1) NOT NULL DEFAULT 0, `generated_by` bigint(20) unsigned DEFAULT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_contract_document_version` (`contract_id`,`version_number`), KEY `idx_contract_document_versions_published` (`contract_id`,`is_published`,`version_number`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `payment_groups` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `group_number` varchar(80) NOT NULL, `contract_id` bigint(20) unsigned NOT NULL, `customer_id` bigint(20) unsigned NOT NULL, `created_by` bigint(20) unsigned DEFAULT NULL, `requested_amount` decimal(18,2) NOT NULL, `allocated_amount` decimal(18,2) NOT NULL DEFAULT 0.00, `method` varchar(30) NOT NULL DEFAULT 'manual', `status` varchar(30) NOT NULL DEFAULT 'paid', `gateway_track_id` varchar(100) DEFAULT NULL, `idempotency_key` varchar(120) DEFAULT NULL, `description` text DEFAULT NULL, `created_at` datetime NOT NULL, `completed_at` datetime DEFAULT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_payment_groups_number` (`group_number`), UNIQUE KEY `uq_payment_groups_idempotency` (`idempotency_key`), KEY `idx_payment_groups_contract` (`contract_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `payment_allocations` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `payment_group_id` bigint(20) unsigned NOT NULL, `payment_id` bigint(20) unsigned NOT NULL, `contract_id` bigint(20) unsigned NOT NULL, `installment_id` bigint(20) unsigned NOT NULL, `allocated_amount` decimal(18,2) NOT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_payment_allocation_installment` (`payment_group_id`,`installment_id`), KEY `idx_payment_allocations_payment` (`payment_id`), CONSTRAINT `fk_payment_allocation_group` FOREIGN KEY (`payment_group_id`) REFERENCES `payment_groups` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `installment_bulk_operations` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `operation_number` varchar(80) NOT NULL, `contract_id` bigint(20) unsigned NOT NULL, `operation_type` varchar(40) NOT NULL, `installment_ids_json` longtext NOT NULL, `old_snapshot_json` longtext DEFAULT NULL, `new_snapshot_json` longtext DEFAULT NULL, `reason` text NOT NULL, `performed_by` bigint(20) unsigned DEFAULT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_installment_bulk_operation_number` (`operation_number`), KEY `idx_installment_bulk_operations_contract` (`contract_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `medal_definitions` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `slug` varchar(100) NOT NULL, `title` varchar(190) NOT NULL, `short_description` varchar(255) DEFAULT NULL, `full_description` text DEFAULT NULL, `how_to_earn` text DEFAULT NULL, `icon_key` varchar(50) NOT NULL DEFAULT 'award', `icon_path` varchar(255) DEFAULT NULL, `color` varchar(20) NOT NULL DEFAULT '#f59e0b', `category` varchar(30) NOT NULL DEFAULT 'activity', `points` int(11) NOT NULL DEFAULT 0, `award_type` varchar(30) NOT NULL DEFAULT 'automatic', `criteria_type` varchar(50) DEFAULT NULL, `criteria_json` longtext DEFAULT NULL, `is_repeatable` tinyint(1) NOT NULL DEFAULT 0, `maximum_awards` int(10) unsigned DEFAULT NULL, `is_active` tinyint(1) NOT NULL DEFAULT 1, `sort_order` int(11) NOT NULL DEFAULT 0, `created_by` bigint(20) unsigned DEFAULT NULL, `created_at` datetime NOT NULL, `updated_at` datetime DEFAULT NULL, `archived_at` datetime DEFAULT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_medal_definition_slug` (`slug`), KEY `idx_medal_definitions_active_sort` (`is_active`,`sort_order`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `user_medals` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `user_id` bigint(20) unsigned NOT NULL, `medal_definition_id` bigint(20) unsigned NOT NULL, `source` varchar(30) NOT NULL DEFAULT 'automatic', `note` text DEFAULT NULL, `related_contract_id` bigint(20) unsigned DEFAULT NULL, `related_payment_id` bigint(20) unsigned DEFAULT NULL, `awarded_by` bigint(20) unsigned DEFAULT NULL, `awarded_at` datetime NOT NULL, `revoked_at` datetime DEFAULT NULL, `revoked_by` bigint(20) unsigned DEFAULT NULL, `revoke_reason` text DEFAULT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), KEY `idx_user_medals_user_active` (`user_id`,`revoked_at`), KEY `idx_user_medals_definition` (`medal_definition_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `user_medal_history` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `user_medal_id` bigint(20) unsigned NOT NULL, `action` varchar(30) NOT NULL, `reason` text DEFAULT NULL, `performed_by` bigint(20) unsigned DEFAULT NULL, `snapshot_json` longtext DEFAULT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), KEY `idx_user_medal_history_medal` (`user_medal_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `medal_definitions` (`slug`,`title`,`short_description`,`icon_key`,`color`,`category`,`points`,`criteria_type`,`criteria_json`,`sort_order`,`created_at`) VALUES
+('first-contract','اولین قرارداد','اولین قرارداد اقساطی شما','file-text','#2563eb','contract',10,'contract_count','{"minimum":1}',10,NOW()),
+('first-payment','اولین پرداخت موفق','اولین پرداخت موفق ثبت شد','check-circle','#16a34a','payment',15,'payment_count','{"minimum":1}',20,NOW()),
+('on-time-payment','پرداخت به‌موقع','پرداخت در موعد انجام شد','clock','#0f766e','early_payment',20,'on_time_count','{"minimum":1}',30,NOW()),
+('five-on-time-payments','۵ پرداخت به‌موقع','پنج پرداخت خوش‌حسابانه','award','#d97706','early_payment',50,'on_time_count','{"minimum":5}',40,NOW()),
+('early-payment','پرداخت زودهنگام','پرداخت پیش از سررسید','zap','#0891b2','early_payment',25,'early_payment_count','{"minimum":1}',35,NOW()),
+('five-early-payments','۵ قسط زودتر از موعد','پنج پرداخت زودهنگام','trending-up','#0284c7','early_payment',55,'early_payment_count','{"minimum":5}',45,NOW()),
+('ten-on-time-payments','۱۰ پرداخت به‌موقع','ده پرداخت خوش‌حسابانه','star','#ca8a04','early_payment',90,'on_time_count','{"minimum":10}',47,NOW()),
+('first-settlement','تسویه اولین قرارداد','اولین قرارداد تسویه شد','shield-check','#7c3aed','settlement',60,'completed_contract_count','{"minimum":1}',50,NOW()),
+('early-settlement','تسویه زودهنگام قرارداد','تسویه پیش از موعد','fast-forward','#9333ea','settlement',90,'early_settlement_count','{"minimum":1}',55,NOW()),
+('three-successful-contracts','۳ قرارداد موفق','سه قرارداد غیرلغوشده','layers','#4f46e5','contract',45,'contract_count','{"minimum":3}',58,NOW()),
+('ten-successful-contracts','۱۰ قرارداد موفق','ده قرارداد غیرلغوشده','briefcase','#3730a3','contract',120,'contract_count','{"minimum":10}',59,NOW()),
+('loyal-customer','مشتری وفادار','پنج قرارداد موفق','heart','#db2777','loyalty',80,'contract_count','{"minimum":5}',60,NOW()),
+('no-overdue','بدون معوقه','اقساط معوق ندارید','shield','#16a34a','activity',35,'overdue_count','{"maximum":0}',65,NOW()),
+('special-customer','مشتری ویژه','امتیاز ویژه مشتری','crown','#be123c','special',150,NULL,'{}',70,NOW());
 DROP TABLE IF EXISTS `settings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -759,6 +799,10 @@ CREATE TABLE `users` (
   `email` varchar(190) DEFAULT NULL,
   `address` text DEFAULT NULL,
   `avatar_key` varchar(40) DEFAULT NULL,
+  `avatar_category` varchar(40) DEFAULT NULL,
+  `avatar_source` varchar(30) NOT NULL DEFAULT 'fallback',
+  `avatar_locked` tinyint(1) NOT NULL DEFAULT 0,
+  `avatar_suggestion_reason` varchar(255) DEFAULT NULL,
   `department` varchar(40) DEFAULT NULL,
   `is_department_manager` tinyint(1) NOT NULL DEFAULT 0,
   `password_hash` varchar(255) NOT NULL,

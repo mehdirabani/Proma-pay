@@ -768,6 +768,16 @@ function create_schema(PDO $pdo)
     foreach ($statements as $sql) {
         $pdo->exec($sql);
     }
+    $pdo->exec("INSERT IGNORE INTO system_plugin_permissions (plugin_id, permission_key, label, is_active, created_at) VALUES
+        ('core', 'view_plugins', 'مشاهده پلاگین‌ها', 1, NOW()),
+        ('core', 'manage_plugins', 'مدیریت پلاگین‌ها', 1, NOW()),
+        ('core', 'install_plugins', 'نصب پلاگین‌ها', 1, NOW()),
+        ('core', 'activate_plugins', 'فعال‌سازی پلاگین‌ها', 1, NOW()),
+        ('core', 'deactivate_plugins', 'غیرفعال‌سازی پلاگین‌ها', 1, NOW()),
+        ('core', 'update_plugins', 'بروزرسانی پلاگین‌ها', 1, NOW()),
+        ('core', 'uninstall_plugins', 'حذف پلاگین‌ها', 1, NOW()),
+        ('core', 'purge_plugin_data', 'حذف کامل داده پلاگین', 1, NOW())");
+    create_v126_core_schema($pdo);
     ensure_install_schema_compatibility($pdo);
     $pdo->exec(
         "INSERT IGNORE INTO chat_channels (title, slug, type, is_pinned, is_system, created_at)
@@ -775,8 +785,50 @@ function create_schema(PDO $pdo)
     );
 }
 
+function create_v126_core_schema(PDO $pdo)
+{
+    $statements = [
+        "CREATE TABLE IF NOT EXISTS contract_deletion_archives (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, contract_id BIGINT UNSIGNED NOT NULL, contract_number VARCHAR(80) NOT NULL, customer_id BIGINT UNSIGNED NOT NULL, deletion_reason TEXT NOT NULL, gateway_warning TEXT NULL, corrected_payment_count INT UNSIGNED NOT NULL DEFAULT 0, snapshot_json LONGTEXT NOT NULL, deleted_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, UNIQUE KEY uq_contract_deletion_archive (contract_id, created_at), KEY idx_contract_deletion_archives_customer (customer_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS contract_document_versions (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, contract_id BIGINT UNSIGNED NOT NULL, version_number INT UNSIGNED NOT NULL, rendered_title VARCHAR(190) NULL, rendered_header TEXT NULL, rendered_body LONGTEXT NOT NULL, source VARCHAR(30) NOT NULL DEFAULT 'generated', checksum CHAR(64) NOT NULL, is_published TINYINT(1) NOT NULL DEFAULT 1, is_finalized TINYINT(1) NOT NULL DEFAULT 0, generated_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, UNIQUE KEY uq_contract_document_version (contract_id, version_number), KEY idx_contract_document_versions_published (contract_id, is_published, version_number)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS payment_groups (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, group_number VARCHAR(80) NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, customer_id BIGINT UNSIGNED NOT NULL, created_by BIGINT UNSIGNED NULL, requested_amount DECIMAL(18,2) NOT NULL, allocated_amount DECIMAL(18,2) NOT NULL DEFAULT 0, method VARCHAR(30) NOT NULL DEFAULT 'manual', status VARCHAR(30) NOT NULL DEFAULT 'paid', gateway_track_id VARCHAR(100) NULL, idempotency_key VARCHAR(120) NULL, description TEXT NULL, created_at DATETIME NOT NULL, completed_at DATETIME NULL, UNIQUE KEY uq_payment_groups_number (group_number), UNIQUE KEY uq_payment_groups_idempotency (idempotency_key), KEY idx_payment_groups_contract (contract_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS payment_allocations (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, payment_group_id BIGINT UNSIGNED NOT NULL, payment_id BIGINT UNSIGNED NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, installment_id BIGINT UNSIGNED NOT NULL, allocated_amount DECIMAL(18,2) NOT NULL, created_at DATETIME NOT NULL, UNIQUE KEY uq_payment_allocation_installment (payment_group_id, installment_id), KEY idx_payment_allocations_payment (payment_id), CONSTRAINT fk_payment_allocation_group FOREIGN KEY (payment_group_id) REFERENCES payment_groups(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS installment_bulk_operations (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, operation_number VARCHAR(80) NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, operation_type VARCHAR(40) NOT NULL, installment_ids_json LONGTEXT NOT NULL, old_snapshot_json LONGTEXT NULL, new_snapshot_json LONGTEXT NULL, reason TEXT NOT NULL, performed_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, UNIQUE KEY uq_installment_bulk_operation_number (operation_number), KEY idx_installment_bulk_operations_contract (contract_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS medal_definitions (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, slug VARCHAR(100) NOT NULL, title VARCHAR(190) NOT NULL, short_description VARCHAR(255) NULL, full_description TEXT NULL, how_to_earn TEXT NULL, icon_key VARCHAR(50) NOT NULL DEFAULT 'award', icon_path VARCHAR(255) NULL, color VARCHAR(20) NOT NULL DEFAULT '#f59e0b', category VARCHAR(30) NOT NULL DEFAULT 'activity', points INT NOT NULL DEFAULT 0, award_type VARCHAR(30) NOT NULL DEFAULT 'automatic', criteria_type VARCHAR(50) NULL, criteria_json LONGTEXT NULL, is_repeatable TINYINT(1) NOT NULL DEFAULT 0, maximum_awards INT UNSIGNED NULL, is_active TINYINT(1) NOT NULL DEFAULT 1, sort_order INT NOT NULL DEFAULT 0, created_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, updated_at DATETIME NULL, archived_at DATETIME NULL, UNIQUE KEY uq_medal_definition_slug (slug), KEY idx_medal_definitions_active_sort (is_active, sort_order)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS user_medals (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, medal_definition_id BIGINT UNSIGNED NOT NULL, source VARCHAR(30) NOT NULL DEFAULT 'automatic', note TEXT NULL, related_contract_id BIGINT UNSIGNED NULL, related_payment_id BIGINT UNSIGNED NULL, awarded_by BIGINT UNSIGNED NULL, awarded_at DATETIME NOT NULL, revoked_at DATETIME NULL, revoked_by BIGINT UNSIGNED NULL, revoke_reason TEXT NULL, created_at DATETIME NOT NULL, KEY idx_user_medals_user_active (user_id, revoked_at), KEY idx_user_medals_definition (medal_definition_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS user_medal_history (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_medal_id BIGINT UNSIGNED NOT NULL, action VARCHAR(30) NOT NULL, reason TEXT NULL, performed_by BIGINT UNSIGNED NULL, snapshot_json LONGTEXT NULL, created_at DATETIME NOT NULL, KEY idx_user_medal_history_medal (user_medal_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+    ];
+    foreach ($statements as $sql) {
+        $pdo->exec($sql);
+    }
+    $pdo->exec("INSERT IGNORE INTO medal_definitions (slug, title, short_description, icon_key, color, category, points, criteria_type, criteria_json, sort_order, created_at) VALUES
+        ('first-contract', 'اولین قرارداد', 'اولین قرارداد اقساطی شما', 'file-text', '#2563eb', 'contract', 10, 'contract_count', '{\"minimum\":1}', 10, NOW()),
+        ('first-payment', 'اولین پرداخت موفق', 'اولین پرداخت موفق ثبت شد', 'check-circle', '#16a34a', 'payment', 15, 'payment_count', '{\"minimum\":1}', 20, NOW()),
+        ('on-time-payment', 'پرداخت به‌موقع', 'پرداخت در موعد انجام شد', 'clock', '#0f766e', 'early_payment', 20, 'on_time_count', '{\"minimum\":1}', 30, NOW()),
+        ('five-on-time-payments', '۵ پرداخت به‌موقع', 'پنج پرداخت خوش‌حسابانه', 'award', '#d97706', 'early_payment', 50, 'on_time_count', '{\"minimum\":5}', 40, NOW()),
+        ('first-settlement', 'تسویه اولین قرارداد', 'اولین قرارداد تسویه شد', 'shield-check', '#7c3aed', 'settlement', 60, 'completed_contract_count', '{\"minimum\":1}', 50, NOW()),
+        ('early-payment', 'پرداخت زودهنگام', 'پرداخت پیش از سررسید', 'zap', '#0891b2', 'early_payment', 25, 'early_payment_count', '{\"minimum\":1}', 35, NOW()),
+        ('five-early-payments', '۵ قسط زودتر از موعد', 'پنج پرداخت زودهنگام', 'trending-up', '#0284c7', 'early_payment', 55, 'early_payment_count', '{\"minimum\":5}', 45, NOW()),
+        ('ten-on-time-payments', '۱۰ پرداخت به‌موقع', 'ده پرداخت خوش‌حسابانه', 'star', '#ca8a04', 'early_payment', 90, 'on_time_count', '{\"minimum\":10}', 47, NOW()),
+        ('early-settlement', 'تسویه زودهنگام قرارداد', 'تسویه پیش از موعد', 'fast-forward', '#9333ea', 'settlement', 90, 'early_settlement_count', '{\"minimum\":1}', 55, NOW()),
+        ('three-successful-contracts', '۳ قرارداد موفق', 'سه قرارداد غیرلغوشده', 'layers', '#4f46e5', 'contract', 45, 'contract_count', '{\"minimum\":3}', 58, NOW()),
+        ('ten-successful-contracts', '۱۰ قرارداد موفق', 'ده قرارداد غیرلغوشده', 'briefcase', '#3730a3', 'contract', 120, 'contract_count', '{\"minimum\":10}', 59, NOW()),
+        ('no-overdue', 'بدون معوقه', 'اقساط معوق ندارید', 'shield', '#16a34a', 'activity', 35, 'overdue_count', '{\"maximum\":0}', 65, NOW()),
+        ('special-customer', 'مشتری ویژه', 'امتیاز ویژه مشتری', 'crown', '#be123c', 'special', 150, NULL, '{}', 70, NOW()),
+        ('loyal-customer', 'مشتری وفادار', 'پنج قرارداد موفق', 'heart', '#db2777', 'loyalty', 80, 'contract_count', '{\"minimum\":5}', 60, NOW())");
+}
+
 function ensure_install_schema_compatibility(PDO $pdo)
 {
+    foreach ([
+        'avatar_category' => 'VARCHAR(40) NULL AFTER avatar_key',
+        'avatar_source' => "VARCHAR(30) NOT NULL DEFAULT 'fallback' AFTER avatar_category",
+        'avatar_locked' => 'TINYINT(1) NOT NULL DEFAULT 0 AFTER avatar_source',
+        'avatar_suggestion_reason' => 'VARCHAR(255) NULL AFTER avatar_locked',
+    ] as $column => $definition) {
+        if (!installer_column_exists($pdo, 'users', $column)) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN {$column} {$definition}");
+        }
+    }
     foreach ([
         'channel_id' => 'BIGINT UNSIGNED NULL AFTER receiver_id',
         'target_unit' => 'VARCHAR(80) NULL AFTER is_read',

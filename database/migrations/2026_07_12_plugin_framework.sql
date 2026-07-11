@@ -69,3 +69,13 @@ CREATE TABLE IF NOT EXISTS system_plugin_logs (
     KEY idx_system_plugin_logs_level (log_level),
     KEY idx_system_plugin_logs_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO system_plugin_permissions (plugin_id, permission_key, label, is_active, created_at) VALUES
+('core', 'view_plugins', 'مشاهده پلاگین‌ها', 1, NOW()),
+('core', 'manage_plugins', 'مدیریت پلاگین‌ها', 1, NOW()),
+('core', 'install_plugins', 'نصب پلاگین‌ها', 1, NOW()),
+('core', 'activate_plugins', 'فعال‌سازی پلاگین‌ها', 1, NOW()),
+('core', 'deactivate_plugins', 'غیرفعال‌سازی پلاگین‌ها', 1, NOW()),
+('core', 'update_plugins', 'بروزرسانی پلاگین‌ها', 1, NOW()),
+('core', 'uninstall_plugins', 'حذف پلاگین‌ها', 1, NOW()),
+('core', 'purge_plugin_data', 'حذف کامل داده پلاگین', 1, NOW());
