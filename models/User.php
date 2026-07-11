@@ -469,6 +469,7 @@ class User extends Model
         self::ensureProfileColumns();
         $data = self::prepareUserData($data);
         self::assertUniqueIdentity($data);
+        $avatarKey = avatar_key_for($data['avatar_key'] ?? null, ($data['national_id'] ?? '') . '|' . ($data['mobile'] ?? '') . '|' . ($data['full_name'] ?? ''));
         self::execute(
             'INSERT INTO users (role, username, full_name, father_name, issued_from, national_id, mobile, secondary_phone, email, password_hash, status, address, avatar_key, department, is_department_manager, created_at)
              VALUES (:role, :username, :full_name, :father_name, :issued_from, :national_id, :mobile, :secondary_phone, :email, :password_hash, :status, :address, :avatar_key, :department, :is_department_manager, NOW())',
@@ -485,7 +486,7 @@ class User extends Model
                 'password_hash' => password_hash(($data['password'] ?? '') ?: bin2hex(random_bytes(8)), PASSWORD_DEFAULT),
                 'status' => $data['status'] ?? 'active',
                 'address' => $data['address'] ?? '',
-                'avatar_key' => $data['avatar_key'] ?? null,
+                'avatar_key' => $avatarKey,
                 'department' => $data['department'] ?? null,
                 'is_department_manager' => !empty($data['is_department_manager']) ? 1 : 0,
             ]
@@ -546,6 +547,7 @@ class User extends Model
         }
         $data = self::prepareUserData($data, $user);
         self::assertUniqueIdentity($data, (int) $id);
+        $avatarKey = avatar_key_for($data['avatar_key'] ?? null, (string) $id . '|' . ($data['full_name'] ?? ($user['full_name'] ?? '')));
         $params = [
             'id' => $id,
             'role' => $data['role'] ?? $user['role'],
@@ -559,7 +561,7 @@ class User extends Model
             'email' => ($data['email'] ?? $user['email']) ?: null,
             'status' => $data['status'] ?? $user['status'],
             'address' => $data['address'] ?? ($user['address'] ?? ''),
-            'avatar_key' => $data['avatar_key'] ?? ($user['avatar_key'] ?? null),
+            'avatar_key' => $avatarKey,
             'department' => $data['department'] ?? ($user['department'] ?? null),
             'is_department_manager' => array_key_exists('is_department_manager', $data) ? (!empty($data['is_department_manager']) ? 1 : 0) : (int) ($user['is_department_manager'] ?? 0),
         ];

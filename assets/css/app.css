@@ -6124,3 +6124,133 @@ body.dark-only .proma-payment-card__qr-grid {
   pointer-events: none;
   transition: opacity .18s ease;
 }
+
+/* Shared control alignment and accessible custom checkboxes. */
+button,
+.btn,
+.icon-btn,
+a.btn,
+input,
+select,
+textarea {
+  vertical-align: middle;
+}
+
+button,
+.btn,
+.icon-btn {
+  line-height: 1.2;
+}
+
+.btn,
+.icon-btn,
+button.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn svg,
+.icon-btn svg,
+button svg {
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+input[type="checkbox"]:not(.switch-options input) {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 19px;
+  height: 19px;
+  min-width: 19px;
+  margin: 0 6px 0 0;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  display: inline-grid;
+  place-content: center;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: background .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+input[type="checkbox"]:not(.switch-options input)::after {
+  content: "";
+  width: 8px;
+  height: 4px;
+  border: solid #fff;
+  border-width: 0 0 2px 2px;
+  transform: rotate(-45deg) scale(0);
+  transition: transform .12s ease;
+}
+
+input[type="checkbox"]:not(.switch-options input):checked {
+  border-color: var(--proma-primary, #7366ff);
+  background: var(--proma-primary, #7366ff);
+  box-shadow: 0 4px 10px rgba(115, 102, 255, .22);
+}
+
+input[type="checkbox"]:not(.switch-options input):checked::after {
+  transform: rotate(-45deg) scale(1);
+}
+
+input[type="checkbox"]:not(.switch-options input):focus-visible {
+  outline: 3px solid rgba(115, 102, 255, .2);
+  outline-offset: 2px;
+}
+
+.proma-confirm-check {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.8;
+}
+
+.proma-confirm-check input[type="checkbox"] {
+  margin-inline: 0;
+}
+
+.proma-danger-check {
+  padding: 10px 12px;
+  border: 1px solid rgba(220, 53, 69, .2);
+  border-radius: 8px;
+  color: #9d2430;
+  background: rgba(220, 53, 69, .06);
+}
+
+.proma-contract-card {
+  position: relative;
+}
+
+.proma-card-edit {
+  position: absolute;
+  z-index: 2;
+  top: 14px;
+  left: 14px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 8px;
+  color: var(--proma-primary, #7366ff);
+  background: #f0efff;
+}
+
+.proma-card-edit:hover,
+.proma-card-edit:focus-visible {
+  color: #fff;
+  background: var(--proma-primary, #7366ff);
+}
+
+.proma-card-edit svg {
+  width: 17px;
+  height: 17px;
+}
+
+tr[data-card-href] {
+  cursor: pointer;
+}
+
+tr[data-card-href]:hover td {
+  background: #fafaff;
+}
