@@ -66,7 +66,7 @@ for ($i = 0; $i < 6; $i++) {
           $financedAmount = max(0, (float) $cardContract['principal_amount'] - (float) ($cardContract['down_payment_amount'] ?? 0));
           $progress = (int) $stats['total'] > 0 ? (int) round(((int) $stats['paid'] / (int) $stats['total']) * 100) : 0;
           ?>
-            <article class="proma-contract-card" data-card-href="<?= e(url('contracts/show/' . $cardContract['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده جزئیات قرارداد <?= e($cardContract['contract_number']) ?>">
+            <article class="proma-contract-card" data-contract-card data-card-href="<?= e(url('contracts/show/' . $cardContract['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده جزئیات قرارداد <?= e($cardContract['contract_number']) ?>">
               <?php if (!$readOnly): ?><button class="proma-card-edit icon-btn" type="button" data-open-modal="edit-contract-<?= (int) $cardContract['id'] ?>" title="ویرایش قرارداد" aria-label="ویرایش قرارداد"><i data-feather="edit-2"></i></button><?php endif; ?>
             <?php if (!$readOnly): ?>
               <label class="proma-card-select" title="انتخاب برای ویرایش دسته‌جمعی">
@@ -77,7 +77,7 @@ for ($i = 0; $i < 6; $i++) {
             <div class="proma-contract-card-main">
               <span class="proma-progress-avatar" style="--progress: <?= $progress ?>">
                 <?php $cardAvatar = avatar_key_for($cardContract['avatar_key'] ?? null, $cardContract['customer_id'] ?? $cardContract['id']); ?>
-                <span class="proma-avatar-choice <?= e($cardAvatar) ?>" style="background-image:url('<?= e(avatar_asset_url($cardAvatar)) ?>')" aria-label="<?= e($cardContract['customer_name']) ?>"></span>
+                <span class="proma-avatar-choice <?= e($cardAvatar) ?>" aria-label="<?= e($cardContract['customer_name']) ?>"><img data-avatar-image src="<?= e(avatar_asset_url($cardAvatar)) ?>" alt="آواتار <?= e($cardContract['customer_name']) ?>" loading="lazy"></span>
               </span>
               <div>
                 <span class="proma-contract-badge"><?= e($cardContract['contract_number']) ?></span>
@@ -116,7 +116,7 @@ for ($i = 0; $i < 6; $i++) {
       <tbody>
       <?php foreach ($contracts as $contract): ?>
         <?php $guarantors = Contract::guarantors($contract['id']); ?>
-        <tr data-card-href="<?= e(url('contracts/show/' . $contract['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده جزئیات قرارداد <?= e($contract['contract_number']) ?>">
+        <tr data-contract-card data-card-href="<?= e(url('contracts/show/' . $contract['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده جزئیات قرارداد <?= e($contract['contract_number']) ?>">
           <?php if (!$readOnly): ?><td><input type="checkbox" name="contract_ids[]" value="<?= (int) $contract['id'] ?>" aria-label="انتخاب قرارداد <?= e($contract['contract_number']) ?>"></td><?php endif; ?>
           <td><a href="<?= e(url('contracts/show/' . $contract['id'])) ?>"><?= e($contract['contract_number']) ?></a></td>
           <td><?= e($contract['customer_name']) ?><br><span class="badge muted"><?= to_persian_digits($contract['mobile']) ?></span></td>
@@ -165,7 +165,7 @@ for ($i = 0; $i < 6; $i++) {
             <option value="">بدون تغییر وضعیت</option>
             <option value="active">فعال</option>
             <option value="referred">ارجاع شده</option>
-            <option value="closed">بسته</option>
+                <option value="completed">تسویه‌شده</option>
           </select>
         </label>
         <label>اپراتور قبلی برای جایگزینی
@@ -648,7 +648,7 @@ for ($i = 0; $i < 6; $i++) {
           </div>
           <label>علت لغو قرارداد<textarea name="cancellation_reason" required minlength="3" rows="3"></textarea></label>
           <label class="proma-confirm-check"><input type="checkbox" name="confirm_cancel" value="1" required> از لغو قرارداد و اقساط فعال آن اطمینان دارم.</label>
-          <label class="proma-confirm-check proma-danger-check"><input type="checkbox" name="correct_customer_payments" value="1"> اصلاحیه مالی پرداخت‌های این مشتری در همه قراردادها ثبت شود و پرداخت‌های موفق او صفر شود. این گزینه بازگشت وجه بانکی انجام نمی‌دهد.</label>
+          <label class="proma-confirm-check proma-danger-check"><input type="checkbox" name="correct_contract_payments" value="1"> برای پرداخت‌های موفق همین قرارداد، اصلاحیه مالی ثبت شود و اثر آن‌ها در محاسبات داخلی صفر شود. این عملیات بازگشت وجه بانکی انجام نمی‌دهد.</label>
         </div>
         <div class="modal-footer"><button class="btn danger" type="submit">تأیید و لغو قرارداد</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
       </form>
