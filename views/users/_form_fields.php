@@ -72,7 +72,7 @@ $isEdit = $userFormMode === 'edit';
     <?php foreach ($userFormAvatarKeys as $avatar): ?>
       <label>
         <input type="radio" name="avatar_key" value="<?= e($avatar) ?>"<?= checked($currentAvatar ?: 'avatar-1', $avatar) ?>>
-        <span class="proma-avatar-choice <?= e($avatar) ?>" aria-label="<?= e($avatar) ?>"></span>
+        <span class="proma-avatar-choice <?= e($avatar) ?>" style="background-image:url('<?= e(avatar_asset_url($avatar)) ?>')" aria-label="<?= e($avatar) ?>"></span>
       </label>
     <?php endforeach; ?>
   </div>
