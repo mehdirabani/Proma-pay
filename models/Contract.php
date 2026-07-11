@@ -167,15 +167,16 @@ class Contract extends Model
             return [];
         }
         $needle = '%' . $query . '%';
-        $params = [$needle, $needle, $needle, $needle, $needle];
+        $params = ['cancelled', $needle, $needle, $needle, $needle, $needle];
         $where = [
+            'c.status != ?',
             '(c.contract_number LIKE ? OR u.full_name LIKE ? OR u.national_id LIKE ? OR u.mobile LIKE ? OR u.secondary_phone LIKE ?)',
         ];
         if (!empty($filters['eligible_legal'])) {
             $where[] = "EXISTS (
                 SELECT 1 FROM installments i
                 WHERE i.contract_id = c.id
-                AND i.status != 'paid'
+                AND i.status NOT IN ('paid', 'cancelled')
                 AND i.due_date < DATE_SUB(CURDATE(), INTERVAL 30 DAY)
             )";
         }
@@ -205,12 +206,42 @@ class Contract extends Model
         return self::fetch(
             "SELECT COUNT(*) AS total,
              SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) AS paid,
-             SUM(CASE WHEN status != 'paid' AND due_date < CURDATE() THEN 1 ELSE 0 END) AS overdue,
-             COALESCE(SUM(GREATEST(base_amount - paid_amount, 0)),0) AS outstanding
+             SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled,
+             SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN 1 ELSE 0 END) AS active_remaining,
+             SUM(CASE WHEN status NOT IN ('paid', 'cancelled') AND due_date < CURDATE() THEN 1 ELSE 0 END) AS overdue,
+             COALESCE(SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN GREATEST(base_amount - paid_amount, 0) ELSE 0 END),0) AS outstanding
              FROM installments
              WHERE contract_id = ?",
             [(int) $contractId]
-        ) ?: ['total' => 0, 'paid' => 0, 'overdue' => 0, 'outstanding' => 0];
+        ) ?: ['total' => 0, 'paid' => 0, 'cancelled' => 0, 'active_remaining' => 0, 'overdue' => 0, 'outstanding' => 0];
+    }
+
+    public static function cancellationSummary($contractId)
+    {
+        $contractId = (int) $contractId;
+        $installments = self::fetch(
+            "SELECT COUNT(*) AS total_installments,
+                    SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN 1 ELSE 0 END) AS active_installments,
+                    SUM(CASE WHEN status = 'paid' OR paid_amount > 0 THEN 1 ELSE 0 END) AS paid_installments,
+                    COALESCE(SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN GREATEST(base_amount - paid_amount, 0) ELSE 0 END), 0) AS outstanding_amount
+             FROM installments
+             WHERE contract_id = ?",
+            [$contractId]
+        ) ?: [];
+        $payments = self::fetch(
+            "SELECT COUNT(*) AS confirmed_payment_count, COALESCE(SUM(amount), 0) AS confirmed_payment_amount
+             FROM payments
+             WHERE contract_id = ? AND status = 'paid' AND COALESCE(is_corrected, 0) = 0",
+            [$contractId]
+        ) ?: [];
+        return [
+            'total_installments' => (int) ($installments['total_installments'] ?? 0),
+            'active_installments' => (int) ($installments['active_installments'] ?? 0),
+            'paid_installments' => (int) ($installments['paid_installments'] ?? 0),
+            'outstanding_amount' => (float) ($installments['outstanding_amount'] ?? 0),
+            'confirmed_payment_count' => (int) ($payments['confirmed_payment_count'] ?? 0),
+            'confirmed_payment_amount' => (float) ($payments['confirmed_payment_amount'] ?? 0),
+        ];
     }
 
     public static function createWithInstallments(array $data, array $guarantorIds = [], array $items = [], array $guarantee = [], array $guarantorPeople = [])
@@ -219,6 +250,10 @@ class Contract extends Model
         self::begin();
         try {
             self::validateFinancialData($data);
+            $customer = self::fetch("SELECT id FROM users WHERE id = ? AND role = 'customer' LIMIT 1", [(int) ($data['customer_id'] ?? 0)]);
+            if (!$customer) {
+                throw new InvalidArgumentException('مشتری انتخاب‌شده معتبر نیست.');
+            }
             $settings = Settings::allKeyed();
             $prefix = trim((string) ($settings['contract_prefix'] ?? 'PR')) ?: 'PR';
             $format = trim((string) ($settings['contract_number_format'] ?? '')) ?: ($prefix . '-{SERIAL:6}');
@@ -271,6 +306,13 @@ class Contract extends Model
     public static function updateContract($id, array $data, array $guarantorIds = [], array $items = [], array $guarantee = [], array $guarantorPeople = [])
     {
         self::ensureSchema();
+        $current = self::find((int) $id);
+        if (!$current) {
+            throw new InvalidArgumentException('قرارداد پیدا نشد.');
+        }
+        if (($current['status'] ?? '') === 'cancelled') {
+            throw new InvalidArgumentException('قرارداد لغو شده قابل ویرایش نیست.');
+        }
         self::begin();
         try {
             self::validateFinancialData($data);
@@ -352,7 +394,7 @@ class Contract extends Model
             $extraWhere = ' AND assigned_operator_id = ?';
             $params[] = $fromOperatorId;
         }
-        $before = self::fetchAll("SELECT id, assigned_operator_id, status FROM contracts WHERE id IN ({$placeholders}){$extraWhere}", $params);
+        $before = self::fetchAll("SELECT id, assigned_operator_id, status FROM contracts WHERE id IN ({$placeholders}) AND status != 'cancelled'{$extraWhere}", $params);
         if (!$before) {
             return ['updated' => 0];
         }
@@ -405,18 +447,96 @@ class Contract extends Model
 
     public static function deleteContract($id)
     {
+        throw new InvalidArgumentException('قراردادها حذف نمی‌شوند؛ برای حفظ سوابق از گزینه «لغو قرارداد» استفاده کنید.');
+    }
+
+    public static function cancel($id, $reason, $adminId)
+    {
         self::ensureSchema();
-        $activeInstallments = self::fetch(
-            "SELECT COUNT(*) AS total
-             FROM installments
-             WHERE contract_id = ?
-             AND (status IN ('pending', 'partial', 'overdue') OR COALESCE(paid_amount, 0) < COALESCE(base_amount, 0))",
-            [(int) $id]
-        );
-        if ((int) ($activeInstallments['total'] ?? 0) > 0) {
-            throw new InvalidArgumentException('این قرارداد دارای اقساط فعال است و امکان حذف آن وجود ندارد.');
+        $contractId = (int) $id;
+        $reason = trim((string) $reason);
+        if ($reason === '') {
+            throw new InvalidArgumentException('علت لغو قرارداد الزامی است.');
         }
-        return self::execute('DELETE FROM contracts WHERE id = ?', [(int) $id]);
+
+        self::begin();
+        try {
+            $contract = self::fetch('SELECT * FROM contracts WHERE id = ? FOR UPDATE', [$contractId]);
+            if (!$contract) {
+                throw new InvalidArgumentException('قرارداد پیدا نشد.');
+            }
+            if (($contract['status'] ?? '') === 'cancelled') {
+                throw new InvalidArgumentException('این قرارداد قبلاً لغو شده است.');
+            }
+            if (in_array(($contract['status'] ?? ''), ['completed', 'closed'], true)) {
+                throw new InvalidArgumentException('قرارداد تسویه‌شده از مسیر لغو عادی قابل لغو نیست.');
+            }
+
+            $summary = self::cancellationSummary($contractId);
+            if ((int) $summary['confirmed_payment_count'] > 0 || (float) $summary['confirmed_payment_amount'] > 0 || (int) $summary['paid_installments'] > 0) {
+                throw new InvalidArgumentException(
+                    'این قرارداد دارای پرداخت ثبت‌شده است. مبلغ پرداختی ' . money_toman($summary['confirmed_payment_amount']) . ' است؛ پیش از لغو باید وضعیت استرداد وجه یا اصلاحیه مالی مشخص شود.'
+                );
+            }
+
+            $installments = self::fetchAll(
+                "SELECT id FROM installments
+                 WHERE contract_id = ? AND status NOT IN ('paid', 'cancelled')
+                 FOR UPDATE",
+                [$contractId]
+            );
+            $oldStatus = $contract['status'];
+            $cancelledInstallmentIds = array_map('intval', array_column($installments, 'id'));
+            self::execute(
+                'UPDATE contracts SET status = ?, cancelled_at = NOW(), cancelled_by = ?, cancellation_reason = ?, updated_at = NOW() WHERE id = ?',
+                ['cancelled', (int) $adminId, $reason, $contractId]
+            );
+            if ($cancelledInstallmentIds) {
+                self::execute(
+                    "UPDATE installments
+                     SET status = 'cancelled', cancelled_at = NOW(), cancelled_by = ?, cancellation_reason = ?, updated_at = NOW()
+                     WHERE contract_id = ? AND status NOT IN ('paid', 'cancelled')",
+                    [(int) $adminId, $reason, $contractId]
+                );
+            }
+
+            ContractDocument::log(
+                $contractId,
+                'cancel_contract',
+                ['status' => $oldStatus, 'installment_ids' => $cancelledInstallmentIds],
+                ['status' => 'cancelled', 'cancelled_installment_ids' => $cancelledInstallmentIds],
+                $reason,
+                $adminId
+            );
+            AuditLog::record('contract', 'cancelled', 'contract', $contractId, [
+                'actor_user_id' => $adminId,
+                'customer_id' => $contract['customer_id'],
+                'contract_id' => $contractId,
+                'description' => 'لغو قرارداد و اقساط فعال',
+                'old_values' => ['status' => $oldStatus],
+                'new_values' => [
+                    'status' => 'cancelled',
+                    'cancelled_installment_ids' => $cancelledInstallmentIds,
+                    'cancellation_reason' => $reason,
+                ],
+            ]);
+            self::commit();
+        } catch (Throwable $e) {
+            self::rollBack();
+            throw $e;
+        }
+
+        try {
+            Notification::create(
+                (int) $contract['customer_id'],
+                'قرارداد لغو شد',
+                'قرارداد شماره ' . ($contract['contract_number'] ?? '') . ' لغو شد. برای اطلاعات بیشتر با مجموعه تماس بگیرید.',
+                'contract',
+                url('contracts/show/' . $contractId)
+            );
+        } catch (Throwable $ignored) {
+        }
+        return true;
     }
 
     public static function generateInstallments($contractId, array $data)

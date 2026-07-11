@@ -95,7 +95,8 @@ class LegalCase extends Model
             $where[] = "EXISTS (
                 SELECT 1 FROM installments i
                 WHERE i.contract_id = lc.contract_id
-                AND i.status != 'paid'
+                AND c.status != 'cancelled'
+                AND i.status NOT IN ('paid', 'cancelled')
                 AND i.due_date < DATE_SUB(CURDATE(), INTERVAL 30 DAY)
             )";
         }
@@ -226,7 +227,8 @@ class LegalCase extends Model
         $row = self::fetch(
             "SELECT COUNT(*) AS total
              FROM installments i
-             WHERE i.contract_id = ? AND i.status != 'paid' AND i.due_date < CURDATE()",
+             JOIN contracts c ON c.id = i.contract_id
+             WHERE i.contract_id = ? AND c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE()",
             [(int) $case['contract_id']]
         );
         return (int) ($row['total'] ?? 0);
@@ -382,10 +384,12 @@ class LegalCase extends Model
     {
         $row = self::fetch(
             "SELECT COUNT(*) AS total
-             FROM installments
-             WHERE contract_id = ?
-             AND status != 'paid'
-             AND due_date < DATE_SUB(CURDATE(), INTERVAL 30 DAY)",
+             FROM installments i
+             JOIN contracts c ON c.id = i.contract_id
+             WHERE i.contract_id = ?
+             AND c.status != 'cancelled'
+             AND i.status NOT IN ('paid', 'cancelled')
+             AND i.due_date < DATE_SUB(CURDATE(), INTERVAL 30 DAY)",
             [(int) $contractId]
         );
         return (int) ($row['total'] ?? 0) > 0;
@@ -474,7 +478,7 @@ class LegalCase extends Model
     public static function eligibleContracts($search = null)
     {
         $params = [];
-        $where = "i.status != 'paid' AND i.due_date < DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+        $where = "c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
         if (trim((string) $search) !== '') {
             $needle = '%' . to_english_digits($search) . '%';
             $where .= ' AND (c.contract_number LIKE ? OR u.full_name LIKE ? OR u.mobile LIKE ?)';

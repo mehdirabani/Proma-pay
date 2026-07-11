@@ -43,6 +43,9 @@ class ContractFinancialSummaryService
 
             $contractTotal += $baseAmount;
             $paidTotal += $paidAmount;
+            if (($installment['status'] ?? '') === 'cancelled') {
+                continue;
+            }
             $remainingPrincipal += $remainingAmount;
 
             if (($installment['due_date'] ?? '') <= $date) {

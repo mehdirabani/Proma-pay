@@ -38,18 +38,18 @@ class DashboardController extends Controller
         $dueMonth = $this->sumValue(
             "SELECT COALESCE(SUM(base_amount),0) AS total
              FROM installments
-             WHERE due_date >= ? AND due_date < ?",
+             WHERE status != 'cancelled' AND due_date >= ? AND due_date < ?",
             [$monthStart, $nextMonthStart]
         );
         $outstanding = $this->sumValue(
             "SELECT COALESCE(SUM(GREATEST(base_amount - paid_amount, 0)),0) AS total
              FROM installments
-             WHERE status != 'paid'"
+             WHERE status NOT IN ('paid', 'cancelled')"
         );
         $overdueAmount = $this->sumValue(
             "SELECT COALESCE(SUM(GREATEST(base_amount - paid_amount, 0)),0) AS total
              FROM installments
-             WHERE status != 'paid' AND due_date < CURDATE()"
+             WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE()"
         );
         $pendingPayment = Model::fetch(
             "SELECT COUNT(*) AS total, COALESCE(SUM(amount),0) AS amount
@@ -64,9 +64,9 @@ class DashboardController extends Controller
             'contracts' => $this->countValue("SELECT COUNT(*) AS total FROM contracts WHERE status = 'active'"),
             'contracts_total' => $this->countValue('SELECT COUNT(*) AS total FROM contracts'),
             'installments_total' => $this->countValue('SELECT COUNT(*) AS total FROM installments'),
-            'overdue' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status != 'paid' AND due_date < CURDATE()"),
-            'due_today' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status != 'paid' AND due_date = CURDATE()"),
-            'due_week' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status != 'paid' AND due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)"),
+            'overdue' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE()"),
+            'due_today' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date = CURDATE()"),
+            'due_week' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)"),
             'received' => $receivedMonth,
             'due_month' => $dueMonth,
             'outstanding' => $outstanding,
@@ -89,6 +89,7 @@ class DashboardController extends Controller
                 'partial' => '#16c7f9',
                 'pending' => '#ffaa05',
                 'overdue' => '#fc4438',
+                'cancelled' => '#8b8d98',
             ]
         );
         $contractStatus = $this->statusChart(
@@ -98,15 +99,16 @@ class DashboardController extends Controller
                 'closed' => '#54ba4a',
                 'referred' => '#ffaa05',
                 'inactive' => '#8b8d98',
+                'cancelled' => '#8b8d98',
             ]
         );
         $overdueBuckets = [
             'labels' => ['امروز', '۱ تا ۷ روز', '۸ تا ۳۰ روز', 'بیش از ۳۰ روز'],
             'data' => [
                 $kpis['due_today'],
-                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status != 'paid' AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) BETWEEN 1 AND 7"),
-                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status != 'paid' AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) BETWEEN 8 AND 30"),
-                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status != 'paid' AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) > 30"),
+                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) BETWEEN 1 AND 7"),
+                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) BETWEEN 8 AND 30"),
+                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) > 30"),
             ],
         ];
         $upcoming = Model::fetchAll(
@@ -114,7 +116,7 @@ class DashboardController extends Controller
              FROM installments i
              JOIN contracts c ON c.id = i.contract_id
              JOIN users u ON u.id = c.customer_id
-             WHERE i.status != 'paid'
+              WHERE c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled')
              AND i.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 14 DAY)
              ORDER BY i.due_date ASC, i.id ASC
              LIMIT 8"
@@ -136,7 +138,7 @@ class DashboardController extends Controller
              FROM installments i
              JOIN contracts c ON c.id = i.contract_id
              JOIN users u ON u.id = c.customer_id
-             WHERE i.status != 'paid' AND i.due_date < CURDATE()
+              WHERE c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE()
              GROUP BY u.id, u.full_name, u.mobile
              ORDER BY debt DESC, overdue_count DESC
              LIMIT 6"
@@ -146,7 +148,7 @@ class DashboardController extends Controller
              COUNT(i.id) AS overdue_count
              FROM users op
              LEFT JOIN contracts c ON c.assigned_operator_id = op.id
-             LEFT JOIN installments i ON i.contract_id = c.id AND i.status != 'paid' AND i.due_date < CURDATE()
+              LEFT JOIN installments i ON i.contract_id = c.id AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE()
              WHERE op.role = 'operator'
              GROUP BY op.id, op.full_name
              ORDER BY overdue_count DESC, contracts DESC
@@ -237,10 +239,10 @@ class DashboardController extends Controller
     {
         $rows = Model::fetchAll(
             "SELECT u.id, u.full_name, u.mobile,
-             (SELECT COUNT(*) FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE c.customer_id = u.id AND i.status = 'paid') AS paid_count,
-             (SELECT COUNT(*) FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE c.customer_id = u.id AND i.status != 'paid' AND i.due_date < CURDATE()) AS overdue_count,
-             (SELECT COALESCE(AVG(DATEDIFF(CURDATE(), i.due_date)),0) FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE c.customer_id = u.id AND i.status != 'paid' AND i.due_date < CURDATE()) AS avg_delay,
-             (SELECT COALESCE(SUM(p.amount),0) FROM payments p JOIN contracts c ON c.id = p.contract_id WHERE c.customer_id = u.id AND p.status = 'paid') AS total_paid,
+              (SELECT COUNT(*) FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE c.customer_id = u.id AND c.status != 'cancelled' AND i.status = 'paid') AS paid_count,
+              (SELECT COUNT(*) FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE c.customer_id = u.id AND c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE()) AS overdue_count,
+              (SELECT COALESCE(AVG(DATEDIFF(CURDATE(), i.due_date)),0) FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE c.customer_id = u.id AND c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE()) AS avg_delay,
+              (SELECT COALESCE(SUM(p.amount),0) FROM payments p JOIN contracts c ON c.id = p.contract_id WHERE c.customer_id = u.id AND c.status != 'cancelled' AND p.status = 'paid') AS total_paid,
              (SELECT COUNT(*) FROM contracts c WHERE c.customer_id = u.id AND c.status = 'active') AS active_contracts,
              (SELECT COUNT(*) FROM legal_cases lc WHERE lc.customer_id = u.id AND lc.status != 'closed') AS legal_count
              FROM users u

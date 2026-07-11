@@ -11,6 +11,7 @@ $financialSummary = $financialSummary ?? null;
 $editableLegalLogIds = array_map('intval', $editableLegalLogIds ?? []);
 $deletableLegalLogIds = array_map('intval', $deletableLegalLogIds ?? []);
 $combinedLegalCost = (float) ($legalLogCostTotal ?? 0) + (float) ($legacyLegalCostTotal ?? 0);
+$cancellationSummary = $cancellationSummary ?? Contract::cancellationSummary((int) $contract['id']);
 $isInternalViewer = Auth::role() !== 'customer';
 $renderedDocumentTitle = trim((string) ($document['rendered_title'] ?? '')) ?: ($documentTitle ?? '');
 $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?: ($documentHeader ?? '');
@@ -20,7 +21,7 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
   <div class="card-header card-no-border">
     <div class="header-top">
       <div>
-        <h2>جزئیات قرارداد <?= e($contract['contract_number']) ?></h2>
+         <h2>جزئیات قرارداد <?= e($contract['contract_number']) ?> <span class="badge <?= e(badge_class($contract['status'] ?? '')) ?>"><?= e(status_label($contract['status'] ?? '')) ?></span></h2>
         <p><?= e($contract['customer_name']) ?> - <?= to_persian_digits($contract['mobile'] ?? '') ?></p>
       </div>
       <div class="actions">
@@ -29,7 +30,7 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
         <a class="btn success" href="<?= e(url('contracts/printDocument/' . $contract['id'])) ?>" target="_blank">چاپ قرارداد</a>
         <?php if ($canManageDocument): ?>
           <a class="btn secondary icon-only" href="<?= e(url('contracts', ['open' => 'edit-contract-' . (int) $contract['id']])) ?>" title="ویرایش" aria-label="ویرایش"><i data-feather="edit-2"></i></a>
-          <a class="btn danger icon-only" href="<?= e(url('contracts', ['open' => 'delete-contract-' . (int) $contract['id']])) ?>" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></a>
+          <?php if (($contract['status'] ?? '') !== 'cancelled'): ?><button class="btn danger" type="button" data-open-modal="cancel-contract-show-<?= (int) $contract['id'] ?>"><i data-feather="slash"></i> لغو قرارداد</button><?php endif; ?>
           <form method="post" action="<?= e(url('contracts/generateDocument/' . $contract['id'])) ?>">
             <?= csrf_field() ?>
             <button class="btn" type="submit"><?= $document ? 'تولید مجدد قرارداد' : 'تولید قرارداد' ?></button>
@@ -48,6 +49,30 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
     </div>
   </div>
 </section>
+
+<?php if ($canManageDocument && ($contract['status'] ?? '') !== 'cancelled'): ?>
+  <div class="modal" id="cancel-contract-show-<?= (int) $contract['id'] ?>">
+    <div class="modal-content proma-modal-lg">
+      <div class="modal-header"><h3>لغو قرارداد</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+      <form method="post" action="<?= e(url('contracts/cancel/' . (int) $contract['id'])) ?>">
+        <div class="modal-body form-grid two">
+          <?= csrf_field() ?>
+          <div class="notice error full">با لغو این قرارداد، قرارداد حذف نمی‌شود اما تمام اقساط فعال آن لغو خواهند شد و دیگر در محاسبات مطالبات و معوقات قرار نمی‌گیرند.</div>
+          <div class="proma-cancellation-summary full">
+            <span><small>شماره قرارداد</small><strong><?= e($contract['contract_number']) ?></strong></span>
+            <span><small>مشتری</small><strong><?= e($contract['customer_name']) ?></strong></span>
+            <span><small>اقساط فعال</small><strong><?= to_persian_digits($cancellationSummary['active_installments'] ?? 0) ?></strong></span>
+            <span><small>مانده فعال</small><strong><?= money_toman($cancellationSummary['outstanding_amount'] ?? 0) ?></strong></span>
+            <span><small>پرداخت ثبت‌شده</small><strong><?= money_toman($cancellationSummary['confirmed_payment_amount'] ?? 0) ?></strong></span>
+          </div>
+          <label class="full">علت لغو قرارداد<textarea name="cancellation_reason" required minlength="3" rows="4" placeholder="علت انصراف مشتری یا لغو قرارداد را وارد کنید."></textarea></label>
+          <label class="full proma-confirm-check"><input type="checkbox" name="confirm_cancel" value="1" required> از لغو قرارداد و اقساط فعال آن اطمینان دارم.</label>
+        </div>
+        <div class="modal-footer"><button class="btn danger" type="submit">تأیید و لغو قرارداد</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
+      </form>
+    </div>
+  </div>
+<?php endif; ?>
 
 <?php if ($canViewFinancialSummary && $financialSummary): ?>
   <section class="card proma-management-card">

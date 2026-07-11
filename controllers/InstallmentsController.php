@@ -47,8 +47,12 @@ class InstallmentsController extends Controller
             set_flash('error', 'قرارداد معتبر انتخاب نشده است.');
             redirect($redirectTo);
         }
-        Installment::createCustom((int) $_POST['contract_id'], $dueDate, $_POST['base_amount'], $_POST['notes'] ?? '', $_POST['guarantee_serial'] ?? '');
-        set_flash('success', 'قسط سفارشی ثبت شد.');
+        try {
+            Installment::createCustom((int) $_POST['contract_id'], $dueDate, $_POST['base_amount'], $_POST['notes'] ?? '', $_POST['guarantee_serial'] ?? '');
+            set_flash('success', 'قسط سفارشی ثبت شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت قسط انجام نشد.');
+        }
         redirect($redirectTo);
     }
 
@@ -69,6 +73,10 @@ class InstallmentsController extends Controller
         if (!$installment) {
             set_flash('error', 'قسط پیدا نشد.');
             redirect('installments');
+        }
+        if (($installment['status'] ?? '') === 'cancelled') {
+            set_flash('error', 'قسط لغو شده قابل پرداخت نیست.');
+            redirect($this->redirectRoute());
         }
         if (normalize_money($_POST['amount'] ?? 0) <= 0) {
             set_flash('error', 'مبلغ پرداخت معتبر نیست.');
@@ -114,8 +122,11 @@ class InstallmentsController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
-        Installment::markPaid((int) $id, Auth::id());
-        set_flash('success', 'قسط تسویه شد.');
+        if (!Installment::markPaid((int) $id, Auth::id())) {
+            set_flash('error', 'قسط لغو شده یا نامعتبر است.');
+        } else {
+            set_flash('success', 'قسط تسویه شد.');
+        }
         redirect('installments');
     }
 
@@ -137,7 +148,7 @@ class InstallmentsController extends Controller
     protected function filters()
     {
         $status = $_GET['status'] ?? '';
-        $allowedStatuses = ['pending', 'partial', 'paid', 'overdue', 'referred', 'corrected'];
+        $allowedStatuses = ['pending', 'partial', 'paid', 'overdue', 'referred', 'corrected', 'cancelled'];
         $paymentState = $_GET['payment_state'] ?? '';
         $allowedStates = ['paid', 'unpaid', 'overdue', 'custom'];
         return [

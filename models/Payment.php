@@ -243,6 +243,19 @@ class Payment extends Model
     public static function record($installmentId, $contractId, $userId, $amount, $method, $status, $trackId = null, $refId = null, $description = '', $paymentDate = null, $paymentType = 'installment', $paymentTime = null)
     {
         self::ensureCorrectionSchema();
+        $contract = self::fetch('SELECT status FROM contracts WHERE id = ? LIMIT 1', [(int) $contractId]);
+        if (!$contract) {
+            throw new InvalidArgumentException('قرارداد پرداخت پیدا نشد.');
+        }
+        if (($contract['status'] ?? '') === 'cancelled') {
+            throw new InvalidArgumentException('برای قرارداد لغو شده پرداخت جدید قابل ثبت نیست.');
+        }
+        if ($installmentId) {
+            $installmentStatus = self::fetch('SELECT status FROM installments WHERE id = ? AND contract_id = ? LIMIT 1', [(int) $installmentId, (int) $contractId]);
+            if (!$installmentStatus || ($installmentStatus['status'] ?? '') === 'cancelled') {
+                throw new InvalidArgumentException('قسط انتخاب‌شده قابل پرداخت نیست.');
+            }
+        }
         $paymentType = $paymentType === 'down_payment' ? 'down_payment' : 'installment';
         $paymentDate = $paymentDate ?: date('Y-m-d');
         $paymentTime = normalize_time($paymentTime) ?: date('H:i');

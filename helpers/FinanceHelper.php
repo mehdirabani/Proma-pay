@@ -37,6 +37,9 @@ class FinanceHelper
     public static function preview(array $installment, array $payments, array $settings, $date = null)
     {
         $date = $date ?: date('Y-m-d');
+        if (($installment['status'] ?? '') === 'cancelled') {
+            return self::cancelledPreview($installment);
+        }
         $state = self::stateOnDate($installment, $payments, $settings, $date);
         $reward = ($state['paid_amount'] > 0 && $state['remaining_amount'] > 0)
             ? 0
@@ -65,6 +68,19 @@ class FinanceHelper
 
     public static function paymentPreview(array $installment, array $payments, array $settings, $paymentAmount = 0, $paymentDate = null)
     {
+        if (($installment['status'] ?? '') === 'cancelled') {
+            $preview = self::cancelledPreview($installment);
+            $preview['remaining_before_payment'] = $preview['remaining_amount'];
+            $preview['remaining_after_payment'] = $preview['remaining_amount'];
+            $preview['paid_amount_after_payment'] = $preview['paid_amount'];
+            $preview['payable_on_payment_date'] = 0;
+            $preview['calculated_penalty'] = 0;
+            $preview['calculated_reward'] = 0;
+            $preview['is_full_payment'] = false;
+            $preview['final_status'] = 'cancelled';
+            $preview['message'] = 'قسط لغو شده قابل پرداخت نیست.';
+            return $preview;
+        }
         $paymentDate = $paymentDate ?: date('Y-m-d');
         $paymentAmount = normalize_money($paymentAmount);
         $state = self::stateOnDate($installment, $payments, $settings, $paymentDate);
@@ -298,5 +314,29 @@ class FinanceHelper
             return 'partial';
         }
         return $date > $dueDate ? 'overdue' : 'pending';
+    }
+
+    protected static function cancelledPreview(array $installment)
+    {
+        $baseAmount = max(0, (float) ($installment['base_amount'] ?? 0));
+        $paidAmount = max(0, min($baseAmount, (float) ($installment['paid_amount'] ?? 0)));
+        return [
+            'base_amount' => $baseAmount,
+            'paid_amount' => $paidAmount,
+            'remaining_amount' => max(0, $baseAmount - $paidAmount),
+            'penalty' => 0,
+            'normal_penalty' => 0,
+            'legal_penalty' => 0,
+            'penalty_mode' => 'normal',
+            'penalty_rate' => 0,
+            'normal_penalty_rate' => 0,
+            'legal_penalty_rate' => 0,
+            'grace_days' => 0,
+            'penalty_start_date' => null,
+            'overdue_days' => 0,
+            'reward' => 0,
+            'payable' => 0,
+            'status' => 'cancelled',
+        ];
     }
 }

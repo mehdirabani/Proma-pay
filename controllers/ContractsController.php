@@ -16,7 +16,7 @@ class ContractsController extends Controller
             'title' => $readOnly ? 'قراردادها' : 'مدیریت قراردادها',
             'contracts' => $result['items'],
             'pagination' => $result,
-            'customers' => $readOnly ? [] : User::customers(),
+            'customers' => [],
             'operators' => $readOnly ? [] : User::all('operator'),
             'settings' => Settings::allKeyed(),
             'defaultStartDate' => jdate($today),
@@ -176,6 +176,7 @@ class ContractsController extends Controller
             'legacyLegalCostTotal' => $canViewLegalCosts ? LegalCase::expenseTotalForContract($contractId) : 0,
             'editableLegalLogIds' => $editableLogIds,
             'deletableLegalLogIds' => $deletableLogIds,
+            'cancellationSummary' => Contract::cancellationSummary($contractId),
         ]);
     }
 
@@ -426,13 +427,67 @@ class ContractsController extends Controller
         $items = array_map(function ($customer) {
             return [
                 'id' => (int) $customer['id'],
+                'customer_number' => (string) $customer['id'],
                 'full_name' => $customer['full_name'] ?? '',
-                'mobile' => $customer['mobile'] ?? '',
-                'national_id' => $customer['national_id'] ?? '',
+                'mobile' => $this->maskValue($customer['mobile'] ?? '', 4, 4),
+                'national_id' => $this->maskValue($customer['national_id'] ?? '', 2, 2),
+                'status_label' => status_label($customer['status'] ?? ''),
                 'status' => $customer['status'] ?? '',
             ];
         }, User::searchCustomers($query, 10));
         $this->json(['ok' => true, 'items' => $items]);
+    }
+
+    public function checkCustomerIdentity()
+    {
+        $this->requireRole('admin');
+        $nationalId = trim(to_english_digits((string) ($_GET['national_id'] ?? '')));
+        $mobile = trim((string) ($_GET['mobile'] ?? ''));
+        $email = trim((string) ($_GET['email'] ?? ''));
+        $matches = User::identityMatches($nationalId, $mobile, $email);
+        $items = array_map(function ($match) {
+            return [
+                'id' => (int) $match['id'],
+                'full_name' => $match['full_name'] ?? '',
+                'mobile' => $this->maskValue($match['mobile'] ?? '', 4, 4),
+                'national_id' => $this->maskValue($match['national_id'] ?? '', 2, 2),
+                'status' => $match['status'] ?? '',
+                'status_label' => status_label($match['status'] ?? ''),
+                'match_types' => $match['match_types'] ?? [],
+            ];
+        }, $matches);
+        $ids = array_values(array_unique(array_map(function ($item) {
+            return (int) $item['id'];
+        }, $items)));
+        $matchTypes = [];
+        foreach ($items as $item) {
+            $matchTypes = array_merge($matchTypes, $item['match_types']);
+        }
+        $matchTypes = array_values(array_unique($matchTypes));
+        $conflict = count($ids) > 1;
+        $message = 'مشتری با این مشخصات پیدا نشد و پس از ثبت قرارداد، مشتری جدید ایجاد خواهد شد.';
+        if ($conflict) {
+            $message = 'اطلاعات واردشده با بیش از یک مشتری موجود تطابق دارد. لطفاً اطلاعات را بررسی کنید.';
+        } elseif ($items) {
+            $message = in_array('national_id', $matchTypes, true)
+                ? 'این کد ملی قبلاً در سامانه ثبت شده است.'
+                : (in_array('mobile', $matchTypes, true)
+                    ? 'این شماره موبایل برای مشتری دیگری ثبت شده است. اطلاعات را بررسی کنید.'
+                    : 'این ایمیل قبلاً برای یک کاربر ثبت شده است.');
+        }
+        $this->json([
+            'ok' => true,
+            'exact' => in_array('national_id', $matchTypes, true),
+            'conflict' => $conflict,
+            'match_type' => $matchTypes[0] ?? null,
+            'message' => $message,
+            'items' => $items,
+        ]);
+    }
+
+    public function checkIdentity()
+    {
+        $this->checkCustomerIdentity();
     }
 
     public function searchGuarantors()
@@ -524,13 +579,34 @@ class ContractsController extends Controller
         redirect('contracts');
     }
 
+    public function cancel($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        if (empty($_POST['confirm_cancel'])) {
+            set_flash('error', 'برای لغو قرارداد باید تأیید نهایی را فعال کنید.');
+            redirect('contracts');
+        }
+        try {
+            Contract::cancel((int) $id, $_POST['cancellation_reason'] ?? '', Auth::id());
+            set_flash('success', 'قرارداد و اقساط فعال آن با موفقیت لغو شدند. سوابق مالی و تاریخی حفظ شده است.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'لغو قرارداد انجام نشد.');
+        }
+        redirect('contracts');
+    }
+
     protected function resolveCustomer(&$reusedCustomer = null)
     {
         if (!empty($_POST['customer_id'])) {
-            return (int) $_POST['customer_id'];
+            $customer = User::find((int) $_POST['customer_id']);
+            if (!$customer || ($customer['role'] ?? '') !== 'customer') {
+                throw new InvalidArgumentException('مشتری انتخاب‌شده معتبر نیست.');
+            }
+            return (int) $customer['id'];
         }
         if (trim($_POST['new_customer_full_name'] ?? '') === '') {
-            return null;
+            throw new InvalidArgumentException('مشتری موجود را انتخاب کنید یا اطلاعات مشتری جدید را کامل کنید.');
         }
         $payload = [
             'role' => 'customer',
@@ -542,16 +618,47 @@ class ContractsController extends Controller
             'mobile' => $_POST['new_customer_mobile'] ?? '',
             'secondary_phone' => $_POST['new_customer_secondary_phone'] ?? '',
             'address' => $_POST['new_customer_address'] ?? '',
-            'email' => '',
+            'email' => $_POST['new_customer_email'] ?? '',
             'password' => '',
             'status' => 'active',
         ];
-        $existing = User::findDuplicateCustomer($payload);
-        if ($existing) {
+        $validator = (new Validator($payload))->mobile('mobile', 'موبایل')->nationalId('national_id', 'کد ملی')->email('email', 'ایمیل');
+        if (!$validator->passes()) {
+            throw new InvalidArgumentException(implode(' ', $validator->errors()));
+        }
+        $matches = User::identityMatches($payload['national_id'], $payload['mobile'], $payload['email']);
+        $matchIds = array_values(array_unique(array_map(function ($match) {
+            return (int) $match['id'];
+        }, $matches)));
+        if (count($matchIds) > 1) {
+            throw new InvalidArgumentException('اطلاعات واردشده با بیش از یک مشتری موجود تطابق دارد. لطفاً اطلاعات را بررسی کنید.');
+        }
+        if ($matches) {
+            $existing = $matches[0];
+            $matchTypes = $existing['match_types'] ?? [];
+            if ($payload['national_id'] !== '' && !in_array('national_id', $matchTypes, true) && in_array('mobile', $matchTypes, true)) {
+                throw new InvalidArgumentException('این شماره موبایل برای مشتری دیگری ثبت شده است. اطلاعات را بررسی کنید.');
+            }
+            if (!in_array('national_id', $matchTypes, true) && in_array('email', $matchTypes, true)) {
+                throw new InvalidArgumentException('این ایمیل قبلاً برای یک کاربر ثبت شده است. برای جلوگیری از ادغام اشتباه، مشتری موجود را جداگانه انتخاب کنید.');
+            }
             $reusedCustomer = $existing['full_name'] ?? 'مشتری موجود';
             return (int) $existing['id'];
         }
         return User::create($payload);
+    }
+
+    protected function maskValue($value, $prefix = 2, $suffix = 2)
+    {
+        $value = (string) $value;
+        if ($value === '') {
+            return '';
+        }
+        $length = strlen($value);
+        if ($length <= ($prefix + $suffix)) {
+            return str_repeat('*', $length);
+        }
+        return substr($value, 0, $prefix) . str_repeat('*', max(3, $length - $prefix - $suffix)) . substr($value, -$suffix);
     }
 
     protected function buildContractUpdatePayload(array $contract, array $input)

@@ -111,7 +111,7 @@ class AiController extends Controller
             'summary' => [
                 'customers' => Model::fetch("SELECT COUNT(*) AS total FROM users WHERE role = 'customer'")['total'] ?? 0,
                 'active_contracts' => Model::fetch("SELECT COUNT(*) AS total FROM contracts WHERE status = 'active'")['total'] ?? 0,
-                'overdue_installments' => Model::fetch("SELECT COUNT(*) AS total FROM installments WHERE status != 'paid' AND due_date < CURDATE()")['total'] ?? 0,
+                'overdue_installments' => Model::fetch("SELECT COUNT(*) AS total FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE()")['total'] ?? 0,
                 'open_legal_cases' => Model::fetch("SELECT COUNT(*) AS total FROM legal_cases WHERE status != 'closed'")['total'] ?? 0,
             ],
             'matching_customers' => Model::fetchAll(
@@ -126,7 +126,7 @@ class AiController extends Controller
                  FROM installments i
                  JOIN contracts c ON c.id = i.contract_id
                  JOIN users u ON u.id = c.customer_id
-                 WHERE i.status != 'paid' AND i.due_date < CURDATE()
+                 WHERE c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE()
                  ORDER BY i.due_date ASC LIMIT 15"
             ),
             'legal_sample' => Model::fetchAll(

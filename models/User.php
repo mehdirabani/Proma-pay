@@ -137,7 +137,7 @@ class User extends Model
         $needle = '%' . $query . '%';
         $limit = max(1, min(25, (int) $limit));
         return self::fetchAll(
-            "SELECT id, full_name, mobile, national_id, status
+            "SELECT id, full_name, mobile, secondary_phone, national_id, status
              FROM users
              WHERE role = 'customer'
              AND (full_name LIKE ? OR mobile LIKE ? OR secondary_phone LIKE ? OR national_id LIKE ? OR address LIKE ?)
@@ -145,6 +145,61 @@ class User extends Model
              LIMIT {$limit}",
             [$needle, $needle, $needle, $needle, $needle]
         );
+    }
+
+    public static function identityMatches($nationalId = '', $mobile = '', $email = '')
+    {
+        self::ensureProfileColumns();
+        $nationalId = trim(to_english_digits((string) $nationalId));
+        $mobile = self::normalizePhoneValue($mobile);
+        $email = trim((string) $email);
+        $checks = [];
+        $params = [];
+        if ($nationalId !== '') {
+            $checks[] = 'national_id = ?';
+            $params[] = $nationalId;
+        }
+        if ($mobile !== '') {
+            $checks[] = '(mobile = ? OR secondary_phone = ?)';
+            array_push($params, $mobile, $mobile);
+        }
+        if ($email !== '') {
+            $checks[] = 'email = ?';
+            $params[] = $email;
+        }
+        if (!$checks) {
+            return [];
+        }
+        $rows = self::fetchAll(
+            'SELECT id, full_name, mobile, secondary_phone, national_id, email, status
+             FROM users
+             WHERE role = ? AND (' . implode(' OR ', $checks) . ')
+             ORDER BY CASE WHEN status = ? THEN 0 ELSE 1 END, id DESC
+             LIMIT 10',
+            array_merge(['customer'], $params, ['active'])
+        );
+        foreach ($rows as &$row) {
+            $matchTypes = [];
+            if ($nationalId !== '' && trim(to_english_digits((string) ($row['national_id'] ?? ''))) === $nationalId) {
+                $matchTypes[] = 'national_id';
+            }
+            $rowMobile = self::normalizePhoneValue($row['mobile'] ?? '');
+            $rowSecondary = self::normalizePhoneValue($row['secondary_phone'] ?? '');
+            if ($mobile !== '' && ($rowMobile === $mobile || $rowSecondary === $mobile)) {
+                $matchTypes[] = 'mobile';
+            }
+            if ($email !== '' && strcasecmp(trim((string) ($row['email'] ?? '')), $email) === 0) {
+                $matchTypes[] = 'email';
+            }
+            $row['match_types'] = $matchTypes;
+        }
+        unset($row);
+        return $rows;
+    }
+
+    public static function normalizePhone($value)
+    {
+        return self::normalizePhoneValue($value);
     }
 
     public static function searchActiveCustomers($query, $limit = 10)
@@ -204,10 +259,10 @@ class User extends Model
         $where = self::customerSummaryWhere($search, $status, $params);
         return self::fetchAll(
             "SELECT u.*,
-             COUNT(DISTINCT c.id) AS contract_count,
-             COUNT(DISTINCT i.id) AS installment_count,
-             COUNT(DISTINCT CASE WHEN i.status = 'paid' THEN i.id END) AS paid_installments,
-             COUNT(DISTINCT CASE WHEN i.status != 'paid' AND i.due_date < CURDATE() THEN i.id END) AS overdue_installments,
+             COUNT(DISTINCT CASE WHEN c.status != 'cancelled' THEN c.id END) AS contract_count,
+             COUNT(DISTINCT CASE WHEN c.status != 'cancelled' AND i.status != 'cancelled' THEN i.id END) AS installment_count,
+             COUNT(DISTINCT CASE WHEN c.status != 'cancelled' AND i.status = 'paid' THEN i.id END) AS paid_installments,
+             COUNT(DISTINCT CASE WHEN c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE() THEN i.id END) AS overdue_installments,
              COALESCE(SUM(CASE WHEN p.status = 'paid' AND COALESCE(p.is_corrected,0) = 0 THEN p.amount ELSE 0 END),0) AS paid_total
              FROM users u
              LEFT JOIN contracts c ON c.customer_id = u.id
@@ -236,10 +291,10 @@ class User extends Model
         $offset = ($page - 1) * $perPage;
         $rows = self::fetchAll(
             "SELECT u.*,
-             COUNT(DISTINCT c.id) AS contract_count,
-             COUNT(DISTINCT i.id) AS installment_count,
-             COUNT(DISTINCT CASE WHEN i.status = 'paid' THEN i.id END) AS paid_installments,
-             COUNT(DISTINCT CASE WHEN i.status != 'paid' AND i.due_date < CURDATE() THEN i.id END) AS overdue_installments,
+             COUNT(DISTINCT CASE WHEN c.status != 'cancelled' THEN c.id END) AS contract_count,
+             COUNT(DISTINCT CASE WHEN c.status != 'cancelled' AND i.status != 'cancelled' THEN i.id END) AS installment_count,
+             COUNT(DISTINCT CASE WHEN c.status != 'cancelled' AND i.status = 'paid' THEN i.id END) AS paid_installments,
+             COUNT(DISTINCT CASE WHEN c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE() THEN i.id END) AS overdue_installments,
              COALESCE(SUM(CASE WHEN p.status = 'paid' AND COALESCE(p.is_corrected,0) = 0 THEN p.amount ELSE 0 END),0) AS paid_total
              FROM users u
              LEFT JOIN contracts c ON c.customer_id = u.id
@@ -426,7 +481,7 @@ class User extends Model
                 'national_id' => trim(to_english_digits($data['national_id'] ?? '')) ?: null,
                 'mobile' => self::normalizePhoneValue($data['mobile'] ?? '') ?: null,
                 'secondary_phone' => self::normalizePhoneValue($data['secondary_phone'] ?? '') ?: null,
-                'email' => $data['email'] ?: null,
+                'email' => trim((string) ($data['email'] ?? '')) ?: null,
                 'password_hash' => password_hash(($data['password'] ?? '') ?: bin2hex(random_bytes(8)), PASSWORD_DEFAULT),
                 'status' => $data['status'] ?? 'active',
                 'address' => $data['address'] ?? '',

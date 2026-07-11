@@ -378,10 +378,13 @@
       const select = box.querySelector('[data-customer-select]') || (form ? form.querySelector('[data-customer-select]') : null);
       if (!endpoint || !input || !results || !select) return;
       let timer = null;
+      let request = null;
+      let highlighted = -1;
 
       const close = function () {
         results.hidden = true;
         results.innerHTML = '';
+        highlighted = -1;
       };
 
       const choose = function (item) {
@@ -392,10 +395,17 @@
           option.textContent = item.full_name + ' - ' + (item.national_id || '') + ' - ' + (item.mobile || '');
           option.selected = true;
           select.appendChild(option);
+        } else {
+          select.value = String(item.id);
+          select.dataset.customerLabel = item.full_name || '';
+          select.dataset.customerName = item.full_name || '';
+          select.dataset.customerMobile = item.mobile || '';
+          select.dataset.customerNationalId = item.national_id || '';
         }
         select.value = String(item.id);
         select.dispatchEvent(new Event('change', { bubbles: true }));
-        input.value = item.full_name;
+        input.value = item.full_name || '';
+        box.dispatchEvent(new CustomEvent('proma:customer-selected', { bubbles: true, detail: item }));
         close();
       };
 
@@ -416,8 +426,8 @@
           const badge = document.createElement('em');
           button.type = 'button';
           title.textContent = item.full_name || 'بدون نام';
-          meta.textContent = 'موبایل: ' + (item.mobile || '-') + ' | کد ملی: ' + (item.national_id || '-');
-          badge.textContent = item.status || '-';
+          meta.textContent = 'موبایل: ' + (item.mobile || '-') + ' | کد ملی: ' + (item.national_id || '-') + ' | شناسه: ' + (item.customer_number || item.id || '-');
+          badge.textContent = item.status_label || item.status || '-';
           button.appendChild(title);
           button.appendChild(meta);
           button.appendChild(badge);
@@ -425,6 +435,17 @@
           results.appendChild(button);
         });
         results.hidden = false;
+        highlighted = -1;
+      };
+
+      const setHighlight = function (index) {
+        const buttons = Array.from(results.querySelectorAll('button'));
+        if (!buttons.length) return;
+        highlighted = (index + buttons.length) % buttons.length;
+        buttons.forEach(function (button, buttonIndex) {
+          button.classList.toggle('is-highlighted', buttonIndex === highlighted);
+        });
+        buttons[highlighted].scrollIntoView({ block: 'nearest' });
       };
 
       input.addEventListener('input', function () {
@@ -432,6 +453,11 @@
         select.value = '';
         if (select.tagName === 'SELECT') {
           select.innerHTML = '<option value=""></option>';
+        } else {
+          delete select.dataset.customerLabel;
+          delete select.dataset.customerName;
+          delete select.dataset.customerMobile;
+          delete select.dataset.customerNationalId;
         }
         select.dispatchEvent(new Event('change', { bubbles: true }));
         window.clearTimeout(timer);
@@ -440,14 +466,35 @@
           return;
         }
         timer = window.setTimeout(function () {
-          fetch(endpoint + '&q=' + encodeURIComponent(query)).then(function (response) {
+          if (request && typeof request.abort === 'function') request.abort();
+          request = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          const separator = endpoint.indexOf('?') >= 0 ? '&' : '?';
+          fetch(endpoint + separator + 'q=' + encodeURIComponent(query), request ? { signal: request.signal } : {}).then(function (response) {
             return response.json();
           }).then(function (json) {
             render(json.ok && Array.isArray(json.items) ? json.items : []);
-          }).catch(function () {
+          }).catch(function (error) {
+            if (error && error.name === 'AbortError') return;
             close();
           });
-        }, 260);
+        }, 300);
+      });
+
+      input.addEventListener('keydown', function (event) {
+        if (results.hidden) return;
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          setHighlight(highlighted + 1);
+        } else if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          setHighlight(highlighted - 1);
+        } else if (event.key === 'Enter' && highlighted >= 0) {
+          event.preventDefault();
+          const button = results.querySelectorAll('button')[highlighted];
+          if (button) button.click();
+        } else if (event.key === 'Escape') {
+          close();
+        }
       });
 
       document.addEventListener('click', function (event) {
@@ -841,7 +888,10 @@
       const guarantorChips = form.querySelector('[data-guarantor-chips]');
       const newCustomerFields = form.querySelector('[data-new-customer-fields]');
       const newCustomerSummary = form.querySelector('[data-new-customer-summary]');
-      const toggleNewCustomer = form.querySelector('[data-toggle-new-customer]');
+      const customerModeTabs = Array.from(form.querySelectorAll('[data-customer-mode-tab]'));
+      const customerModePanels = Array.from(form.querySelectorAll('[data-customer-mode-panel]'));
+      const identityStatus = form.querySelector('[data-customer-identity-status]');
+      const identityEndpoint = form.getAttribute('data-identity-check-url');
       const previewUrl = form.getAttribute('data-preview-url');
       let previewTimer = null;
 
@@ -873,17 +923,23 @@
       const syncCustomerChip = function () {
         if (!customerSelect || !customerChip) return;
         customerChip.innerHTML = '';
-        const option = customerSelect.selectedOptions[0];
-        if (!option || !option.value) return;
+        const option = customerSelect.tagName === 'SELECT' ? customerSelect.selectedOptions[0] : null;
+        const value = customerSelect.value;
+        if (!value) return;
+        const label = option ? option.textContent : (customerSelect.dataset.customerLabel || 'مشتری انتخاب‌شده');
         const chip = document.createElement('span');
         const close = document.createElement('button');
         chip.className = 'proma-chip';
-        chip.appendChild(document.createTextNode(option.textContent));
+        chip.appendChild(document.createTextNode(label));
         close.type = 'button';
         close.textContent = '×';
         close.addEventListener('click', function () {
           customerSelect.value = '';
-          customerSelect.innerHTML = '<option value=""></option>';
+          if (customerSelect.tagName === 'SELECT') customerSelect.innerHTML = '<option value=""></option>';
+          delete customerSelect.dataset.customerLabel;
+          delete customerSelect.dataset.customerName;
+          delete customerSelect.dataset.customerMobile;
+          delete customerSelect.dataset.customerNationalId;
           const liveInput = form.querySelector('[data-customer-search-input]');
           if (liveInput) liveInput.value = '';
           syncCustomerChip();
@@ -891,6 +947,52 @@
         });
         chip.appendChild(close);
         customerChip.appendChild(chip);
+      };
+
+      const setCustomerMode = function (mode, clearSelection) {
+        mode = mode === 'new' ? 'new' : 'existing';
+        form.dataset.customerMode = mode;
+        customerModeTabs.forEach(function (tab) {
+          const active = tab.getAttribute('data-customer-mode-tab') === mode;
+          tab.classList.toggle('active', active);
+          tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        customerModePanels.forEach(function (panel) {
+          panel.hidden = panel.getAttribute('data-customer-mode-panel') !== mode;
+        });
+        if (newCustomerFields) {
+          const nameField = newCustomerFields.querySelector('[name="new_customer_full_name"]');
+          if (nameField) nameField.required = mode === 'new';
+        }
+        if (customerSelect) {
+          customerSelect.required = mode === 'existing';
+          if (mode === 'new' && clearSelection) {
+            customerSelect.value = '';
+            delete customerSelect.dataset.customerLabel;
+            delete customerSelect.dataset.customerName;
+            delete customerSelect.dataset.customerMobile;
+            delete customerSelect.dataset.customerNationalId;
+            const liveInput = form.querySelector('[data-customer-search-input]');
+            if (liveInput) liveInput.value = '';
+            customerSelect.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+      };
+
+      const selectCustomer = function (item) {
+        if (!customerSelect || !item || !item.id) return;
+        customerSelect.value = String(item.id);
+        customerSelect.dataset.customerLabel = item.full_name || '';
+        customerSelect.dataset.customerName = item.full_name || '';
+        customerSelect.dataset.customerMobile = item.mobile || '';
+        customerSelect.dataset.customerNationalId = item.national_id || '';
+        const liveInput = form.querySelector('[data-customer-search-input]');
+        if (liveInput) liveInput.value = item.full_name || '';
+        setCustomerMode('existing', false);
+        customerSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        syncCustomerChip();
+        syncGuarantorChips();
+        syncLiveGuarantorChips();
       };
 
       const syncGuarantorChips = function () {
@@ -975,13 +1077,91 @@
         }, 220);
       };
 
-      if (toggleNewCustomer) {
-        toggleNewCustomer.addEventListener('click', function () {
-          const modalId = toggleNewCustomer.getAttribute('data-new-customer-modal') || 'contract-new-customer-popup';
-          const modal = document.getElementById(modalId);
-          if (modal) modal.classList.add('open');
+      customerModeTabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          setCustomerMode(tab.getAttribute('data-customer-mode-tab'), true);
         });
-      }
+      });
+
+      form.addEventListener('proma:customer-selected', function (event) {
+        selectCustomer(event.detail || {});
+      });
+
+      let identityTimer = null;
+      let identityRequest = null;
+      let identitySequence = 0;
+      const identityFields = ['national_id', 'mobile', 'email'].map(function (name) {
+        return newCustomerFields ? newCustomerFields.querySelector('[data-new-customer-field="' + name + '"]') : null;
+      }).filter(Boolean);
+      const clearIdentityStatus = function () {
+        form.dataset.identityConflict = '0';
+        if (!identityStatus) return;
+        identityStatus.hidden = true;
+        identityStatus.className = 'proma-customer-identity-status';
+        identityStatus.innerHTML = '';
+      };
+      const renderIdentityStatus = function (json) {
+        if (!identityStatus) return;
+        identityStatus.hidden = false;
+        identityStatus.className = 'proma-customer-identity-status ' + (json.conflict ? 'is-warning' : (json.items && json.items.length ? 'is-warning' : 'is-success'));
+        identityStatus.innerHTML = '';
+        const message = document.createElement('strong');
+        message.textContent = json.message || '';
+        identityStatus.appendChild(message);
+        form.dataset.identityConflict = json.conflict ? '1' : '0';
+        if (json.items && json.items.length === 1 && !json.conflict) {
+          const item = json.items[0];
+          const row = document.createElement('div');
+          row.className = 'proma-identity-match';
+          const details = document.createElement('span');
+          details.textContent = item.full_name + ' · ' + (item.mobile || '-') + ' · ' + (item.national_id || '-');
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'btn small secondary';
+          button.textContent = 'انتخاب همین مشتری';
+          button.addEventListener('click', function () { selectCustomer(item); });
+          row.appendChild(details);
+          row.appendChild(button);
+          identityStatus.appendChild(row);
+        }
+      };
+      const checkIdentity = function () {
+        if (!identityEndpoint || !newCustomerFields) return;
+        const values = {};
+        identityFields.forEach(function (field) {
+          values[field.getAttribute('data-new-customer-field')] = field.value.trim();
+        });
+        const national = toEnglishDigits(values.national_id || '').replace(/\D/g, '');
+        const mobile = toEnglishDigits(values.mobile || '').replace(/\D/g, '');
+        const email = values.email || '';
+        if (national.length < 10 && mobile.length < 7 && !email.includes('@')) {
+          clearIdentityStatus();
+          return;
+        }
+        const sequence = ++identitySequence;
+        if (identityRequest && typeof identityRequest.abort === 'function') identityRequest.abort();
+        identityRequest = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const url = new URL(identityEndpoint, window.location.href);
+        url.searchParams.set('national_id', national);
+        url.searchParams.set('mobile', mobile);
+        url.searchParams.set('email', email);
+        fetch(url.toString(), identityRequest ? { signal: identityRequest.signal } : {}).then(function (response) {
+          return response.json();
+        }).then(function (json) {
+          if (sequence !== identitySequence) return;
+          renderIdentityStatus(json.ok ? json : { conflict: false, items: [], message: 'امکان بررسی اطلاعات مشتری وجود ندارد.' });
+        }).catch(function (error) {
+          if (error && error.name === 'AbortError') return;
+          if (sequence === identitySequence) clearIdentityStatus();
+        });
+      };
+      identityFields.forEach(function (field) {
+        field.addEventListener('input', function () {
+          window.clearTimeout(identityTimer);
+          identityTimer = window.setTimeout(checkIdentity, 300);
+        });
+      });
+      setCustomerMode(form.querySelector('[data-customer-select]') && form.querySelector('[data-customer-select]').value ? 'existing' : 'existing', false);
 
       [principal, downPayment, months, rate].forEach(function (field) {
         if (!field) return;
@@ -993,7 +1173,6 @@
       });
       if (customerSelect) {
         customerSelect.addEventListener('change', function () {
-          if (customerSelect.value) clearNewCustomerDraft();
           syncCustomerChip();
           syncGuarantorChips();
           syncLiveGuarantorChips();
@@ -1006,6 +1185,7 @@
       form.addEventListener('submit', function (event) {
         const principalValue = parseMoney(principal ? principal.value : 0);
         const downValue = parseMoney(downPayment ? downPayment.value : 0);
+        const customerMode = form.dataset.customerMode === 'new' ? 'new' : 'existing';
         const hasCustomer = customerSelect && customerSelect.value;
         const newName = form.querySelector('[name="new_customer_full_name"]');
         if (principalValue <= 0) {
@@ -1018,7 +1198,17 @@
           showError('مبلغ پیش‌پرداخت نمی‌تواند بیشتر از مبلغ اصل قرارداد باشد.');
           return;
         }
-        if (!hasCustomer && (!newName || !newName.value.trim())) {
+        if (customerMode === 'new' && form.dataset.identityConflict === '1') {
+          event.preventDefault();
+          showError('اطلاعات مشتری جدید با سوابق موجود تعارض دارد. مشتری موجود را انتخاب کنید یا اطلاعات را اصلاح کنید.');
+          return;
+        }
+        if (customerMode === 'existing' && !hasCustomer) {
+          event.preventDefault();
+          showError('یک مشتری موجود را از نتایج جست‌وجو انتخاب کنید.');
+          return;
+        }
+        if (customerMode === 'new' && (!newName || !newName.value.trim())) {
           event.preventDefault();
           showError('مشتری موجود را انتخاب کنید یا اطلاعات مشتری تازه را وارد کنید.');
         }

@@ -108,7 +108,7 @@ class Event extends Model
     public static function installmentCalendarEvents($startDate, $endDate, $customerId = null)
     {
         $params = [$startDate, $endDate];
-        $where = 'i.due_date >= ? AND i.due_date < ?';
+        $where = "c.status != 'cancelled' AND i.status != 'cancelled' AND i.due_date >= ? AND i.due_date < ?";
         if ($customerId) {
             $where .= ' AND c.customer_id = ?';
             $params[] = (int) $customerId;

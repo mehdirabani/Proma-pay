@@ -160,9 +160,9 @@ class Installment extends Model
             if ($filters['payment_state'] === 'paid') {
                 $where[] = "i.status = 'paid'";
             } elseif ($filters['payment_state'] === 'unpaid') {
-                $where[] = "i.status != 'paid'";
+            $where[] = "i.status NOT IN ('paid', 'cancelled')";
             } elseif ($filters['payment_state'] === 'overdue') {
-                $where[] = "i.status != 'paid' AND i.due_date < CURDATE()";
+                $where[] = "i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE()";
             } elseif ($filters['payment_state'] === 'custom') {
                 $where[] = 'COALESCE(i.is_custom, 0) = 1';
             }
@@ -255,10 +255,10 @@ class Installment extends Model
     protected static function overdueWhere($bucket = null, $search = null, $operatorId = null)
     {
         $today = date('Y-m-d');
-        $where = "i.status != 'paid' AND i.due_date < ?";
+        $where = "c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < ?";
         $params = [$today];
         if ($bucket === 'today') {
-            $where = "i.status != 'paid' AND i.due_date = ?";
+            $where = "c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date = ?";
             $params = [$today];
         } elseif ($bucket === '1-7') {
             $where .= ' AND DATEDIFF(?, i.due_date) BETWEEN 1 AND 7';
@@ -285,6 +285,13 @@ class Installment extends Model
     public static function createCustom($contractId, $dueDate, $amount, $notes = '', $guaranteeSerial = '', $title = '')
     {
         self::ensureSchema();
+        $contract = self::fetch('SELECT status FROM contracts WHERE id = ? LIMIT 1', [(int) $contractId]);
+        if (!$contract) {
+            throw new InvalidArgumentException('قرارداد پیدا نشد.');
+        }
+        if (($contract['status'] ?? '') === 'cancelled') {
+            throw new InvalidArgumentException('برای قرارداد لغو شده قسط جدید قابل ثبت نیست.');
+        }
         $number = (int) self::fetch('SELECT COALESCE(MAX(installment_number), 0) + 1 AS n FROM installments WHERE contract_id = ?', [$contractId])['n'];
         $amount = normalize_money($amount);
         self::execute(
@@ -300,6 +307,9 @@ class Installment extends Model
         $row = self::find((int) $id);
         if (!$row) {
             throw new InvalidArgumentException('قسط پیدا نشد.');
+        }
+        if (($row['status'] ?? '') === 'cancelled') {
+            throw new InvalidArgumentException('قسط لغو شده قابل ویرایش نیست.');
         }
         $dueDate = parse_jalali_date($data['due_date'] ?? '') ?: ($data['due_date'] ?? null);
         if (!$dueDate) {
@@ -344,6 +354,10 @@ class Installment extends Model
 
     public static function adjust($id, $penalty, $reward)
     {
+        $row = self::fetch('SELECT status FROM installments WHERE id = ?', [(int) $id]);
+        if (!$row || ($row['status'] ?? '') === 'cancelled') {
+            throw new InvalidArgumentException('قسط لغو شده قابل اصلاح نیست.');
+        }
         self::execute(
             'UPDATE installments SET manual_penalty_adjustment = ?, manual_reward_adjustment = ? WHERE id = ?',
             [normalize_money($penalty), normalize_money($reward), (int) $id]
@@ -355,6 +369,9 @@ class Installment extends Model
     {
         $installment = self::find($id);
         if (!$installment) {
+            return false;
+        }
+        if (($installment['status'] ?? '') === 'cancelled') {
             return false;
         }
         $value = normalize_money($value);
@@ -385,6 +402,9 @@ class Installment extends Model
     {
         $row = self::fetch('SELECT * FROM installments WHERE id = ?', [(int) $id]);
         if (!$row) {
+            return;
+        }
+        if (($row['status'] ?? '') === 'cancelled') {
             return;
         }
         $status = FinanceHelper::status((float) $row['base_amount'], (float) $row['paid_amount'], $row['due_date']);

@@ -18,6 +18,7 @@ class SystemResetService
             'migrations',
             'migration_batches',
             'backup_logs',
+            'audit_logs',
             'users',
             'chat_channels',
         ];
