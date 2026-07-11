@@ -654,6 +654,83 @@ CREATE TABLE `profile_update_requests` (
   CONSTRAINT `fk_profile_request_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `system_plugin_logs`;
+DROP TABLE IF EXISTS `system_plugin_role_permissions`;
+DROP TABLE IF EXISTS `system_plugin_permissions`;
+DROP TABLE IF EXISTS `system_plugin_migrations`;
+DROP TABLE IF EXISTS `system_plugins`;
+CREATE TABLE `system_plugins` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `plugin_id` varchar(100) NOT NULL,
+  `name` varchar(190) NOT NULL,
+  `description` text DEFAULT NULL,
+  `version` varchar(40) NOT NULL,
+  `path` varchar(255) NOT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'discovered',
+  `installed_at` datetime DEFAULT NULL,
+  `activated_at` datetime DEFAULT NULL,
+  `deactivated_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `installed_by` bigint(20) unsigned DEFAULT NULL,
+  `last_error` text DEFAULT NULL,
+  `manifest_json` longtext DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_system_plugins_plugin_id` (`plugin_id`),
+  KEY `idx_system_plugins_status` (`status`),
+  KEY `idx_system_plugins_installed_by` (`installed_by`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `system_plugin_migrations` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `plugin_id` varchar(100) NOT NULL,
+  `migration_name` varchar(190) NOT NULL,
+  `batch` int(10) unsigned NOT NULL DEFAULT 1,
+  `checksum` char(64) NOT NULL,
+  `executed_at` datetime DEFAULT NULL,
+  `execution_time_ms` int(10) unsigned NOT NULL DEFAULT 0,
+  `status` varchar(30) NOT NULL DEFAULT 'running',
+  `error_message` text DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_system_plugin_migration` (`plugin_id`,`migration_name`),
+  KEY `idx_system_plugin_migrations_status` (`status`),
+  KEY `idx_system_plugin_migrations_executed_at` (`executed_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `system_plugin_permissions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `plugin_id` varchar(100) NOT NULL,
+  `permission_key` varchar(190) NOT NULL,
+  `label` varchar(190) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_system_plugin_permission` (`plugin_id`,`permission_key`),
+  KEY `idx_system_plugin_permissions_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `system_plugin_role_permissions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `plugin_id` varchar(100) NOT NULL,
+  `permission_key` varchar(190) NOT NULL,
+  `role` varchar(40) NOT NULL,
+  `is_allowed` tinyint(1) NOT NULL DEFAULT 0,
+  `granted_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_system_plugin_role_permission` (`plugin_id`,`permission_key`,`role`),
+  KEY `idx_system_plugin_role_permissions_role` (`role`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `system_plugin_logs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `plugin_id` varchar(100) NOT NULL,
+  `log_level` varchar(20) NOT NULL,
+  `log_type` varchar(50) NOT NULL,
+  `message` text NOT NULL,
+  `context_json` longtext DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_system_plugin_logs_plugin` (`plugin_id`),
+  KEY `idx_system_plugin_logs_level` (`log_level`),
+  KEY `idx_system_plugin_logs_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 DROP TABLE IF EXISTS `settings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;

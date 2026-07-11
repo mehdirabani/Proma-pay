@@ -8,6 +8,9 @@ class Router
         if ($route === '') {
             $route = Auth::check() ? 'dashboard' : (ecommerce_is_enabled() ? 'ecommerce/landing' : 'auth/login');
         }
+        if (class_exists('PluginManager') && PluginManager::boot()->dispatchRoute($route)) {
+            return;
+        }
         $parts = array_values(array_filter(explode('/', $route), 'strlen'));
         $controllerPart = $parts[0] ?? 'dashboard';
         $action = $parts[1] ?? 'index';

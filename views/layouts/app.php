@@ -94,6 +94,7 @@ if (Auth::role() === 'admin') {
         ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
         ['ai', 'تحلیل هوشمند', 'stroke-learning', 'fill-learning'],
         ['file-manager', 'مدیریت فایل', 'stroke-file', 'fill-file'],
+        ['plugins', 'پلاگین‌ها', 'stroke-others', 'fill-others'],
         ['settings', 'تنظیمات', 'stroke-others', 'fill-others'],
     ];
 } elseif (Auth::role() === 'operator') {

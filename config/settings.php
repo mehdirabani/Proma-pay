@@ -2,7 +2,7 @@
 
 return [
     'app_name' => 'پروما',
-    'version' => '1.0.25',
+    'version' => (require __DIR__ . '/version.php')['application'],
     'asset_version' => '1.0.39',
     'timezone' => 'Asia/Tehran',
     'base_url' => '',
@@ -46,6 +46,9 @@ return [
         'open' => 'باز',
         'closed' => 'بسته',
         'referred' => 'ارجاع شده',
+        'discovered' => 'شناسایی‌شده',
+        'installed' => 'نصب‌شده',
+        'uninstalled' => 'حذف‌شده',
     ],
     'payment_methods' => [
         'manual' => 'پرداخت دستی',

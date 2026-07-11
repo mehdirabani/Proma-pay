@@ -25,6 +25,32 @@ function app_config($key = null, $default = null)
     return $config[$key] ?? $default;
 }
 
+function app_version_info()
+{
+    static $version;
+    if ($version === null) {
+        $path = __DIR__ . '/../config/version.php';
+        $version = is_file($path) ? (require $path) : [];
+    }
+    return is_array($version) ? $version : [];
+}
+
+function app_version($default = '1.0.0')
+{
+    return trim((string) (app_version_info()['application'] ?? $default));
+}
+
+function app_version_display($default = 'V1.0.0')
+{
+    $value = trim((string) (app_version_info()['display'] ?? ''));
+    return $value !== '' ? $value : 'V' . ltrim(app_version($default), 'vV');
+}
+
+function plugin_api_version($default = '1.0')
+{
+    return trim((string) (app_version_info()['plugin_api'] ?? $default));
+}
+
 function setting_enabled($key, $default = true)
 {
     try {
@@ -47,8 +73,16 @@ function landing_is_enabled()
 
 function app_version_label()
 {
-    $version = trim((string) app_config('version', '1.0.0'));
-    return 'v' . ltrim($version, 'vV');
+    return 'v' . ltrim(app_version(), 'vV');
+}
+
+function plugin_is_active($pluginId)
+{
+    try {
+        return class_exists('PluginManager') && PluginManager::isActive($pluginId);
+    } catch (Throwable $e) {
+        return false;
+    }
 }
 
 function avatar_catalog()
@@ -417,6 +451,9 @@ function badge_class($status)
         'uploaded' => 'info',
         'raw' => 'muted',
         'referred' => 'warning',
+        'discovered' => 'info',
+        'installed' => 'info',
+        'uninstalled' => 'muted',
         'rejected' => 'danger',
     ];
     return $map[$status] ?? 'muted';
