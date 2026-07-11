@@ -138,6 +138,20 @@ if (!$ecommerceEnabled) {
         return strpos((string) ($item[0] ?? ''), 'ecommerce') !== 0;
     }));
 }
+$pluginMenus = [];
+if (Auth::role() === 'admin' && class_exists('PluginManager')) {
+    try {
+        $pluginMenus = PluginManager::boot()->menus();
+        foreach ($pluginMenus as $pluginMenu) {
+            if (!empty($pluginMenu['permission']) && !PluginManager::can($pluginMenu['permission'])) {
+                continue;
+            }
+            $nav[] = [$pluginMenu['route'], $pluginMenu['label'], 'stroke-others', 'fill-others'];
+        }
+    } catch (Throwable $e) {
+        $pluginMenus = [];
+    }
+}
 ?>
 <!doctype html>
 <html lang="fa" dir="rtl">
@@ -165,6 +179,7 @@ if (!$ecommerceEnabled) {
   <link id="color" rel="stylesheet" href="<?= e(template_asset_url('css/color-1.css')) ?>" media="screen">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/responsive.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
+  <?php if (plugin_is_active('proma-accounting')): ?><link rel="stylesheet" href="<?= e(asset_url('plugins/PromaAccounting/assets/css/accounting.css')) ?>"><?php endif; ?>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
 </head>
 <body onload="if (window.startTime) startTime()" data-user-id="<?= (int) Auth::id() ?>" data-notification-sound="<?= $notificationSoundEnabled ? '1' : '0' ?>" data-notification-volume="<?= e($notificationSoundVolume) ?>">

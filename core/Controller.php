@@ -5,7 +5,18 @@ class Controller
     public function render($view, array $data = [], $layout = 'app')
     {
         extract($data, EXTR_SKIP);
-        $viewFile = __DIR__ . '/../views/' . $view . '.php';
+        if (strpos((string) $view, 'plugin:') === 0) {
+            $pluginView = substr((string) $view, 7);
+            $parts = explode('/', trim($pluginView, '/'), 2);
+            if (count($parts) !== 2) {
+                http_response_code(500);
+                echo 'نمای افزونه معتبر نیست.';
+                exit;
+            }
+            $viewFile = PluginManager::viewFile($parts[0], $parts[1]);
+        } else {
+            $viewFile = __DIR__ . '/../views/' . $view . '.php';
+        }
         if (!is_file($viewFile)) {
             http_response_code(500);
             echo 'نمای مورد نظر پیدا نشد.';

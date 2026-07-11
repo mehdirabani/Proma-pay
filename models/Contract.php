@@ -298,6 +298,13 @@ class Contract extends Model
                 'guarantee' => $guarantee,
                 'guarantor_people' => $guarantorPeople,
             ], 'ثبت قرارداد', $data['created_by'] ?? null);
+            if (class_exists('PluginManager')) {
+                PluginManager::fire('contract.created', [
+                    'contract_id' => $contractId,
+                    'customer_id' => (int) $data['customer_id'],
+                    'actor_user_id' => !empty($data['created_by']) ? (int) $data['created_by'] : null,
+                ], true);
+            }
             self::commit();
             return $contractId;
         } catch (Throwable $e) {
@@ -367,6 +374,13 @@ class Contract extends Model
                 'guarantee' => $guarantee,
                 'guarantor_people' => $guarantorPeople,
             ], $data['change_reason'] ?? 'ویرایش قرارداد', $data['updated_by'] ?? null);
+            if (class_exists('PluginManager')) {
+                PluginManager::fire('contract.updated', [
+                    'contract_id' => (int) $id,
+                    'customer_id' => (int) $data['customer_id'],
+                    'actor_user_id' => !empty($data['updated_by']) ? (int) $data['updated_by'] : null,
+                ], true);
+            }
             self::commit();
             return true;
         } catch (Throwable $e) {
@@ -542,6 +556,13 @@ class Contract extends Model
                     'cancellation_reason' => $reason,
                 ],
             ]);
+            if (class_exists('PluginManager')) {
+                PluginManager::fire('contract.cancelled', [
+                    'contract_id' => $contractId,
+                    'customer_id' => (int) $contract['customer_id'],
+                    'actor_user_id' => (int) $adminId,
+                ], true);
+            }
             self::commit();
         } catch (Throwable $e) {
             self::rollBack();
@@ -577,10 +598,17 @@ class Contract extends Model
             ) ?: [];
             $total = (int) ($stats['total_installments'] ?? 0);
             $open = (int) ($stats['open_installments'] ?? 0);
+            $oldStatus = (string) ($contract['status'] ?? '');
+            $newStatus = $oldStatus;
             if ($total > 0 && $open === 0) {
+                $newStatus = 'completed';
                 self::execute("UPDATE contracts SET status = 'completed', updated_at = NOW() WHERE id = ? AND status != 'cancelled'", [$contractId]);
             } elseif ($open > 0 && in_array(($contract['status'] ?? ''), ['completed', 'closed'], true)) {
+                $newStatus = 'active';
                 self::execute("UPDATE contracts SET status = 'active', updated_at = NOW() WHERE id = ? AND status != 'cancelled'", [$contractId]);
+            }
+            if ($newStatus !== $oldStatus && class_exists('PluginManager')) {
+                PluginManager::fire('contract.' . $newStatus, ['contract_id' => $contractId, 'old_status' => $oldStatus, 'new_status' => $newStatus], true);
             }
             return;
         }

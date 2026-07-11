@@ -1,0 +1,8 @@
+<div class="page-title"><div><h2>داشبورد حسابداری</h2><p class="text-muted">دفترکل کاربران و فروش‌ها از این بخش قابل پیگیری است.</p></div></div>
+<div class="proma-accounting-kpis mb-4">
+  <div class="proma-accounting-kpi"><span>کاربران حسابداری</span><strong><?= to_persian_digits($summary['users'] ?? 0) ?></strong></div>
+  <div class="proma-accounting-kpi"><span>فروش‌های ثبت‌شده</span><strong><?= to_persian_digits($summary['sales'] ?? 0) ?></strong></div>
+  <div class="proma-accounting-kpi"><span>کمیسیون باز</span><strong><?= money_toman($summary['commission'] ?? 0) ?></strong></div>
+  <div class="proma-accounting-kpi"><span>خالص دفترکل</span><strong><?= money_toman($summary['ledger'] ?? 0) ?></strong></div>
+</div>
+<section class="card"><div class="card-header d-flex justify-content-between align-items-center"><h3>حساب‌های اخیر</h3><a class="btn btn-sm btn-primary" href="<?= e(url('plugin/accounting/accounts')) ?>">فهرست حساب‌ها</a></div><div class="table-responsive"><table class="table proma-accounting-table"><thead><tr><th>کاربر</th><th>نقش</th><th>شماره حساب</th><th>مانده</th><th></th></tr></thead><tbody><?php foreach (($accounts ?? []) as $account): ?><tr><td><?= e($account['full_name']) ?></td><td><?= e(role_label($account['role'])) ?></td><td dir="ltr"><?= e($account['account_number'] ?: '-') ?></td><td><?= money_toman($account['balance']) ?></td><td><a class="btn btn-sm btn-light" href="<?= e(url('plugin/accounting/ledger/' . (int) $account['id'])) ?>">دفترکل</a></td></tr><?php endforeach; ?><?php if (empty($accounts)): ?><tr><td colspan="5" class="empty">حسابی ثبت نشده است.</td></tr><?php endif; ?></tbody></table></div></section>

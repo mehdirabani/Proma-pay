@@ -1,0 +1,33 @@
+{
+  "id": "proma-accounting",
+  "name": "حسابداری کاربران",
+  "description": "مدیریت فروش، کمیسیون، دفترکل کاربران، هزینه‌ها، پاداش‌ها و دریافت/پرداخت‌ها",
+  "version": "1.0.0",
+  "author": "Proma Pay",
+  "plugin_api_version": "1.0",
+  "requires_core": "1.2.6",
+  "requires_php": ">=8.1",
+  "provider": "Proma\\Plugins\\Accounting\\AccountingServiceProvider",
+  "permissions": [
+    {"key":"plugin.proma-accounting.view","label":"مشاهده حسابداری"},
+    {"key":"plugin.proma-accounting.manage","label":"مدیریت حسابداری"},
+    {"key":"plugin.proma-accounting.assign_seller","label":"تخصیص فروشنده"},
+    {"key":"plugin.proma-accounting.post_ledger","label":"ثبت سند دفترکل"},
+    {"key":"plugin.proma-accounting.reverse_ledger","label":"معکوس‌کردن سند دفترکل"}
+  ],
+  "dependencies": [],
+  "routes": [
+    {"path":"plugin/accounting/dashboard","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@dashboard","method":"GET","permission":"plugin.proma-accounting.view"},
+    {"path":"plugin/accounting/accounts","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@accounts","method":"GET","permission":"plugin.proma-accounting.view"},
+    {"path":"plugin/accounting/ledger/{userId}","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@ledger","method":"GET","permission":"plugin.proma-accounting.view"},
+    {"path":"plugin/accounting/ledger/post","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@postLedger","method":"POST","permission":"plugin.proma-accounting.post_ledger"},
+    {"path":"plugin/accounting/ledger/reverse/{entryId}","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@reverseLedger","method":"POST","permission":"plugin.proma-accounting.reverse_ledger"},
+    {"path":"plugin/accounting/sales","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@sales","method":"GET","permission":"plugin.proma-accounting.view"},
+    {"path":"plugin/accounting/commissions","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@commissions","method":"GET","permission":"plugin.proma-accounting.view"}
+  ],
+  "migrations": [
+    "migrations/2026_07_12_accounting_core.sql"
+  ],
+  "assets": ["assets/css/accounting.css","assets/js/accounting.js"],
+  "settings": []
+}

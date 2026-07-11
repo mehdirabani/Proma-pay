@@ -309,6 +309,23 @@ class Payment extends Model
                 self::applyToInstallment($installmentId);
                 self::storeSnapshot($paymentId, $before, self::installmentState($installmentId));
             }
+            if (class_exists('PluginManager')) {
+                PluginManager::fire('payment.created', [
+                    'payment_id' => $paymentId,
+                    'contract_id' => (int) $contractId,
+                    'installment_id' => $installmentId ? (int) $installmentId : null,
+                    'actor_user_id' => $userId ? (int) $userId : null,
+                    'status' => $status,
+                ], true);
+                if ($status === 'paid') {
+                    PluginManager::fire('payment.completed', [
+                        'payment_id' => $paymentId,
+                        'contract_id' => (int) $contractId,
+                        'installment_id' => $installmentId ? (int) $installmentId : null,
+                        'actor_user_id' => $userId ? (int) $userId : null,
+                    ], true);
+                }
+            }
             if ($startedTransaction) {
                 self::commit();
             }
@@ -398,6 +415,14 @@ class Payment extends Model
             );
             self::applyToInstallment($payment['installment_id']);
             self::storeSnapshot((int) $payment['id'], $before, self::installmentState((int) $payment['installment_id']));
+            if (class_exists('PluginManager')) {
+                PluginManager::fire('payment.completed', [
+                    'payment_id' => (int) $payment['id'],
+                    'contract_id' => (int) $payment['contract_id'],
+                    'installment_id' => (int) $payment['installment_id'],
+                    'actor_user_id' => $payment['user_id'] ? (int) $payment['user_id'] : null,
+                ], true);
+            }
             Notification::create($payment['user_id'], 'پرداخت جدید ثبت شد', 'پرداخت شما با موفقیت تأیید شد.', 'payment', url('installments/panel'));
             self::commit();
             return ['ok' => true, 'message' => 'پرداخت با موفقیت ثبت شد.'];

@@ -315,6 +315,23 @@ class PluginManager
         return $this->menus;
     }
 
+    public static function viewFile($pluginId, $view)
+    {
+        $plugin = PluginRegistry::find($pluginId);
+        if (!$plugin || empty($plugin['path'])) {
+            throw new InvalidArgumentException('افزونه برای نمایش view پیدا نشد.');
+        }
+        $view = trim(str_replace('\\', '/', (string) $view), '/');
+        if ($view === '' || strpos($view, '..') !== false || !preg_match('/^[a-zA-Z0-9_\/-]+$/', $view)) {
+            throw new InvalidArgumentException('مسیر view افزونه معتبر نیست.');
+        }
+        $path = rtrim($plugin['path'], '/\\') . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $view) . '.php';
+        if (!is_file($path)) {
+            throw new InvalidArgumentException('view افزونه پیدا نشد.');
+        }
+        return $path;
+    }
+
     public static function fire($event, array $payload = [], $critical = false)
     {
         self::boot();
