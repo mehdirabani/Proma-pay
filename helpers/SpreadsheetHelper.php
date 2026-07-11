@@ -26,7 +26,8 @@ class SpreadsheetHelper
             if ($line === '') {
                 continue;
             }
-            $rows[] = [$line];
+            $delimiter = self::detectDelimiter($line);
+            $rows[] = $delimiter ? array_map('trim', str_getcsv($line, $delimiter)) : [$line];
         }
         return $rows;
     }
@@ -34,11 +35,17 @@ class SpreadsheetHelper
     protected static function readCsv($path)
     {
         $rows = [];
+        $content = file_get_contents($path);
+        if ($content === false) {
+            throw new RuntimeException('فایل بارگذاری شده قابل خواندن نیست.');
+        }
+        $sample = strtok($content, "\r\n") ?: '';
+        $delimiter = self::detectDelimiter($sample) ?: ',';
         $handle = fopen($path, 'r');
         if (!$handle) {
             throw new RuntimeException('فایل بارگذاری شده قابل خواندن نیست.');
         }
-        while (($data = fgetcsv($handle)) !== false) {
+        while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
             $rows[] = array_map('trim', $data);
         }
         fclose($handle);
@@ -99,5 +106,21 @@ class SpreadsheetHelper
             $rows[] = $cells;
         }
         return $rows;
+    }
+
+    protected static function detectDelimiter($line)
+    {
+        $line = (string) $line;
+        $candidates = ["\t", ',', ';', '|', '،'];
+        $best = null;
+        $bestCount = 0;
+        foreach ($candidates as $candidate) {
+            $count = substr_count($line, $candidate);
+            if ($count > $bestCount) {
+                $best = $candidate;
+                $bestCount = $count;
+            }
+        }
+        return $bestCount > 0 ? $best : null;
     }
 }

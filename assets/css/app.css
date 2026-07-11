@@ -1911,6 +1911,102 @@ input.btn:not([class*="btn-"]):not(.secondary):not(.danger):not(.warning):not(.s
   display: none;
 }
 
+.proma-customer-mode {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--proma-line);
+  border-radius: 8px;
+  background: #f8faff;
+}
+
+.proma-customer-mode button {
+  min-height: 36px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--proma-muted);
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+}
+
+.proma-customer-mode button.active {
+  color: #fff;
+  background: var(--proma-primary);
+}
+
+.proma-customer-mode-panel[hidden],
+[data-customer-identity-status][hidden] {
+  display: none;
+}
+
+.proma-customer-identity-status {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--proma-muted);
+  background: #f8faff;
+  font-size: 12px;
+}
+
+.proma-customer-identity-status.is-warning {
+  color: #9a3412;
+  background: rgba(255, 170, 5, .12);
+}
+
+.proma-customer-identity-status.is-success {
+  color: #166534;
+  background: rgba(84, 186, 74, .12);
+}
+
+.proma-identity-match {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(82, 82, 108, .12);
+}
+
+.proma-cancellation-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--proma-line);
+  border-radius: 8px;
+  background: #f8faff;
+}
+
+.proma-cancellation-summary span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.proma-cancellation-summary small {
+  color: var(--proma-muted);
+  font-size: 11px;
+}
+
+.proma-cancellation-summary strong {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.proma-confirm-check {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+  color: var(--proma-text);
+}
+
 .proma-inline-error {
   padding: 10px 12px;
   border-radius: 8px;
@@ -2669,6 +2765,12 @@ label:has(> input[data-select-filter="customer-select"]) {
 }
 
 .proma-live-results button:hover {
+  background: #f8faff;
+}
+
+.proma-live-results button.is-highlighted {
+  outline: 2px solid rgba(115, 102, 255, .28);
+  outline-offset: -2px;
   background: #f8faff;
 }
 
@@ -5479,6 +5581,10 @@ body.dark-only .proma-payment-card__qr-grid {
   .proma-legal-meta-grid,
   .proma-social-card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .proma-cancellation-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .proma-payment-method-switch {

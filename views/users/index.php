@@ -2,20 +2,33 @@
 $avatars = ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6'];
 $viewMode = in_array($_GET['view'] ?? '', ['cards', 'list'], true) ? $_GET['view'] : 'cards';
 $canManageUsers = $canManageUsers ?? Auth::role() === 'admin';
+$socialLinks = $socialLinks ?? [];
+$pagination = $pagination ?? ['total' => count($users ?? []), 'page' => 1, 'pages' => 1, 'per_page' => count($users ?? []) ?: 36];
+$pageUrl = function ($page) use ($viewMode) {
+    $params = [
+        'q' => $_GET['q'] ?? null,
+        'role' => $_GET['role'] ?? null,
+        'status' => $_GET['status'] ?? null,
+        'department' => $_GET['department'] ?? null,
+        'view' => $viewMode,
+        'page' => (int) $page > 1 ? (int) $page : null,
+    ];
+    return url('users', array_filter($params, fn($value) => $value !== null && $value !== ''));
+};
 ?>
 <section class="card">
   <div class="card-header card-no-border">
     <div class="header-top">
       <h2>فهرست کاربران</h2>
       <div class="actions">
-        <a class="btn small <?= $viewMode === 'cards' ? '' : 'secondary' ?>" href="<?= e(url('users', array_filter(['q' => $_GET['q'] ?? null, 'role' => $_GET['role'] ?? null, 'status' => $_GET['status'] ?? null, 'view' => 'cards']))) ?>">کارت‌ها</a>
-        <a class="btn small <?= $viewMode === 'list' ? '' : 'secondary' ?>" href="<?= e(url('users', array_filter(['q' => $_GET['q'] ?? null, 'role' => $_GET['role'] ?? null, 'status' => $_GET['status'] ?? null, 'view' => 'list']))) ?>">لیست</a>
+        <a class="btn small <?= $viewMode === 'cards' ? '' : 'secondary' ?>" href="<?= e(url('users', array_filter(['q' => $_GET['q'] ?? null, 'role' => $_GET['role'] ?? null, 'status' => $_GET['status'] ?? null, 'department' => $_GET['department'] ?? null, 'view' => 'cards', 'page' => $_GET['page'] ?? null]))) ?>">کارت‌ها</a>
+        <a class="btn small <?= $viewMode === 'list' ? '' : 'secondary' ?>" href="<?= e(url('users', array_filter(['q' => $_GET['q'] ?? null, 'role' => $_GET['role'] ?? null, 'status' => $_GET['status'] ?? null, 'department' => $_GET['department'] ?? null, 'view' => 'list', 'page' => $_GET['page'] ?? null]))) ?>">لیست</a>
         <?php if ($canManageUsers): ?><button class="btn" type="button" data-open-modal="create-user">افزودن کاربر</button><?php endif; ?>
       </div>
     </div>
   </div>
   <div class="card-body">
-    <form method="get" action="<?= e(url('users')) ?>" class="form-grid four">
+    <form method="get" action="<?= e(url('users')) ?>" class="form-grid four" data-ajax-filter data-ajax-target="[data-ajax-results='users']">
       <input type="hidden" name="route" value="users">
       <input type="hidden" name="view" value="<?= e($viewMode) ?>">
       <label>جستجو<input name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="نام، موبایل، ایمیل یا شناسه"></label>
@@ -32,10 +45,42 @@ $canManageUsers = $canManageUsers ?? Auth::role() === 'admin';
           <option value="inactive"<?= selected($_GET['status'] ?? '', 'inactive') ?>>غیرفعال</option>
         </select>
       </label>
-      <div class="actions"><button class="btn secondary" type="submit">اعمال فیلتر</button></div>
+      <?php if (Auth::role() === 'admin'): ?>
+        <label>واحد
+          <select name="department">
+            <option value="">همه واحدها</option>
+            <?php foreach (($departments ?? []) as $key => $label): ?>
+              <?php if ($key === '') continue; ?>
+              <option value="<?= e($key) ?>"<?= selected($_GET['department'] ?? '', $key) ?>><?= e($label) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </label>
+      <?php endif; ?>
+      <div class="actions"><button class="btn secondary" type="submit">اعمال فیلتر</button><span class="proma-ajax-status" data-ajax-status></span></div>
     </form>
   </div>
 </section>
+
+<?php if ($socialLinks): ?>
+<section class="proma-social-card-grid proma-users-social-strip">
+  <?php foreach ($socialLinks as $social): ?>
+    <a class="proma-social-card proma-social-card--<?= e($social['class']) ?>" href="<?= e($social['url']) ?>" target="_blank" rel="noopener noreferrer">
+      <span class="proma-social-card__icon"><i data-feather="<?= e($social['icon']) ?>"></i></span>
+      <span>
+        <strong><?= e($social['label']) ?></strong>
+        <small><?= e(parse_url($social['url'], PHP_URL_HOST) ?: $social['url']) ?></small>
+      </span>
+      <em>مشاهده</em>
+    </a>
+  <?php endforeach; ?>
+</section>
+<?php endif; ?>
+
+<div data-ajax-results="users">
+<div class="proma-list-meta">
+  <span class="badge info">کل کاربران: <?= to_persian_digits($pagination['total'] ?? count($users ?? [])) ?></span>
+  <span class="badge muted">صفحه <?= to_persian_digits($pagination['page'] ?? 1) ?> از <?= to_persian_digits($pagination['pages'] ?? 1) ?></span>
+</div>
 
 <?php if ($viewMode === 'cards'): ?>
 <section class="proma-profile-grid">
@@ -45,29 +90,19 @@ $canManageUsers = $canManageUsers ?? Auth::role() === 'admin';
         <div class="proma-profile-head">
           <span class="proma-avatar-choice <?= e($item['avatar_key'] ?: 'avatar-1') ?>"><?= e(mb_substr($item['full_name'], 0, 1, 'UTF-8')) ?></span>
           <div>
-            <h5><?= e($item['full_name']) ?></h5>
-            <p><?= e(role_label($item['role'])) ?> · <?= to_persian_digits($item['mobile']) ?></p>
+            <h5><?= e($item['full_name']) ?> <?php if (!empty($item['identity_verified'])): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓</span><?php endif; ?></h5>
+            <p><?= e(role_label($item['role'])) ?> · <?= e(department_label($item['department'] ?? '')) ?> · <?= to_persian_digits($item['mobile']) ?></p>
           </div>
           <span class="badge <?= e(badge_class($item['status'])) ?>"><?= e(status_label($item['status'])) ?></span>
         </div>
         <div class="proma-user-meta">
           <span><small>شناسه</small><strong><?= e($item['username'] ?: $item['national_id'] ?: '-') ?></strong></span>
-          <span><small>ایمیل</small><strong><?= e($item['email'] ?: '-') ?></strong></span>
+          <span><small>واحد</small><strong><?= e(department_label($item['department'] ?? '')) ?><?= !empty($item['is_department_manager']) ? ' / مدیر بخش' : '' ?></strong></span>
         </div>
-        <?php if ($item['role'] === 'customer'): ?>
-          <div class="proma-medal-row">
-            <?php foreach (($item['medals'] ?? []) as $medal): ?><span class="badge badge-light-warning"><?= e($medal['title']) ?></span><?php endforeach; ?>
-            <?php if (empty($item['medals'])): ?><span class="badge muted">بدون مدال</span><?php endif; ?>
-          </div>
-        <?php endif; ?>
         <?php if ($canManageUsers): ?>
           <div class="actions">
-            <button class="btn small secondary" type="button" data-open-modal="edit-user-<?= (int) $item['id'] ?>">ویرایش</button>
-            <?php if ($item['role'] === 'customer'): ?><button class="btn small warning" type="button" data-open-modal="medals-user-<?= (int) $item['id'] ?>">مدال‌ها</button><?php endif; ?>
-            <form method="post" action="<?= e(url('users/delete/' . $item['id'])) ?>">
-              <?= csrf_field() ?>
-              <button class="btn small danger" type="submit">حذف</button>
-            </form>
+            <button class="btn small secondary icon-only" type="button" data-open-modal="edit-user-<?= (int) $item['id'] ?>" title="ویرایش" aria-label="ویرایش"><i data-feather="edit-2"></i></button>
+            <button class="btn small danger icon-only" type="button" data-open-modal="delete-user-<?= (int) $item['id'] ?>" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button>
           </div>
         <?php endif; ?>
       </div>
@@ -82,24 +117,34 @@ $canManageUsers = $canManageUsers ?? Auth::role() === 'admin';
   <div class="card-header card-no-border"><h2>نمای جدولی کاربران</h2></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>نام</th><th>نقش</th><th>شناسه</th><th>موبایل</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+      <thead><tr><th>نام</th><th>نقش</th><th>واحد</th><th>شناسه</th><th>موبایل</th><th>وضعیت</th><th>عملیات</th></tr></thead>
       <tbody>
       <?php foreach ($users as $item): ?>
         <tr>
-          <td><?= e($item['full_name']) ?></td>
+          <td><?= e($item['full_name']) ?> <?php if (!empty($item['identity_verified'])): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓</span><?php endif; ?></td>
           <td><?= e(role_label($item['role'])) ?></td>
+          <td><?= e(department_label($item['department'] ?? '')) ?><?= !empty($item['is_department_manager']) ? ' / مدیر بخش' : '' ?></td>
           <td><?= e($item['username'] ?: $item['national_id'] ?: '-') ?></td>
           <td><?= to_persian_digits($item['mobile']) ?></td>
           <td><span class="badge <?= e(badge_class($item['status'])) ?>"><?= e(status_label($item['status'])) ?></span></td>
-          <td class="actions"><?= $canManageUsers ? '<button class="btn small secondary" type="button" data-open-modal="edit-user-' . (int) $item['id'] . '">ویرایش</button>' : '<span class="badge muted">مشاهده</span>' ?></td>
+          <td class="actions">
+            <?php if ($canManageUsers): ?>
+              <button class="btn small secondary icon-only" type="button" data-open-modal="edit-user-<?= (int) $item['id'] ?>" title="ویرایش" aria-label="ویرایش"><i data-feather="edit-2"></i></button>
+              <button class="btn small danger icon-only" type="button" data-open-modal="delete-user-<?= (int) $item['id'] ?>" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button>
+            <?php else: ?>
+              <span class="badge muted">مشاهده</span>
+            <?php endif; ?>
+          </td>
         </tr>
       <?php endforeach; ?>
-      <?php if (!$users): ?><tr><td colspan="6" class="empty">کاربری ثبت نشده است.</td></tr><?php endif; ?>
+      <?php if (!$users): ?><tr><td colspan="7" class="empty">کاربری ثبت نشده است.</td></tr><?php endif; ?>
       </tbody>
     </table>
   </div>
 </section>
 <?php endif; ?>
+
+<?= render_pagination($pagination, $pageUrl) ?>
 
 <?php if ($canManageUsers && !empty($profileRequests)): ?>
 <section class="card" style="margin-top:16px">
@@ -131,27 +176,47 @@ $canManageUsers = $canManageUsers ?? Auth::role() === 'admin';
 </section>
 <?php endif; ?>
 
+<?php if ($canManageUsers && !empty($identityRequests)): ?>
+<section class="card" style="margin-top:16px">
+  <div class="card-header card-no-border"><h5>مدارک هویتی در انتظار بررسی</h5></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>کاربر</th><th>نقش</th><th>نوع مدرک</th><th>زمان بارگذاری</th><th>فایل</th><th>عملیات</th></tr></thead>
+      <tbody>
+      <?php foreach ($identityRequests as $document): ?>
+        <tr>
+          <td><?= e($document['full_name']) ?><br><span class="badge muted"><?= to_persian_digits($document['mobile']) ?></span></td>
+          <td><?= e(role_label($document['role'])) ?></td>
+          <td><?= e(IdentityDocument::typeLabel($document['document_type'])) ?></td>
+          <td><?= e(jdatetime($document['uploaded_at'])) ?></td>
+          <td><a class="btn small secondary" href="<?= e(url('profile/identityFile/' . $document['id'])) ?>" target="_blank">مشاهده</a></td>
+          <td class="actions">
+            <form method="post" action="<?= e(url('profile/identityApprove/' . $document['id'])) ?>"><?= csrf_field() ?><input type="hidden" name="review_note" value=""><button class="btn small success" type="submit">تأیید</button></form>
+            <form method="post" action="<?= e(url('profile/identityReject/' . $document['id'])) ?>"><?= csrf_field() ?><input name="review_note" placeholder="علت رد"><button class="btn small danger" type="submit">رد</button></form>
+          </td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</section>
+<?php endif; ?>
+
 <?php if ($canManageUsers): ?>
 <div class="modal" id="create-user">
   <div class="modal-content proma-modal-lg">
     <div class="modal-header"><h3>افزودن کاربر</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
     <form method="post" action="<?= e(url('users/store')) ?>">
-      <div class="modal-body form-grid three">
+      <div class="modal-body proma-user-form">
         <?= csrf_field() ?>
-        <label>نقش
-          <select name="role">
-            <?php foreach (array_filter($roles, fn($role) => $role !== 'customer') as $role): ?><option value="<?= e($role) ?>"><?= e(role_label($role)) ?></option><?php endforeach; ?>
-          </select>
-        </label>
-        <label>نام کامل<input name="full_name" required></label>
-        <label>نام پدر<input name="father_name"></label>
-        <label>صادره از<input name="issued_from"></label>
-        <label>نام کاربری<input name="username" required dir="ltr"></label>
-        <label>کد ملی<input name="national_id" inputmode="numeric"></label>
-        <label>موبایل<input name="mobile" inputmode="tel"></label>
-        <label>ایمیل<input name="email" type="email" dir="ltr"></label>
-        <label>رمز عبور<input name="password" type="password" required></label>
-        <label>وضعیت<select name="status"><option value="active">فعال</option><option value="inactive">غیرفعال</option></select></label>
+        <?php
+          $userFormMode = 'create';
+          $userFormData = [];
+          $userFormRoles = array_values(array_filter($roles, fn($role) => $role !== 'customer'));
+          $userFormDepartments = $departments ?? [];
+          $userFormAvatarKeys = $avatars;
+          include __DIR__ . '/_form_fields.php';
+        ?>
       </div>
       <div class="modal-footer"><button class="btn" type="submit">ثبت کاربر</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
     </form>
@@ -163,57 +228,37 @@ $canManageUsers = $canManageUsers ?? Auth::role() === 'admin';
     <div class="modal-content proma-modal-lg">
       <div class="modal-header"><h3>ویرایش کاربر</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
       <form method="post" action="<?= e(url('users/update/' . $item['id'])) ?>">
-        <div class="modal-body form-grid three">
+        <div class="modal-body proma-user-form">
           <?= csrf_field() ?>
-          <label>نقش<select name="role"><?php foreach ($roles as $role): ?><option value="<?= e($role) ?>"<?= selected($item['role'], $role) ?>><?= e(role_label($role)) ?></option><?php endforeach; ?></select></label>
-          <label>نام کامل<input name="full_name" value="<?= e($item['full_name']) ?>" required></label>
-          <label>نام پدر<input name="father_name" value="<?= e($item['father_name'] ?? '') ?>"></label>
-          <label>صادره از<input name="issued_from" value="<?= e($item['issued_from'] ?? '') ?>"></label>
-          <label>نام کاربری<input name="username" value="<?= e($item['username']) ?>" dir="ltr"></label>
-          <label>کد ملی<input name="national_id" value="<?= e($item['national_id']) ?>" inputmode="numeric"></label>
-          <label>موبایل<input name="mobile" value="<?= e($item['mobile']) ?>" inputmode="tel"></label>
-          <label>ایمیل<input name="email" value="<?= e($item['email']) ?>" type="email" dir="ltr"></label>
-          <label>رمز عبور تازه<input name="password" type="password"></label>
-          <label>وضعیت<select name="status"><option value="active"<?= selected($item['status'], 'active') ?>>فعال</option><option value="inactive"<?= selected($item['status'], 'inactive') ?>>غیرفعال</option></select></label>
-          <label class="full">نشانی<textarea name="address"><?= e($item['address'] ?? '') ?></textarea></label>
-          <div class="full">
-            <span class="field-title">آواتارهای مجاز</span>
-            <div class="proma-avatar-options">
-              <?php foreach ($avatars as $avatar): ?>
-                <label><input type="radio" name="avatar_key" value="<?= e($avatar) ?>"<?= checked($item['avatar_key'] ?: 'avatar-1', $avatar) ?>><span class="proma-avatar-choice <?= e($avatar) ?>"><?= e(mb_substr($item['full_name'], 0, 1, 'UTF-8')) ?></span></label>
-              <?php endforeach; ?>
-            </div>
-          </div>
+          <?php
+            $userFormMode = 'edit';
+            $userFormData = $item;
+            $userFormRoles = $roles;
+            $userFormDepartments = $departments ?? [];
+            $userFormAvatarKeys = $avatars;
+            include __DIR__ . '/_form_fields.php';
+          ?>
         </div>
         <div class="modal-footer"><button class="btn" type="submit">ذخیره تغییرات</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
       </form>
     </div>
   </div>
 
-  <?php if ($item['role'] === 'customer'): ?>
-    <div class="modal" id="medals-user-<?= (int) $item['id'] ?>">
-      <div class="modal-content">
-        <div class="modal-header"><h3>مدال‌های <?= e($item['full_name']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+  <div class="modal" id="delete-user-<?= (int) $item['id'] ?>">
+    <div class="modal-content">
+      <div class="modal-header"><h3>تأیید حذف کاربر</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+      <form method="post" action="<?= e(url('users/delete/' . $item['id'])) ?>">
         <div class="modal-body">
-          <div class="proma-medal-list">
-            <?php foreach (($item['medals'] ?? []) as $medal): ?>
-              <div class="proma-medal-item">
-                <div><strong><?= e($medal['title']) ?></strong><small><?= to_persian_digits($medal['points']) ?> امتیاز · <?= e($medal['description']) ?></small></div>
-                <form method="post" action="<?= e(url('users/medalDelete/' . $medal['id'])) ?>"><?= csrf_field() ?><button class="btn small danger" type="submit">حذف</button></form>
-              </div>
-            <?php endforeach; ?>
-            <?php if (empty($item['medals'])): ?><div class="empty">مدالی ثبت نشده است.</div><?php endif; ?>
-          </div>
-          <form method="post" action="<?= e(url('users/medalStore/' . $item['id'])) ?>" class="form-grid" style="margin-top:16px">
-            <?= csrf_field() ?>
-            <label>عنوان مدال<input name="title" required></label>
-            <label>امتیاز<input name="points" inputmode="numeric" value="0"></label>
-            <label class="full">توضیح<textarea name="description"></textarea></label>
-            <div class="full"><button class="btn warning" type="submit">افزودن مدال</button></div>
-          </form>
+          <?= csrf_field() ?>
+          <?php $deleteCode = ConfirmationCode::hint('user_delete_' . (int) $item['id']); ?>
+          <div class="notice error">برای حذف <?= e($item['full_name']) ?> عدد <strong class="ltr"><?= e($deleteCode) ?></strong> را وارد کنید.</div>
+          <label>عدد تأیید<input name="confirm_text" required inputmode="numeric" autocomplete="off" placeholder="<?= e($deleteCode) ?>"></label>
         </div>
-      </div>
+        <div class="modal-footer"><button class="btn danger icon-only" type="submit" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
+      </form>
     </div>
-  <?php endif; ?>
+  </div>
+
 <?php endforeach; ?>
 <?php endif; ?>
+</div>

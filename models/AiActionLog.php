@@ -56,4 +56,16 @@ class AiActionLog extends Model
             [$status, trim((string) $summary), (int) $id]
         );
     }
+
+    public static function delete($id)
+    {
+        self::ensureSchema();
+        self::execute('DELETE FROM ai_action_logs WHERE id = ?', [(int) $id]);
+    }
+
+    public static function clear()
+    {
+        self::ensureSchema();
+        self::execute('DELETE FROM ai_action_logs');
+    }
 }

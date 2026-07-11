@@ -1,9 +1,9 @@
 <?php
-$totalBase = 0;
-$totalPayable = 0;
+$lastDueDate = '';
 foreach ($installments as $item) {
-    $totalBase += (float) $item['base_amount'];
-    $totalPayable += (float) $item['payable'];
+    if (!empty($item['due_date']) && $item['due_date'] > $lastDueDate) {
+        $lastDueDate = $item['due_date'];
+    }
 }
 ?>
 <!doctype html>
@@ -12,14 +12,29 @@ foreach ($installments as $item) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= e($title) ?> - <?= e($contract['contract_number']) ?></title>
-  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
   <style>
+    @font-face {
+      font-family: "YekanBakh";
+      src: url("assets/fonts/woff2/YekanBakh-Regular.woff2") format("woff2"),
+           url("assets/fonts/woff/YekanBakh-Regular.woff") format("woff");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "YekanBakh";
+      src: url("assets/fonts/woff2/YekanBakh-Bold.woff2") format("woff2"),
+           url("assets/fonts/woff/YekanBakh-Bold.woff") format("woff");
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       color: #20212a;
       background: #f4f6fb;
-      font-family: Vazirmatn, Tahoma, Arial, sans-serif;
+      font-family: "YekanBakh", Tahoma, Arial, sans-serif;
       direction: rtl;
     }
     .booklet-shell {
@@ -131,17 +146,98 @@ foreach ($installments as $item) {
       font-size: 12px;
     }
     @media print {
-      @page { size: A5 portrait; margin: 6mm; }
-      body { background: #fff; }
-      .booklet-shell { width: 100%; margin: 0; }
-      .booklet-toolbar { display: none; }
+      @page { size: A4 portrait; margin: 8mm; }
+      html,
+      body {
+        width: auto;
+        min-width: 0;
+        color: #111827;
+        background: #fff;
+        font-size: 9.5pt;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .booklet-shell {
+        width: 100%;
+        margin: 0;
+      }
+      .booklet-toolbar {
+        display: none;
+      }
       .booklet-cover,
       .coupon {
+        border-color: #1f2937;
+        border-radius: 0;
         box-shadow: none;
       }
-      .booklet-cover { page-break-after: always; }
-      .coupon-grid { grid-template-columns: 1fr; gap: 5mm; }
-      .coupon { min-height: 52mm; }
+      .booklet-cover {
+        padding: 4mm;
+        margin-bottom: 4mm;
+        break-after: avoid;
+        page-break-after: auto;
+      }
+      .booklet-cover h2 {
+        margin-bottom: 3mm;
+        font-size: 13pt;
+      }
+      .meta-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 2mm;
+      }
+      .meta-grid div {
+        min-height: 13mm;
+        padding: 1.8mm 2mm;
+        border: 1px solid #d1d5db;
+        border-radius: 0;
+        background: #fff;
+      }
+      .meta-grid span,
+      .coupon small {
+        margin-bottom: 1mm;
+        color: #374151;
+        font-size: 8pt;
+      }
+      .meta-grid strong,
+      .coupon strong {
+        font-size: 9.5pt;
+        line-height: 1.55;
+      }
+      .coupon-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4mm;
+        align-items: start;
+      }
+      .coupon {
+        min-height: 58mm;
+        padding: 3mm;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .coupon-header {
+        padding-bottom: 2mm;
+        margin-bottom: 2mm;
+        border-bottom-color: #4b5563;
+      }
+      .coupon-number {
+        min-width: 23mm;
+        min-height: 9mm;
+        border: 1px solid #111827;
+        border-radius: 0;
+        color: #111827;
+        background: #fff;
+      }
+      .coupon-body {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 2mm;
+      }
+      .coupon-footer {
+        min-height: 12mm;
+        gap: 3mm;
+        margin-top: 3mm;
+        padding-top: 3mm;
+        border-top-color: #4b5563;
+        color: #111827;
+      }
     }
   </style>
 </head>
@@ -162,7 +258,7 @@ foreach ($installments as $item) {
         <div><span>تاریخ قرارداد</span><strong><?= e(jdate($contract['start_date'])) ?></strong></div>
         <div><span>اولین سررسید</span><strong><?= e(jdate($contract['first_due_date'])) ?></strong></div>
         <div><span>تعداد اقساط</span><strong><?= to_persian_digits(count($installments)) ?></strong></div>
-        <div><span>اصل قرارداد</span><strong><?= money_toman($contract['principal_amount']) ?></strong></div>
+        <div><span>آخرین سررسید</span><strong><?= $lastDueDate ? e(jdate($lastDueDate)) : '-' ?></strong></div>
       </div>
       <?php if ($guarantors): ?>
         <p><strong>ضامنان:</strong> <?= e(implode('، ', array_column($guarantors, 'full_name'))) ?></p>

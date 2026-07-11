@@ -133,6 +133,21 @@ class Payment extends Model
         );
     }
 
+    public static function forLegalCase($contractId, $customerId)
+    {
+        self::ensureCorrectionSchema();
+        return self::fetchAll(
+            "SELECT p.*, c.customer_id, c.contract_number, u.full_name AS customer_name, i.installment_number
+             FROM payments p
+             JOIN contracts c ON c.id = p.contract_id
+             JOIN users u ON u.id = c.customer_id
+             LEFT JOIN installments i ON i.id = p.installment_id
+             WHERE p.contract_id = ? AND c.customer_id = ? AND COALESCE(p.is_corrected, 0) = 0
+             ORDER BY COALESCE(p.payment_date, DATE(p.paid_at), DATE(p.created_at)) DESC, p.id DESC",
+            [(int) $contractId, (int) $customerId]
+        );
+    }
+
     public static function monthlyTrendForContract($contractId, $months = 6)
     {
         self::ensureCorrectionSchema();
@@ -219,12 +234,28 @@ class Payment extends Model
                 LEFT JOIN users cu ON cu.id = p.corrected_by"
             . ($where ? ' WHERE ' . implode(' AND ', $where) : '')
             . ' ORDER BY COALESCE(p.payment_date, DATE(p.paid_at), DATE(p.created_at)) DESC, p.id DESC';
+        if (!empty($filters['limit'])) {
+            $sql .= ' LIMIT ' . max(1, min(200, (int) $filters['limit']));
+        }
         return self::fetchAll($sql, $params);
     }
 
     public static function record($installmentId, $contractId, $userId, $amount, $method, $status, $trackId = null, $refId = null, $description = '', $paymentDate = null, $paymentType = 'installment', $paymentTime = null)
     {
         self::ensureCorrectionSchema();
+        $contract = self::fetch('SELECT status FROM contracts WHERE id = ? LIMIT 1', [(int) $contractId]);
+        if (!$contract) {
+            throw new InvalidArgumentException('قرارداد پرداخت پیدا نشد.');
+        }
+        if (($contract['status'] ?? '') === 'cancelled') {
+            throw new InvalidArgumentException('برای قرارداد لغو شده پرداخت جدید قابل ثبت نیست.');
+        }
+        if ($installmentId) {
+            $installmentStatus = self::fetch('SELECT status FROM installments WHERE id = ? AND contract_id = ? LIMIT 1', [(int) $installmentId, (int) $contractId]);
+            if (!$installmentStatus || ($installmentStatus['status'] ?? '') === 'cancelled') {
+                throw new InvalidArgumentException('قسط انتخاب‌شده قابل پرداخت نیست.');
+            }
+        }
         $paymentType = $paymentType === 'down_payment' ? 'down_payment' : 'installment';
         $paymentDate = $paymentDate ?: date('Y-m-d');
         $paymentTime = normalize_time($paymentTime) ?: date('H:i');
@@ -363,7 +394,7 @@ class Payment extends Model
             );
             self::applyToInstallment($payment['installment_id']);
             self::storeSnapshot((int) $payment['id'], $before, self::installmentState((int) $payment['installment_id']));
-            Notification::create($payment['user_id'], 'پرداخت جدید ثبت شد', 'پرداخت شما با موفقیت تأیید شد.', 'payment', url('payments'));
+            Notification::create($payment['user_id'], 'پرداخت جدید ثبت شد', 'پرداخت شما با موفقیت تأیید شد.', 'payment', url('installments/panel'));
             self::commit();
             return ['ok' => true, 'message' => 'پرداخت با موفقیت ثبت شد.'];
         } catch (Throwable $e) {

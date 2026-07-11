@@ -8,7 +8,7 @@
             <div class="greeting-user">
               <h4 class="f-w-600">پنل پیگیری اپراتور</h4>
               <p>قراردادهای ارجاع‌شده و تماس‌های اخیر را از همین پیشخوان مدیریت کنید.</p>
-              <div class="whatsnew-btn"><a class="btn btn-outline-white" href="<?= e(url('operator')) ?>">ثبت تماس</a></div>
+              <div class="whatsnew-btn"><a class="btn btn-outline-white" href="<?= e(url('overdue')) ?>">سررسید گذشته</a></div>
             </div>
           </div>
         </div>
@@ -46,7 +46,7 @@
       <div class="card-header card-no-border">
         <div class="header-top">
           <h5>قراردادهای ارجاع‌شده</h5>
-          <a class="link-only" href="<?= e(url('operator')) ?>">مدیریت پیگیری‌ها</a>
+          <a class="link-only" href="<?= e(url('overdue')) ?>">سررسید گذشته</a>
         </div>
       </div>
       <div class="card-body pt-0">

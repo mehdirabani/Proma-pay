@@ -10,7 +10,7 @@ class Auth
             session_set_cookie_params([
                 'lifetime' => 0,
                 'path' => '/',
-                'secure' => !empty($_SERVER['HTTPS']),
+                'secure' => is_https_request(),
                 'httponly' => true,
                 'samesite' => 'Lax',
             ]);
@@ -42,7 +42,7 @@ class Auth
         $user = Model::fetch(
             "SELECT * FROM users
              WHERE status = 'active'
-             AND role IN ('admin','operator','lawyer')
+             AND role IN ('admin','operator','lawyer','customer')
              AND (username = :username OR mobile = :mobile OR national_id = :national_id OR email = :email)
              LIMIT 1",
             [
@@ -54,6 +54,9 @@ class Auth
         );
         if (!$user || !password_verify((string) $password, $user['password_hash'])) {
             return false;
+        }
+        if (($user['role'] ?? '') === 'customer') {
+            User::syncCustomerLoginDefaults((int) $user['id'], $user);
         }
         self::setSession($user);
         return true;
@@ -75,25 +78,48 @@ class Auth
     public static function customerLogin($nationalId, $mobileLast4)
     {
         $nationalId = trim(to_english_digits($nationalId));
-        $mobileLast4 = to_english_digits($mobileLast4);
-        $user = Model::fetch(
+        $identifierDigits = preg_replace('/\D+/', '', $nationalId);
+        if (strlen($identifierDigits) < 4) {
+            $identifierDigits = '__no_numeric_identifier__';
+        }
+        $mobileLast4 = preg_replace('/\D+/', '', to_english_digits($mobileLast4));
+        if (strlen($mobileLast4) !== 4) {
+            return false;
+        }
+        $users = Model::fetchAll(
             "SELECT * FROM users
              WHERE status = 'active' AND role = 'customer'
-             AND (national_id = :identifier_national OR mobile = :identifier_mobile OR email = :identifier_email)
-             AND RIGHT(mobile, 4) = :last4
-             LIMIT 1",
+             AND (
+                username = :identifier_username
+                OR national_id = :identifier_national
+                OR mobile = :identifier_mobile
+                OR email = :identifier_email
+                OR username = :digits_username
+                OR national_id = :digits_national
+                OR mobile = :digits_mobile
+             )
+             ORDER BY id DESC
+             LIMIT 5",
             [
+                'identifier_username' => $nationalId,
                 'identifier_national' => $nationalId,
                 'identifier_mobile' => $nationalId,
                 'identifier_email' => $nationalId,
-                'last4' => $mobileLast4,
+                'digits_username' => $identifierDigits,
+                'digits_national' => $identifierDigits,
+                'digits_mobile' => $identifierDigits,
             ]
         );
-        if (!$user) {
-            return false;
+        foreach ($users as $user) {
+            $mobileDigits = preg_replace('/\D+/', '', to_english_digits($user['mobile'] ?? ''));
+            if (strlen($mobileDigits) < 4 || substr($mobileDigits, -4) !== $mobileLast4) {
+                continue;
+            }
+            User::syncCustomerLoginDefaults((int) $user['id'], $user, true);
+            self::setSession($user);
+            return true;
         }
-        self::setSession($user);
-        return true;
+        return false;
     }
 
     protected static function setSession(array $user)
@@ -152,5 +178,10 @@ class Auth
             $controller->render('errors/403', ['title' => 'دسترسی غیرمجاز'], 'app');
             exit;
         }
+    }
+
+    public static function canViewUsers()
+    {
+        return current_user_can_view_users();
     }
 }
