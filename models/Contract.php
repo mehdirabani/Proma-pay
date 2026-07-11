@@ -32,6 +32,7 @@ class Contract extends Model
     public static function all($filters = [])
     {
         self::ensureSchema();
+        self::syncCompletionStatuses();
         $params = [];
         $where = self::listWhere($filters, $params);
         $sql = "SELECT c.*, u.full_name AS customer_name, u.mobile, u.national_id, u.secondary_phone, u.avatar_key,
@@ -51,6 +52,7 @@ class Contract extends Model
     public static function paginated(array $filters = [])
     {
         self::ensureSchema();
+        self::syncCompletionStatuses();
         $params = [];
         $where = self::listWhere($filters, $params);
         $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
@@ -114,6 +116,7 @@ class Contract extends Model
     public static function find($id)
     {
         self::ensureSchema();
+        self::syncCompletionStatuses((int) $id);
         return self::fetch(
             "SELECT c.*, u.full_name AS customer_name, u.father_name AS customer_father_name,
              u.issued_from AS customer_issued_from, u.mobile, u.national_id, u.secondary_phone,
@@ -348,6 +351,16 @@ class Contract extends Model
             ContractDocument::saveGuarantorPeople((int) $id, $guarantorPeople);
             self::syncInstallmentSchedule((int) $id, $data);
             Payment::syncDownPayment((int) $id, $data['updated_by'] ?? null, normalize_money($data['down_payment_amount'] ?? 0), $data['start_date']);
+            if (($current['status'] ?? '') === 'closed') {
+                self::execute(
+                    "UPDATE contracts SET status = 'active', updated_at = NOW()
+                     WHERE id = ? AND status = 'closed'
+                     AND EXISTS (SELECT 1 FROM installments WHERE contract_id = ? AND status NOT IN ('paid', 'cancelled'))",
+                    [(int) $id, (int) $id]
+                );
+            }
+            self::syncCompletionStatuses((int) $id);
+            ContractDocument::generate((int) $id, $data['updated_by'] ?? null);
             ContractDocument::log((int) $id, 'update_contract', $old, [
                 'contract' => $data,
                 'items' => $items,
@@ -451,7 +464,7 @@ class Contract extends Model
         throw new InvalidArgumentException('قراردادها حذف نمی‌شوند؛ برای حفظ سوابق از گزینه «لغو قرارداد» استفاده کنید.');
     }
 
-    public static function cancel($id, $reason, $adminId)
+    public static function cancel($id, $reason, $adminId, $correctCustomerPayments = false)
     {
         self::ensureSchema();
         $contractId = (int) $id;
@@ -473,6 +486,14 @@ class Contract extends Model
                 throw new InvalidArgumentException('قرارداد تسویه‌شده از مسیر لغو عادی قابل لغو نیست.');
             }
 
+            $correctedPayments = 0;
+            if ($correctCustomerPayments) {
+                $correctedPayments = Payment::correctAllForCustomer(
+                    (int) $contract['customer_id'],
+                    'اصلاحیه مالی هنگام لغو قرارداد ' . ($contract['contract_number'] ?? '') . ': ' . $reason,
+                    $adminId
+                );
+            }
             $summary = self::cancellationSummary($contractId);
             if ((int) $summary['confirmed_payment_count'] > 0 || (float) $summary['confirmed_payment_amount'] > 0 || (int) $summary['paid_installments'] > 0) {
                 throw new InvalidArgumentException(
@@ -537,7 +558,28 @@ class Contract extends Model
             );
         } catch (Throwable $ignored) {
         }
-        return true;
+        return ['corrected_payments' => $correctedPayments ?? 0];
+    }
+
+    public static function syncCompletionStatuses($contractId = null)
+    {
+        $params = [];
+        $scope = '';
+        if ($contractId !== null && (int) $contractId > 0) {
+            $scope = ' AND c.id = ?';
+            $params[] = (int) $contractId;
+        }
+        self::execute(
+            "UPDATE contracts c
+             SET status = 'closed', updated_at = NOW()
+             WHERE c.status IN ('active', 'referred', 'processing', 'pending'){$scope}
+             AND EXISTS (SELECT 1 FROM installments i1 WHERE i1.contract_id = c.id)
+             AND NOT EXISTS (
+                SELECT 1 FROM installments i2
+                WHERE i2.contract_id = c.id AND i2.status NOT IN ('paid', 'cancelled')
+             )",
+            $params
+        );
     }
 
     public static function generateInstallments($contractId, array $data)

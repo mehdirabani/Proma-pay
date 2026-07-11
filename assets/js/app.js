@@ -2169,6 +2169,12 @@
         const href = card.getAttribute('data-card-href');
         if (href) window.location.href = href;
       });
+      card.addEventListener('keydown', function (event) {
+        if (event.target !== card || (event.key !== 'Enter' && event.key !== ' ')) return;
+        event.preventDefault();
+        const href = card.getAttribute('data-card-href');
+        if (href) window.location.href = href;
+      });
     });
   };
 

@@ -69,7 +69,7 @@ $renderCompactLogo = static function () use ($compactLogoPath, $logoText, $logoI
 $footerText = $settings['footer_text'] ?? 'توسعه‌دهنده: مهدی ربانی - pgm.mehdirabani@gmail.com - github.com/mehdirabani';
 $sprite = template_asset_url('svg/icon-sprite.svg');
 $userInitial = mb_substr($user['full_name'] ?? 'ک', 0, 1, 'UTF-8');
-$userAvatarKey = normalize_avatar_key($user['avatar_key'] ?? 'avatar-1');
+$userAvatarKey = avatar_key_for($user['avatar_key'] ?? null, $user['id'] ?? ($user['full_name'] ?? ''));
 $canViewUsers = Auth::canViewUsers();
 $nav = [];
 if (Auth::role() === 'admin') {

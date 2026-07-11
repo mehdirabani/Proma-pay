@@ -7,15 +7,18 @@ class OverdueController extends Controller
         $this->requireRole(['admin', 'operator']);
         $bucket = $_GET['bucket'] ?? null;
         $search = trim((string) ($_GET['q'] ?? ''));
+        $sort = in_array($_GET['sort'] ?? '', ['oldest', 'newest', 'amount_desc', 'amount_asc', 'name_asc', 'name_desc'], true) ? $_GET['sort'] : 'oldest';
         $operatorId = Auth::role() === 'operator' ? Auth::id() : null;
         $result = Installment::overduePaginated($bucket, $search, $operatorId, [
             'page' => max(1, (int) to_english_digits($_GET['page'] ?? 1)),
             'per_page' => 40,
+            'sort' => $sort,
         ]);
         $this->render('overdue/index', [
             'title' => 'اقساط سررسید گذشته',
             'bucket' => $bucket,
             'search' => $search,
+            'sort' => $sort,
             'installments' => $result['items'],
             'pagination' => $result,
             'operators' => User::all('operator'),
