@@ -62,6 +62,11 @@ function normalize_avatar_key($value)
     return in_array($value, avatar_options(), true) ? $value : 'avatar-1';
 }
 
+function avatar_asset_url($value)
+{
+    return asset_url('assets/images/avatars/' . normalize_avatar_key($value) . '.png');
+}
+
 function e($value)
 {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');

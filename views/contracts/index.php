@@ -75,7 +75,7 @@ for ($i = 0; $i < 6; $i++) {
             <?php endif; ?>
             <div class="proma-contract-card-main">
               <span class="proma-progress-avatar" style="--progress: <?= $progress ?>">
-                <span class="proma-avatar-choice <?= e(normalize_avatar_key($cardContract['avatar_key'] ?? 'avatar-1')) ?>" aria-label="<?= e($cardContract['customer_name']) ?>"></span>
+                <span class="proma-avatar-choice <?= e(normalize_avatar_key($cardContract['avatar_key'] ?? 'avatar-1')) ?>" style="background-image:url('<?= e(avatar_asset_url($cardContract['avatar_key'] ?? 'avatar-1')) ?>')" aria-label="<?= e($cardContract['customer_name']) ?>"></span>
               </span>
               <div>
                 <span class="proma-contract-badge"><?= e($cardContract['contract_number']) ?></span>
@@ -605,7 +605,7 @@ for ($i = 0; $i < 6; $i++) {
 
           <section class="proma-form-section">
             <label class="full">یادداشت<textarea name="notes"><?= e($contract['notes']) ?></textarea></label>
-            <label class="full">دلیل ویرایش<input name="change_reason" required placeholder="مثلاً اصلاح اطلاعات کالا یا ضمانت"></label>
+            <label class="full">دلیل ویرایش<input name="change_reason" placeholder="اختیاری؛ مثلاً اصلاح اطلاعات کالا یا ضمانت"></label>
           </section>
         </div>
         <div class="modal-footer"><button class="btn" type="submit">ذخیره تغییرات</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>

@@ -4385,6 +4385,53 @@ label:has(> input[data-select-filter="customer-select"]) {
 .proma-avatar-choice.avatar-6,
 .proma-customer-avatar.avatar-6 { background-image: url('../images/avatars/avatar-6.png'); }
 
+/* Keep the repeated form controls on a shared grid baseline. */
+.form-grid,
+.proma-contract-form .form-grid,
+.proma-user-form .form-grid {
+  align-items: end;
+}
+
+.form-grid > label,
+.form-grid > .proma-live-card,
+.form-grid > .switch-options,
+.form-grid > .actions,
+.proma-repeat-row > .form-grid {
+  min-width: 0;
+}
+
+.form-grid > label > input:not([type="checkbox"]):not([type="radio"]),
+.form-grid > label > select,
+.form-grid > label > textarea,
+.proma-live-search > input:not([type="checkbox"]):not([type="radio"]),
+.proma-form-section .proma-live-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.proma-contract-form .form-grid > label,
+.proma-user-form .form-grid > label {
+  min-height: 78px;
+}
+
+.proma-contract-form .proma-form-section > .proma-section-title,
+.proma-user-form .proma-form-section > .proma-section-title {
+  min-height: 38px;
+  align-items: center;
+}
+
+.proma-repeat-row {
+  align-items: end;
+}
+
+.proma-repeat-row > .form-grid {
+  align-items: end;
+}
+
+.proma-ecommerce-row-form {
+  align-items: end;
+}
+
 .proma-role-dashboard {
   --role-accent: #7366ff;
   --role-accent-soft: #f0efff;

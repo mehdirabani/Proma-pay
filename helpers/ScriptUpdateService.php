@@ -72,8 +72,16 @@ class ScriptUpdateService
 
         $original = preg_replace('/[^a-z0-9._-]+/i', '-', pathinfo((string) $upload['name'], PATHINFO_FILENAME));
         $original = trim($original, '-_.') ?: 'package';
-        $name = 'proma-update-' . date('Y-m-d-H-i-s') . '-' . $original . '.zip';
+        if (preg_match('/^proma-update-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-[a-z0-9._-]+$/i', $original)) {
+            $name = $original . '.zip';
+        } else {
+            $name = 'proma-update-' . date('Y-m-d-H-i-s') . '-' . $original . '.zip';
+        }
         $path = self::baseDir() . DIRECTORY_SEPARATOR . $name;
+        if (is_file($path)) {
+            $name = pathinfo($name, PATHINFO_FILENAME) . '-copy-' . date('YmdHis') . '.zip';
+            $path = self::baseDir() . DIRECTORY_SEPARATOR . $name;
+        }
         if (!move_uploaded_file($upload['tmp_name'], $path)) {
             throw new RuntimeException('ذخیره بسته بروزرسانی انجام نشد.');
         }
@@ -113,7 +121,7 @@ class ScriptUpdateService
         foreach ($files as $fileSpec) {
             $source = self::safePackagePath($fileSpec['source']);
             $target = self::safeTargetPath($fileSpec['target']);
-            $content = $zip->getFromName($source);
+            $content = self::zipContent($zip, $source);
             if ($content === false) {
                 throw new RuntimeException('فایل ' . $source . ' داخل بسته پیدا نشد.');
             }
@@ -126,7 +134,7 @@ class ScriptUpdateService
 
         foreach ($migrations as $migration) {
             $migrationPath = self::safePackagePath($migration);
-            $sql = $zip->getFromName($migrationPath);
+            $sql = self::zipContent($zip, $migrationPath);
             if ($sql === false) {
                 throw new RuntimeException('migration معرفی‌شده در بسته پیدا نشد: ' . $migrationPath);
             }
@@ -183,7 +191,7 @@ class ScriptUpdateService
         $manifestContent = false;
         $manifestName = '';
         foreach (['proma-update.json', 'update-manifest.json', 'manifest.json'] as $candidate) {
-            $manifestContent = $zip->getFromName($candidate);
+            $manifestContent = self::zipContent($zip, $candidate);
             if ($manifestContent !== false) {
                 $manifestName = $candidate;
                 break;
@@ -232,6 +240,25 @@ class ScriptUpdateService
         $zip->close();
     }
 
+    protected static function zipContent(ZipArchive $zip, $path)
+    {
+        $path = trim(str_replace('\\', '/', (string) $path), '/');
+        foreach ([$path, './' . $path] as $candidate) {
+            $content = $zip->getFromName($candidate);
+            if ($content !== false) {
+                return $content;
+            }
+        }
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $entry = str_replace('\\', '/', (string) $zip->getNameIndex($i));
+            $entry = preg_replace('#^\./+#', '', trim($entry, '/'));
+            if ($entry === $path) {
+                return $zip->getFromIndex($i);
+            }
+        }
+        return false;
+    }
+
     protected static function relaxRuntimeLimits()
     {
         if (function_exists('set_time_limit')) {
@@ -249,6 +276,7 @@ class ScriptUpdateService
         $hasIndex = false;
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = str_replace('\\', '/', (string) $zip->getNameIndex($i));
+            $name = preg_replace('#^\./+#', '', $name);
             $name = trim($name, '/');
             if ($name === '' || substr($name, -1) === '/') {
                 continue;

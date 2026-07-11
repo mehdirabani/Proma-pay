@@ -346,6 +346,7 @@ class Contract extends Model
             ContractDocument::saveItems((int) $id, $items);
             ContractDocument::saveGuarantee((int) $id, $guarantee);
             ContractDocument::saveGuarantorPeople((int) $id, $guarantorPeople);
+            self::syncInstallmentSchedule((int) $id, $data);
             Payment::syncDownPayment((int) $id, $data['updated_by'] ?? null, normalize_money($data['down_payment_amount'] ?? 0), $data['start_date']);
             ContractDocument::log((int) $id, 'update_contract', $old, [
                 'contract' => $data,
@@ -557,6 +558,60 @@ class Contract extends Model
                  VALUES (?, ?, ?, ?, 0, ?, ?, 0, NOW())',
                 [$contractId, $i, $dueDate, $amount, $amount, $amount <= 0 ? 'paid' : ($dueDate < date('Y-m-d') ? 'overdue' : 'pending')]
             );
+        }
+    }
+
+    protected static function syncInstallmentSchedule($contractId, array $data)
+    {
+        $contractId = (int) $contractId;
+        $amount = FinanceHelper::installmentAmount(
+            self::financedAmount($data),
+            max(1, (int) to_english_digits($data['months'] ?? 1)),
+            (float) to_english_digits($data['monthly_interest_rate'] ?? 0),
+            ($data['interest_type'] ?? 'simple') === 'compound' ? 'compound' : 'simple'
+        );
+        $months = max(1, (int) to_english_digits($data['months'] ?? 1));
+        $firstDue = $data['first_due_date'];
+        $rows = self::fetchAll(
+            'SELECT * FROM installments WHERE contract_id = ? AND COALESCE(is_custom, 0) = 0 ORDER BY installment_number ASC',
+            [$contractId]
+        );
+        $byNumber = [];
+        foreach ($rows as $row) {
+            $byNumber[(int) $row['installment_number']] = $row;
+        }
+
+        for ($number = 1; $number <= $months; $number++) {
+            $dueDate = FinanceHelper::addMonths($firstDue, $number - 1);
+            $existing = $byNumber[$number] ?? null;
+            if (!$existing) {
+                self::execute(
+                    'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, is_custom, created_at)
+                     VALUES (?, ?, ?, ?, 0, ?, ?, 0, NOW())',
+                    [$contractId, $number, $dueDate, $amount, $amount, $amount <= 0 ? 'paid' : ($dueDate < date('Y-m-d') ? 'overdue' : 'pending')]
+                );
+                continue;
+            }
+
+            $paid = max(0, (float) ($existing['paid_amount'] ?? 0));
+            $remaining = max(0, $amount - $paid);
+            $status = $remaining <= 0
+                ? 'paid'
+                : FinanceHelper::status($amount, $paid, $dueDate);
+            self::execute(
+                'UPDATE installments
+                 SET due_date = ?, base_amount = ?, remaining_amount = ?, status = ?, updated_at = NOW()
+                 WHERE id = ?',
+                [$dueDate, $amount, $remaining, $status, (int) $existing['id']]
+            );
+        }
+
+        foreach ($rows as $row) {
+            $number = (int) $row['installment_number'];
+            if ($number <= $months || (float) ($row['paid_amount'] ?? 0) > 0 || ($row['status'] ?? '') === 'paid') {
+                continue;
+            }
+            self::execute('DELETE FROM installments WHERE id = ? AND COALESCE(is_custom, 0) = 0', [(int) $row['id']]);
         }
     }
 
