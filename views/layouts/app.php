@@ -323,7 +323,7 @@ if (!$ecommerceEnabled) {
             </li>
             <li class="profile-nav onhover-dropdown pe-0 py-0">
               <div class="media profile-media">
-                <span class="proma-avatar <?= e($userAvatarKey) ?>" style="background-image:url('<?= e(avatar_asset_url($userAvatarKey)) ?>')" aria-label="<?= e($user['full_name'] ?? $userInitial) ?>"></span>
+                <span class="proma-avatar <?= e($userAvatarKey) ?>" aria-label="<?= e($user['full_name'] ?? $userInitial) ?>"><img data-avatar-image src="<?= e(avatar_asset_url($userAvatarKey)) ?>" alt="آواتار <?= e($user['full_name'] ?? $userInitial) ?>" loading="lazy"></span>
                 <div class="media-body">
                   <span><?= e($user['full_name'] ?? '') ?></span>
                   <p class="mb-0"><?= e(role_label($user['role'] ?? '')) ?> <i class="middle fa fa-angle-down"></i></p>

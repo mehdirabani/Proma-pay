@@ -2,8 +2,8 @@
 
 return [
     'app_name' => 'پروما',
-    'version' => '1.0.24',
-    'asset_version' => '1.0.38',
+    'version' => '1.0.25',
+    'asset_version' => '1.0.39',
     'timezone' => 'Asia/Tehran',
     'base_url' => '',
     'session_name' => 'proma_pay_session',
@@ -28,7 +28,7 @@ return [
         'new' => 'جدید',
         'draft' => 'پیش‌نویس',
         'processing' => 'در حال پردازش',
-        'completed' => 'تکمیل شده',
+        'completed' => 'تسویه‌شده',
         'cancelled' => 'لغو شده',
         'reviewing' => 'در حال بررسی',
         'partial' => 'پرداخت جزئی',

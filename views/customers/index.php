@@ -59,7 +59,7 @@ $pageUrl = function ($page) use ($viewMode) {
         <div class="proma-profile-head">
           <span class="proma-progress-avatar" style="--progress: <?= (int) ($item['good_score'] ?? 0) ?>">
             <?php $customerAvatar = avatar_key_for($item['avatar_key'] ?? null, $item['id'] ?? $item['full_name']); ?>
-            <span class="proma-avatar-choice <?= e($customerAvatar) ?>" style="background-image:url('<?= e(avatar_asset_url($customerAvatar)) ?>')" aria-label="<?= e($item['full_name']) ?>"></span>
+            <span class="proma-avatar-choice <?= e($customerAvatar) ?>" aria-label="<?= e($item['full_name']) ?>"><img data-avatar-image src="<?= e(avatar_asset_url($customerAvatar)) ?>" alt="آواتار <?= e($item['full_name']) ?>" loading="lazy"></span>
           </span>
           <div>
             <h5><?= e($item['full_name']) ?> <?php if (!empty($item['identity_verified'])): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓</span><?php endif; ?></h5>

@@ -2160,23 +2160,44 @@
   };
 
   const initCardLinks = function () {
-    document.querySelectorAll('[data-card-href]').forEach(function (card) {
-      if (card.dataset.cardHrefBound === '1') return;
-      card.dataset.cardHrefBound = '1';
-      card.addEventListener('click', function (event) {
-        if (event.defaultPrevented) return;
-        if (event.target.closest('a,button,form,input,select,textarea,label,[role="button"],[data-open-modal],[data-close-modal],.modal')) return;
-        const href = card.getAttribute('data-card-href');
-        if (href) window.location.href = href;
-      });
-      card.addEventListener('keydown', function (event) {
-        if (event.target !== card || (event.key !== 'Enter' && event.key !== ' ')) return;
-        event.preventDefault();
-        const href = card.getAttribute('data-card-href');
-        if (href) window.location.href = href;
-      });
+    if (document.documentElement.dataset.contractCardNavigationBound === '1') return;
+    document.documentElement.dataset.contractCardNavigationBound = '1';
+    const interactiveSelector = 'a,button,input,select,textarea,label,[role="button"],[data-stop-card-navigation],[data-open-modal],[data-close-modal],.modal';
+    const elementFromEvent = function (event) {
+      if (event.target && event.target.nodeType === 1) return event.target;
+      return event.target && event.target.parentElement ? event.target.parentElement : null;
+    };
+    const isInternalInteractive = function (target, card) {
+      const control = target.closest(interactiveSelector);
+      if (control && card.contains(control)) return true;
+      const form = target.closest('form');
+      return !!(form && card.contains(form));
+    };
+    document.addEventListener('click', function (event) {
+      if (event.defaultPrevented) return;
+      const target = elementFromEvent(event);
+      if (!target || typeof target.closest !== 'function') return;
+      const card = target.closest('[data-contract-card][data-card-href]');
+      if (!card || isInternalInteractive(target, card)) return;
+      const href = card.getAttribute('data-card-href');
+      if (href) window.location.assign(href);
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const target = elementFromEvent(event);
+      if (!target || target !== target.closest('[data-contract-card][data-card-href]')) return;
+      if (isInternalInteractive(target, target)) return;
+      event.preventDefault();
+      const href = target.getAttribute('data-card-href');
+      if (href) window.location.assign(href);
     });
   };
+
+  document.addEventListener('error', function (event) {
+    const image = event.target;
+    if (!image || !image.matches || !image.matches('[data-avatar-image]')) return;
+    image.parentElement.classList.add('avatar-image-fallback');
+  }, true);
 
   const initTour = function () {
     const tour = document.querySelector('[data-tour]');

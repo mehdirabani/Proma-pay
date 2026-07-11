@@ -308,8 +308,8 @@ class Installment extends Model
         if (!$contract) {
             throw new InvalidArgumentException('قرارداد پیدا نشد.');
         }
-        if (($contract['status'] ?? '') === 'cancelled') {
-            throw new InvalidArgumentException('برای قرارداد لغو شده قسط جدید قابل ثبت نیست.');
+        if (in_array(($contract['status'] ?? ''), ['cancelled', 'completed', 'closed'], true)) {
+            throw new InvalidArgumentException('برای قرارداد لغو یا تسویه‌شده قسط جدید قابل ثبت نیست.');
         }
         $number = (int) self::fetch('SELECT COALESCE(MAX(installment_number), 0) + 1 AS n FROM installments WHERE contract_id = ?', [$contractId])['n'];
         $amount = normalize_money($amount);

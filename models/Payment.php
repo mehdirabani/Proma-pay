@@ -58,7 +58,7 @@ class Payment extends Model
             "CREATE TABLE IF NOT EXISTS payment_corrections (
                 id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 payment_id BIGINT UNSIGNED NOT NULL,
-                installment_id BIGINT UNSIGNED NOT NULL,
+                installment_id BIGINT UNSIGNED NULL,
                 contract_id BIGINT UNSIGNED NOT NULL,
                 customer_id BIGINT UNSIGNED NOT NULL,
                 reason TEXT NOT NULL,
@@ -69,6 +69,10 @@ class Payment extends Model
                 KEY idx_payment_correction_installment (installment_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
         );
+        try {
+            self::execute('ALTER TABLE payment_corrections MODIFY installment_id BIGINT UNSIGNED NULL');
+        } catch (Throwable $e) {
+        }
         self::$correctionSchemaReady = true;
     }
 
@@ -247,8 +251,8 @@ class Payment extends Model
         if (!$contract) {
             throw new InvalidArgumentException('قرارداد پرداخت پیدا نشد.');
         }
-        if (($contract['status'] ?? '') === 'cancelled') {
-            throw new InvalidArgumentException('برای قرارداد لغو شده پرداخت جدید قابل ثبت نیست.');
+        if (in_array(($contract['status'] ?? ''), ['cancelled', 'completed', 'closed'], true)) {
+            throw new InvalidArgumentException('برای قرارداد لغو یا تسویه‌شده پرداخت جدید قابل ثبت نیست.');
         }
         if ($installmentId) {
             $installmentStatus = self::fetch('SELECT status FROM installments WHERE id = ? AND contract_id = ? LIMIT 1', [(int) $installmentId, (int) $contractId]);
@@ -429,12 +433,12 @@ class Payment extends Model
         }
     }
 
-    public static function correctAllForCustomer($customerId, $reason, $adminId)
+    public static function correctForContract($contractId, $reason, $adminId)
     {
         self::ensureCorrectionSchema();
-        $customerId = (int) $customerId;
+        $contractId = (int) $contractId;
         $reason = trim((string) $reason);
-        if ($customerId <= 0 || $reason === '') {
+        if ($contractId <= 0 || $reason === '') {
             return 0;
         }
         $startedTransaction = false;
@@ -447,40 +451,56 @@ class Payment extends Model
                 "SELECT p.*, c.customer_id
                  FROM payments p
                  JOIN contracts c ON c.id = p.contract_id
-                 WHERE c.customer_id = ? AND p.status = 'paid' AND COALESCE(p.is_corrected, 0) = 0
+                 WHERE p.contract_id = ? AND c.id = ? AND p.status = 'paid' AND COALESCE(p.is_corrected, 0) = 0
                  ORDER BY p.id ASC FOR UPDATE",
-                [$customerId]
+                [$contractId, $contractId]
             );
             $corrected = 0;
             foreach ($payments as $payment) {
                 $installmentId = !empty($payment['installment_id']) ? (int) $payment['installment_id'] : null;
-                $before = $installmentId ? self::installmentState($installmentId) : null;
                 if ($installmentId) {
                     self::fetch('SELECT id FROM installments WHERE id = ? FOR UPDATE', [$installmentId]);
                 }
-                $snapshot = $payment['correction_snapshot_json'] ?: json_encode([
+                $before = $installmentId ? self::installmentState($installmentId) : ['effective_amount' => (float) $payment['amount']];
+                self::execute(
+                    "UPDATE payments
+                     SET is_corrected = 1, status = 'corrected', correction_reason = ?, corrected_at = NOW(), corrected_by = ?
+                     WHERE id = ? AND COALESCE(is_corrected, 0) = 0",
+                    [$reason, (int) $adminId, (int) $payment['id']]
+                );
+                if ($installmentId) {
+                    self::applyToInstallment($installmentId);
+                }
+                $after = $installmentId ? self::installmentState($installmentId) : ['effective_amount' => 0, 'status' => 'corrected'];
+                $snapshot = json_encode([
                     'payment_id' => (int) $payment['id'],
                     'installment_id' => $installmentId,
                     'contract_id' => (int) $payment['contract_id'],
-                    'customer_id' => $customerId,
+                    'customer_id' => (int) $payment['customer_id'],
                     'amount' => (float) $payment['amount'],
                     'payment_date' => $payment['payment_date'] ?: ($payment['paid_at'] ?: $payment['created_at']),
                     'before' => $before,
+                    'after' => $after,
+                    'effective_amount_before' => (float) $payment['amount'],
+                    'effective_amount_after' => 0,
                 ], JSON_UNESCAPED_UNICODE);
                 self::execute(
-                    "UPDATE payments
-                     SET is_corrected = 1, status = 'corrected', correction_reason = ?, corrected_at = NOW(), corrected_by = ?, correction_snapshot_json = ?
-                     WHERE id = ? AND COALESCE(is_corrected, 0) = 0",
-                    [$reason, (int) $adminId, $snapshot, (int) $payment['id']]
+                    'INSERT INTO payment_corrections
+                     (payment_id, installment_id, contract_id, customer_id, reason, snapshot_json, corrected_by, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
+                    [(int) $payment['id'], $installmentId, $contractId, (int) $payment['customer_id'], $reason, $snapshot, (int) $adminId]
                 );
-                if ($installmentId) {
-                    self::execute(
-                        'INSERT INTO payment_corrections
-                         (payment_id, installment_id, contract_id, customer_id, reason, snapshot_json, corrected_by, created_at)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
-                        [(int) $payment['id'], $installmentId, (int) $payment['contract_id'], $customerId, $reason, $snapshot, (int) $adminId]
-                    );
-                    self::applyToInstallment($installmentId);
+                self::execute('UPDATE payments SET correction_snapshot_json = ? WHERE id = ?', [$snapshot, (int) $payment['id']]);
+                if (class_exists('AuditLog')) {
+                    AuditLog::record('payment', 'corrected', 'payment', (int) $payment['id'], [
+                        'actor_user_id' => $adminId,
+                        'customer_id' => (int) $payment['customer_id'],
+                        'contract_id' => $contractId,
+                        'installment_id' => $installmentId,
+                        'description' => 'اصلاحیه مالی هنگام لغو قرارداد',
+                        'old_values' => ['amount' => (float) $payment['amount'], 'effective_amount' => (float) $payment['amount']],
+                        'new_values' => ['amount' => (float) $payment['amount'], 'effective_amount' => 0, 'reason' => $reason],
+                    ]);
                 }
                 $corrected++;
             }

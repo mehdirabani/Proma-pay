@@ -533,7 +533,7 @@ DROP TABLE IF EXISTS `payment_corrections`;
 CREATE TABLE `payment_corrections` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `payment_id` bigint(20) unsigned NOT NULL,
-  `installment_id` bigint(20) unsigned NOT NULL,
+  `installment_id` bigint(20) unsigned DEFAULT NULL,
   `contract_id` bigint(20) unsigned NOT NULL,
   `customer_id` bigint(20) unsigned NOT NULL,
   `reason` text NOT NULL,

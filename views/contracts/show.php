@@ -67,7 +67,7 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
           </div>
           <label class="full">علت لغو قرارداد<textarea name="cancellation_reason" required minlength="3" rows="4" placeholder="علت انصراف مشتری یا لغو قرارداد را وارد کنید."></textarea></label>
           <label class="full proma-confirm-check"><input type="checkbox" name="confirm_cancel" value="1" required> از لغو قرارداد و اقساط فعال آن اطمینان دارم.</label>
-          <label class="full proma-confirm-check proma-danger-check"><input type="checkbox" name="correct_customer_payments" value="1"> اصلاحیه مالی پرداخت‌های این مشتری در همه قراردادها ثبت شود و پرداخت‌های موفق او صفر شود. این گزینه بازگشت وجه بانکی انجام نمی‌دهد.</label>
+          <label class="full proma-confirm-check proma-danger-check"><input type="checkbox" name="correct_contract_payments" value="1"> برای پرداخت‌های موفق همین قرارداد، اصلاحیه مالی ثبت شود و اثر آن‌ها در محاسبات داخلی صفر شود. این عملیات بازگشت وجه بانکی انجام نمی‌دهد.</label>
         </div>
         <div class="modal-footer"><button class="btn danger" type="submit">تأیید و لغو قرارداد</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
       </form>
