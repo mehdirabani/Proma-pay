@@ -56,7 +56,7 @@ class SettingsController extends Controller
                 $values[$key] = $rawValue;
             }
         }
-        foreach (['password_reset_enabled', 'calendar_notifications_enabled', 'calendar_notify_admin_without_user', 'calendar_due_day_repeat_enabled', 'notifications_sound_enabled', 'zibal_enabled', 'zibal_test_mode', 'card_transfer_enabled', 'card_transfer_show_sheba', 'card_transfer_show_account_number', 'email_enabled'] as $checkbox) {
+        foreach (['password_reset_enabled', 'calendar_notifications_enabled', 'calendar_notify_admin_without_user', 'calendar_due_day_repeat_enabled', 'notifications_sound_enabled', 'zibal_enabled', 'zibal_test_mode', 'card_transfer_enabled', 'card_transfer_show_sheba', 'card_transfer_show_account_number', 'email_enabled', 'ecommerce_enabled', 'landing_enabled'] as $checkbox) {
             $values[$checkbox] = isset($_POST[$checkbox]) ? '1' : '0';
         }
         $values['notifications_sound_volume'] = (string) max(0, min(1, (float) ($values['notifications_sound_volume'] ?? '0.45')));

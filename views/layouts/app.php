@@ -1,6 +1,7 @@
 <?php
 $user = Auth::user();
 $settings = Settings::allKeyed();
+$ecommerceEnabled = ecommerce_is_enabled();
 $route = trim($_GET['route'] ?? 'dashboard', '/');
 $unreadNotifications = Notification::unreadCount(Auth::id());
 $unreadMessages = Chat::unreadCount(Auth::id());
@@ -16,7 +17,7 @@ $latestNotificationId = Notification::latestId(Auth::id());
 $notificationSoundEnabled = (int) ($settings['notifications_sound_enabled'] ?? 1);
 $notificationSoundVolume = max(0, min(1, (float) ($settings['notifications_sound_volume'] ?? '0.45')));
 $headerCartSummary = ['items' => [], 'subtotal' => 0, 'total' => 0, 'quantity' => 0];
-if (($user['role'] ?? '') === 'customer') {
+if ($ecommerceEnabled && ($user['role'] ?? '') === 'customer') {
     try {
         $headerCartSummary = Ecommerce::cartSummary();
     } catch (Throwable $e) {
@@ -68,6 +69,7 @@ $renderCompactLogo = static function () use ($compactLogoPath, $logoText, $logoI
 $footerText = $settings['footer_text'] ?? 'توسعه‌دهنده: مهدی ربانی - pgm.mehdirabani@gmail.com - github.com/mehdirabani';
 $sprite = template_asset_url('svg/icon-sprite.svg');
 $userInitial = mb_substr($user['full_name'] ?? 'ک', 0, 1, 'UTF-8');
+$userAvatarKey = normalize_avatar_key($user['avatar_key'] ?? 'avatar-1');
 $canViewUsers = Auth::canViewUsers();
 $nav = [];
 if (Auth::role() === 'admin') {
@@ -129,6 +131,11 @@ if (Auth::role() === 'admin') {
         ['calendar', 'تقویم', 'stroke-task', 'fill-task'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
     ];
+}
+if (!$ecommerceEnabled) {
+    $nav = array_values(array_filter($nav, static function ($item) {
+        return strpos((string) ($item[0] ?? ''), 'ecommerce') !== 0;
+    }));
 }
 ?>
 <!doctype html>
@@ -316,7 +323,7 @@ if (Auth::role() === 'admin') {
             </li>
             <li class="profile-nav onhover-dropdown pe-0 py-0">
               <div class="media profile-media">
-                <span class="proma-avatar"><?= e($userInitial) ?></span>
+                <span class="proma-avatar <?= e($userAvatarKey) ?>" aria-label="<?= e($user['full_name'] ?? $userInitial) ?>"></span>
                 <div class="media-body">
                   <span><?= e($user['full_name'] ?? '') ?></span>
                   <p class="mb-0"><?= e(role_label($user['role'] ?? '')) ?> <i class="middle fa fa-angle-down"></i></p>

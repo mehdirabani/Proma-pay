@@ -25,6 +25,43 @@ function app_config($key = null, $default = null)
     return $config[$key] ?? $default;
 }
 
+function setting_enabled($key, $default = true)
+{
+    try {
+        $value = Settings::get($key, $default ? '1' : '0');
+    } catch (Throwable $e) {
+        $value = $default ? '1' : '0';
+    }
+    return in_array((string) $value, ['1', 'true', 'on', 'yes'], true);
+}
+
+function ecommerce_is_enabled()
+{
+    return setting_enabled('ecommerce_enabled', true);
+}
+
+function landing_is_enabled()
+{
+    return ecommerce_is_enabled() && setting_enabled('landing_enabled', true);
+}
+
+function app_version_label()
+{
+    $version = trim((string) app_config('version', '1.0.0'));
+    return 'v' . ltrim($version, 'vV');
+}
+
+function avatar_options()
+{
+    return ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4', 'avatar-5', 'avatar-6'];
+}
+
+function normalize_avatar_key($value)
+{
+    $value = trim((string) $value);
+    return in_array($value, avatar_options(), true) ? $value : 'avatar-1';
+}
+
 function e($value)
 {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');

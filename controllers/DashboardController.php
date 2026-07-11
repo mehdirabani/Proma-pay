@@ -11,7 +11,8 @@ class DashboardController extends Controller
             return;
         }
         if ($role === 'operator') {
-            redirect('overdue');
+            $this->operator();
+            return;
         }
         if ($role === 'lawyer') {
             $this->lawyer();
@@ -266,19 +267,42 @@ class DashboardController extends Controller
 
     protected function operator()
     {
+        $contracts = Contract::all(['operator_id' => Auth::id()]);
+        $calls = OperatorCall::all(Auth::id());
+        $overdue = Installment::overdue(null, null, Auth::id(), 100);
+        $today = date('Y-m-d');
+        $metrics = [
+            'contracts' => count($contracts),
+            'active_contracts' => count(array_filter($contracts, static fn ($item) => ($item['status'] ?? '') === 'active')),
+            'overdue' => count($overdue),
+            'today' => count(array_filter($overdue, static fn ($item) => ($item['due_date'] ?? '') === $today)),
+            'calls' => count($calls),
+            'followups' => count(array_filter($calls, static fn ($item) => !empty($item['next_followup_date']) && $item['next_followup_date'] >= $today)),
+        ];
         $this->render('dashboard/operator', [
             'title' => 'داشبورد اپراتور',
-            'contracts' => Contract::all(['operator_id' => Auth::id()]),
-            'calls' => OperatorCall::all(Auth::id()),
+            'contracts' => $contracts,
+            'calls' => $calls,
+            'overdue' => $overdue,
+            'metrics' => $metrics,
         ]);
     }
 
     protected function lawyer()
     {
+        $cases = LegalCase::all(['lawyer_id' => Auth::id()]);
+        $eligible = LegalCase::eligibleContracts();
+        $metrics = [
+            'cases' => count($cases),
+            'open_cases' => count(array_filter($cases, static fn ($item) => ($item['status'] ?? '') !== 'closed')),
+            'eligible' => count($eligible),
+            'expenses' => array_sum(array_map(static fn ($item) => (float) ($item['expense_amount'] ?? 0), $cases)),
+        ];
         $this->render('dashboard/lawyer', [
             'title' => 'داشبورد وکیل',
-            'cases' => LegalCase::all(['lawyer_id' => Auth::id()]),
-            'eligible' => LegalCase::eligibleContracts(),
+            'cases' => $cases,
+            'eligible' => $eligible,
+            'metrics' => $metrics,
         ]);
     }
 
@@ -287,14 +311,23 @@ class DashboardController extends Controller
         $customerId = Auth::id();
         User::syncAutomaticMedals((int) $customerId);
         $contracts = Contract::all(['customer_id' => $customerId]);
+        $installments = Installment::all(['customer_id' => $customerId]);
+        $activeInstallments = array_filter($installments, static fn ($item) => !in_array(($item['status'] ?? ''), ['paid', 'cancelled'], true));
         $this->render('dashboard/customer', [
             'title' => 'داشبورد مشتری',
             'contracts' => $contracts,
-            'installments' => Installment::all(['customer_id' => $customerId]),
+            'installments' => $installments,
             'payments' => Payment::recentForCustomer($customerId, 9),
             'medals' => Model::fetchAll('SELECT * FROM medals WHERE user_id = ? ORDER BY id DESC', [$customerId]),
             'socialLinks' => configured_social_links(Settings::allKeyed()),
-            'ecommerceOrders' => Ecommerce::ordersForCustomer($customerId, 6),
+            'ecommerceOrders' => ecommerce_is_enabled() ? Ecommerce::ordersForCustomer($customerId, 6) : [],
+            'metrics' => [
+                'contracts' => count($contracts),
+                'installments' => count($installments),
+                'open_installments' => count($activeInstallments),
+                'overdue' => count(array_filter($activeInstallments, static fn ($item) => ($item['status'] ?? '') === 'overdue')),
+                'payable' => array_sum(array_map(static fn ($item) => (float) ($item['payable'] ?? 0), $activeInstallments)),
+            ],
             'givenGuarantees' => Contract::all(['guarantor_id' => $customerId]),
             'receivedGuarantees' => Model::fetchAll(
                 "SELECT c.contract_number, c.id AS contract_id, u.full_name, u.mobile, u.national_id

@@ -2,6 +2,16 @@
 
 class EcommerceController extends Controller
 {
+    public function __construct()
+    {
+        if (!ecommerce_is_enabled()) {
+            if (Auth::check()) {
+                redirect('dashboard');
+            }
+            redirect('auth/login');
+        }
+    }
+
     public function index()
     {
         if (Auth::check() && Auth::role() === 'admin') {
@@ -12,6 +22,9 @@ class EcommerceController extends Controller
 
     public function landing()
     {
+        if (!landing_is_enabled()) {
+            redirect('ecommerce/shop');
+        }
         $featured = Ecommerce::activeProducts([
             'page' => 1,
             'per_page' => 8,

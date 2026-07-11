@@ -2,7 +2,7 @@
   <div class="col-xl-4">
     <section class="card proma-profile-card">
       <div class="card-body">
-        <div class="proma-avatar-choice <?= e($user['avatar_key'] ?? 'avatar-1') ?>"><?= e(mb_substr($user['full_name'], 0, 1, 'UTF-8')) ?></div>
+        <div class="proma-avatar-choice <?= e(normalize_avatar_key($user['avatar_key'] ?? 'avatar-1')) ?>" aria-label="<?= e($user['full_name']) ?>"></div>
         <h4><?= e($user['full_name']) ?> <?php if (!empty($identityVerified)): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓ آبی</span><?php endif; ?></h4>
         <p><?= e(role_label($user['role'])) ?></p>
         <?php if ($latestRequest): ?>
@@ -29,7 +29,7 @@
               <?php foreach ($avatars as $avatar): ?>
                 <label>
                   <input type="radio" name="avatar_key" value="<?= e($avatar) ?>"<?= checked($user['avatar_key'] ?? 'avatar-1', $avatar) ?>>
-                  <span class="proma-avatar-choice <?= e($avatar) ?>"><?= to_persian_digits(substr($avatar, -1)) ?></span>
+                  <span class="proma-avatar-choice <?= e($avatar) ?>" aria-label="<?= e($avatar) ?>"></span>
                 </label>
               <?php endforeach; ?>
             </div>
