@@ -6,6 +6,7 @@ $logoText = trim((string) ($settings['logo_text'] ?? $settings['system_name'] ??
 $printLogoPath = $logoPath ?: $logoIconPath;
 $documentTitle = trim((string) ($documentTitle ?? '')) ?: 'قرارداد';
 $documentHeader = trim((string) ($documentHeader ?? ''));
+$isCancelled = ($contract['status'] ?? '') === 'cancelled';
 ?>
 <!doctype html>
 <html lang="fa" dir="rtl">
@@ -41,6 +42,7 @@ $documentHeader = trim((string) ($documentHeader ?? ''));
       print-color-adjust: exact;
     }
     .contract-print-page {
+      position: relative;
       width: 210mm;
       min-height: 297mm;
       margin: 0 auto;
@@ -141,6 +143,25 @@ $documentHeader = trim((string) ($documentHeader ?? ''));
       border-radius: 6px;
       padding: 2px 4px;
       background: #fff;
+    }
+    .contract-cancelled-watermark {
+      position: absolute;
+      top: 42%;
+      left: 50%;
+      z-index: 2;
+      color: rgba(185, 28, 28, .16);
+      border: 2px solid rgba(185, 28, 28, .2);
+      padding: 8px 22px;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0;
+      transform: translate(-50%, -50%) rotate(-18deg);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .contract-cancelled-note {
+      color: #b91c1c !important;
+      font-weight: 700;
     }
     .contract-print-body,
     .contract-document-body {
@@ -294,13 +315,14 @@ $documentHeader = trim((string) ($documentHeader ?? ''));
         <h1><?= e($documentTitle) ?></h1>
         <?php if ($documentHeader !== ''): ?><p><?= e($documentHeader) ?></p><?php endif; ?>
       </div>
-      <span class="contract-print-side-note">نسخه چاپی<br>قرارداد</span>
+      <span class="contract-print-side-note<?= $isCancelled ? ' contract-cancelled-note' : '' ?>"><?= $isCancelled ? 'قرارداد لغو شده' : 'نسخه چاپی<br>قرارداد' ?></span>
       <div class="contract-print-meta">
         <span>شماره قرارداد: <?= e($contract['contract_number']) ?></span>
         <span>تاریخ قرارداد: <?= e(jdate($contract['start_date'])) ?></span>
-        <span>امانت‌دار: <?= e($contract['customer_name']) ?></span>
+        <span class="<?= $isCancelled ? 'contract-cancelled-note' : '' ?>">امانت‌دار: <?= e($contract['customer_name']) ?></span>
       </div>
     </header>
+    <?php if ($isCancelled): ?><div class="contract-cancelled-watermark">قرارداد لغو شده</div><?php endif; ?>
     <?= $body ?>
   </main>
   <script>window.addEventListener('load', function () { window.print(); });</script>
