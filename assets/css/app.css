@@ -1417,6 +1417,27 @@ a {
   color: var(--proma-primary);
 }
 
+.proma-sidebar-nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  margin-inline-end: 12px;
+  font-size: 18px;
+  line-height: 1;
+  vertical-align: middle;
+  color: currentColor;
+}
+
+.page-wrapper.compact-wrapper .sidebar-link .proma-sidebar-nav-icon {
+  flex: 0 0 19px;
+}
+
+.page-wrapper.compact-wrapper.proma-sidebar-icons .sidebar-link .proma-sidebar-nav-icon {
+  margin-inline-end: 0;
+}
+
 .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .logo-wrapper {
   min-height: 86px;
 }

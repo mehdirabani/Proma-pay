@@ -457,7 +457,7 @@ class PluginManager
         }
         $requiredCore = preg_replace('/[^0-9.]/', '', (string) ($manifest['requires_core'] ?? '0'));
         if ($requiredCore !== '' && version_compare(app_version(), $requiredCore, '<')) {
-            throw new RuntimeException('نسخه Proma Pay برای این افزونه کافی نیست.');
+            throw new RuntimeException('نسخه Proma Pay برای این افزونه کافی نیست. نسخه نصب‌شده: ' . app_version_display() . '؛ حداقل لازم: V' . $requiredCore . '.');
         }
         $requiredApi = trim((string) ($manifest['plugin_api_version'] ?? '0'));
         if ($requiredApi !== '' && version_compare(plugin_api_version(), $requiredApi, '<')) {

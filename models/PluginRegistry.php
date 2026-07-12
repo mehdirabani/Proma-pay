@@ -36,7 +36,7 @@ class PluginRegistry extends Model
             'INSERT INTO system_plugins
              (plugin_id, name, description, version, path, status, installed_at, installed_by, manifest_json, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, ?, NOW())
-             ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description), version = VALUES(version), path = VALUES(path), manifest_json = VALUES(manifest_json), updated_at = NOW()',
+             ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description), version = VALUES(version), path = VALUES(path), status = VALUES(status), last_error = NULL, deleted_at = NULL, manifest_json = VALUES(manifest_json), updated_at = NOW()',
             [
                 $manifest['id'],
                 $manifest['name'],

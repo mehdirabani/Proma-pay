@@ -1663,19 +1663,29 @@
   const initSidebarCollapse = function () {
     const wrapper = document.getElementById('pageWrapper');
     if (!wrapper) return;
-    if (localStorage.getItem('proma-sidebar-icons') === '1') {
-      wrapper.classList.add('proma-sidebar-icons');
+    const sidebar = document.querySelector('.sidebar-wrapper');
+    const header = document.querySelector('.page-header');
+    const syncState = function () {
+      if (!sidebar || !header || window.innerWidth < 992) return;
+      const collapsed = sidebar.classList.contains('close_icon');
+      localStorage.setItem('proma-sidebar-icons', collapsed ? '1' : '0');
+      document.querySelectorAll('.toggle-sidebar').forEach(function (button) {
+        button.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      });
+    };
+    if (sidebar && header && window.innerWidth >= 992 && localStorage.getItem('proma-sidebar-icons') === '1') {
+      sidebar.classList.add('close_icon');
+      header.classList.add('close_icon');
     }
     document.querySelectorAll('.toggle-sidebar').forEach(function (button) {
       button.setAttribute('title', 'باز و بسته کردن منو');
+      button.setAttribute('role', 'button');
       button.addEventListener('click', function () {
         if (window.innerWidth < 992) return;
-        window.setTimeout(function () {
-          wrapper.classList.toggle('proma-sidebar-icons');
-          localStorage.setItem('proma-sidebar-icons', wrapper.classList.contains('proma-sidebar-icons') ? '1' : '0');
-        }, 0);
+        window.setTimeout(syncState, 20);
       });
     });
+    syncState();
   };
 
   const initLoadingForms = function () {

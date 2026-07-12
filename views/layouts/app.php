@@ -153,6 +153,13 @@ if (Auth::role() === 'admin' && class_exists('PluginManager')) {
         $pluginMenus = [];
     }
 }
+$sidebarIcon = static function (array $item, string $sprite, bool $filled = false): string {
+    if (($item[0] ?? '') === 'medals') {
+        return $filled ? '' : '<i class="proma-sidebar-nav-icon icofont icofont-award" aria-hidden="true"></i>';
+    }
+    $icon = $filled ? ($item[3] ?? '') : ($item[2] ?? '');
+    return '<svg class="' . ($filled ? 'fill-icon' : 'stroke-icon') . '" aria-hidden="true"><use href="' . e($sprite) . '#' . e($icon) . '"></use></svg>';
+};
 ?>
 <!doctype html>
 <html lang="fa" dir="rtl">
@@ -406,8 +413,8 @@ if (Auth::role() === 'admin' && class_exists('PluginManager')) {
                     <?php if ($item[0] === 'review' && $pendingReviewCount): ?><label class="badge badge-light-danger"><?= to_persian_digits($pendingReviewCount) ?></label><?php endif; ?>
                     <?php if ($children): ?>
                       <a class="sidebar-link sidebar-title <?= $active ? 'active' : '' ?>" href="javascript:void(0)">
-                        <svg class="stroke-icon"><use href="<?= e($sprite) ?>#<?= e($item[2]) ?>"></use></svg>
-                        <svg class="fill-icon"><use href="<?= e($sprite) ?>#<?= e($item[3]) ?>"></use></svg>
+                        <?= $sidebarIcon($item, $sprite) ?>
+                        <?= $sidebarIcon($item, $sprite, true) ?>
                         <span><?= e($item[1]) ?></span>
                       </a>
                       <ul class="sidebar-submenu" style="<?= $active ? 'display:block;' : '' ?>">
@@ -418,8 +425,8 @@ if (Auth::role() === 'admin' && class_exists('PluginManager')) {
                       </ul>
                     <?php else: ?>
                       <a class="sidebar-link sidebar-title link-nav <?= $active ? 'active' : '' ?>" href="<?= e(url($item[0])) ?>">
-                        <svg class="stroke-icon"><use href="<?= e($sprite) ?>#<?= e($item[2]) ?>"></use></svg>
-                        <svg class="fill-icon"><use href="<?= e($sprite) ?>#<?= e($item[3]) ?>"></use></svg>
+                        <?= $sidebarIcon($item, $sprite) ?>
+                        <?= $sidebarIcon($item, $sprite, true) ?>
                         <span><?= e($item[1]) ?></span>
                       </a>
                     <?php endif; ?>

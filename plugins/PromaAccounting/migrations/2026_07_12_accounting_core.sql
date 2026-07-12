@@ -89,7 +89,6 @@ CREATE TABLE IF NOT EXISTS plugin_accounting_accounts (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
     account_number VARCHAR(50) NOT NULL,
-    account_number VARCHAR(50) NOT NULL,
     currency VARCHAR(10) NOT NULL DEFAULT 'IRR',
     status VARCHAR(20) NOT NULL DEFAULT 'active',
     created_at DATETIME NOT NULL,
@@ -134,6 +133,7 @@ CREATE TABLE IF NOT EXISTS plugin_accounting_categories (
 CREATE TABLE IF NOT EXISTS accounting_user_accounts (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
+    account_number VARCHAR(50) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'active',
     opening_balance DECIMAL(18,2) NOT NULL DEFAULT 0,
     current_balance DECIMAL(18,2) NOT NULL DEFAULT 0,

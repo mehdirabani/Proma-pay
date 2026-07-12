@@ -22,7 +22,7 @@ class PluginsController extends Controller
             $manifest = PluginManager::instance()->upload($_FILES['plugin_zip'] ?? [], Auth::id());
             set_flash('success', 'پلاگین «' . ($manifest['name'] ?? $manifest['id']) . '» با موفقیت بررسی و بارگذاری شد. اکنون آن را نصب کنید.');
         } catch (Throwable $e) {
-            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'بارگذاری پلاگین انجام نشد.');
+            set_flash('error', 'بارگذاری پلاگین انجام نشد: ' . $e->getMessage());
         }
         redirect('plugins');
     }
@@ -36,7 +36,7 @@ class PluginsController extends Controller
             PluginManager::instance()->install($pluginId, Auth::id());
             set_flash('success', 'پلاگین نصب شد. برای اجرای قابلیت‌ها آن را فعال کنید.');
         } catch (Throwable $e) {
-            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'نصب پلاگین انجام نشد.');
+            set_flash('error', 'نصب پلاگین انجام نشد: ' . $e->getMessage());
         }
         redirect('plugins');
     }
@@ -50,7 +50,7 @@ class PluginsController extends Controller
             PluginManager::instance()->activate($pluginId, Auth::id());
             set_flash('success', 'پلاگین فعال شد.');
         } catch (Throwable $e) {
-            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'فعال‌سازی پلاگین انجام نشد.');
+            set_flash('error', 'فعال‌سازی پلاگین انجام نشد: ' . $e->getMessage());
         }
         redirect('plugins');
     }
@@ -64,7 +64,7 @@ class PluginsController extends Controller
             PluginManager::instance()->deactivate($pluginId, Auth::id());
             set_flash('success', 'پلاگین غیرفعال شد و داده‌های آن حفظ شدند.');
         } catch (Throwable $e) {
-            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'غیرفعال‌سازی پلاگین انجام نشد.');
+            set_flash('error', 'غیرفعال‌سازی پلاگین انجام نشد: ' . $e->getMessage());
         }
         redirect('plugins');
     }
@@ -78,7 +78,7 @@ class PluginsController extends Controller
             PluginManager::instance()->uninstall($pluginId, Auth::id());
             set_flash('success', 'پلاگین غیرفعال و ثبت آن حذف شد؛ داده‌های افزونه حفظ شده‌اند.');
         } catch (Throwable $e) {
-            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'حذف پلاگین انجام نشد.');
+            set_flash('error', 'حذف پلاگین انجام نشد: ' . $e->getMessage());
         }
         redirect('plugins');
     }
@@ -101,7 +101,7 @@ class PluginsController extends Controller
             PluginManager::instance()->update($pluginId, Auth::id());
             set_flash('success', 'افزونه با migrationهای جدید به‌روزرسانی شد.');
         } catch (Throwable $e) {
-            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'به‌روزرسانی افزونه انجام نشد.');
+            set_flash('error', 'به‌روزرسانی افزونه انجام نشد: ' . $e->getMessage());
         }
         redirect('plugins');
     }
