@@ -1,7 +1,7 @@
 {
   "name": "پرما پرداخت",
   "short_name": "پرما پرداخت",
-  "version": "v1.2.9",
+  "version": "v1.3.0",
   "description": "سامانه مدیریت قرارداد، اقساط و پرداخت",
   "start_url": "index.php",
   "display": "standalone",

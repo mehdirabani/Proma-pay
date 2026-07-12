@@ -11,7 +11,7 @@ $assert = static function ($condition, string $message): void {
 };
 
 $version = require $root . '/config/version.php';
-$assert(($version['application'] ?? '') === '1.2.9', 'Application version must be V1.2.9.');
+$assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.2.9', '>='), 'Application version must be V1.2.9 or newer.');
 
 $requiredFiles = [
     'assets/css/components/layout.css',

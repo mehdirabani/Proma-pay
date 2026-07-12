@@ -77,6 +77,7 @@ Domain مربوطه را مشخص کن.
 | Users / Roles / Permissions | کاربران، نقش‌ها، دسترسی‌ها و Scope |
 | Customers | مشتریان، اطلاعات هویتی و اعتبارسنجی |
 | Contracts | قراردادهای فروش اقساطی |
+| Contract Templates & Print | قالب مؤثر، نسخه‌بندی قالب، renderer امن، profile چاپ و بازسازی اسناد |
 | Installments | اقساط، سررسیدها، معوقات |
 | Payments | پرداخت‌ها، رسیدها، کارت‌به‌کارت، درگاه |
 | Financial | لاگ مالی، Ledger، Settlement، Adjustment |

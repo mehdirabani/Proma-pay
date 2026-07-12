@@ -418,27 +418,10 @@ if (!isset($tabs[$activeTab])) {
   </section>
 
   <section class="card proma-settings-panel <?= $activeTab === 'template' ? 'active' : '' ?>" data-settings-panel="template">
-    <div class="card-header"><h2>قالب قرارداد</h2></div>
-    <div class="card-body form-grid">
-      <label class="full">عنوان چاپی قرارداد<input name="contract_document_title" value="<?= e($settings['contract_document_title'] ?? '') ?>" placeholder="مثلاً قرارداد اجاره به شرط تملیک / امانت‌داری"></label>
-      <label class="full">هدر چاپی قرارداد<textarea name="contract_document_header" rows="4" placeholder="متن بالای برگه قرارداد؛ متغیرهای قرارداد قابل استفاده هستند."><?= e($settings['contract_document_header'] ?? '') ?></textarea></label>
-      <label class="full">متن کامل قرارداد<textarea class="proma-contract-editor" name="contract_template_body" rows="18" data-rich-editor data-rich-editor-height="460" placeholder="اگر خالی بماند متن پیش‌فرض قرارداد استفاده می‌شود."><?= e($settings['contract_template_body'] ?? '') ?></textarea></label>
-      <div class="full notice info">
-        <strong>قالب فعال فعلی</strong>
-        <div class="contract-document-preview" style="max-height:260px"><?= ContractDocument::previewTemplateHtml($activeContractTemplate) ?></div>
-      </div>
-      <div class="full proma-variable-list">
-        <strong>متغیرهای قابل استفاده در متن قرارداد</strong>
-        <div class="proma-shortcode-list">
-          <?php foreach ($contractVariables as $variable => $description): ?>
-            <span class="proma-shortcode-item">
-              <button type="button" data-copy-shortcode="<?= e($variable) ?>"><?= e($variable) ?></button>
-              <small><?= e($description) ?></small>
-            </span>
-          <?php endforeach; ?>
-        </div>
-      </div>
-      <div class="full actions"><button class="btn" type="submit">ذخیره قالب قرارداد</button></div>
+    <div class="card-header"><h2>قراردادها</h2></div>
+    <div class="card-body grid">
+      <div class="notice info">قالب قرارداد، نسخه‌ها، متغیرها و تنظیمات چاپ اکنون در بخش مستقل ذخیره می‌شوند؛ بنابراین ویرایش قالب هیچ تنظیم یا کلید محرمانه دیگری را دوباره ارسال نمی‌کند.</div>
+      <div class="actions"><a class="btn" href="<?= e(url('settings/contracts')) ?>"><i data-feather="file-text"></i> ورود به تنظیمات حرفه‌ای قرارداد</a></div>
     </div>
   </section>
 

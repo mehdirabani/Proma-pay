@@ -106,6 +106,18 @@ class ContractDocument extends Model
             self::execute('ALTER TABLE generated_contract_documents ADD COLUMN rendered_header TEXT NULL AFTER rendered_title');
         } catch (Throwable $e) {
         }
+        try {
+            self::execute('ALTER TABLE generated_contract_documents ADD COLUMN template_version_id BIGINT UNSIGNED NULL AFTER contract_id');
+        } catch (Throwable $e) {
+        }
+        try {
+            self::execute("ALTER TABLE generated_contract_documents ADD COLUMN template_status VARCHAR(30) NOT NULL DEFAULT 'legacy' AFTER template_version_id");
+        } catch (Throwable $e) {
+        }
+        try {
+            self::execute('ALTER TABLE contract_document_versions ADD COLUMN template_version_id BIGINT UNSIGNED NULL AFTER contract_id');
+        } catch (Throwable $e) {
+        }
 
         self::$schemaReady = true;
     }
@@ -357,17 +369,19 @@ TEXT;
     public static function generate($contractId, $generatedBy = null)
     {
         self::ensureSchema();
+        $effectiveTemplate = ContractTemplateService::getEffectiveTemplate();
+        $templateVersionId = !empty($effectiveTemplate['id']) ? (int) $effectiveTemplate['id'] : null;
         $rendered = self::render((int) $contractId);
         $title = self::renderTitle((int) $contractId);
         $header = self::renderHeader((int) $contractId);
         $existing = self::document((int) $contractId);
         self::execute(
-            'INSERT INTO generated_contract_documents (contract_id, rendered_title, rendered_header, rendered_body, generated_by, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, NOW(), NULL)
-             ON DUPLICATE KEY UPDATE rendered_title = VALUES(rendered_title), rendered_header = VALUES(rendered_header), rendered_body = VALUES(rendered_body), generated_by = VALUES(generated_by), updated_at = NOW()',
-            [(int) $contractId, $title, $header, $rendered, $generatedBy ? (int) $generatedBy : null]
+            'INSERT INTO generated_contract_documents (contract_id, template_version_id, template_status, rendered_title, rendered_header, rendered_body, generated_by, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NULL)
+             ON DUPLICATE KEY UPDATE template_version_id = VALUES(template_version_id), template_status = VALUES(template_status), rendered_title = VALUES(rendered_title), rendered_header = VALUES(rendered_header), rendered_body = VALUES(rendered_body), generated_by = VALUES(generated_by), updated_at = NOW()',
+            [(int) $contractId, $templateVersionId, 'current', $title, $header, $rendered, $generatedBy ? (int) $generatedBy : null]
         );
-        self::recordVersion((int) $contractId, $title, $header, $rendered, 'generated', $generatedBy);
+        self::recordVersion((int) $contractId, $title, $header, $rendered, 'generated', $generatedBy, $templateVersionId);
         self::log(
             (int) $contractId,
             $existing ? 'regenerate_document' : 'generate_document',
@@ -386,7 +400,7 @@ TEXT;
         if ($body === '') {
             throw new InvalidArgumentException('متن قرارداد نمی‌تواند خالی باشد.');
         }
-        $body = self::sanitizeHtml($body);
+        $body = ContractTemplateRenderer::sanitizeHtml($body);
         $title = trim((string) ($title ?? '')) ?: self::renderTitle((int) $contractId);
         $header = trim((string) ($header ?? '')) ?: self::renderHeader((int) $contractId);
         $existing = self::document((int) $contractId);
@@ -445,7 +459,7 @@ TEXT;
         }
     }
 
-    protected static function recordVersion($contractId, $title, $header, $body, $source, $userId = null)
+    protected static function recordVersion($contractId, $title, $header, $body, $source, $userId = null, $templateVersionId = null)
     {
         try {
             $checksum = hash('sha256', (string) $title . "\0" . (string) $header . "\0" . (string) $body);
@@ -460,9 +474,9 @@ TEXT;
                 self::execute('UPDATE contract_document_versions SET is_published = 0 WHERE contract_id = ?', [(int) $contractId]);
             }
             self::execute(
-                'INSERT INTO contract_document_versions (contract_id, version_number, rendered_title, rendered_header, rendered_body, source, checksum, is_published, is_finalized, generated_by, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, NOW())',
-                [(int) $contractId, $versionNumber, $title, $header, $body, trim((string) $source) ?: 'generated', $checksum, $published, $userId ? (int) $userId : null]
+                'INSERT INTO contract_document_versions (contract_id, template_version_id, version_number, rendered_title, rendered_header, rendered_body, source, checksum, is_published, is_finalized, generated_by, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, NOW())',
+                [(int) $contractId, $templateVersionId ? (int) $templateVersionId : null, $versionNumber, $title, $header, $body, trim((string) $source) ?: 'generated', $checksum, $published, $userId ? (int) $userId : null]
             );
             return (int) self::lastInsertId();
         } catch (Throwable $e) {
@@ -505,7 +519,7 @@ TEXT;
         if ($template === '') {
             $template = self::defaultTemplate();
         }
-        return '<div class="contract-document-body">' . self::templateToHtml($template) . '</div>';
+        return '<div class="contract-document-body">' . ContractTemplateRenderer::render($template, ContractTemplateRenderer::FORMAT_PLAIN) . '</div>';
     }
 
     public static function render($contractId)
@@ -515,10 +529,9 @@ TEXT;
             throw new InvalidArgumentException('قرارداد پیدا نشد.');
         }
         $settings = Settings::allKeyed();
-        $template = trim((string) ($settings['contract_template_body'] ?? ''));
-        if ($template === '') {
-            $template = self::defaultTemplate();
-        }
+        $effectiveTemplate = ContractTemplateService::getEffectiveTemplate();
+        $template = (string) ($effectiveTemplate['body_source'] ?? self::defaultTemplate());
+        $templateFormat = (string) ($effectiveTemplate['body_format'] ?? ContractTemplateRenderer::FORMAT_PLAIN);
         $items = self::items((int) $contractId);
         $guarantees = self::guarantees((int) $contractId);
         $guarantorPeople = self::guarantorPeople((int) $contractId);
@@ -528,7 +541,6 @@ TEXT;
         $remaining = max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0));
         $legalPenaltyClause = self::legalPenaltyClause($settings);
 
-        $html = self::templateToHtml($template);
         $replace = [
             '{{contract_number}}' => e($contract['contract_number']),
             '{{contract_date}}' => e(jdate($contract['start_date'])),
@@ -566,11 +578,9 @@ TEXT;
             '{{last_due_date}}' => e($lastInstallment ? jdate($lastInstallment['due_date']) : ''),
             '{{signature_section}}' => self::signatureSection($guarantorPeople),
         ];
-        foreach ($replace as $placeholder => $value) {
-            $html = str_replace($placeholder, $value, $html);
-        }
+        $html = ContractTemplateRenderer::render($template, $templateFormat, $replace);
         if (!self::templateContainsLegalPenalty($template)) {
-            $html .= '<br><br>' . nl2br(e($legalPenaltyClause), false);
+            $html .= '<p class="contract-paragraph contract-note">' . e($legalPenaltyClause) . '</p>';
         }
         return '<div class="contract-document-body">' . $html . '</div>';
     }
@@ -620,72 +630,12 @@ TEXT;
 
     protected static function templateToHtml($template)
     {
-        $template = self::decodeHtmlEntities(trim((string) $template));
-        if ($template === '') {
-            return '';
-        }
-        if (!self::looksLikeHtml($template)) {
-            return nl2br(e($template), false);
-        }
-        return self::sanitizeHtml($template);
+        return ContractTemplateRenderer::render($template, self::looksLikeHtml($template) ? ContractTemplateRenderer::FORMAT_HTML : ContractTemplateRenderer::FORMAT_PLAIN);
     }
 
     public static function sanitizeHtml($html)
     {
-        $html = self::decodeHtmlEntities(trim((string) $html));
-        if ($html === '') {
-            return '';
-        }
-        if (!self::looksLikeHtml($html)) {
-            return nl2br(e($html), false);
-        }
-
-        $allowedTags = '<p><br><div><span><strong><b><em><i><u><s><ul><ol><li><blockquote><h1><h2><h3><h4><table><thead><tbody><tfoot><tr><th><td><small><sup><sub><a><pre><code>';
-        $html = strip_tags($html, $allowedTags);
-        $html = preg_replace('/\s+on[a-z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
-        $html = preg_replace('/\s+(src|srcset)\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
-        $html = preg_replace('/\s+(?!href\b|style\b|class\b|dir\b|target\b|rel\b|colspan\b|rowspan\b)[a-z0-9_:-]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
-        $html = preg_replace_callback('/\s+href\s*=\s*([\'"])(.*?)\1/is', function ($match) {
-            $href = trim(html_entity_decode($match[2], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-            if ($href === '' || preg_match('/^\s*(javascript|data|vbscript):/i', $href)) {
-                return '';
-            }
-            if (!preg_match('#^(https?://|mailto:|tel:|#|/)#i', $href)) {
-                return '';
-            }
-            return ' href="' . e($href) . '"';
-        }, $html);
-        $html = preg_replace_callback('/\s+style\s*=\s*([\'"])(.*?)\1/is', function ($match) {
-            $style = self::sanitizeInlineStyle($match[2]);
-            return $style === '' ? '' : ' style="' . e($style) . '"';
-        }, $html);
-        $html = preg_replace_callback('/\s+class\s*=\s*([\'"])(.*?)\1/is', function ($match) {
-            $classes = preg_split('/\s+/', trim((string) $match[2])) ?: [];
-            $classes = array_values(array_filter($classes, function ($class) {
-                return preg_match('/^[a-z0-9_-]{1,48}$/i', $class);
-            }));
-            return $classes ? ' class="' . e(implode(' ', array_slice($classes, 0, 12))) . '"' : '';
-        }, $html);
-        $html = preg_replace_callback('/\s+(dir|target|rel|colspan|rowspan)\s*=\s*([\'"])(.*?)\2/is', function ($match) {
-            $name = strtolower($match[1]);
-            $value = trim((string) $match[3]);
-            if ($name === 'dir' && !in_array($value, ['rtl', 'ltr', 'auto'], true)) {
-                return '';
-            }
-            if ($name === 'target') {
-                return $value === '_blank' ? ' target="_blank"' : '';
-            }
-            if ($name === 'rel') {
-                return ' rel="noopener noreferrer"';
-            }
-            if (in_array($name, ['colspan', 'rowspan'], true)) {
-                $number = max(1, min(12, (int) to_english_digits($value)));
-                return ' ' . $name . '="' . $number . '"';
-            }
-            return '';
-        }, $html);
-
-        return trim($html);
+        return ContractTemplateRenderer::sanitizeHtml($html);
     }
 
     protected static function sanitizeInlineStyle($style)

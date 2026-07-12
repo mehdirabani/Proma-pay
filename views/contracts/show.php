@@ -132,9 +132,10 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
 
 <div class="grid cols-2">
   <section class="card">
-    <div class="card-header card-no-border"><h2>متن قرارداد</h2></div>
+    <div class="card-header card-no-border"><div class="header-top"><h2>متن قرارداد</h2><?php if ($document): ?><button class="btn secondary small" type="button" data-contract-copy-textarea="resolved-contract-text"><i data-feather="copy"></i> کپی متن قرارداد تولیدشده</button><?php endif; ?></div></div>
     <div class="card-body">
       <?php if ($document): ?>
+        <textarea id="resolved-contract-text" hidden><?= e(trim(html_entity_decode(strip_tags(str_ireplace(['<br>', '<br/>', '<br />', '</p>', '</h2>', '</h3>', '</li>', '</tr>'], ["\n", "\n", "\n", "\n\n", "\n\n", "\n\n", "\n", "\n"], (string) $document['rendered_body'])), ENT_QUOTES | ENT_HTML5, 'UTF-8'))) ?></textarea>
         <div class="contract-document-preview">
           <div class="contract-document-preview-header">
             <strong><?= e($renderedDocumentTitle) ?></strong>

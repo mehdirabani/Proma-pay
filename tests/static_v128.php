@@ -41,7 +41,8 @@ $assert(strpos($formsCss, '--proma-control-height: 44px') !== false, 'Shared con
 $assert(strpos($formsCss, 'textarea.proma-form-control') !== false, 'Textarea exception is missing.');
 
 $printCss = (string) file_get_contents($root . '/assets/css/components/contract-print.css');
-$assert(strpos($printCss, 'margin: 18mm 17mm') !== false, 'A4 safe print margins are missing.');
+$assert(strpos($printCss, '--contract-margin-top: 6mm') !== false, 'Compact A4 top margin is missing.');
+$assert(strpos($printCss, 'var(--contract-margin-top)') !== false, 'Print margins are not profile-driven.');
 $assert(strpos($printCss, 'grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr)') !== false, 'Symmetric letterhead grid is missing.');
 
 echo "STATIC_V128_OK\n";

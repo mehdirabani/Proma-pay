@@ -115,6 +115,180 @@ class SettingsController extends Controller
         redirect('settings', ['tab' => $tab]);
     }
 
+    public function contracts($section = '')
+    {
+        ContractPermission::requirePermission('contract_settings.view');
+        $section = preg_replace('/[^a-z0-9_-]/i', '', (string) $section) ?: 'dashboard';
+        if (!in_array($section, ['dashboard', 'numbering', 'template', 'print', 'versions', 'variables', 'preview', 'rebuild'], true)) {
+            $section = 'dashboard';
+        }
+        $effective = ContractTemplateService::getEffectiveTemplate();
+        $draft = ContractTemplateService::getDraftTemplate();
+        $this->render('settings/contracts', [
+            'title' => 'تنظیمات قراردادها',
+            'section' => $section,
+            'settings' => Settings::allKeyed(),
+            'effectiveTemplate' => $effective,
+            'draftTemplate' => $draft,
+            'editorTemplate' => $draft ?: $effective,
+            'templateVersions' => ContractTemplateService::versions(),
+            'templateStats' => ContractTemplateService::stats(),
+            'printProfile' => ContractPrintProfile::load(),
+            'printPresets' => ContractPrintProfile::presets(),
+            'variableCatalog' => ContractTemplateService::variableCatalog(),
+            'latestRebuildJob' => ContractTemplateService::latestRebuildJob(),
+        ]);
+    }
+
+    public function saveContractDraft()
+    {
+        ContractPermission::requirePermission('contract_templates.edit');
+        $this->onlyPost();
+        try {
+            $id = ContractTemplateService::createVersion(
+                $_POST['body_source'] ?? '',
+                $_POST['body_format'] ?? ContractTemplateRenderer::FORMAT_PLAIN,
+                $_POST['change_reason'] ?? '',
+                Auth::id()
+            );
+            set_flash('success', 'پیش‌نویس نسخه ' . to_persian_digits((ContractTemplateService::findVersion($id)['version_number'] ?? '')) . ' ذخیره شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('settings/contracts/template');
+    }
+
+    public function saveContractHeader()
+    {
+        ContractPermission::requirePermission('contract_settings.manage');
+        $this->onlyPost();
+        try {
+            $title = trim(strip_tags((string) ($_POST['contract_document_title'] ?? '')));
+            $header = trim(strip_tags((string) ($_POST['contract_document_header'] ?? '')));
+            if ($title === '') {
+                throw new InvalidArgumentException('عنوان چاپی قرارداد الزامی است.');
+            }
+            $old = ['title' => Settings::get('contract_document_title', ''), 'header' => Settings::get('contract_document_header', '')];
+            Settings::saveMany(['contract_document_title' => $title, 'contract_document_header' => $header]);
+            ContractTemplateService::audit('contract_header_changed', 1, null, $old, ['title' => $title, 'header' => $header], $_POST['change_reason'] ?? 'ویرایش عنوان و هدر قرارداد', Auth::id());
+            set_flash('success', 'عنوان و هدر چاپی قرارداد ذخیره شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('settings/contracts/template');
+    }
+
+    public function saveContractNumbering()
+    {
+        ContractPermission::requirePermission('contract_settings.manage');
+        $this->onlyPost();
+        try {
+            $prefix = strtoupper(preg_replace('/[^A-Z0-9_-]/i', '', to_english_digits($_POST['contract_prefix'] ?? 'PR'))) ?: 'PR';
+            $year = preg_replace('/\D+/', '', to_english_digits($_POST['contract_year'] ?? ''));
+            $serial = max(1, (int) to_english_digits($_POST['contract_next_serial'] ?? 1));
+            $format = trim((string) ($_POST['contract_number_format'] ?? 'PR-{SERIAL:6}'));
+            if (!preg_match('/\{SERIAL(?::[1-9][0-9]?)?\}/', $format)) {
+                throw new InvalidArgumentException('فرمت شماره قرارداد باید متغیر SERIAL داشته باشد.');
+            }
+            Settings::saveMany(['contract_prefix' => $prefix, 'contract_year' => $year, 'contract_next_serial' => (string) $serial, 'contract_number_format' => $format]);
+            ContractTemplateService::audit('contract_numbering_changed', 1, null, null, ['prefix' => $prefix, 'year' => $year, 'next_serial' => $serial, 'format' => $format], $_POST['change_reason'] ?? 'ویرایش شماره‌گذاری قرارداد', Auth::id());
+            set_flash('success', 'تنظیمات شماره‌گذاری قرارداد ذخیره شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('settings/contracts/numbering');
+    }
+
+    public function publishContractTemplate($id)
+    {
+        ContractPermission::requirePermission('contract_templates.publish');
+        $this->onlyPost();
+        try {
+            ContractTemplateService::publishVersion((int) $id, $_POST['change_reason'] ?? '', Auth::id());
+            set_flash('success', 'نسخه قالب منتشر شد. اسناد نهایی قدیمی بدون تغییر باقی ماندند.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('settings/contracts/versions');
+    }
+
+    public function restoreContractTemplate($id)
+    {
+        ContractPermission::requirePermission('contract_templates.restore');
+        $this->onlyPost();
+        try {
+            ContractTemplateService::restoreVersion((int) $id, $_POST['change_reason'] ?? 'بازگردانی نسخه قدیمی به‌عنوان پیش‌نویس', Auth::id());
+            set_flash('success', 'نسخه انتخاب‌شده به‌عنوان پیش‌نویس تازه بازیابی شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('settings/contracts/template');
+    }
+
+    public function resetContractTemplate()
+    {
+        ContractPermission::requirePermission('contract_templates.edit');
+        $this->onlyPost();
+        try {
+            ContractTemplateService::resetToDefault($_POST['change_reason'] ?? 'بازنشانی به قالب پیش‌فرض سامانه', Auth::id());
+            set_flash('success', 'قالب پیش‌فرض به‌عنوان پیش‌نویس ایجاد شد و هنوز منتشر نشده است.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('settings/contracts/template');
+    }
+
+    public function saveContractPrint()
+    {
+        ContractPermission::requirePermission('contract_print_settings.manage');
+        $this->onlyPost();
+        try {
+            $old = ContractPrintProfile::load();
+            $preset = $_POST['preset'] ?? 'custom';
+            $profile = !empty($_POST['apply_preset'])
+                ? ContractPrintProfile::fromPreset($preset)
+                : ContractPrintProfile::validate($_POST);
+            Settings::saveMany(ContractPrintProfile::settingValues($profile));
+            ContractTemplateService::audit('print_profile_changed', 1, null, $old, $profile, $_POST['change_reason'] ?? 'ویرایش تنظیمات چاپ', Auth::id());
+            set_flash('success', 'تنظیمات چاپ ذخیره شد و بدون بازسازی متن روی همه چاپ‌ها اعمال می‌شود.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('settings/contracts/print');
+    }
+
+    public function contractsPreview($versionId = null)
+    {
+        ContractPermission::requirePermission('contract_templates.view');
+        $template = $versionId ? ContractTemplateService::findVersion((int) $versionId) : null;
+        $template = $template ?: (ContractTemplateService::getDraftTemplate() ?: ContractTemplateService::getEffectiveTemplate());
+        $settings = Settings::allKeyed();
+        $this->render('settings/contract-preview', [
+            'title' => 'پیش‌نمایش قرارداد',
+            'settings' => $settings,
+            'profile' => ContractPrintProfile::load($settings),
+            'body' => ContractTemplateService::previewHtml($template),
+            'template' => $template,
+        ], null);
+    }
+
+    public function rebuildContractDocuments($jobId = null)
+    {
+        ContractPermission::requirePermission('contract_documents.rebuild');
+        $this->onlyPost();
+        try {
+            $jobId = $jobId ? (int) $jobId : ContractTemplateService::startRebuildJob(Auth::id());
+            $job = ContractTemplateService::processRebuildJob($jobId, 25);
+            $message = ($job['status'] ?? '') === 'completed'
+                ? 'بازسازی اسناد غیرنهایی کامل شد.'
+                : 'یک بسته ۲۵تایی پردازش شد؛ برای ادامه دوباره دکمه ادامه را بزنید.';
+            set_flash('success', $message);
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('settings/contracts/rebuild');
+    }
+
     protected function normalizeBaseUrl($value)
     {
         $value = rtrim(trim((string) $value), '/');

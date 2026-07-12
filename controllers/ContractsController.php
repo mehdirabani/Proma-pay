@@ -469,6 +469,7 @@ class ContractsController extends Controller
             'title' => 'چاپ قرارداد',
             'contract' => $contract,
             'settings' => $settings,
+            'printProfile' => ContractPrintProfile::load($settings),
             'documentTitle' => trim((string) ($document['rendered_title'] ?? '')) ?: ContractDocument::renderTitle((int) $id),
             'documentHeader' => trim((string) ($document['rendered_header'] ?? '')) ?: ContractDocument::renderHeader((int) $id),
             'body' => $document['rendered_body'] ?? ContractDocument::render((int) $id),

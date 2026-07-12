@@ -14,4 +14,10 @@ php tests/static_v126.php
 php tests/static_v129.php
 ```
 
+تست موتور قالب و چاپ قرارداد نسخه `V1.3.0`:
+
+```text
+php tests/static_v130.php
+```
+
 تست‌های نصب تازه، migration، نصب افزونه و workflowهای مالی باید روی یک MySQL/MariaDB سالم و دیتابیس موقت اجرا شوند. در محیط توسعه فعلی MariaDB سیستم crash می‌کند و این تست‌ها تا رفع مشکل سرویس دیتابیس معتبر نیستند.

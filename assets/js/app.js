@@ -2152,6 +2152,7 @@
           ]
         }
       });
+      textarea._promaQuill = quill;
 
       const initial = decodeHtmlEntities(textarea.value || '');
       if (initial.trim() !== '') {
@@ -2171,8 +2172,10 @@
       } catch (error) {}
 
       const sync = function () {
+        if (!textarea.classList.contains('proma-rich-source')) return;
         const html = quill.root.innerHTML.trim();
         textarea.value = html === '<p><br></p>' ? '' : html;
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
       };
       quill.on('text-change', sync);
       const form = textarea.closest('form');
