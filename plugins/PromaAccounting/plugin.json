@@ -2,7 +2,7 @@
   "id": "proma-accounting",
   "name": "حسابداری کاربران",
   "description": "مدیریت فروش، کمیسیون، دفترکل کاربران، هزینه‌ها، پاداش‌ها و دریافت/پرداخت‌ها",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Proma Pay",
   "plugin_api_version": "1.0",
   "requires_core": "1.2.6",
@@ -42,16 +42,25 @@
     {"path":"plugin/accounting/ledger/reverse/{entryId}","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@reverseLedger","method":"POST","permission":"plugin.proma-accounting.reverse_ledger"},
     {"path":"plugin/accounting/sales","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@sales","method":"GET","permission":"plugin.proma-accounting.view"},
     {"path":"plugin/accounting/commissions","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@commissions","method":"GET","permission":"plugin.proma-accounting.view_commissions"},
+    {"path":"plugin/accounting/commissions/approve/{commissionId}","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@approveCommission","method":"POST","permission":"plugin.proma-accounting.approve_commissions"},
+    {"path":"plugin/accounting/commissions/post/{commissionId}","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@postCommission","method":"POST","permission":"plugin.proma-accounting.post_commissions"},
+    {"path":"plugin/accounting/commissions/reverse/{commissionId}","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@reverseCommission","method":"POST","permission":"plugin.proma-accounting.reverse_commissions"},
     {"path":"plugin/accounting/sales/assign","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@assignSeller","method":"POST","permission":"plugin.proma-accounting.assign_seller"},
     {"path":"plugin/accounting/rules","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@rules","method":"GET","permission":"plugin.proma-accounting.manage_commission_rules"},
     {"path":"plugin/accounting/rules/save","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@saveRule","method":"POST","permission":"plugin.proma-accounting.manage_commission_rules"},
     {"path":"plugin/accounting/settings","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@settings","method":"GET","permission":"plugin.proma-accounting.manage_accounting_settings"},
     {"path":"plugin/accounting/settings/save","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@saveSettings","method":"POST","permission":"plugin.proma-accounting.manage_accounting_settings"},
+    {"path":"plugin/accounting/settings/preview","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@previewCommission","method":"POST","permission":"plugin.proma-accounting.manage_accounting_settings"},
+    {"path":"plugin/accounting/setup","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@setup","method":"GET","permission":"plugin.proma-accounting.manage_accounting_settings"},
+    {"path":"plugin/accounting/setup/save","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@saveSetup","method":"POST","permission":"plugin.proma-accounting.manage_accounting_settings"},
+    {"path":"plugin/accounting/setup/skip","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@skipSetup","method":"POST","permission":"plugin.proma-accounting.manage_accounting_settings"},
+    {"path":"plugin/accounting/help","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@help","method":"GET","permission":"plugin.proma-accounting.view"},
     {"path":"plugin/accounting/backfill","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@backfill","method":"GET","permission":"plugin.proma-accounting.backfill_sales"},
     {"path":"plugin/accounting/backfill/run","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@runBackfill","method":"POST","permission":"plugin.proma-accounting.backfill_sales"}
   ],
   "migrations": [
-    "migrations/2026_07_12_accounting_core.sql"
+    "migrations/2026_07_12_accounting_core.sql",
+    "migrations/2026_07_13_accounting_v1_1.sql"
   ],
   "assets": ["assets/css/accounting.css","assets/js/accounting.js"],
   "settings": []

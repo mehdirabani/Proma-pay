@@ -6,7 +6,7 @@ class AccountingServiceProvider implements \PluginServiceProviderInterface
 {
     public function register(\PluginManager $manager, array $manifest)
     {
-        foreach (['Money', 'AccountingRepository', 'LedgerService', 'CommissionService', 'SalesService'] as $file) {
+        foreach (['Money', 'AccountingRepository', 'LedgerService', 'CommissionCalculationService', 'CommissionService', 'SalesService'] as $file) {
             require_once __DIR__ . '/Services/' . $file . '.php';
         }
         require_once __DIR__ . '/Controllers/AccountingController.php';
@@ -22,15 +22,16 @@ class AccountingServiceProvider implements \PluginServiceProviderInterface
             ]);
         }
         foreach ([
-            ['route' => 'plugin/accounting/dashboard', 'label' => 'داشبورد حسابداری', 'permission' => 'plugin.proma-accounting.view_accounting_dashboard'],
-            ['route' => 'plugin/accounting/accounts', 'label' => 'حساب کاربران', 'permission' => 'plugin.proma-accounting.view_user_accounting'],
-            ['route' => 'plugin/accounting/sales', 'label' => 'فروش‌ها', 'permission' => 'plugin.proma-accounting.view'],
-            ['route' => 'plugin/accounting/commissions', 'label' => 'کمیسیون فروش', 'permission' => 'plugin.proma-accounting.view_commissions'],
-            ['route' => 'plugin/accounting/rules', 'label' => 'قوانین کمیسیون', 'permission' => 'plugin.proma-accounting.manage_commission_rules'],
-            ['route' => 'plugin/accounting/backfill', 'label' => 'بازسازی فروش‌های قبلی', 'permission' => 'plugin.proma-accounting.backfill_sales'],
-            ['route' => 'plugin/accounting/settings', 'label' => 'تنظیمات حسابداری', 'permission' => 'plugin.proma-accounting.manage_accounting_settings'],
+            ['route' => 'plugin/accounting/dashboard', 'label' => 'داشبورد حسابداری', 'icon' => 'pie-chart', 'permission' => 'plugin.proma-accounting.view_accounting_dashboard'],
+            ['route' => 'plugin/accounting/accounts', 'label' => 'حساب کاربران', 'icon' => 'users', 'permission' => 'plugin.proma-accounting.view_user_accounting'],
+            ['route' => 'plugin/accounting/sales', 'label' => 'فروش‌ها', 'icon' => 'shopping-bag', 'permission' => 'plugin.proma-accounting.view'],
+            ['route' => 'plugin/accounting/commissions', 'label' => 'کمیسیون فروش', 'icon' => 'percent', 'permission' => 'plugin.proma-accounting.view_commissions'],
+            ['route' => 'plugin/accounting/rules', 'label' => 'قوانین کمیسیون', 'icon' => 'sliders', 'permission' => 'plugin.proma-accounting.manage_commission_rules'],
+            ['route' => 'plugin/accounting/backfill', 'label' => 'بازسازی فروش‌های قبلی', 'icon' => 'refresh-cw', 'permission' => 'plugin.proma-accounting.backfill_sales'],
+            ['route' => 'plugin/accounting/settings', 'label' => 'تنظیمات حسابداری', 'icon' => 'settings', 'permission' => 'plugin.proma-accounting.manage_accounting_settings'],
+            ['route' => 'plugin/accounting/help', 'label' => 'راهنمای حسابداری', 'icon' => 'book-open', 'permission' => 'plugin.proma-accounting.view'],
         ] as $menu) {
-            $manager->registerMenu($manifest['id'], array_merge(['icon' => 'briefcase'], $menu));
+            $manager->registerMenu($manifest['id'], $menu);
         }
     }
 
@@ -69,6 +70,12 @@ class AccountingServiceProvider implements \PluginServiceProviderInterface
 
     public function update(\PluginManager $manager, array $manifest)
     {
+        $status = \Model::fetch("SELECT setting_value FROM plugin_accounting_settings WHERE setting_key = 'setup_status' LIMIT 1");
+        $hasHistory = (bool) \Model::fetch('SELECT id FROM accounting_ledger_entries LIMIT 1')
+            || (bool) \Model::fetch('SELECT id FROM plugin_accounting_sales LIMIT 1');
+        if (($status['setting_value'] ?? '') === 'pending' && $hasHistory) {
+            \Model::execute("UPDATE plugin_accounting_settings SET setting_value = 'skipped', updated_at = NOW() WHERE setting_key = 'setup_status'");
+        }
     }
 
     public function uninstall(\PluginManager $manager, array $manifest, $purge = false)

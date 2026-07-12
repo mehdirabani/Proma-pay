@@ -37,6 +37,11 @@ class Money
         return number_format(self::integer($value), 2, '.', '');
     }
 
+    public static function signedDecimal($value)
+    {
+        return number_format((int) $value, 2, '.', '');
+    }
+
     protected static function englishDigits($value)
     {
         return strtr((string) $value, [

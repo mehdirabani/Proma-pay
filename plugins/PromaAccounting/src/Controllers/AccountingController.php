@@ -3,30 +3,32 @@
 namespace Proma\Plugins\Accounting\Controllers;
 
 use Proma\Plugins\Accounting\Services\AccountingRepository;
+use Proma\Plugins\Accounting\Services\CommissionCalculationService;
 use Proma\Plugins\Accounting\Services\CommissionService;
 use Proma\Plugins\Accounting\Services\LedgerService;
+use Proma\Plugins\Accounting\Services\Money;
 use Proma\Plugins\Accounting\Services\SalesService;
 
 class AccountingController extends \Controller
 {
     public function dashboard()
     {
+        $settings = AccountingRepository::settings();
+        if (($settings['setup_status'] ?? 'pending') === 'pending') {
+            \redirect('plugin/accounting/setup');
+        }
         $this->render('plugin:proma-accounting/dashboard', [
             'title' => 'داشبورد حسابداری',
             'summary' => AccountingRepository::dashboard(),
             'accounts' => AccountingRepository::accounts('', 1, 8)['items'],
-            'settings' => AccountingRepository::settings(),
+            'settings' => $settings,
         ]);
     }
 
     public function accounts()
     {
         $result = AccountingRepository::accounts($_GET['q'] ?? '', $_GET['page'] ?? 1, 25, ['balance' => $_GET['balance'] ?? '']);
-        $this->render('plugin:proma-accounting/accounts', [
-            'title' => 'حساب کاربران',
-            'accounts' => $result['items'],
-            'pagination' => $result,
-        ]);
+        $this->render('plugin:proma-accounting/accounts', ['title' => 'حساب کاربران', 'accounts' => $result['items'], 'pagination' => $result]);
     }
 
     public function ledger($userId)
@@ -106,6 +108,30 @@ class AccountingController extends \Controller
         $this->render('plugin:proma-accounting/commissions', ['title' => 'کمیسیون فروش', 'commissions' => $result['items'], 'pagination' => $result]);
     }
 
+    public function approveCommission($commissionId)
+    {
+        $this->onlyPost();
+        CommissionService::approve((int) $commissionId, \Auth::id());
+        \set_flash('success', 'کمیسیون تأیید شد.');
+        \redirect('plugin/accounting/commissions');
+    }
+
+    public function postCommission($commissionId)
+    {
+        $this->onlyPost();
+        CommissionService::post((int) $commissionId, \Auth::id());
+        \set_flash('success', 'کمیسیون با ثبت یکتا وارد حساب کاربر شد.');
+        \redirect('plugin/accounting/commissions');
+    }
+
+    public function reverseCommission($commissionId)
+    {
+        $this->onlyPost();
+        CommissionService::reverse((int) $commissionId, \Auth::id(), $_POST['reason'] ?? 'اصلاح کمیسیون');
+        \set_flash('success', 'کمیسیون با حفظ تاریخچه معکوس شد.');
+        \redirect('plugin/accounting/commissions');
+    }
+
     public function rules()
     {
         $this->render('plugin:proma-accounting/rules', ['title' => 'قوانین کمیسیون', 'rules' => AccountingRepository::rules(), 'staff' => AccountingRepository::staff('')]);
@@ -115,39 +141,135 @@ class AccountingController extends \Controller
     {
         $this->onlyPost();
         $type = in_array($_POST['commission_type'] ?? '', ['fixed', 'percentage'], true) ? $_POST['commission_type'] : 'percentage';
-        $basis = in_array($_POST['calculation_basis'] ?? '', ['principal_amount', 'financed_amount', 'collected_amount'], true) ? $_POST['calculation_basis'] : 'financed_amount';
-        $timing = in_array($_POST['calculation_timing'] ?? '', ['at_contract_creation', 'after_down_payment', 'after_first_installment', 'after_full_settlement', 'manual_approval'], true) ? $_POST['calculation_timing'] : 'at_contract_creation';
+        $basis = CommissionCalculationService::basisType($_POST['calculation_basis'] ?? 'financed_amount');
+        $timing = $this->timing($_POST['calculation_timing'] ?? 'at_contract_creation');
+        $value = $this->commissionValue($type, $_POST['commission_value'] ?? '');
+        $minimum = trim((string) ($_POST['minimum_amount'] ?? '')) !== '' ? $this->money($_POST['minimum_amount'], 'حداقل کمیسیون') : null;
+        $maximum = trim((string) ($_POST['maximum_amount'] ?? '')) !== '' ? $this->money($_POST['maximum_amount'], 'حداکثر کمیسیون') : null;
+        if ($minimum !== null && $maximum !== null && $minimum > $maximum) {
+            throw new \InvalidArgumentException('حداقل کمیسیون نمی‌تواند از حداکثر کمیسیون بیشتر باشد.');
+        }
+        $name = trim((string) ($_POST['name'] ?? ''));
+        if ($name === '') {
+            throw new \InvalidArgumentException('نام قانون الزامی است.');
+        }
         $userId = !empty($_POST['user_id']) ? (int) $_POST['user_id'] : null;
+        if ($userId && !\Model::fetch("SELECT id FROM users WHERE id = ? AND role IN ('admin','operator','lawyer') AND status = 'active' LIMIT 1", [$userId])) {
+            throw new \InvalidArgumentException('فروشنده انتخاب‌شده معتبر یا فعال نیست.');
+        }
         \Model::execute(
             'INSERT INTO plugin_accounting_commission_rules (user_id, name, commission_type, commission_value, calculation_basis, minimum_amount, maximum_amount, calculation_timing, requires_approval, is_active, priority, created_by, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, NOW())',
-            [$userId, trim((string) ($_POST['name'] ?? 'قانون کمیسیون')), $type, trim((string) ($_POST['commission_value'] ?? '0')), $basis, trim((string) ($_POST['minimum_amount'] ?? '')) !== '' ? (int) to_english_digits($_POST['minimum_amount']) : null, trim((string) ($_POST['maximum_amount'] ?? '')) !== '' ? (int) to_english_digits($_POST['maximum_amount']) : null, $timing, isset($_POST['requires_approval']) ? 1 : 0, (int) ($_POST['priority'] ?? 0), \Auth::id()]
+            [$userId, $name, $type, $value, $basis, $minimum, $maximum, $timing, isset($_POST['requires_approval']) ? 1 : 0, (int) ($_POST['priority'] ?? 0), \Auth::id()]
         );
         \AuditLog::record('accounting', 'commission_rule_saved', 'plugin_accounting_commission_rule', (int) \Model::lastInsertId(), ['actor_user_id' => \Auth::id()]);
-        \set_flash('success', 'قانون کمیسیون ذخیره شد.');
+        \set_flash('success', 'قانون کمیسیون ذخیره شد و فقط روی محاسبات آینده اثر دارد.');
         \redirect('plugin/accounting/rules');
     }
 
     public function settings()
     {
-        $this->render('plugin:proma-accounting/settings', ['title' => 'تنظیمات حسابداری', 'settings' => AccountingRepository::settings()]);
+        $this->renderSettings();
     }
 
     public function saveSettings()
     {
         $this->onlyPost();
-        $allowed = ['default_commission_type', 'default_commission_value', 'default_calculation_basis', 'default_calculation_timing', 'minimum_commission', 'maximum_commission', 'rounding_rule'];
-        foreach ($allowed as $key) {
-            $value = trim((string) ($_POST[$key] ?? ''));
-            \Model::execute('INSERT INTO plugin_accounting_settings (setting_key, setting_value, updated_by, updated_at) VALUES (?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_by = VALUES(updated_by), updated_at = NOW()', [$key, $value, \Auth::id()]);
+        $values = $this->settingsPayload($_POST);
+        $old = AccountingRepository::settings();
+        \Model::begin();
+        try {
+            $this->upsertSettings($values);
+            \AuditLog::record('accounting', 'settings_updated', 'plugin_accounting_settings', 0, ['actor_user_id' => \Auth::id(), 'old_values' => $old, 'new_values' => $values]);
+            \Model::commit();
+        } catch (\Throwable $e) {
+            \Model::rollBack();
+            throw $e;
         }
-        foreach (['require_commission_approval', 'automatic_ledger_posting'] as $key) {
-            $value = isset($_POST[$key]) ? '1' : '0';
-            \Model::execute('INSERT INTO plugin_accounting_settings (setting_key, setting_value, updated_by, updated_at) VALUES (?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_by = VALUES(updated_by), updated_at = NOW()', [$key, $value, \Auth::id()]);
-        }
-        \AuditLog::record('accounting', 'settings_updated', 'plugin_accounting_settings', 0, ['actor_user_id' => \Auth::id(), 'new_values' => ['keys' => $allowed]]);
-        \set_flash('success', 'تنظیمات حسابداری ذخیره شد.');
+        \set_flash('success', 'تنظیمات ذخیره شد. کمیسیون‌ها و اسناد قبلی بدون تغییر باقی ماندند.');
         \redirect('plugin/accounting/settings');
+    }
+
+    public function previewCommission()
+    {
+        $this->onlyPost();
+        $input = $this->previewPayload($_POST);
+        $preview = CommissionCalculationService::preview((int) $input['seller_user_id'], $input);
+        $this->renderSettings($preview, $input);
+    }
+
+    public function setup()
+    {
+        $settings = AccountingRepository::settings();
+        $step = max(1, min(10, (int) ($_GET['step'] ?? ($settings['setup_step'] ?? 1))));
+        $preview = null;
+        if ($step === 9) {
+            $preview = CommissionCalculationService::preview(0, [
+                'principal_amount' => 20000000,
+                'down_payment_amount' => 5000000,
+                'financed_amount' => 15000000,
+                'profit_amount' => 3000000,
+                'collected_amount' => 5000000,
+            ]);
+        }
+        $this->render('plugin:proma-accounting/setup', ['title' => 'راه‌اندازی حسابداری', 'settings' => $settings, 'step' => $step, 'preview' => $preview]);
+    }
+
+    public function saveSetup()
+    {
+        $this->onlyPost();
+        $step = max(1, min(10, (int) ($_POST['step'] ?? 1)));
+        $settings = AccountingRepository::settings();
+        $values = [];
+        if ($step === 1) {
+            $values['default_commission_type'] = in_array($_POST['default_commission_type'] ?? '', ['percentage', 'fixed'], true) ? $_POST['default_commission_type'] : 'percentage';
+        } elseif ($step === 2) {
+            $values['default_commission_value'] = $this->commissionValue($settings['default_commission_type'] ?? 'percentage', $_POST['default_commission_value'] ?? '');
+        } elseif ($step === 3) {
+            $values['default_calculation_basis'] = CommissionCalculationService::basisType($_POST['default_calculation_basis'] ?? 'financed_amount');
+        } elseif ($step === 4) {
+            $values['minimum_commission_enabled'] = isset($_POST['minimum_commission_enabled']) ? '1' : '0';
+            $values['minimum_commission'] = (string) $this->money($_POST['minimum_commission'] ?? 0, 'حداقل کمیسیون');
+            $values['maximum_commission_enabled'] = isset($_POST['maximum_commission_enabled']) ? '1' : '0';
+            $values['maximum_commission'] = (string) $this->money($_POST['maximum_commission'] ?? 0, 'حداکثر کمیسیون');
+            if ($values['minimum_commission_enabled'] === '1' && $values['maximum_commission_enabled'] === '1' && (int) $values['minimum_commission'] > (int) $values['maximum_commission']) {
+                throw new \InvalidArgumentException('حداقل کمیسیون نمی‌تواند از حداکثر کمیسیون بیشتر باشد.');
+            }
+        } elseif ($step === 5) {
+            $values['rounding_method'] = CommissionCalculationService::roundingMethod($_POST['rounding_method'] ?? 'none');
+            $values['rounding_unit'] = (string) $this->roundingUnit($_POST['rounding_unit'] ?? 1000);
+        } elseif ($step === 6) {
+            $values['default_calculation_timing'] = $this->timing($_POST['default_calculation_timing'] ?? 'at_contract_creation');
+        } elseif ($step === 7) {
+            $values['require_commission_approval'] = isset($_POST['require_commission_approval']) ? '1' : '0';
+        } elseif ($step === 8) {
+            $values['automatic_ledger_posting'] = isset($_POST['automatic_ledger_posting']) ? '1' : '0';
+        } elseif ($step === 10) {
+            $values['setup_status'] = 'completed';
+        }
+        $next = min(10, $step + 1);
+        $values['setup_step'] = (string) $next;
+        $this->upsertSettings($values);
+        \AuditLog::record('accounting', 'setup_progress_saved', 'plugin_accounting_settings', 0, ['actor_user_id' => \Auth::id(), 'new_values' => ['step' => $step, 'completed' => $step === 10]]);
+        if ($step === 10) {
+            \set_flash('success', 'راه‌اندازی حسابداری کامل شد.');
+            \redirect('plugin/accounting/dashboard');
+        }
+        \redirect('plugin/accounting/setup', ['step' => $next]);
+    }
+
+    public function skipSetup()
+    {
+        $this->onlyPost();
+        $this->upsertSettings(['setup_status' => 'skipped']);
+        \AuditLog::record('accounting', 'setup_skipped', 'plugin_accounting_settings', 0, ['actor_user_id' => \Auth::id()]);
+        \set_flash('success', 'راهنمای راه‌اندازی فعلاً رد شد؛ هر زمان از تنظیمات قابل اجرا است.');
+        \redirect('plugin/accounting/dashboard');
+    }
+
+    public function help()
+    {
+        $this->render('plugin:proma-accounting/help', ['title' => 'راهنمای حسابداری']);
     }
 
     public function backfill()
@@ -161,5 +283,101 @@ class AccountingController extends \Controller
         $result = SalesService::backfill((int) ($_POST['batch_size'] ?? 25), \Auth::id());
         \set_flash('success', 'تعداد ' . (int) $result['processed'] . ' فروش قبلی بررسی شد. موارد بدون فروشنده نیازمند تخصیص هستند.');
         \redirect('plugin/accounting/backfill');
+    }
+
+    private function renderSettings($preview = null, array $previewInput = [])
+    {
+        $this->render('plugin:proma-accounting/settings', [
+            'title' => 'تنظیمات حسابداری',
+            'settings' => AccountingRepository::settings(),
+            'staff' => AccountingRepository::staff(''),
+            'preview' => $preview,
+            'previewInput' => $previewInput,
+        ]);
+    }
+
+    private function settingsPayload(array $input)
+    {
+        $type = in_array($input['default_commission_type'] ?? '', ['percentage', 'fixed'], true) ? $input['default_commission_type'] : 'percentage';
+        $current = AccountingRepository::settings();
+        $minimumEnabled = isset($input['minimum_commission_enabled']);
+        $maximumEnabled = isset($input['maximum_commission_enabled']);
+        $minimum = $minimumEnabled ? $this->money($input['minimum_commission'] ?? 0, 'حداقل کمیسیون') : Money::integer($current['minimum_commission'] ?? 0);
+        $maximum = $maximumEnabled ? $this->money($input['maximum_commission'] ?? 0, 'حداکثر کمیسیون') : Money::integer($current['maximum_commission'] ?? 0);
+        if ($minimumEnabled && $maximumEnabled && $minimum > $maximum) {
+            throw new \InvalidArgumentException('حداقل کمیسیون نمی‌تواند از حداکثر کمیسیون بیشتر باشد.');
+        }
+        return [
+            'default_commission_type' => $type,
+            'default_commission_value' => $this->commissionValue($type, $input['default_commission_value'] ?? ''),
+            'default_calculation_basis' => CommissionCalculationService::basisType($input['default_calculation_basis'] ?? 'financed_amount'),
+            'minimum_commission_enabled' => $minimumEnabled ? '1' : '0',
+            'minimum_commission' => (string) $minimum,
+            'maximum_commission_enabled' => $maximumEnabled ? '1' : '0',
+            'maximum_commission' => (string) $maximum,
+            'rounding_method' => CommissionCalculationService::roundingMethod($input['rounding_method'] ?? 'none'),
+            'rounding_unit' => (string) $this->roundingUnit($input['rounding_unit'] ?? 1000),
+            'default_calculation_timing' => $this->timing($input['default_calculation_timing'] ?? 'at_contract_creation'),
+            'require_commission_approval' => isset($input['require_commission_approval']) ? '1' : '0',
+            'automatic_ledger_posting' => isset($input['automatic_ledger_posting']) ? '1' : '0',
+            'setup_status' => 'completed',
+            'setup_step' => '10',
+        ];
+    }
+
+    private function previewPayload(array $input)
+    {
+        $values = ['seller_user_id' => (int) ($input['seller_user_id'] ?? 0)];
+        foreach (['principal_amount', 'down_payment_amount', 'financed_amount', 'profit_amount', 'collected_amount'] as $key) {
+            $values[$key] = $this->money($input[$key] ?? 0, 'مبلغ پیش‌نمایش');
+        }
+        return $values;
+    }
+
+    private function commissionValue($type, $value)
+    {
+        if ($type === 'fixed') {
+            return (string) $this->money($value, 'مقدار پیش‌فرض کمیسیون');
+        }
+        $normalized = str_replace([',', '،', '٪', '%', ' '], '', \to_english_digits((string) $value));
+        if ($normalized === '' || !preg_match('/^\d+(?:\.\d{1,2})?$/', $normalized) || Money::rateBasisPoints($normalized) > 10000) {
+            throw new \InvalidArgumentException('مقدار درصد باید بین صفر تا صد و حداکثر دارای دو رقم اعشار باشد.');
+        }
+        return $normalized;
+    }
+
+    private function money($value, $label)
+    {
+        $normalized = str_replace(['٬', ',', '،', 'تومان', 'ریال', ' '], '', \to_english_digits((string) $value));
+        if ($normalized === '' || !preg_match('/^\d+$/', $normalized)) {
+            throw new \InvalidArgumentException($label . ' باید یک مبلغ صحیح و نامنفی باشد.');
+        }
+        return Money::integer($normalized);
+    }
+
+    private function roundingUnit($value)
+    {
+        $unit = Money::integer($value);
+        if (!in_array($unit, [100, 500, 1000, 5000, 10000], true)) {
+            throw new \InvalidArgumentException('برای روش انتخاب‌شده، واحد گرد کردن را مشخص کنید.');
+        }
+        return $unit;
+    }
+
+    private function timing($value)
+    {
+        return in_array($value, ['at_contract_creation', 'after_down_payment', 'after_first_installment', 'after_full_settlement', 'manual_approval'], true)
+            ? $value
+            : 'at_contract_creation';
+    }
+
+    private function upsertSettings(array $values)
+    {
+        foreach ($values as $key => $value) {
+            \Model::execute(
+                'INSERT INTO plugin_accounting_settings (setting_key, setting_value, updated_by, updated_at) VALUES (?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_by = VALUES(updated_by), updated_at = NOW()',
+                [(string) $key, (string) $value, \Auth::id()]
+            );
+        }
     }
 }
