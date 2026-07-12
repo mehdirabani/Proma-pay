@@ -67,7 +67,10 @@ for ($i = 0; $i < 6; $i++) {
           $progress = (int) $stats['total'] > 0 ? (int) round(((int) $stats['paid'] / (int) $stats['total']) * 100) : 0;
           ?>
             <article class="proma-contract-card" data-contract-card data-card-href="<?= e(url('contracts/show/' . $cardContract['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده جزئیات قرارداد <?= e($cardContract['contract_number']) ?>">
-              <?php if (!$readOnly): ?><button class="proma-card-edit icon-btn" type="button" data-open-modal="edit-contract-<?= (int) $cardContract['id'] ?>" title="ویرایش قرارداد" aria-label="ویرایش قرارداد"><i data-feather="edit-2"></i></button><?php endif; ?>
+              <?php if (!$readOnly): ?><div class="proma-card-top-actions" aria-label="عملیات سریع قرارداد">
+                <button class="proma-card-edit icon-btn" type="button" data-open-modal="edit-contract-<?= (int) $cardContract['id'] ?>" title="ویرایش قرارداد" aria-label="ویرایش قرارداد"><i data-feather="edit-2"></i></button>
+                <button class="proma-card-delete icon-btn" type="button" data-open-modal="delete-contract-<?= (int) $cardContract['id'] ?>" title="حذف دائمی قرارداد" aria-label="حذف دائمی قرارداد"><i data-feather="trash-2"></i></button>
+              </div><?php endif; ?>
             <?php if (!$readOnly): ?>
               <label class="proma-card-select" title="انتخاب برای ویرایش دسته‌جمعی">
                 <input type="checkbox" name="contract_ids[]" value="<?= (int) $cardContract['id'] ?>">
@@ -101,7 +104,6 @@ for ($i = 0; $i < 6; $i++) {
                 <a class="btn small success" href="<?= e(url('contracts/booklet/' . $cardContract['id'])) ?>" target="_blank">دفترچه</a>
                   <?php if (!$readOnly): ?>
                   <?php if (($cardContract['status'] ?? '') !== 'cancelled'): ?><button class="btn small danger" type="button" data-open-modal="cancel-contract-<?= (int) $cardContract['id'] ?>"><i data-feather="slash"></i> لغو</button><?php endif; ?>
-                  <button class="btn small danger" type="button" data-open-modal="delete-contract-<?= (int) $cardContract['id'] ?>" title="حذف دائمی قرارداد"><i data-feather="trash-2"></i> حذف</button>
                 <?php endif; ?>
               </div>
             </div>
@@ -139,7 +141,7 @@ for ($i = 0; $i < 6; $i++) {
             <?php if (!$readOnly): ?><button class="btn small info" type="button" data-open-modal="custom-installment-<?= (int) $contract['id'] ?>">قسط دلخواه</button><?php endif; ?>
             <a class="btn small success" href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank">چاپ دفترچه</a>
             <?php if (!$readOnly && ($contract['status'] ?? '') !== 'cancelled'): ?><button class="btn small danger" type="button" data-open-modal="cancel-contract-<?= (int) $contract['id'] ?>"><i data-feather="slash"></i> لغو</button><?php endif; ?>
-            <?php if (!$readOnly): ?><button class="btn small danger" type="button" data-open-modal="delete-contract-<?= (int) $contract['id'] ?>" title="حذف دائمی قرارداد"><i data-feather="trash-2"></i></button><?php endif; ?>
+            <?php if (!$readOnly): ?><button class="btn small danger icon-only" type="button" data-open-modal="delete-contract-<?= (int) $contract['id'] ?>" title="حذف دائمی قرارداد" aria-label="حذف دائمی قرارداد"><i data-feather="trash-2"></i></button><?php endif; ?>
           </td>
         </tr>
       <?php endforeach; ?>

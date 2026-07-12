@@ -1657,19 +1657,23 @@ input.btn:not([class*="btn-"]):not(.secondary):not(.danger):not(.warning):not(.s
   min-height: 74px;
 }
 
-.form-grid label.required-field,
-.install-form label.required-field,
-.modal-body label.required-field {
+label.required-field {
   position: relative;
+  padding-inline-start: 14px;
 }
 
-.form-grid label.required-field::after,
-.install-form label.required-field::after,
-.modal-body label.required-field::after {
+label.required-field::before {
   content: "*";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 0;
   color: #fc4438;
   font-weight: 800;
-  margin-inline-start: 4px;
+  line-height: 1.5;
+}
+
+label.required-field::after {
+  content: none !important;
 }
 
 .proma-checkbox-field {
@@ -6262,10 +6266,6 @@ input[type="checkbox"]:not(.switch-options input):focus-visible {
 }
 
 .proma-card-edit {
-  position: absolute;
-  z-index: 2;
-  top: 14px;
-  left: 14px;
   width: 36px;
   height: 36px;
   padding: 0;
@@ -6283,6 +6283,120 @@ input[type="checkbox"]:not(.switch-options input):focus-visible {
 .proma-card-edit svg {
   width: 17px;
   height: 17px;
+}
+
+.proma-card-top-actions {
+  position: absolute;
+  inset-block-start: 14px;
+  inset-inline-end: 14px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.proma-card-top-actions .icon-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 8px;
+}
+
+.proma-card-delete {
+  color: #dc3545;
+  background: rgba(220, 53, 69, .1);
+}
+
+.proma-card-delete:hover,
+.proma-card-delete:focus-visible {
+  color: #fff;
+  background: #dc3545;
+}
+
+.proma-card-top-actions svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* Keep the sidebar viewport independent from the page height so its final item is scrollable. */
+@media (min-width: 992px) {
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper {
+    height: 100vh !important;
+    overflow: hidden;
+  }
+
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper > div {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .logo-wrapper,
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .logo-icon-wrapper {
+    flex: 0 0 86px;
+  }
+
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main,
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #sidebar-menu,
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #simple-bar {
+    min-height: 0;
+  }
+
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main {
+    flex: 1 1 auto;
+    height: auto !important;
+    overflow: hidden;
+  }
+
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #sidebar-menu,
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #simple-bar {
+    height: 100% !important;
+  }
+
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #simple-bar {
+    box-sizing: border-box;
+    max-height: none !important;
+    margin-block: 0 !important;
+    padding-block-end: 56px !important;
+    overflow-y: auto !important;
+  }
+
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #simple-bar .simplebar-content {
+    padding-block-end: 56px;
+  }
+
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #simple-bar .simplebar-wrapper,
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #simple-bar .simplebar-mask,
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #simple-bar .simplebar-offset,
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #simple-bar .simplebar-content-wrapper {
+    min-height: 0;
+    height: 100%;
+  }
+}
+
+/* All standard forms share the same label/control baseline. */
+.form-grid > label:not(.check):not(.proma-checkbox-field):not(.proma-confirm-check):not(.proma-group-check),
+.install-form > label:not(.check):not(.proma-checkbox-field),
+.proma-settings-form .form-grid > label:not(.check):not(.proma-checkbox-field) {
+  min-height: 74px;
+  align-content: start;
+}
+
+.form-grid > .actions,
+.install-form > .actions {
+  align-self: end;
+  min-height: 44px;
+  margin-top: 0;
+}
+
+.form-grid > label > input:not([type="checkbox"]):not([type="radio"]),
+.form-grid > label > select,
+.form-grid > label > textarea,
+.install-form > label > input:not([type="checkbox"]):not([type="radio"]),
+.install-form > label > select,
+.install-form > label > textarea {
+  align-self: stretch;
 }
 
 tr[data-card-href] {
