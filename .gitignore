@@ -15,5 +15,6 @@
 *.log
 *.tmp
 proma-pay_v*.zip
+proma-accounting_v*.zip
 proma-update-*.zip
 proma-update-*-manifest.json
