@@ -35,6 +35,7 @@ try {
   <link rel="stylesheet" href="<?= e(template_asset_url('css/responsive.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/forms.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/layout.css')) ?>">
 </head>
 <body class="proma-public-body">
   <header class="proma-public-header">
@@ -52,9 +53,11 @@ try {
   </header>
 
   <main class="proma-public-main">
+  <div class="proma-public-content">
     <?php if ($success = flash('success')): ?><div class="alert alert-light-success" role="alert"><?= e($success) ?></div><?php endif; ?>
     <?php if ($error = flash('error')): ?><div class="alert alert-light-danger" role="alert"><?= e($error) ?></div><?php endif; ?>
     <?= $content ?>
+  </div>
   </main>
 
   <footer class="proma-public-footer">

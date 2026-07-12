@@ -189,6 +189,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
   <?php if (plugin_is_active('proma-accounting')): ?><link rel="stylesheet" href="<?= e(asset_url('plugins/PromaAccounting/assets/css/accounting.css')) ?>"><?php endif; ?>
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/forms.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/layout.css')) ?>">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
 </head>
 <body onload="if (window.startTime) startTime()" data-user-id="<?= (int) Auth::id() ?>" data-notification-sound="<?= $notificationSoundEnabled ? '1' : '0' ?>" data-notification-volume="<?= e($notificationSoundVolume) ?>">
@@ -458,9 +459,11 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
           </div>
         </div>
         <div class="container-fluid">
-          <?php if ($success = flash('success')): ?><div class="alert alert-light-success" role="alert"><?= e($success) ?></div><?php endif; ?>
-          <?php if ($error = flash('error')): ?><div class="alert alert-light-danger" role="alert"><?= e($error) ?></div><?php endif; ?>
-          <?= $content ?>
+          <main class="proma-page-content" data-role="<?= e(Auth::role()) ?>">
+            <?php if ($success = flash('success')): ?><div class="alert alert-light-success" role="alert"><?= e($success) ?></div><?php endif; ?>
+            <?php if ($error = flash('error')): ?><div class="alert alert-light-danger" role="alert"><?= e($error) ?></div><?php endif; ?>
+            <?= $content ?>
+          </main>
         </div>
       </div>
 

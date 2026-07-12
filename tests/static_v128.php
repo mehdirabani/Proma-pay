@@ -13,7 +13,7 @@ $assert = static function ($condition, string $message): void {
 };
 
 $version = require $root . '/config/version.php';
-$assert(($version['application'] ?? '') === '1.2.8', 'Application version must be V1.2.8.');
+$assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.2.8', '>='), 'Application version must be V1.2.8 or newer.');
 $assert(PluginStatus::normalize('uninstalled') === PluginStatus::REMOVED, 'Legacy plugin status normalization failed.');
 $assert(PluginStatus::canInstall(PluginStatus::UPLOADED, true), 'Uploaded plugin must be installable.');
 $assert(!PluginStatus::canInstall(PluginStatus::ACTIVE, true), 'Active plugin must not be installable.');

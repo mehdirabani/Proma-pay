@@ -25,9 +25,12 @@ $layoutAppIconPath = $layoutLogoIconPath ?: $layoutFaviconPath;
   <link rel="stylesheet" href="<?= e(template_asset_url('css/responsive.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/forms.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/layout.css')) ?>">
 </head>
 <body>
-  <?= $content ?>
+  <main class="proma-auth-content">
+    <?= $content ?>
+  </main>
   <script src="<?= e(template_asset_url('js/jquery.min.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/bootstrap/bootstrap.bundle.min.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/icons/feather-icon/feather.min.js')) ?>"></script>

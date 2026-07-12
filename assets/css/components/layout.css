@@ -1,0 +1,366 @@
+:root {
+  --proma-space-1: 4px;
+  --proma-space-2: 8px;
+  --proma-space-3: 12px;
+  --proma-space-4: 16px;
+  --proma-space-5: 20px;
+  --proma-space-6: 24px;
+  --proma-space-7: 32px;
+  --proma-page-section-gap: 24px;
+  --proma-grid-gap-x: 20px;
+  --proma-grid-gap-y: 20px;
+  --proma-card-padding-x: 20px;
+  --proma-card-padding-y: 18px;
+  --proma-section-radius: 8px;
+}
+
+.proma-page-content,
+.proma-public-content,
+.proma-auth-content {
+  min-width: 0;
+}
+
+.proma-page-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--proma-page-section-gap);
+  padding-block-end: var(--proma-space-7);
+}
+
+.proma-page-content > * {
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+.proma-page-content > :where(.card, .table-wrap, .pagination, .tabs, .proma-pagination, .notice, .alert) {
+  margin-block: 0 !important;
+}
+
+.proma-page-content > .card,
+.proma-page-content > .row > [class*="col-"] > .card,
+.proma-page-content > .row > [class*="col-"] > section.card,
+.proma-page-content > .row > [class*="col-"] > article.card {
+  margin-bottom: 0;
+}
+
+.proma-page-content :where(.grid, .proma-customer-summary, .proma-profile-grid, .proma-store-grid, .proma-file-manager-grid, .proma-calendar-grid) > .card,
+.proma-public-content :where(.grid, .proma-store-grid) > .card {
+  margin-block: 0 !important;
+}
+
+.proma-page-content .grid:not(.form-grid):not(.proma-form-grid),
+.proma-public-content .grid:not(.form-grid):not(.proma-form-grid) {
+  row-gap: var(--proma-grid-gap-y);
+  column-gap: var(--proma-grid-gap-x);
+}
+
+.proma-page-content > .row,
+.proma-page-content .proma-dashboard,
+.proma-page-content .proma-role-dashboard {
+  --bs-gutter-x: var(--proma-grid-gap-x);
+  --bs-gutter-y: var(--proma-grid-gap-y);
+}
+
+.proma-page-content > .row > [class*="col-"],
+.proma-dashboard > [class*="col-"],
+.proma-role-dashboard > [class*="col-"] {
+  min-width: 0;
+}
+
+.proma-page-content [class*="col-"] > .card + .card,
+.proma-page-content [class*="col-"] > section.card + section.card,
+.proma-page-content [class*="col-"] > article.card + article.card {
+  margin-top: var(--proma-grid-gap-y);
+}
+
+.proma-page-content :where(
+  .proma-customer-summary,
+  .proma-profile-grid,
+  .proma-store-grid,
+  .proma-file-manager-grid,
+  .proma-calendar-grid,
+  .proma-settings-shell
+) > .card {
+  margin-bottom: 0;
+}
+
+.proma-customer-summary,
+.proma-profile-grid,
+.proma-store-grid,
+.proma-file-manager-grid,
+.proma-calendar-grid,
+.proma-settings-shell {
+  row-gap: var(--proma-grid-gap-y);
+  column-gap: var(--proma-grid-gap-x);
+}
+
+.proma-dashboard,
+.proma-role-dashboard {
+  align-items: stretch;
+}
+
+.proma-dashboard > [class*="col-"],
+.proma-role-dashboard > [class*="col-"] {
+  display: flex;
+  flex-direction: column;
+}
+
+.proma-dashboard > [class*="col-"] > .card,
+.proma-role-dashboard > [class*="col-"] > .card {
+  width: 100%;
+  height: 100%;
+  margin-bottom: 0 !important;
+}
+
+.proma-page-content .card {
+  border-radius: var(--proma-section-radius);
+}
+
+.proma-page-content .card > .card-header {
+  min-width: 0;
+  padding: var(--proma-card-padding-y) var(--proma-card-padding-x) var(--proma-space-3);
+}
+
+.proma-page-content .card > .card-body {
+  min-width: 0;
+  padding: var(--proma-card-padding-y) var(--proma-card-padding-x);
+}
+
+.proma-page-content .card > .card-header + .card-body.pt-0 {
+  padding-top: 0 !important;
+}
+
+.proma-page-content .card > .card-footer {
+  padding: var(--proma-space-4) var(--proma-card-padding-x);
+}
+
+.proma-page-content .header-top {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--proma-space-3);
+}
+
+.proma-page-content .header-top > :is(h2, h3, h4, h5, h6),
+.proma-page-content .card-header > :is(h2, h3, h4, h5, h6) {
+  min-width: 0;
+  margin: 0;
+  line-height: 1.55;
+}
+
+.proma-page-content .actions,
+.proma-page-content .proma-table-actions,
+.proma-page-content .proma-role-actions,
+.proma-page-content .proma-role-hero-actions {
+  align-items: center;
+  row-gap: var(--proma-space-2);
+  column-gap: var(--proma-space-2);
+}
+
+.proma-page-content .table-responsive {
+  min-width: 0;
+  margin: 0;
+}
+
+.proma-page-content .table {
+  margin-bottom: 0;
+}
+
+.proma-page-content .table > :not(caption) > * > * {
+  padding-block: 12px;
+  vertical-align: middle;
+}
+
+.proma-page-content :where(.empty, .proma-empty-mini) {
+  min-height: 72px;
+  display: grid;
+  place-items: center;
+  padding: var(--proma-space-4);
+  text-align: center;
+}
+
+.proma-role-dashboard .proma-role-hero,
+.proma-role-dashboard .proma-role-kpi,
+.proma-role-dashboard .proma-role-panel,
+.proma-admin-dashboard .proma-admin-hero,
+.proma-admin-dashboard .proma-admin-kpi,
+.proma-admin-dashboard .proma-admin-panel {
+  margin-bottom: 0 !important;
+}
+
+.proma-role-hero .card-body,
+.proma-admin-hero .card-body {
+  padding: var(--proma-space-6);
+}
+
+.proma-role-kpi .card-body,
+.proma-admin-kpi .card-body {
+  min-height: 136px;
+  padding: var(--proma-space-5);
+}
+
+.proma-role-panel .card-header,
+.proma-admin-panel .card-header {
+  padding: var(--proma-space-5) var(--proma-space-5) var(--proma-space-3);
+}
+
+.proma-role-panel .card-body,
+.proma-admin-panel .card-body {
+  padding: var(--proma-space-5);
+}
+
+.proma-role-panel .card-header + .card-body.pt-0,
+.proma-admin-panel .card-header + .card-body.pt-0 {
+  padding-top: 0 !important;
+}
+
+.proma-role-list,
+.proma-admin-task-list,
+.proma-admin-health-list,
+.proma-risk-list,
+.proma-operator-list {
+  gap: var(--proma-space-3);
+}
+
+.proma-role-list-item,
+.proma-admin-task-list a,
+.proma-admin-status-grid div,
+.proma-admin-health {
+  padding: var(--proma-space-3) var(--proma-space-4);
+}
+
+.proma-role-kpi-icon,
+.proma-admin-kpi-icon,
+.proma-social-card__icon {
+  border-radius: var(--proma-section-radius);
+}
+
+.proma-social-card-grid {
+  gap: var(--proma-space-4);
+}
+
+.proma-public-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--proma-page-section-gap);
+}
+
+.proma-public-content > :where(.card, .row, section) {
+  margin-block: 0;
+}
+
+.proma-public-content > .alert {
+  margin: 0;
+}
+
+.proma-auth-content > :first-child,
+.proma-public-content > :first-child,
+.proma-page-content > :first-child {
+  margin-top: 0 !important;
+}
+
+.proma-auth-content > :last-child,
+.proma-public-content > :last-child,
+.proma-page-content > :last-child {
+  margin-bottom: 0 !important;
+}
+
+@media (max-width: 1199.98px) {
+  :root {
+    --proma-page-section-gap: 20px;
+    --proma-grid-gap-x: 18px;
+    --proma-grid-gap-y: 18px;
+  }
+
+  .proma-admin-hero .card-body,
+  .proma-role-hero .card-body {
+    gap: var(--proma-space-5);
+  }
+}
+
+@media (max-width: 767.98px) {
+  :root {
+    --proma-page-section-gap: 16px;
+    --proma-grid-gap-x: 12px;
+    --proma-grid-gap-y: 16px;
+    --proma-card-padding-x: 16px;
+    --proma-card-padding-y: 16px;
+  }
+
+  .proma-page-content {
+    padding-block-end: var(--proma-space-6);
+  }
+
+  .page-body > .container-fluid,
+  .proma-public-main {
+    padding-inline: 12px;
+  }
+
+  .proma-public-main {
+    width: 100%;
+  }
+
+  .proma-page-content .card > .card-header,
+  .proma-role-panel .card-header,
+  .proma-admin-panel .card-header {
+    padding: var(--proma-space-4) var(--proma-space-4) var(--proma-space-3);
+  }
+
+  .proma-page-content .card > .card-body,
+  .proma-role-panel .card-body,
+  .proma-admin-panel .card-body,
+  .proma-role-hero .card-body,
+  .proma-admin-hero .card-body,
+  .proma-role-kpi .card-body,
+  .proma-admin-kpi .card-body {
+    padding: var(--proma-space-4);
+  }
+
+  .proma-role-hero .card-body,
+  .proma-admin-hero .card-body {
+    min-height: 0;
+  }
+
+  .proma-role-hero-actions,
+  .proma-admin-actions {
+    width: 100%;
+  }
+
+  .proma-role-hero-actions > .btn,
+  .proma-admin-actions > .proma-admin-action {
+    flex: 1 1 150px;
+  }
+
+  .proma-page-content .header-top {
+    align-items: flex-start;
+  }
+
+  .proma-page-content .table > :not(caption) > * > * {
+    padding-block: 10px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .proma-page-content .header-top > :is(.actions, .proma-role-actions),
+  .proma-page-content .card-header > :is(.actions, form) {
+    width: 100%;
+  }
+
+  .proma-page-content .header-top > .actions > .btn,
+  .proma-page-content .card-header > .actions > .btn {
+    flex: 1 1 128px;
+  }
+
+  .proma-role-list-item,
+  .proma-admin-task-list a,
+  .proma-admin-health {
+    align-items: flex-start;
+  }
+}
+
+body.dark-only .proma-page-content :where(.proma-role-list-item, .proma-admin-task-list a, .proma-admin-status-grid div, .proma-admin-health),
+[data-theme="dark"] .proma-page-content :where(.proma-role-list-item, .proma-admin-task-list a, .proma-admin-status-grid div, .proma-admin-health) {
+  background: var(--proma-control-bg, #20242b);
+}

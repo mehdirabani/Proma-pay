@@ -140,6 +140,7 @@ $updateRelativeFiles = [
     'assets/css/app.css',
     'assets/css/components/forms.css',
     'assets/css/components/contract-print.css',
+    'assets/css/components/layout.css',
     'config/settings.php',
     'config/version.php',
     'controllers/PluginsController.php',
@@ -159,8 +160,11 @@ $updateRelativeFiles = [
     'CHANGELOG.md',
     'docs/plugins/PLUGIN_UI_DESIGN_SYSTEM.md',
     'docs/plugins/PLUGIN_REINSTALLATION.md',
-    'docs/releases/V1.2.8.md',
+    'docs/debug/V1_2_9_UI_LAYOUT_AUDIT.md',
+    'docs/releases/V1.2.9.md',
+    'tests/README.md',
     'tests/static_v128.php',
+    'tests/static_v129.php',
 ];
 $updateFiles = [];
 foreach ($updateRelativeFiles as $relativePath) {
@@ -182,7 +186,7 @@ $updateManifest = [
     'app' => 'proma-pay',
     'name' => 'بروزرسانی پایدار Proma Pay V' . $version,
     'version' => $version,
-    'minimum_version' => '1.2.7',
+    'minimum_version' => '1.2.8',
     'plugin_api' => (string) ($versionInfo['plugin_api'] ?? '1.0'),
     'files' => $updateManifestFiles,
     'migrations' => [],
