@@ -1,4 +1,4 @@
-const CACHE_PREFIX = 'proma-pay-v1-3-0-';
+const CACHE_PREFIX = 'proma-pay-v1-3-1-';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

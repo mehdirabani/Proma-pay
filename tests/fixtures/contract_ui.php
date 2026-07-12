@@ -11,7 +11,7 @@ if (in_array($type, ['print', 'table'], true)) {
     $profile = $printProfile;
     if ($type === 'table') {
         $rows = '';
-        for ($index = 1; $index <= 80; $index++) {
+        for ($index = 1; $index <= 240; $index++) {
             $rows .= '<tr><td>' . to_persian_digits($index) . '</td><td>ردیف آزمایشی ' . to_persian_digits($index) . '</td><td>۱۴۰۵/۰۵/۲۲</td></tr>';
         }
         $body = '<h2 class="contract-section-title">آزمون ادامه جدول در چند صفحه</h2><table class="contract-print-table"><thead><tr><th>ردیف</th><th>شرح</th><th>سررسید</th></tr></thead><tbody>' . $rows . '</tbody></table>';

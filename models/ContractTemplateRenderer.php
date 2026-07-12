@@ -69,19 +69,25 @@ class ContractTemplateRenderer
                 $items = '';
                 foreach ($lines as $line) {
                     $text = preg_replace('/^\s*(?:[-*•]|\d+[.)])\s+/u', '', $line);
-                    $items .= '<li>' . e($text) . '</li>';
+                    $items .= '<li>' . self::renderImportantInline($text) . '</li>';
                 }
                 $html[] = '<' . $tag . ' class="contract-list">' . $items . '</' . $tag . '>';
                 continue;
             }
 
             if (count($lines) === 1 && preg_match('/^(?:ماده|تبصره|بند)\s*[۰-۹0-9]*/u', trim($lines[0]))) {
-                $html[] = '<h2 class="contract-section-title">' . e(trim($lines[0])) . '</h2>';
+                $html[] = '<h2 class="contract-section-title">' . self::renderImportantInline(trim($lines[0])) . '</h2>';
                 continue;
             }
 
-            $escaped = array_map('e', $lines);
-            $html[] = '<p class="contract-paragraph">' . implode('<br>', $escaped) . '</p>';
+            if (count($lines) === 1 && self::isCompleteImportantParagraph($lines[0])) {
+                $content = mb_substr(trim($lines[0]), 2, -2, 'UTF-8');
+                $html[] = '<p class="contract-paragraph contract-important-paragraph"><strong class="contract-important-clause">' . e($content) . '</strong></p>';
+                continue;
+            }
+
+            $rendered = array_map([self::class, 'renderImportantInline'], $lines);
+            $html[] = '<p class="contract-paragraph">' . implode('<br>', $rendered) . '</p>';
         }
         return implode("\n", $html);
     }
@@ -109,6 +115,7 @@ class ContractTemplateRenderer
             'contract-print-table', 'text-center', 'text-right', 'text-left', 'ltr',
             'contract-document-body', 'contract-signature-grid', 'contract-signature-box',
             'contract-guarantors-section', 'contract-guarantor-box', 'contract-empty', 'full',
+            'contract-important-clause', 'contract-important-paragraph',
         ]);
 
         $previous = libxml_use_internal_errors(true);
@@ -173,6 +180,7 @@ class ContractTemplateRenderer
             }
         };
         $walk($root);
+        self::applyImportantMarkupToDom($document, $root);
 
         $output = '';
         foreach ($root->childNodes as $child) {
@@ -189,7 +197,90 @@ class ContractTemplateRenderer
         $html = strip_tags((string) $html, $allowed);
         $html = preg_replace('/\s+(?:on[a-z]+|style|src|href)\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
         $html = preg_replace('/\s+(?!class\b|dir\b|colspan\b|rowspan\b)[a-z0-9_:-]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
+        if (substr_count($html, '**') % 2 === 0) {
+            $html = preg_replace_callback('/\*\*([^<]+?)\*\*/u', static function ($match) {
+                return '<strong class="contract-important-clause">' . $match[1] . '</strong>';
+            }, $html);
+        }
         return trim($html);
+    }
+
+    public static function hasBalancedImportantMarkers($source)
+    {
+        return substr_count((string) $source, '**') % 2 === 0;
+    }
+
+    protected static function renderImportantInline($text)
+    {
+        $text = (string) $text;
+        if (strpos($text, '**') === false || !self::hasBalancedImportantMarkers($text)) {
+            return e($text);
+        }
+        $parts = preg_split('/(\*\*.+?\*\*)/us', $text, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$text];
+        $html = '';
+        foreach ($parts as $part) {
+            if (preg_match('/^\*\*(.+)\*\*$/us', $part, $match)) {
+                $html .= '<strong class="contract-important-clause">' . e($match[1]) . '</strong>';
+            } else {
+                $html .= e($part);
+            }
+        }
+        return $html;
+    }
+
+    protected static function isCompleteImportantParagraph($text)
+    {
+        $text = trim((string) $text);
+        return substr_count($text, '**') === 2 && preg_match('/^\*\*.+\*\*$/us', $text) === 1;
+    }
+
+    protected static function applyImportantMarkupToDom(DOMDocument $document, DOMNode $root)
+    {
+        $nodes = [];
+        $collect = function (DOMNode $node) use (&$collect, &$nodes) {
+            foreach ($node->childNodes as $child) {
+                if ($child instanceof DOMText) {
+                    $nodes[] = $child;
+                } elseif ($child instanceof DOMElement) {
+                    $collect($child);
+                }
+            }
+        };
+        $collect($root);
+
+        foreach ($nodes as $node) {
+            if (!$node->parentNode || strpos($node->nodeValue, '**') === false || !self::hasBalancedImportantMarkers($node->nodeValue)) {
+                continue;
+            }
+            $parent = $node->parentNode;
+            if ($parent instanceof DOMElement && strpos(' ' . $parent->getAttribute('class') . ' ', ' contract-important-clause ') !== false) {
+                continue;
+            }
+            $complete = $parent instanceof DOMElement
+                && strtolower($parent->tagName) === 'p'
+                && $parent->childNodes->length === 1
+                && self::isCompleteImportantParagraph($node->nodeValue);
+            if ($complete) {
+                $classes = preg_split('/\s+/', trim($parent->getAttribute('class'))) ?: [];
+                $classes[] = 'contract-paragraph';
+                $classes[] = 'contract-important-paragraph';
+                $parent->setAttribute('class', implode(' ', array_unique(array_filter($classes))));
+            }
+
+            $parts = preg_split('/(\*\*.+?\*\*)/us', $node->nodeValue, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$node->nodeValue];
+            $fragment = $document->createDocumentFragment();
+            foreach ($parts as $part) {
+                if (preg_match('/^\*\*(.+)\*\*$/us', $part, $match)) {
+                    $strong = $document->createElement('strong');
+                    $strong->setAttribute('class', 'contract-important-clause');
+                    $strong->appendChild($document->createTextNode($match[1]));
+                    $fragment->appendChild($strong);
+                } elseif ($part !== '') {
+                    $fragment->appendChild($document->createTextNode($part));
+                }
+            }
+            $parent->replaceChild($fragment, $node);
+        }
     }
 
     protected static function decodeEntities($value)

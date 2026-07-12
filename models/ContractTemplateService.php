@@ -34,6 +34,8 @@ class ContractTemplateService extends Model
             published_by BIGINT UNSIGNED NULL,
             published_at DATETIME NULL,
             superseded_at DATETIME NULL,
+            archived_at DATETIME NULL,
+            archived_by BIGINT UNSIGNED NULL,
             UNIQUE KEY uq_contract_template_version (template_id, version_number),
             KEY idx_contract_template_versions_status (template_id, status, version_number)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
@@ -46,6 +48,7 @@ class ContractTemplateService extends Model
             old_values_json LONGTEXT NULL,
             new_values_json LONGTEXT NULL,
             reason TEXT NULL,
+            ip_address VARCHAR(45) NULL,
             created_at DATETIME NOT NULL,
             KEY idx_contract_template_audit_created (created_at),
             KEY idx_contract_template_audit_template (template_id, version_id)
@@ -91,7 +94,7 @@ class ContractTemplateService extends Model
             FROM contract_template_versions v
             LEFT JOIN users u ON u.id = v.created_by
             LEFT JOIN users p ON p.id = v.published_by
-            WHERE v.template_id = 1 AND v.status = 'published'
+            WHERE v.template_id = 1 AND v.status = 'published' AND v.archived_at IS NULL
             ORDER BY v.version_number DESC, v.id DESC LIMIT 1");
     }
 
@@ -101,7 +104,7 @@ class ContractTemplateService extends Model
         return self::fetch("SELECT v.*, u.full_name AS created_by_name
             FROM contract_template_versions v
             LEFT JOIN users u ON u.id = v.created_by
-            WHERE v.template_id = 1 AND v.status = 'draft'
+            WHERE v.template_id = 1 AND v.status = 'draft' AND v.archived_at IS NULL
             ORDER BY v.version_number DESC, v.id DESC LIMIT 1");
     }
 
@@ -110,15 +113,31 @@ class ContractTemplateService extends Model
         return self::getPublishedTemplate() ?: self::getDefaultTemplate();
     }
 
-    public static function versions()
+    public static function versions($includeArchived = false)
     {
         self::ensureSchema();
-        return self::fetchAll("SELECT v.*, u.full_name AS created_by_name, p.full_name AS published_by_name
+        $where = $includeArchived ? '' : ' AND v.archived_at IS NULL';
+        $rows = self::fetchAll("SELECT v.*, u.full_name AS created_by_name, p.full_name AS published_by_name,
+                (SELECT COUNT(*) FROM generated_contract_documents g WHERE g.template_version_id = v.id) AS generated_document_reference_count,
+                (SELECT COUNT(*) FROM contract_document_versions d WHERE d.template_version_id = v.id) AS document_reference_count,
+                (SELECT COUNT(*) FROM contract_document_versions f WHERE f.template_version_id = v.id AND f.is_finalized = 1) AS finalized_document_reference_count,
+                CASE WHEN t.current_version_id = v.id THEN 1 ELSE 0 END AS is_current
             FROM contract_template_versions v
+            INNER JOIN contract_templates t ON t.id = v.template_id
             LEFT JOIN users u ON u.id = v.created_by
             LEFT JOIN users p ON p.id = v.published_by
-            WHERE v.template_id = 1
+            WHERE v.template_id = 1" . $where . "
             ORDER BY v.version_number DESC, v.id DESC");
+        foreach ($rows as &$row) {
+            $row['usage_count'] = (int) $row['generated_document_reference_count'] + (int) $row['document_reference_count'];
+            $row['can_delete'] = empty($row['is_current'])
+                && (int) $row['usage_count'] === 0
+                && (int) $row['finalized_document_reference_count'] === 0
+                && in_array($row['status'], ['draft', 'superseded', 'archived'], true);
+            $row['can_archive'] = empty($row['is_current']) && empty($row['archived_at']);
+        }
+        unset($row);
+        return $rows;
     }
 
     public static function findVersion($id)
@@ -136,6 +155,7 @@ class ContractTemplateService extends Model
         $source = ContractTemplateRenderer::normalizeSource($source);
         $validation = self::validateTemplate($source, $format);
         if (!$validation['valid']) {
+            self::audit('template_validation_failed', 1, null, null, ['errors' => $validation['errors'], 'warnings' => $validation['warnings']], 'اعتبارسنجی پیش‌نویس', $userId);
             throw new InvalidArgumentException(implode(' ', $validation['errors']));
         }
         $reason = trim((string) $reason);
@@ -153,6 +173,9 @@ class ContractTemplateService extends Model
         ]);
         $id = (int) self::lastInsertId();
         self::audit('template_draft_created', 1, $id, null, ['version_number' => $version, 'format' => $format, 'content_hash' => $hash], $reason, $userId);
+        if (substr_count($source, '**') >= 2 && ContractTemplateRenderer::hasBalancedImportantMarkers($source)) {
+            self::audit('important_clause_parser_used', 1, $id, null, ['marker_pairs' => (int) (substr_count($source, '**') / 2)], $reason, $userId);
+        }
         return $id;
     }
 
@@ -162,6 +185,14 @@ class ContractTemplateService extends Model
         $version = self::findVersion($versionId);
         if (!$version) {
             throw new InvalidArgumentException('نسخه قالب پیدا نشد.');
+        }
+        if (!empty($version['archived_at']) || ($version['status'] ?? '') === 'archived') {
+            throw new InvalidArgumentException('نسخه بایگانی‌شده باید ابتدا به‌عنوان پیش‌نویس تازه بازیابی شود.');
+        }
+        $validation = self::validateTemplate($version['body_source'], $version['body_format']);
+        if (!$validation['valid']) {
+            self::audit('template_validation_failed', 1, (int) $versionId, null, ['errors' => $validation['errors'], 'warnings' => $validation['warnings']], 'اعتبارسنجی پیش از انتشار', $userId);
+            throw new InvalidArgumentException(implode(' ', $validation['errors']));
         }
         $reason = trim((string) $reason);
         if (mb_strlen($reason, 'UTF-8') < 3) {
@@ -194,6 +225,88 @@ class ContractTemplateService extends Model
         $id = self::createVersion($version['body_source'], $version['body_format'], $reason, $userId);
         self::audit('template_restored_as_draft', 1, $id, ['source_version_id' => (int) $versionId], ['draft_version_id' => $id], $reason, $userId);
         return $id;
+    }
+
+    public static function referenceCounts($versionId)
+    {
+        self::ensureSchema();
+        $result = ['generated' => 0, 'documents' => 0, 'finalized' => 0, 'verification_failed' => false];
+        try {
+            $result['generated'] = (int) (self::fetch('SELECT COUNT(*) AS total FROM generated_contract_documents WHERE template_version_id = ?', [(int) $versionId])['total'] ?? 0);
+            $result['documents'] = (int) (self::fetch('SELECT COUNT(*) AS total FROM contract_document_versions WHERE template_version_id = ?', [(int) $versionId])['total'] ?? 0);
+            $result['finalized'] = (int) (self::fetch('SELECT COUNT(*) AS total FROM contract_document_versions WHERE template_version_id = ? AND is_finalized = 1', [(int) $versionId])['total'] ?? 0);
+        } catch (Throwable $e) {
+            $result['verification_failed'] = true;
+        }
+        return $result;
+    }
+
+    public static function archiveVersion($versionId, $reason, $userId = null)
+    {
+        self::ensureSchema();
+        $reason = trim((string) $reason);
+        if (mb_strlen($reason, 'UTF-8') < 3) {
+            throw new InvalidArgumentException('علت بایگانی نسخه را وارد کنید.');
+        }
+        $version = self::findVersion($versionId);
+        if (!$version) {
+            throw new InvalidArgumentException('نسخه قالب پیدا نشد.');
+        }
+        if (!empty($version['archived_at']) || ($version['status'] ?? '') === 'archived') {
+            return false;
+        }
+        $template = self::fetch('SELECT current_version_id FROM contract_templates WHERE id = 1 LIMIT 1');
+        if ((int) ($template['current_version_id'] ?? 0) === (int) $versionId) {
+            throw new InvalidArgumentException('نسخه فعال قالب قابل بایگانی نیست. ابتدا نسخه دیگری را منتشر کنید.');
+        }
+        $counts = self::referenceCounts($versionId);
+        self::begin();
+        try {
+            self::execute("UPDATE contract_template_versions SET status = 'archived', archived_at = NOW(), archived_by = ? WHERE id = ? AND archived_at IS NULL", [$userId ? (int) $userId : null, (int) $versionId]);
+            self::audit('template_version_archived', 1, (int) $versionId, ['status' => $version['status']], ['status' => 'archived', 'references' => $counts], $reason, $userId);
+            self::commit();
+        } catch (Throwable $e) {
+            self::rollBack();
+            throw $e;
+        }
+        return true;
+    }
+
+    public static function deleteVersion($versionId, $reason, $userId = null)
+    {
+        self::ensureSchema();
+        $reason = trim((string) $reason);
+        if (mb_strlen($reason, 'UTF-8') < 3) {
+            throw new InvalidArgumentException('علت حذف نسخه را وارد کنید.');
+        }
+        $version = self::findVersion($versionId);
+        if (!$version) {
+            return false;
+        }
+        $template = self::fetch('SELECT current_version_id FROM contract_templates WHERE id = 1 LIMIT 1');
+        if ((int) ($template['current_version_id'] ?? 0) === (int) $versionId || ($version['status'] ?? '') === 'published') {
+            throw new InvalidArgumentException('نسخه فعال قالب قابل حذف نیست. ابتدا نسخه دیگری را منتشر کنید.');
+        }
+        $counts = self::referenceCounts($versionId);
+        if ($counts['verification_failed']) {
+            throw new RuntimeException('بررسی ارجاع‌های حقوقی نسخه کامل نشد؛ حذف برای حفظ سوابق متوقف شد.');
+        }
+        if ($counts['generated'] > 0 || $counts['documents'] > 0 || $counts['finalized'] > 0) {
+            throw new InvalidArgumentException('این نسخه در اسناد قرارداد استفاده شده است و برای حفظ تاریخچه حقوقی قابل حذف دائمی نیست.');
+        }
+        if (!in_array($version['status'], ['draft', 'superseded', 'archived'], true)) {
+            throw new InvalidArgumentException('وضعیت این نسخه اجازه حذف دائمی را نمی‌دهد.');
+        }
+        self::begin();
+        try {
+            self::audit('template_version_deleted', 1, (int) $versionId, ['version_number' => (int) $version['version_number'], 'status' => $version['status']], ['references' => $counts], $reason, $userId);
+            self::execute('DELETE FROM contract_template_versions WHERE id = ? AND template_id = 1', [(int) $versionId]);
+            self::commit();
+        } catch (Throwable $e) {
+            self::rollBack();
+            throw $e;
+        }
+        return true;
     }
 
     public static function resetToDefault($reason, $userId = null)
@@ -242,6 +355,20 @@ class ContractTemplateService extends Model
         if (preg_match('/<(?:script|style|iframe|object|embed|form|input|button|link|meta)\b|\son[a-z]+\s*=|(?:javascript|vbscript)\s*:/i', $source)) {
             $errors[] = 'قالب شامل کد یا ویژگی ناامن است.';
         }
+        if (preg_match('/\sstyle\s*=/i', $source)) {
+            $errors[] = 'استایل درون‌خطی پشتیبانی نمی‌شود؛ ظاهر چاپ باید از پروفایل چاپ کنترل شود.';
+        }
+        if (!ContractTemplateRenderer::hasBalancedImportantMarkers($source)) {
+            $warnings[] = 'یک علامت ** بدون جفت در قالب پیدا شد.';
+        }
+        if ($format === ContractTemplateRenderer::FORMAT_HTML) {
+            preg_match_all('/<\s*\/?\s*([a-z][a-z0-9]*)\b/i', $source, $tagMatches);
+            $allowedTags = ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'blockquote', 'span', 'section', 'div', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td'];
+            $unsupported = array_values(array_diff(array_unique(array_map('strtolower', $tagMatches[1] ?? [])), $allowedTags));
+            if ($unsupported) {
+                $warnings[] = 'تگ‌های پشتیبانی‌نشده حذف می‌شوند: ' . implode('، ', $unsupported);
+            }
+        }
         preg_match_all('/\{\{[a-z0-9_]+\}\}/i', $source, $matches);
         $known = ContractDocument::variables();
         $unknown = array_values(array_diff(array_unique($matches[0] ?? []), $known));
@@ -251,7 +378,7 @@ class ContractTemplateService extends Model
         if (!in_array($format, [ContractTemplateRenderer::FORMAT_PLAIN, ContractTemplateRenderer::FORMAT_HTML], true)) {
             $errors[] = 'فرمت قالب معتبر نیست.';
         }
-        return ['valid' => !$errors, 'errors' => $errors, 'warnings' => $warnings, 'unknown_variables' => $unknown];
+        return ['valid' => !$errors, 'errors' => $errors, 'warnings' => array_values(array_unique($warnings)), 'unknown_variables' => $unknown];
     }
 
     public static function variableCatalog()
@@ -381,10 +508,12 @@ class ContractTemplateService extends Model
     public static function audit($action, $templateId, $versionId, $oldValues, $newValues, $reason, $userId = null)
     {
         self::ensureSchema();
-        self::execute('INSERT INTO contract_template_audit_logs (action, actor_id, template_id, version_id, old_values_json, new_values_json, reason, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())', [
+        $ip = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+        self::execute('INSERT INTO contract_template_audit_logs (action, actor_id, template_id, version_id, old_values_json, new_values_json, reason, ip_address, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())', [
             trim((string) $action), $userId ? (int) $userId : null, $templateId ? (int) $templateId : null, $versionId ? (int) $versionId : null,
             $oldValues === null ? null : json_encode($oldValues, JSON_UNESCAPED_UNICODE),
             $newValues === null ? null : json_encode($newValues, JSON_UNESCAPED_UNICODE), trim((string) $reason) ?: null,
+            $ip !== '' ? mb_substr($ip, 0, 45, 'UTF-8') : null,
         ]);
     }
 

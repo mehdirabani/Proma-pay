@@ -146,11 +146,24 @@ $pluginMenus = [];
 if (Auth::role() === 'admin' && class_exists('PluginManager')) {
     try {
         $pluginMenus = PluginManager::boot()->menus();
+        $pluginMenuGroups = [];
         foreach ($pluginMenus as $pluginMenu) {
             if (!empty($pluginMenu['permission']) && !PluginManager::can($pluginMenu['permission'])) {
                 continue;
             }
-            $nav[] = [$pluginMenu['route'], $pluginMenu['label'], 'stroke-others', 'fill-others'];
+            $pluginId = (string) ($pluginMenu['plugin_id'] ?? 'plugin');
+            if (!isset($pluginMenuGroups[$pluginId])) {
+                $record = class_exists('PluginRegistry') ? PluginRegistry::find($pluginId) : null;
+                $pluginMenuGroups[$pluginId] = [
+                    'label' => trim((string) ($pluginMenu['group_label'] ?? '')) ?: trim((string) ($record['name'] ?? '')) ?: $pluginId,
+                    'route' => (string) $pluginMenu['route'],
+                    'children' => [],
+                ];
+            }
+            $pluginMenuGroups[$pluginId]['children'][] = [(string) $pluginMenu['route'], (string) $pluginMenu['label']];
+        }
+        foreach ($pluginMenuGroups as $pluginMenuGroup) {
+            $nav[] = [$pluginMenuGroup['route'], $pluginMenuGroup['label'], 'stroke-others', 'fill-others', $pluginMenuGroup['children']];
         }
     } catch (Throwable $e) {
         $pluginMenus = [];

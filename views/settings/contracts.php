@@ -90,8 +90,14 @@ $tabs = [
           <button class="btn secondary small" type="button" data-load-contract-source="effective-template-source"><i data-feather="download"></i> بارگذاری قالب فعلی</button>
           <button class="btn secondary small" type="button" data-load-contract-source="default-template-source"><i data-feather="file-plus"></i> بارگذاری پیش‌فرض</button>
           <button class="btn secondary small" type="button" data-template-find><i data-feather="search"></i> یافتن و جایگزینی</button>
+          <button class="btn secondary small" type="button" data-insert-important-clause><i data-feather="alert-circle"></i> درج بند مهم</button>
           <select data-contract-variable-select aria-label="درج متغیر"><option value="">درج متغیر...</option><?php foreach ($variableCatalog as $group => $variables): ?><optgroup label="<?= e($group) ?>"><?php foreach ($variables as $variable): ?><option value="<?= e($variable['code']) ?>"><?= e($variable['title']) ?></option><?php endforeach; ?></optgroup><?php endforeach; ?></select>
           <span data-template-count>۰ واژه، ۰ نویسه</span>
+        </div>
+        <div class="notice info mt-3">
+          <strong>راهنمای برجسته‌کردن بند مهم</strong><br>
+          برای نمایش یک بند مهم به‌صورت بولد و یک پیکسل بزرگ‌تر، متن را بین دو علامت <code>**</code> قرار دهید.<br>
+          <code>**این بند در نسخه چاپی با فونت ۷ پیکسل و به‌صورت بولد نمایش داده می‌شود.**</code>
         </div>
         <label class="proma-template-source-field">متن قالب
           <textarea id="editor-template-source" name="body_source" rows="24" data-rich-editor data-rich-editor-height="620" data-contract-template-editor required><?= e($editorSource) ?></textarea>
@@ -127,17 +133,20 @@ $tabs = [
       <form method="post" action="<?= e(url('settings/saveContractPrint')) ?>" data-print-profile-form>
         <?= csrf_field() ?>
         <div class="card-body form-grid two">
-          <label class="full">تراکم چاپ<select name="preset" data-print-profile-input><option value="compact" <?= $printProfile['preset'] === 'compact' ? 'selected' : '' ?>>فشرده</option><option value="standard" <?= $printProfile['preset'] === 'standard' ? 'selected' : '' ?>>استاندارد</option><option value="comfortable" <?= $printProfile['preset'] === 'comfortable' ? 'selected' : '' ?>>خوانا</option><option value="custom" <?= $printProfile['preset'] === 'custom' ? 'selected' : '' ?>>سفارشی</option></select></label>
+          <label class="full">تراکم چاپ<select name="preset" data-print-profile-input><?php foreach ($printPresets as $presetKey => $presetValues): ?><option value="<?= e($presetKey) ?>" <?= $printProfile['preset'] === $presetKey ? 'selected' : '' ?>><?= e($presetValues['label'] ?? $presetKey) ?></option><?php endforeach; ?><option value="custom" <?= $printProfile['preset'] === 'custom' ? 'selected' : '' ?>>سفارشی</option></select></label>
+          <div class="notice info full">در پروفایل رسمی فشرده، متن معمولی حداکثر ۶px و عنوان‌ها و بندهای مهم حداکثر ۷px هستند.</div>
           <?php $printFields = [
             'margin_top' => ['حاشیه بالا', 4, 25, .5, 'mm'], 'margin_right' => ['حاشیه راست', 7, 25, .5, 'mm'],
             'margin_bottom' => ['حاشیه پایین', 7, 30, .5, 'mm'], 'margin_left' => ['حاشیه چپ', 7, 25, .5, 'mm'],
-            'body_font_size' => ['اندازه فونت متن', 8.5, 14, .1, 'pt'], 'body_line_height' => ['فاصله خطوط', 1.2, 2, .05, ''],
-            'paragraph_spacing' => ['فاصله پاراگراف', 0, 10, .5, 'mm'], 'section_top_spacing' => ['فاصله بالای عنوان', 0, 12, .5, 'mm'],
-            'section_bottom_spacing' => ['فاصله پایین عنوان', 0, 10, .5, 'mm'], 'header_top_spacing' => ['فاصله بالای هدر', 0, 10, .5, 'mm'],
-            'header_bottom_spacing' => ['فاصله پایین هدر', 0, 12, .5, 'mm'], 'header_divider_spacing' => ['فاصله خط جداکننده', 0, 12, .5, 'mm'],
+            'body_font_size' => ['اندازه فونت متن', 5, 14, .1, 'px'], 'important_font_size' => ['فونت بند مهم', 6, 15, .1, 'px'], 'heading_font_size' => ['فونت عنوان داخلی', 6, 15, .1, 'px'],
+            'body_line_height' => ['فاصله خطوط متن', 1.15, 2, .01, ''], 'important_line_height' => ['فاصله خطوط بند مهم', 1.15, 2, .01, ''], 'heading_line_height' => ['فاصله خطوط عنوان', 1.15, 2, .01, ''],
+            'paragraph_spacing' => ['فاصله پاراگراف', 0, 12, .5, 'px'], 'section_top_spacing' => ['فاصله بالای عنوان', 0, 16, .5, 'px'],
+            'section_bottom_spacing' => ['فاصله پایین عنوان', 0, 12, .5, 'px'], 'list_spacing' => ['فاصله فهرست', 0, 12, .5, 'px'], 'list_indent' => ['تورفتگی فهرست', 6, 30, 1, 'px'],
+            'header_top_spacing' => ['فاصله بالای هدر', 0, 12, .5, 'px'], 'header_bottom_spacing' => ['فاصله پایین هدر', 0, 16, .5, 'px'], 'header_divider_spacing' => ['فاصله خط جداکننده', 0, 16, .5, 'px'],
             'logo_width' => ['عرض لوگو', 15, 60, 1, 'mm'], 'logo_height' => ['ارتفاع لوگو', 8, 30, 1, 'mm'],
-            'table_font_size' => ['فونت جدول', 8, 13, .1, 'pt'], 'table_cell_vertical_padding' => ['فاصله عمودی سلول', .5, 5, .1, 'mm'],
-            'table_cell_horizontal_padding' => ['فاصله افقی سلول', .5, 6, .1, 'mm'], 'signature_top_spacing' => ['فاصله امضا', 4, 30, .5, 'mm'], 'signature_box_height' => ['ارتفاع کادر امضا', 15, 45, .5, 'mm'],
+            'table_font_size' => ['فونت جدول', 5, 13, .1, 'px'], 'table_heading_font_size' => ['فونت سرستون جدول', 5.5, 14, .1, 'px'], 'table_line_height' => ['فاصله خطوط جدول', 1.1, 1.8, .01, ''],
+            'table_cell_vertical_padding' => ['فاصله عمودی سلول', .5, 8, .1, 'px'], 'table_cell_horizontal_padding' => ['فاصله افقی سلول', 1, 10, .1, 'px'], 'table_margin' => ['فاصله جدول', 0, 12, .5, 'px'],
+            'signature_top_spacing' => ['فاصله امضا', 4, 30, .5, 'mm'], 'signature_box_height' => ['ارتفاع کادر امضا', 15, 45, .5, 'mm'],
           ]; foreach ($printFields as $key => $meta): ?>
             <label><?= e($meta[0]) ?><span class="proma-number-control"><input type="number" name="<?= e($key) ?>" value="<?= e($printProfile[$key]) ?>" min="<?= e($meta[1]) ?>" max="<?= e($meta[2]) ?>" step="<?= e($meta[3]) ?>" data-print-profile-input data-print-unit="<?= e($meta[4]) ?>"><small><?= e($meta[4]) ?></small></span></label>
           <?php endforeach; ?>
@@ -158,14 +167,43 @@ $tabs = [
 <?php endif; ?>
 
 <?php if ($section === 'versions'): ?>
+  <?php if (!empty($versionComparison)): ?>
+    <section class="card">
+      <div class="card-header card-no-border"><h3>مقایسه V<?= to_persian_digits($versionComparison['left']['version_number']) ?> با نسخه فعال V<?= to_persian_digits($versionComparison['right']['version_number']) ?></h3></div>
+      <div class="card-body grid cols-2">
+        <div class="notice success"><strong>خطوط افزوده‌شده</strong><pre><?= e(implode("\n", $versionComparison['added_lines']) ?: 'بدون تغییر') ?></pre></div>
+        <div class="notice warning"><strong>خطوط حذف‌شده</strong><pre><?= e(implode("\n", $versionComparison['removed_lines']) ?: 'بدون تغییر') ?></pre></div>
+      </div>
+    </section>
+  <?php endif; ?>
   <section class="card">
-    <div class="card-header card-no-border"><div class="header-top"><div><h3>تاریخچه نسخه‌های قالب</h3><p>نسخه‌های منتشرشده حذف فیزیکی نمی‌شوند.</p></div><a class="btn" href="<?= e(url('settings/contracts/template')) ?>"><i data-feather="plus"></i> پیش‌نویس جدید</a></div></div>
-    <div class="table-wrap"><table><thead><tr><th>نسخه</th><th>وضعیت</th><th>فرمت</th><th>سازنده</th><th>تاریخ انتشار</th><th>دلیل تغییر</th><th>عملیات</th></tr></thead><tbody>
-      <?php foreach ($templateVersions as $version): ?><tr><td>V<?= to_persian_digits($version['version_number']) ?></td><td><span class="badge <?= $version['status'] === 'published' ? 'success' : ($version['status'] === 'draft' ? 'warning' : 'secondary') ?>"><?= e($statusLabels[$version['status']] ?? $version['status']) ?></span></td><td><?= e($version['body_format']) ?></td><td><?= e($version['created_by_name'] ?? 'سامانه') ?></td><td><?= !empty($version['published_at']) ? e(jdatetime($version['published_at'])) : '-' ?></td><td><?= e($version['change_reason'] ?? '-') ?></td><td><div class="actions"><a class="btn small secondary" target="_blank" href="<?= e(url('settings/contractsPreview/' . (int) $version['id'])) ?>">پیش‌نمایش</a><button class="btn small secondary" type="button" data-contract-copy-textarea="version-source-<?= (int) $version['id'] ?>">کپی</button><?php if ($version['status'] !== 'published'): ?><button class="btn small" type="button" data-open-modal="publish-template-<?= (int) $version['id'] ?>">انتشار</button><?php endif; ?><form method="post" action="<?= e(url('settings/restoreContractTemplate/' . (int) $version['id'])) ?>"><?= csrf_field() ?><input type="hidden" name="change_reason" value="بازگردانی نسخه V<?= e($version['version_number']) ?> به‌عنوان پیش‌نویس"><button class="btn small secondary" type="submit">بازیابی</button></form></div><textarea id="version-source-<?= (int) $version['id'] ?>" hidden><?= e($version['body_source']) ?></textarea></td></tr><?php endforeach; ?>
-      <?php if (!$templateVersions): ?><tr><td colspan="7" class="empty">هنوز نسخه سفارشی ایجاد نشده است.</td></tr><?php endif; ?>
+    <div class="card-header card-no-border"><div class="header-top"><div><h3>تاریخچه نسخه‌های قالب</h3><p>نسخه‌های فعال و دارای ارجاع حقوقی حذف نمی‌شوند.</p></div><div class="actions"><a class="btn secondary" href="<?= e(url('settings/contracts/versions') . (!empty($showArchivedVersions) ? '' : '?show_archived=1')) ?>"><i data-feather="archive"></i> <?= !empty($showArchivedVersions) ? 'پنهان‌کردن بایگانی‌ها' : 'نمایش نسخه‌های بایگانی‌شده' ?></a><a class="btn" href="<?= e(url('settings/contracts/template')) ?>"><i data-feather="plus"></i> پیش‌نویس جدید</a></div></div></div>
+    <div class="table-wrap"><table><thead><tr><th>نسخه و وضعیت</th><th>ایجاد/انتشار</th><th>دلیل تغییر</th><th>استفاده</th><th>عملیات</th></tr></thead><tbody>
+      <?php foreach ($templateVersions as $version): ?>
+        <tr>
+          <td><strong>V<?= to_persian_digits($version['version_number']) ?></strong><br><span class="badge <?= $version['status'] === 'published' ? 'success' : ($version['status'] === 'draft' ? 'warning' : 'secondary') ?>"><?= e($statusLabels[$version['status']] ?? $version['status']) ?></span><?php if (!empty($version['is_current'])): ?> <span class="badge success">فعال</span><?php endif; ?></td>
+          <td><small>ایجاد: <?= e($version['created_by_name'] ?? 'سامانه') ?>، <?= !empty($version['created_at']) ? e(jdatetime($version['created_at'])) : '-' ?></small><br><small>انتشار: <?= e($version['published_by_name'] ?? '-') ?>، <?= !empty($version['published_at']) ? e(jdatetime($version['published_at'])) : '-' ?></small></td>
+          <td><?= e($version['change_reason'] ?? '-') ?></td>
+          <td><small>کل: <?= to_persian_digits($version['usage_count'] ?? 0) ?></small><br><small>سند تولیدشده: <?= to_persian_digits($version['generated_document_reference_count'] ?? 0) ?></small><br><small>نهایی: <?= to_persian_digits($version['finalized_document_reference_count'] ?? 0) ?></small></td>
+          <td><div class="actions">
+            <a class="btn small secondary" target="_blank" href="<?= e(url('settings/contractsPreview/' . (int) $version['id'])) ?>">پیش‌نمایش</a>
+            <a class="btn small secondary" href="<?= e(url('settings/contracts/versions') . '?compare=' . (int) $version['id']) ?>">مقایسه</a>
+            <button class="btn small secondary" type="button" data-contract-copy-textarea="version-source-<?= (int) $version['id'] ?>">کپی</button>
+            <?php if ($version['status'] !== 'published' && $version['status'] !== 'archived'): ?><button class="btn small" type="button" data-open-modal="publish-template-<?= (int) $version['id'] ?>">انتشار</button><?php endif; ?>
+            <form method="post" action="<?= e(url('settings/restoreContractTemplate/' . (int) $version['id'])) ?>"><?= csrf_field() ?><input type="hidden" name="change_reason" value="بازگردانی نسخه V<?= e($version['version_number']) ?> به‌عنوان پیش‌نویس"><button class="btn small secondary" type="submit">بازیابی</button></form>
+            <?php if (!empty($version['can_archive'])): ?><button class="btn small secondary" type="button" data-open-modal="archive-template-<?= (int) $version['id'] ?>">بایگانی</button><?php endif; ?>
+            <?php if (!empty($version['can_delete'])): ?><button class="btn small danger" type="button" data-open-modal="delete-template-<?= (int) $version['id'] ?>">حذف</button><?php elseif (!empty($version['is_current'])): ?><small>نسخه فعال قابل حذف نیست.</small><?php elseif (!empty($version['usage_count'])): ?><small>نسخه ارجاع‌شده فقط بایگانی می‌شود.</small><?php endif; ?>
+          </div><textarea id="version-source-<?= (int) $version['id'] ?>" hidden><?= e($version['body_source']) ?></textarea></td>
+        </tr>
+      <?php endforeach; ?>
+      <?php if (!$templateVersions): ?><tr><td colspan="5" class="empty">هنوز نسخه سفارشی ایجاد نشده است.</td></tr><?php endif; ?>
     </tbody></table></div>
   </section>
-  <?php foreach ($templateVersions as $version): if ($version['status'] === 'published') continue; ?><div class="modal" id="publish-template-<?= (int) $version['id'] ?>"><div class="modal-content"><div class="modal-header"><h3>انتشار نسخه V<?= to_persian_digits($version['version_number']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div><form method="post" action="<?= e(url('settings/publishContractTemplate/' . (int) $version['id'])) ?>"><div class="modal-body form-grid"><?= csrf_field() ?><div class="notice warning full">پس از انتشار، قراردادهای آینده از این قالب استفاده می‌کنند و اسناد غیرنهایی قبلی برای بازسازی علامت می‌خورند.</div><label class="full required-field">دلیل انتشار<input name="change_reason" required minlength="3" value="<?= e($version['change_reason'] ?? '') ?>"></label><label class="full proma-confirm-check"><input type="checkbox" required> پیش‌نمایش را بررسی کرده‌ام و انتشار این نسخه را تایید می‌کنم.</label></div><div class="modal-footer"><button class="btn" type="submit">انتشار قالب</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div></form></div></div><?php endforeach; ?>
+  <?php foreach ($templateVersions as $version): ?>
+    <?php if ($version['status'] !== 'published' && $version['status'] !== 'archived'): ?><div class="modal" id="publish-template-<?= (int) $version['id'] ?>"><div class="modal-content"><div class="modal-header"><h3>انتشار نسخه V<?= to_persian_digits($version['version_number']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div><form method="post" action="<?= e(url('settings/publishContractTemplate/' . (int) $version['id'])) ?>"><div class="modal-body form-grid"><?= csrf_field() ?><div class="notice warning full">پس از انتشار، قراردادهای آینده از این قالب استفاده می‌کنند و اسناد غیرنهایی قبلی برای بازسازی علامت می‌خورند.</div><label class="full required-field">دلیل انتشار<input name="change_reason" required minlength="3" value="<?= e($version['change_reason'] ?? '') ?>"></label><label class="full proma-confirm-check"><input type="checkbox" required> پیش‌نمایش را بررسی کرده‌ام و انتشار این نسخه را تایید می‌کنم.</label></div><div class="modal-footer"><button class="btn" type="submit">انتشار قالب</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div></form></div></div><?php endif; ?>
+    <?php if (!empty($version['can_archive'])): ?><div class="modal" id="archive-template-<?= (int) $version['id'] ?>"><div class="modal-content"><div class="modal-header"><h3>بایگانی نسخه V<?= to_persian_digits($version['version_number']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div><form method="post" action="<?= e(url('settings/archiveContractTemplate/' . (int) $version['id'])) ?>"><div class="modal-body form-grid"><?= csrf_field() ?><div class="notice info full">نسخه در تاریخچه باقی می‌ماند و برای بازیابی، یک پیش‌نویس تازه از آن ساخته خواهد شد.</div><label class="full required-field">علت بایگانی<input name="change_reason" required minlength="3"></label></div><div class="modal-footer"><button class="btn" type="submit">بایگانی نسخه</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div></form></div></div><?php endif; ?>
+    <?php if (!empty($version['can_delete'])): ?><div class="modal" id="delete-template-<?= (int) $version['id'] ?>"><div class="modal-content"><div class="modal-header"><h3>حذف نسخه قالب قرارداد</h3><button class="icon-btn" type="button" data-close-modal>×</button></div><form method="post" action="<?= e(url('settings/deleteContractTemplate/' . (int) $version['id'])) ?>"><div class="modal-body form-grid"><?= csrf_field() ?><div class="notice danger full">نسخه V<?= to_persian_digits($version['version_number']) ?> با وضعیت <?= e($statusLabels[$version['status']] ?? $version['status']) ?> و صفر ارجاع، به‌طور دائمی حذف می‌شود.</div><label class="full required-field">علت حذف نسخه<input name="change_reason" required minlength="3"></label><label class="full proma-confirm-check"><input type="checkbox" name="confirm_delete" value="1" required> از حذف این نسخه اطمینان دارم.</label></div><div class="modal-footer"><button class="btn danger" type="submit">حذف نسخه</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div></form></div></div><?php endif; ?>
+  <?php endforeach; ?>
 <?php endif; ?>
 
 <?php if ($section === 'variables'): ?>

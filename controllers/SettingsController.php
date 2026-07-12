@@ -124,6 +124,14 @@ class SettingsController extends Controller
         }
         $effective = ContractTemplateService::getEffectiveTemplate();
         $draft = ContractTemplateService::getDraftTemplate();
+        $comparison = null;
+        if ($section === 'versions' && !empty($_GET['compare']) && !empty($effective['id'])) {
+            try {
+                $comparison = ContractTemplateService::compareVersions((int) $_GET['compare'], (int) $effective['id']);
+            } catch (Throwable $e) {
+                set_flash('error', $e->getMessage());
+            }
+        }
         $this->render('settings/contracts', [
             'title' => 'تنظیمات قراردادها',
             'section' => $section,
@@ -131,7 +139,9 @@ class SettingsController extends Controller
             'effectiveTemplate' => $effective,
             'draftTemplate' => $draft,
             'editorTemplate' => $draft ?: $effective,
-            'templateVersions' => ContractTemplateService::versions(),
+            'templateVersions' => ContractTemplateService::versions(!empty($_GET['show_archived'])),
+            'showArchivedVersions' => !empty($_GET['show_archived']),
+            'versionComparison' => $comparison,
             'templateStats' => ContractTemplateService::stats(),
             'printProfile' => ContractPrintProfile::load(),
             'printPresets' => ContractPrintProfile::presets(),
@@ -145,13 +155,21 @@ class SettingsController extends Controller
         ContractPermission::requirePermission('contract_templates.edit');
         $this->onlyPost();
         try {
+            $validation = ContractTemplateService::validateTemplate(
+                $_POST['body_source'] ?? '',
+                $_POST['body_format'] ?? ContractTemplateRenderer::FORMAT_PLAIN
+            );
             $id = ContractTemplateService::createVersion(
                 $_POST['body_source'] ?? '',
                 $_POST['body_format'] ?? ContractTemplateRenderer::FORMAT_PLAIN,
                 $_POST['change_reason'] ?? '',
                 Auth::id()
             );
-            set_flash('success', 'پیش‌نویس نسخه ' . to_persian_digits((ContractTemplateService::findVersion($id)['version_number'] ?? '')) . ' ذخیره شد.');
+            $message = 'پیش‌نویس نسخه ' . to_persian_digits((ContractTemplateService::findVersion($id)['version_number'] ?? '')) . ' ذخیره شد.';
+            if (!empty($validation['warnings'])) {
+                $message .= ' هشدار: ' . implode(' ', $validation['warnings']);
+            }
+            set_flash('success', $message);
         } catch (Throwable $e) {
             set_flash('error', $e->getMessage());
         }
@@ -225,6 +243,35 @@ class SettingsController extends Controller
         redirect('settings/contracts/template');
     }
 
+    public function archiveContractTemplate($id)
+    {
+        ContractPermission::requirePermission('contract_templates.archive');
+        $this->onlyPost();
+        try {
+            ContractTemplateService::archiveVersion((int) $id, $_POST['change_reason'] ?? '', Auth::id());
+            set_flash('success', 'نسخه قالب بایگانی شد و تاریخچه حقوقی آن محفوظ ماند.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('settings/contracts/versions');
+    }
+
+    public function deleteContractTemplate($id)
+    {
+        ContractPermission::requirePermission('contract_templates.delete_unused');
+        $this->onlyPost();
+        try {
+            if (empty($_POST['confirm_delete'])) {
+                throw new InvalidArgumentException('برای حذف نسخه، تایید نهایی را انتخاب کنید.');
+            }
+            $deleted = ContractTemplateService::deleteVersion((int) $id, $_POST['change_reason'] ?? '', Auth::id());
+            set_flash('success', $deleted ? 'نسخه بدون استفاده حذف شد.' : 'این نسخه قبلاً حذف شده بود.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('settings/contracts/versions');
+    }
+
     public function resetContractTemplate()
     {
         ContractPermission::requirePermission('contract_templates.edit');
@@ -249,7 +296,17 @@ class SettingsController extends Controller
                 ? ContractPrintProfile::fromPreset($preset)
                 : ContractPrintProfile::validate($_POST);
             Settings::saveMany(ContractPrintProfile::settingValues($profile));
-            ContractTemplateService::audit('print_profile_changed', 1, null, $old, $profile, $_POST['change_reason'] ?? 'ویرایش تنظیمات چاپ', Auth::id());
+            $reason = $_POST['change_reason'] ?? 'ویرایش تنظیمات چاپ';
+            ContractTemplateService::audit('print_profile_updated', 1, null, $old, $profile, $reason, Auth::id());
+            ContractTemplateService::audit('contract_typography_updated', 1, null, [
+                'body_font_size' => $old['body_font_size'], 'body_line_height' => $old['body_line_height'],
+            ], [
+                'body_font_size' => $profile['body_font_size'], 'heading_font_size' => $profile['heading_font_size'],
+                'important_font_size' => $profile['important_font_size'], 'body_line_height' => $profile['body_line_height'],
+            ], $reason, Auth::id());
+            if ($profile['preset'] === ContractPrintProfile::OFFICIAL_COMPACT) {
+                ContractTemplateService::audit('compact_print_profile_activated', 1, null, null, ['preset' => $profile['preset']], $reason, Auth::id());
+            }
             set_flash('success', 'تنظیمات چاپ ذخیره شد و بدون بازسازی متن روی همه چاپ‌ها اعمال می‌شود.');
         } catch (Throwable $e) {
             set_flash('error', $e->getMessage());

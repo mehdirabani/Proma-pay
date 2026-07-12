@@ -402,6 +402,8 @@ class PluginManager
             'label' => trim((string) $item['label']),
             'icon' => trim((string) ($item['icon'] ?? 'box')),
             'permission' => trim((string) ($item['permission'] ?? '')),
+            'group_label' => trim((string) ($item['group_label'] ?? '')),
+            'group_icon' => trim((string) ($item['group_icon'] ?? '')),
         ];
     }
 

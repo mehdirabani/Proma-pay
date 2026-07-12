@@ -173,6 +173,7 @@ $updateRelativeFiles = [
     'views/settings/contracts.php',
     'views/settings/contract-preview.php',
     'database/migrations/2026_07_13_contract_template_print_engine.sql',
+    'database/migrations/2026_07_13_contract_print_compact_version_retention.sql',
     'CHANGELOG.md',
     'docs/plugins/PLUGIN_UI_DESIGN_SYSTEM.md',
     'docs/plugins/PLUGIN_REINSTALLATION.md',
@@ -182,6 +183,11 @@ $updateRelativeFiles = [
     'docs/contracts/CONTRACT_TEMPLATE_VERSIONING.md',
     'docs/contracts/CONTRACT_PRINT_PROFILE.md',
     'docs/contracts/CONTRACT_PRINT_COMPACT_MODE.md',
+    'docs/contracts/COMPACT_A4_PRINT_PROFILE.md',
+    'docs/contracts/CONTRACT_PRINT_TYPOGRAPHY.md',
+    'docs/contracts/IMPORTANT_CLAUSE_MARKUP.md',
+    'docs/contracts/TEMPLATE_VERSION_DELETION.md',
+    'docs/contracts/TEMPLATE_VERSION_RETENTION.md',
     'docs/contracts/CONTRACT_DOCUMENT_REBUILD.md',
     'docs/README.md',
     'docs/codex/01_PROJECT_MAP.md',
@@ -189,11 +195,15 @@ $updateRelativeFiles = [
     'docs/security/CONTRACT_TEMPLATE_SANITIZATION.md',
     'docs/ui/CONTRACT_SETTINGS_UI.md',
     'docs/releases/V1.3.0.md',
+    'docs/releases/V1.3.1.md',
     'docs/reports/CONTRACT_SETTINGS_AND_PRINT_ENGINE_REPORT.md',
+    'docs/reports/V1_3_1_CONTRACT_PRINT_AND_TEMPLATE_VERSION_REPORT.md',
+    'docs/debug/V1_3_0_CONTRACT_PRINT_AND_TEMPLATE_VERSION_AUDIT.md',
     'tests/README.md',
     'tests/static_v128.php',
     'tests/static_v129.php',
     'tests/static_v130.php',
+    'tests/static_v131.php',
 ];
 $updateFiles = [];
 foreach ($updateRelativeFiles as $relativePath) {
@@ -215,10 +225,13 @@ $updateManifest = [
     'app' => 'proma-pay',
     'name' => 'بروزرسانی پایدار Proma Pay V' . $version,
     'version' => $version,
-    'minimum_version' => '1.2.9',
+    'minimum_version' => '1.3.0',
     'plugin_api' => (string) ($versionInfo['plugin_api'] ?? '1.0'),
     'files' => $updateManifestFiles,
-    'migrations' => ['database/migrations/2026_07_13_contract_template_print_engine.sql'],
+    'migrations' => [
+        'database/migrations/2026_07_13_contract_template_print_engine.sql',
+        'database/migrations/2026_07_13_contract_print_compact_version_retention.sql',
+    ],
     'preserves' => ['config/database.php', 'plugins/', 'storage/', 'uploads/'],
 ];
 $updatePath = $updateDir . '/proma-update_v' . $versionSlug . '.zip';

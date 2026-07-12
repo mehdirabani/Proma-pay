@@ -134,6 +134,24 @@
         updateStatus();
       });
     });
+    const importantButton = document.querySelector('[data-insert-important-clause]');
+    if (importantButton && editor) importantButton.addEventListener('click', function () {
+      const text = '**متن بند مهم**';
+      if (editor._promaQuill) {
+        const range = editor._promaQuill.getSelection(true);
+        const index = range ? range.index : editor._promaQuill.getLength() - 1;
+        editor._promaQuill.insertText(index, text);
+        editor._promaQuill.setSelection(index + 2, text.length - 4);
+      } else {
+        const start = editor.selectionStart || editor.value.length;
+        const end = editor.selectionEnd || start;
+        editor.value = editor.value.slice(0, start) + text + editor.value.slice(end);
+        editor.focus();
+        editor.setSelectionRange(start + 2, start + text.length - 2);
+      }
+      dirty = true;
+      updateStatus();
+    });
     const variableSelect = document.querySelector('[data-contract-variable-select]');
     if (variableSelect) variableSelect.addEventListener('change', function () {
       const code = variableSelect.value;
@@ -184,6 +202,9 @@
         const unit = input.getAttribute('data-print-unit') || '';
         root.style.setProperty('--contract-' + input.name.replace(/_/g, '-'), input.value + unit);
       });
+      if (typeof previewFrame.contentWindow.updateContractDiagnostics === 'function') {
+        previewFrame.contentWindow.updateContractDiagnostics();
+      }
     };
     if (previewFrame) previewFrame.addEventListener('load', updatePreview);
     printInputs.forEach(function (input) { input.addEventListener('input', updatePreview); input.addEventListener('change', updatePreview); });
