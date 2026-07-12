@@ -47,16 +47,24 @@ class PluginManager
             return [];
         }
         $items = [];
+        $seen = [];
+        $registryReady = PluginRegistry::tableExists();
         foreach (glob($root . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR) ?: [] as $dir) {
             if (basename($dir) === 'tmp' || strpos(basename($dir), '.') === 0) {
                 continue;
             }
             try {
                 $manifest = PluginManifest::read($dir);
-                $registered = PluginRegistry::find($manifest['id']);
-                $manifest['path'] = str_replace('\\', '/', $dir);
-                $manifest['status'] = $registered['status'] ?? 'discovered';
+                $seen[$manifest['id']] = true;
+                if ($registryReady) {
+                    PluginRegistry::reconcileFilesystem($manifest, $dir, 'discovered');
+                }
+                $registered = $registryReady ? PluginRegistry::find($manifest['id']) : null;
+                $manifest['technical_path'] = str_replace('\\', '/', $dir);
+                $manifest['path'] = self::displayPath($dir);
+                $manifest['status'] = PluginRegistry::normalizeStatus($registered['status'] ?? 'discovered');
                 $manifest['last_error'] = $registered['last_error'] ?? null;
+                $manifest['has_files'] = true;
                 $items[] = $manifest;
             } catch (Throwable $e) {
                 $items[] = [
@@ -65,11 +73,39 @@ class PluginManager
                     'version' => '-',
                     'status' => 'failed',
                     'last_error' => $e->getMessage(),
-                    'path' => str_replace('\\', '/', $dir),
+                    'path' => self::displayPath($dir),
+                    'technical_path' => str_replace('\\', '/', $dir),
+                    'has_files' => false,
+                ];
+            }
+        }
+        if ($registryReady) {
+            foreach (PluginRegistry::allIncludingRemoved() as $registered) {
+                $pluginId = trim((string) ($registered['plugin_id'] ?? ''));
+                if ($pluginId === '' || isset($seen[$pluginId])) {
+                    continue;
+                }
+                $missingStatus = PluginRegistry::markMissing($pluginId);
+                $items[] = [
+                    'id' => $pluginId,
+                    'name' => $registered['name'] ?? $pluginId,
+                    'version' => $registered['version'] ?? '-',
+                    'status' => $missingStatus,
+                    'last_error' => 'فایل‌های افزونه در پوشه runtime پیدا نشد.',
+                    'path' => self::displayPath($registered['path'] ?? $pluginId),
+                    'technical_path' => str_replace('\\', '/', (string) ($registered['path'] ?? '')),
+                    'has_files' => false,
                 ];
             }
         }
         return $items;
+    }
+
+    public static function displayPath($path)
+    {
+        $name = basename(str_replace('\\', '/', rtrim((string) $path, '/\\')));
+        $name = preg_replace('/[^A-Za-z0-9._-]/', '', $name);
+        return 'plugins/' . ($name !== '' ? $name : 'unknown');
     }
 
     public static function isActive($pluginId)
@@ -179,7 +215,7 @@ class PluginManager
         if (method_exists($provider, 'uninstall')) {
             $provider->uninstall($this, $manifest, $purge);
         }
-        PluginRegistry::setStatus($manifest['id'], 'uninstalled');
+        PluginRegistry::setStatus($manifest['id'], 'removed');
         if ($purge) {
             $this->removePluginFiles($registered['path']);
         }
@@ -282,23 +318,58 @@ class PluginManager
             throw new InvalidArgumentException('ساختار ZIP باید plugin.json را در ریشه افزونه داشته باشد.');
         }
         $manifest = PluginManifest::read($pluginRoot);
+        $this->ensureRegistryTables();
         $destinationName = $pluginRoot === $temp ? $manifest['id'] : basename($pluginRoot);
         $destination = self::rootPath() . DIRECTORY_SEPARATOR . $destinationName;
+        $replacementBackup = null;
         if (is_dir($destination) || file_exists($destination)) {
-            $this->removePluginFiles($temp);
-            throw new InvalidArgumentException('پوشه افزونه از قبل وجود دارد. ابتدا نسخه فعلی را بررسی کنید.');
+            $registered = PluginRegistry::findAny($manifest['id']);
+            $status = PluginRegistry::normalizeStatus($registered['status'] ?? 'discovered');
+            if (in_array($status, ['installed', 'active', 'inactive', 'update_available'], true)) {
+                $this->removePluginFiles($temp);
+                throw new InvalidArgumentException('نسخه نصب‌شده یا فعال افزونه را از مسیر بروزرسانی ارتقا دهید.');
+            }
+            try {
+                $destinationManifest = PluginManifest::read($destination);
+                if (($destinationManifest['id'] ?? '') !== $manifest['id']) {
+                    throw new InvalidArgumentException('پوشه مقصد متعلق به افزونه دیگری است.');
+                }
+            } catch (Throwable $e) {
+                $this->removePluginFiles($temp);
+                throw new InvalidArgumentException('پوشه مقصد موجود است و جایگزینی امن آن ممکن نیست: ' . $e->getMessage());
+            }
+            $replacementBackup = dirname($destination) . DIRECTORY_SEPARATOR . '.replace-' . basename($destination) . '-' . bin2hex(random_bytes(5));
+            if (!rename($destination, $replacementBackup)) {
+                $this->removePluginFiles($temp);
+                throw new RuntimeException('آماده‌سازی نسخه قبلی افزونه برای جایگزینی انجام نشد.');
+            }
         }
         if (!is_dir(self::rootPath()) && !mkdir(self::rootPath(), 0755, true)) {
             $this->removePluginFiles($temp);
             throw new RuntimeException('ساخت پوشه افزونه انجام نشد.');
         }
         if (!rename($pluginRoot, $destination)) {
+            if ($replacementBackup && is_dir($replacementBackup)) {
+                @rename($replacementBackup, $destination);
+            }
             $this->removePluginFiles($temp);
             throw new RuntimeException('انتقال افزونه به پوشه plugins انجام نشد.');
         }
+        if ($replacementBackup && is_dir($replacementBackup)) {
+            $this->removePluginFiles($replacementBackup);
+        }
         $this->removePluginFiles($temp);
+        $manifest = PluginManifest::read($destination);
+        PluginRegistry::reconcileFilesystem($manifest, $destination, 'uploaded', $userId);
         $this->audit('plugin', 'uploaded', $manifest['id'], $userId, ['version' => $manifest['version']]);
         return $manifest;
+    }
+
+    public function rescan($userId = null)
+    {
+        $plugins = self::discover();
+        $this->audit('plugin', 'rescanned', 'runtime', $userId, ['count' => count($plugins)]);
+        return $plugins;
     }
 
     public function registerRoute($pluginId, $path, $handler, array $options = [])

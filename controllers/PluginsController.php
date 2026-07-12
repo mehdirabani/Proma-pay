@@ -27,6 +27,20 @@ class PluginsController extends Controller
         redirect('plugins');
     }
 
+    public function rescan()
+    {
+        $this->requireRole('admin');
+        PluginManager::requirePermission('manage_plugins');
+        $this->onlyPost();
+        try {
+            $plugins = PluginManager::instance()->rescan(Auth::id());
+            set_flash('success', 'پوشه پلاگین‌ها بررسی شد و وضعیت ' . to_persian_digits(count($plugins)) . ' افزونه همگام شد.');
+        } catch (Throwable $e) {
+            set_flash('error', 'بازبینی پوشه پلاگین‌ها انجام نشد: ' . $e->getMessage());
+        }
+        redirect('plugins');
+    }
+
     public function install($pluginId)
     {
         $this->requireRole('admin');

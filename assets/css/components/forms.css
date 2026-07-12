@@ -1,0 +1,461 @@
+:root {
+  --proma-control-height: 44px;
+  --proma-control-min-height: 44px;
+  --proma-control-padding-inline: 12px;
+  --proma-control-padding-block: 9px;
+  --proma-control-radius: 8px;
+  --proma-control-font-size: 14px;
+  --proma-control-line-height: 1.6;
+  --proma-field-gap: 7px;
+  --proma-form-column-gap: 16px;
+  --proma-form-row-gap: 18px;
+  --proma-label-min-height: 24px;
+  --proma-control-border: #d9e0ea;
+  --proma-control-bg: #fff;
+  --proma-control-text: #1f2937;
+  --proma-control-muted: #667085;
+  --proma-control-focus: #7366ff;
+  --proma-control-danger: #dc3545;
+}
+
+.proma-form-grid,
+.proma-form-row,
+.form-grid,
+.install-form {
+  display: grid;
+  align-items: start;
+  column-gap: var(--proma-form-column-gap);
+  row-gap: var(--proma-form-row-gap);
+}
+
+.proma-form-grid,
+.form-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.proma-form-grid.two,
+.form-grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.proma-form-grid.three,
+.form-grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.proma-form-grid.four,
+.form-grid.four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.proma-form-field,
+.form-grid > label:not(.check):not(.proma-checkbox-field):not(.proma-radio-field):not(.proma-confirm-check):not(.proma-group-check),
+.install-form > label:not(.check):not(.proma-checkbox-field):not(.proma-radio-field):not(.proma-confirm-check) {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(var(--proma-label-min-height), auto) auto minmax(0, auto);
+  align-content: start;
+  gap: var(--proma-field-gap);
+  margin: 0;
+  color: var(--proma-control-text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.65;
+}
+
+:is(.proma-form-grid.two, .proma-form-grid.three, .proma-form-grid.four, .form-grid.two, .form-grid.three, .form-grid.four)
+  > :is(.proma-form-field, label:not(.check):not(.proma-checkbox-field):not(.proma-radio-field):not(.proma-confirm-check):not(.proma-group-check)) {
+  --proma-label-min-height: 42px;
+}
+
+.proma-form-label {
+  min-height: var(--proma-label-min-height);
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 0;
+  color: var(--proma-control-text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.65;
+}
+
+.proma-form-grid > .full,
+.form-grid > .full,
+.proma-form-field.full {
+  grid-column: 1 / -1;
+}
+
+.proma-form-control,
+.form-grid input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]),
+.form-grid select:not([multiple]),
+.install-form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]),
+.install-form select:not([multiple]),
+.modal input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]),
+.modal select:not([multiple]),
+.proma-live-search > input:not([type="checkbox"]):not([type="radio"]),
+.proma-input-group > input,
+.proma-input-group > select {
+  width: 100%;
+  height: var(--proma-control-height);
+  min-height: var(--proma-control-min-height);
+  box-sizing: border-box;
+  margin: 0;
+  border: 1px solid var(--proma-control-border);
+  border-radius: var(--proma-control-radius);
+  padding: var(--proma-control-padding-block) var(--proma-control-padding-inline);
+  color: var(--proma-control-text);
+  background: var(--proma-control-bg);
+  box-shadow: none;
+  font: inherit;
+  font-size: var(--proma-control-font-size);
+  font-weight: 400;
+  line-height: var(--proma-control-line-height);
+  vertical-align: middle;
+}
+
+.proma-form-control:focus,
+.form-grid input:focus,
+.form-grid select:focus,
+.form-grid textarea:focus,
+.install-form input:focus,
+.install-form select:focus,
+.install-form textarea:focus,
+.modal input:focus,
+.modal select:focus,
+.modal textarea:focus,
+.proma-live-search > input:focus {
+  border-color: var(--proma-control-focus);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(115, 102, 255, .14);
+}
+
+.proma-form-control::placeholder,
+.form-grid input::placeholder,
+.form-grid textarea::placeholder,
+.modal input::placeholder,
+.modal textarea::placeholder {
+  color: #98a2b3;
+  opacity: 1;
+}
+
+.proma-form-control:disabled,
+.proma-form-control[readonly],
+.form-grid :is(input, select, textarea):disabled,
+.form-grid :is(input, textarea)[readonly],
+.modal :is(input, select, textarea):disabled,
+.modal :is(input, textarea)[readonly] {
+  color: #667085;
+  border-color: #e4e7ec;
+  background: #f2f4f7;
+  cursor: not-allowed;
+}
+
+.proma-form-control[aria-invalid="true"],
+.form-grid [aria-invalid="true"],
+.modal [aria-invalid="true"],
+.proma-form-control.is-invalid {
+  border-color: var(--proma-control-danger);
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, .1);
+}
+
+.proma-form-help,
+.proma-form-error {
+  min-height: 18px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.proma-form-help { color: var(--proma-control-muted); }
+.proma-form-error { color: var(--proma-control-danger); }
+
+.form-grid textarea,
+.install-form textarea,
+.modal textarea,
+textarea.proma-form-control {
+  width: 100%;
+  height: auto;
+  min-height: 100px;
+  resize: vertical;
+  padding-block: 10px;
+}
+
+.form-grid select[multiple],
+.install-form select[multiple],
+.modal select[multiple],
+select[multiple].proma-form-control {
+  width: 100%;
+  height: auto;
+  min-height: 128px;
+}
+
+.proma-input-group,
+.input-group,
+.proma-field-actions {
+  min-width: 0;
+  min-height: var(--proma-control-height);
+  display: flex;
+  align-items: stretch;
+}
+
+.proma-input-group > *,
+.input-group > * {
+  min-height: var(--proma-control-height);
+  margin: 0;
+  border-radius: 0;
+}
+
+.proma-input-group > :first-child,
+.input-group > :first-child {
+  border-start-start-radius: var(--proma-control-radius);
+  border-end-start-radius: var(--proma-control-radius);
+}
+
+.proma-input-group > :last-child,
+.input-group > :last-child {
+  border-start-end-radius: var(--proma-control-radius);
+  border-end-end-radius: var(--proma-control-radius);
+}
+
+.proma-input-prefix,
+.proma-input-suffix,
+.proma-input-group > button,
+.input-group > button,
+.input-group .btn {
+  min-width: var(--proma-control-height);
+  height: var(--proma-control-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 12px;
+  line-height: 1;
+}
+
+.proma-field-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.proma-field-actions > .btn,
+.form-grid > .actions .btn,
+.install-form > .actions .btn,
+.modal-footer .btn {
+  min-height: var(--proma-control-height);
+  align-self: center;
+}
+
+.proma-checkbox-field,
+.proma-radio-field,
+.proma-confirm-check,
+.proma-group-check,
+label.check {
+  min-height: 44px;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  line-height: 1.65;
+}
+
+.proma-checkbox-field input,
+.proma-radio-field input,
+.proma-confirm-check input,
+.proma-group-check input,
+label.check input {
+  flex: 0 0 auto;
+}
+
+label.required-field {
+  position: relative;
+  padding-inline-start: 14px;
+}
+
+label.required-field::before {
+  content: "*";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  color: var(--proma-control-danger);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+label.required-field::after {
+  content: none !important;
+}
+
+.modal-content form {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-content .modal-body {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.modal-content .modal-header,
+.modal-content .modal-footer {
+  flex: 0 0 auto;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.proma-table-actions,
+table .actions {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.proma-plugin-toolbar,
+.proma-plugin-upload-form {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.proma-plugin-upload-form > label {
+  min-width: min(300px, 100%);
+  display: grid;
+  grid-template-rows: minmax(var(--proma-label-min-height), auto) auto;
+  gap: var(--proma-field-gap);
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.proma-plugin-upload-form input[type="file"] {
+  width: 100%;
+  min-height: var(--proma-control-height);
+  margin: 0;
+  border: 1px solid var(--proma-control-border);
+  border-radius: var(--proma-control-radius);
+  padding: 5px;
+  color: var(--proma-control-text);
+  background: var(--proma-control-bg);
+  font-size: 12px;
+}
+
+.proma-plugin-technical {
+  max-width: 320px;
+  margin-block-start: 6px;
+  color: var(--proma-control-muted);
+  font-size: 11px;
+}
+
+.proma-plugin-technical summary {
+  width: max-content;
+  cursor: pointer;
+  user-select: none;
+}
+
+.proma-plugin-technical code {
+  display: block;
+  max-width: 100%;
+  margin-block-start: 5px;
+  padding: 6px 8px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+table th,
+table td {
+  vertical-align: middle;
+}
+
+.proma-accounting-plugin :is(input, select):not([type="checkbox"]):not([type="radio"]),
+.proma-accounting-plugin .btn {
+  min-height: var(--proma-control-height);
+  vertical-align: middle;
+}
+
+@media (max-width: 1199.98px) {
+  .proma-form-grid.four,
+  .form-grid.four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767.98px) {
+  :is(.proma-form-grid, .form-grid, .install-form) > :is(.proma-form-field, label) {
+    --proma-label-min-height: 24px;
+  }
+
+  .proma-form-grid.two,
+  .proma-form-grid.three,
+  .proma-form-grid.four,
+  .form-grid.two,
+  .form-grid.three,
+  .form-grid.four,
+  .install-form {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .proma-form-grid > *,
+  .form-grid > *,
+  .install-form > * {
+    grid-column: 1 / -1 !important;
+  }
+
+  .proma-field-actions,
+  .form-grid > .actions,
+  .install-form > .actions,
+  .modal-footer {
+    width: 100%;
+  }
+
+  .proma-field-actions > .btn,
+  .form-grid > .actions > .btn,
+  .install-form > .actions > .btn,
+  .modal-footer > .btn {
+    flex: 1 1 140px;
+  }
+
+  .proma-plugin-toolbar,
+  .proma-plugin-upload-form,
+  .proma-plugin-toolbar > form {
+    width: 100%;
+  }
+
+  .proma-plugin-upload-form > label,
+  .proma-plugin-upload-form > .btn,
+  .proma-plugin-toolbar > form > .btn {
+    width: 100%;
+  }
+}
+
+body.dark-only,
+[data-theme="dark"] {
+  --proma-control-border: #3f4754;
+  --proma-control-bg: #20242b;
+  --proma-control-text: #f2f4f7;
+  --proma-control-muted: #98a2b3;
+}
+
+body.dark-only .proma-form-control:disabled,
+body.dark-only .proma-form-control[readonly],
+body.dark-only .form-grid :is(input, select, textarea):disabled,
+body.dark-only .form-grid :is(input, textarea)[readonly],
+[data-theme="dark"] .proma-form-control:disabled,
+[data-theme="dark"] .proma-form-control[readonly] {
+  color: #98a2b3;
+  border-color: #343a46;
+  background: #171a20;
+}

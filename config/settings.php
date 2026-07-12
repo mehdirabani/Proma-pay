@@ -3,7 +3,7 @@
 return [
     'app_name' => 'پروما',
     'version' => (require __DIR__ . '/version.php')['application'],
-    'asset_version' => '1.0.39',
+    'asset_version' => '1.0.40',
     'timezone' => 'Asia/Tehran',
     'base_url' => '',
     'session_name' => 'proma_pay_session',
@@ -47,6 +47,8 @@ return [
         'closed' => 'بسته',
         'referred' => 'ارجاع شده',
         'discovered' => 'شناسایی‌شده',
+        'update_available' => 'بروزرسانی موجود',
+        'removed' => 'حذف‌شده',
         'installed' => 'نصب‌شده',
         'uninstalled' => 'حذف‌شده',
     ],

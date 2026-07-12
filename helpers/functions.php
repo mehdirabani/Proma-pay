@@ -469,6 +469,8 @@ function badge_class($status)
         'raw' => 'muted',
         'referred' => 'warning',
         'discovered' => 'info',
+        'update_available' => 'warning',
+        'removed' => 'muted',
         'installed' => 'info',
         'uninstalled' => 'muted',
         'rejected' => 'danger',

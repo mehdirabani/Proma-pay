@@ -188,6 +188,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <link rel="stylesheet" href="<?= e(template_asset_url('css/responsive.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
   <?php if (plugin_is_active('proma-accounting')): ?><link rel="stylesheet" href="<?= e(asset_url('plugins/PromaAccounting/assets/css/accounting.css')) ?>"><?php endif; ?>
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/forms.css')) ?>">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
 </head>
 <body onload="if (window.startTime) startTime()" data-user-id="<?= (int) Auth::id() ?>" data-notification-sound="<?= $notificationSoundEnabled ? '1' : '0' ?>" data-notification-volume="<?= e($notificationSoundVolume) ?>">

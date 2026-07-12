@@ -1,0 +1,346 @@
+@font-face {
+  font-family: "YekanBakh";
+  src: url("../../fonts/woff2/YekanBakh-Regular.woff2") format("woff2"),
+       url("../../fonts/woff/YekanBakh-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "YekanBakh";
+  src: url("../../fonts/woff2/YekanBakh-Bold.woff2") format("woff2"),
+       url("../../fonts/woff/YekanBakh-Bold.woff") format("woff");
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+* { box-sizing: border-box; }
+
+html,
+body { min-height: 100%; }
+
+body {
+  margin: 0;
+  color: #111827;
+  background: #e9edf3;
+  font-family: "YekanBakh", Tahoma, sans-serif;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.contract-print-page {
+  position: relative;
+  width: 210mm;
+  min-height: 297mm;
+  margin: 20px auto;
+  padding: 18mm 17mm;
+  background: #fff;
+  box-shadow: 0 14px 40px rgba(31, 41, 55, .14);
+}
+
+.proma-contract-letterhead {
+  direction: rtl;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4mm 8mm;
+  overflow: hidden;
+  margin-block-end: 5mm;
+  border: 1px solid #263244;
+  border-radius: 3mm;
+  background: #fff;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.proma-letterhead-number,
+.proma-letterhead-meta,
+.proma-letterhead-logo {
+  min-width: 0;
+  padding-block: 4mm 2.5mm;
+}
+
+.proma-letterhead-number {
+  grid-column: 1;
+  padding-inline-start: 4mm;
+  text-align: right;
+}
+
+.proma-letterhead-number small,
+.proma-letterhead-meta small {
+  display: block;
+  margin-block-end: 1mm;
+  color: #667085;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.proma-letterhead-number strong {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: #111827;
+  font-family: Tahoma, sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.proma-letterhead-logo {
+  grid-column: 2;
+  display: grid;
+  place-items: center;
+  width: 40mm;
+  min-height: 19mm;
+  padding-inline: 1mm;
+}
+
+.proma-letterhead-logo img {
+  display: block;
+  max-width: 38mm;
+  max-height: 18mm;
+  object-fit: contain;
+}
+
+.proma-letterhead-logo-fallback {
+  max-width: 38mm;
+  color: #263244;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.proma-letterhead-meta {
+  grid-column: 3;
+  display: grid;
+  gap: 1.5mm;
+  padding-inline-end: 4mm;
+  color: #344054;
+  font-size: 10px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.proma-letterhead-meta span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.proma-letterhead-title {
+  grid-column: 1 / -1;
+  padding: 2.7mm 4mm 3mm;
+  border-top: 2px solid #263244;
+  background: #f5f7fa;
+  text-align: center;
+}
+
+.proma-letterhead-title h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.proma-letterhead-title p {
+  margin: 1mm 0 0;
+  color: #475467;
+  font-size: 8.7px;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.contract-print-body,
+.contract-document-body {
+  direction: rtl;
+  color: #111827;
+  font-size: 10.4px;
+  line-height: 1.54;
+  text-align: justify;
+}
+
+.contract-document-body :is(p, div, li, blockquote) {
+  line-height: 1.54;
+}
+
+.contract-document-body :is(p, div) {
+  margin-block: 0 1.4mm;
+}
+
+.contract-document-body :is(ul, ol) {
+  margin: 1mm 0 1.5mm;
+  padding-inline-start: 6mm;
+}
+
+.contract-document-body li { margin-block-end: .6mm; }
+
+.contract-document-body :is(h1, h2, h3, h4) {
+  margin: 2.5mm 0 1mm;
+  font-weight: 800;
+  line-height: 1.4;
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+.contract-document-body img {
+  max-width: 100%;
+  height: auto;
+}
+
+.contract-print-table,
+.contract-document-body table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin: 2mm 0 3mm;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.contract-print-table thead,
+.contract-document-body table thead { display: table-header-group; }
+
+.contract-print-table tr,
+.contract-document-body table tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.contract-print-table :is(th, td),
+.contract-document-body table :is(th, td) {
+  border: .35mm solid #667085;
+  padding: 1.3mm 1.6mm;
+  text-align: center;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.contract-print-table th,
+.contract-document-body table th {
+  background: #eef1f5;
+  font-weight: 800;
+}
+
+.contract-guarantors-section,
+.contract-guarantor-box,
+.contract-signature-grid,
+.contract-signature-box {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.contract-guarantors-section h3 {
+  margin: 2.5mm 0 1mm;
+  font-size: 10px;
+}
+
+.contract-guarantor-box {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1mm 3mm;
+  margin: 1.5mm 0;
+  padding: 2mm 2.5mm;
+  border: .3mm solid #98a2b3;
+  border-radius: 2mm;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.contract-guarantor-box .full { grid-column: 1 / -1; }
+
+.contract-signature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4mm;
+  margin-block-start: 8mm;
+}
+
+.contract-signature-box {
+  min-height: 25mm;
+  padding-block-start: 2mm;
+  border-top: .35mm solid #111827;
+  font-size: 9px;
+  text-align: center;
+}
+
+.contract-empty {
+  margin: 1.5mm 0;
+  padding: 2mm;
+  color: #667085;
+  border: .3mm dashed #98a2b3;
+  border-radius: 2mm;
+  font-size: 9px;
+}
+
+.contract-cancelled-watermark {
+  position: fixed;
+  top: 44%;
+  left: 50%;
+  z-index: 4;
+  padding: 3mm 8mm;
+  color: rgba(185, 28, 28, .17);
+  border: .7mm solid rgba(185, 28, 28, .2);
+  font-size: 24px;
+  font-weight: 900;
+  transform: translate(-50%, -50%) rotate(-18deg);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.contract-cancelled-note { color: #b42318 !important; }
+
+@page {
+  size: A4 portrait;
+  margin: 18mm 17mm;
+}
+
+@media print {
+  html,
+  body {
+    min-height: auto;
+    background: #fff;
+  }
+
+  .contract-print-page {
+    width: auto;
+    min-height: auto;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .proma-contract-letterhead { margin-block-end: 4mm; }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  body { background: #fff; }
+
+  .contract-print-page {
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 18px 14px;
+    box-shadow: none;
+  }
+
+  .proma-contract-letterhead {
+    grid-template-columns: minmax(0, 1fr) 84px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .proma-letterhead-logo { width: 84px; }
+  .proma-letterhead-number strong { font-size: 14px; }
+  .proma-letterhead-meta { font-size: 8px; }
+}

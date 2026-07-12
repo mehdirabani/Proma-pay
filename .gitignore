@@ -9,6 +9,7 @@
 /storage/uploads/
 /vendor/
 /node_modules/
+/dist/
 /html/RTL/node_modules/
 /.env
 /1.xlsx

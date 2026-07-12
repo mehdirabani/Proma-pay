@@ -30,6 +30,87 @@ class PluginRegistry extends Model
         }
     }
 
+    public static function findAny($pluginId)
+    {
+        try {
+            return self::fetch('SELECT * FROM system_plugins WHERE plugin_id = ? LIMIT 1', [trim((string) $pluginId)]);
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    public static function allIncludingRemoved()
+    {
+        try {
+            return self::fetchAll('SELECT * FROM system_plugins ORDER BY name, plugin_id');
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    public static function normalizeStatus($status)
+    {
+        return PluginStatus::normalize($status);
+    }
+
+    public static function reconcileFilesystem(array $manifest, $root, $preferredStatus = 'discovered', $userId = null)
+    {
+        $pluginId = trim((string) ($manifest['id'] ?? ''));
+        if ($pluginId === '') {
+            throw new InvalidArgumentException('شناسه افزونه برای همگام‌سازی معتبر نیست.');
+        }
+        $preferredStatus = self::normalizeStatus($preferredStatus);
+        $existing = self::findAny($pluginId);
+        $manifestJson = json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $normalizedRoot = str_replace('\\', '/', rtrim((string) $root, '/\\'));
+
+        if (!$existing) {
+            self::execute(
+                'INSERT INTO system_plugins
+                 (plugin_id, name, description, version, path, status, installed_at, installed_by, manifest_json, updated_at, deleted_at)
+                 VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, NOW(), NULL)',
+                [$pluginId, $manifest['name'], trim((string) ($manifest['description'] ?? '')), $manifest['version'], $normalizedRoot, $preferredStatus, $userId ? (int) $userId : null, $manifestJson]
+            );
+            return $preferredStatus;
+        }
+
+        $current = self::normalizeStatus($existing['status'] ?? 'discovered');
+        $protected = ['installed', 'active', 'inactive', 'update_available'];
+        if (in_array($current, $protected, true)) {
+            $nextStatus = $current;
+        } elseif ($current === 'uploaded' && $preferredStatus === 'discovered') {
+            $nextStatus = 'uploaded';
+        } else {
+            $nextStatus = $preferredStatus;
+        }
+
+        self::execute(
+            'UPDATE system_plugins
+             SET name = ?, description = ?, version = ?, path = ?, status = ?, installed_by = COALESCE(installed_by, ?),
+                 manifest_json = ?, last_error = CASE WHEN ? = \'failed\' THEN last_error ELSE NULL END,
+                 deleted_at = NULL, updated_at = NOW()
+             WHERE plugin_id = ?',
+            [$manifest['name'], trim((string) ($manifest['description'] ?? '')), $manifest['version'], $normalizedRoot, $nextStatus, $userId ? (int) $userId : null, $manifestJson, $nextStatus, $pluginId]
+        );
+        return $nextStatus;
+    }
+
+    public static function markMissing($pluginId)
+    {
+        try {
+            $existing = self::findAny($pluginId);
+            $current = self::normalizeStatus($existing['status'] ?? 'removed');
+            $status = in_array($current, ['installed', 'active', 'inactive', 'update_available'], true) ? 'failed' : 'removed';
+            self::execute(
+                'UPDATE system_plugins SET status = ?, last_error = ?, updated_at = NOW() WHERE plugin_id = ?',
+                [$status, 'فایل‌های افزونه در پوشه runtime پیدا نشد.', trim((string) $pluginId)]
+            );
+            return $status;
+        } catch (Throwable $e) {
+            return 'removed';
+        }
+    }
+
     public static function upsert(array $manifest, $root, $userId = null)
     {
         self::execute(
@@ -52,6 +133,7 @@ class PluginRegistry extends Model
 
     public static function setStatus($pluginId, $status, $error = null)
     {
+        $status = self::normalizeStatus($status);
         $fields = ['status = ?', 'last_error = ?', 'updated_at = NOW()'];
         $params = [$status, $error ?: null];
         if ($status === 'active') {

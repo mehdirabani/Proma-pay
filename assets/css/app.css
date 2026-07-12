@@ -6322,6 +6322,7 @@ input[type="checkbox"]:not(.switch-options input):focus-visible {
 @media (min-width: 992px) {
   .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper {
     height: 100vh !important;
+    height: 100dvh !important;
     overflow: hidden;
   }
 
@@ -6358,12 +6359,14 @@ input[type="checkbox"]:not(.switch-options input):focus-visible {
     box-sizing: border-box;
     max-height: none !important;
     margin-block: 0 !important;
-    padding-block-end: 56px !important;
+    padding-block-end: 96px !important;
+    scroll-padding-block-end: 96px;
     overflow-y: auto !important;
+    overscroll-behavior: contain;
   }
 
   .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #simple-bar .simplebar-content {
-    padding-block-end: 56px;
+    padding-block-end: 112px !important;
   }
 
   .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #simple-bar .simplebar-wrapper,
@@ -6372,6 +6375,17 @@ input[type="checkbox"]:not(.switch-options input):focus-visible {
   .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #simple-bar .simplebar-content-wrapper {
     min-height: 0;
     height: 100%;
+  }
+
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #simple-bar .simplebar-content-wrapper {
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    scroll-padding-block-end: 112px;
+  }
+
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .right-arrow,
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .left-arrow {
+    display: none !important;
   }
 }
 

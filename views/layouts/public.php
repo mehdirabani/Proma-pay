@@ -34,6 +34,7 @@ try {
   <link id="color" rel="stylesheet" href="<?= e(template_asset_url('css/color-1.css')) ?>" media="screen">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/responsive.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/forms.css')) ?>">
 </head>
 <body class="proma-public-body">
   <header class="proma-public-header">
