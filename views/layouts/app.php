@@ -4,50 +4,105 @@ $settings = Settings::allKeyed();
 $route = trim($_GET['route'] ?? 'dashboard', '/');
 $unreadNotifications = Notification::unreadCount(Auth::id());
 $unreadMessages = Chat::unreadCount(Auth::id());
-$notifications = Notification::latest(Auth::id());
-$systemName = $settings['system_name'] ?? app_config('app_name', 'پرما پرداخت');
+$pendingIdentityReviews = 0;
+$pendingReceiptReviews = 0;
+if (Auth::role() === 'admin') {
+    $pendingIdentityReviews = IdentityDocument::pendingCount();
+    $pendingReceiptReviews = PaymentReceipt::pendingCount();
+}
+$pendingReviewCount = $pendingIdentityReviews + $pendingReceiptReviews;
+$notifications = Notification::latest(Auth::id(), 6);
+$latestNotificationId = Notification::latestId(Auth::id());
+$notificationSoundEnabled = (int) ($settings['notifications_sound_enabled'] ?? 1);
+$notificationSoundVolume = max(0, min(1, (float) ($settings['notifications_sound_volume'] ?? '0.45')));
+$systemName = $settings['system_name'] ?? app_config('app_name', 'پروما');
 $logoText = $settings['logo_text'] ?? $systemName;
-$footerText = $settings['footer_text'] ?? 'پنل مدیریت مالی راست‌چین';
+$logoPath = trim((string) ($settings['logo_path'] ?? ''));
+$logoIconPath = trim((string) ($settings['logo_icon_path'] ?? ''));
+$faviconPath = trim((string) ($settings['favicon_path'] ?? ''));
+$appIconPath = $logoIconPath ?: $faviconPath;
+$compactLogoPath = $logoIconPath ?: $logoPath;
+$logoInitial = mb_substr($logoText ?: $systemName, 0, 1, 'UTF-8') ?: 'پ';
+$renderFullLogo = static function () use ($logoPath, $logoIconPath, $logoText, $logoInitial) {
+    ob_start();
+    if ($logoPath !== '') {
+        ?><img class="proma-uploaded-logo" src="<?= e(asset_url($logoPath)) ?>" alt="<?= e($logoText) ?>"><?php
+    } else {
+        if ($logoIconPath !== '') {
+            ?><img class="proma-uploaded-logo sm" src="<?= e(asset_url($logoIconPath)) ?>" alt="<?= e($logoText) ?>"><?php
+        } else {
+            ?><span class="proma-logo-mark"><?= e($logoInitial) ?></span><?php
+        }
+        ?><span><?= e($logoText) ?></span><?php
+    }
+    return trim(ob_get_clean());
+};
+$renderCompactLogo = static function () use ($compactLogoPath, $logoText, $logoInitial) {
+    ob_start();
+    if ($compactLogoPath !== '') {
+        ?><img class="proma-uploaded-logo sm" src="<?= e(asset_url($compactLogoPath)) ?>" alt="<?= e($logoText) ?>"><?php
+    } else {
+        ?><span class="proma-logo-mark sm"><?= e($logoInitial) ?></span><?php
+    }
+    return trim(ob_get_clean());
+};
+$footerText = $settings['footer_text'] ?? 'توسعه‌دهنده: مهدی ربانی - pgm.mehdirabani@gmail.com - github.com/mehdirabani';
 $sprite = template_asset_url('svg/icon-sprite.svg');
 $userInitial = mb_substr($user['full_name'] ?? 'ک', 0, 1, 'UTF-8');
+$canViewUsers = Auth::canViewUsers();
 $nav = [];
 if (Auth::role() === 'admin') {
     $nav = [
         ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
+        ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['users', 'کاربران', 'stroke-user', 'fill-user'],
         ['customers', 'مشتریان', 'stroke-user', 'fill-user'],
         ['contracts', 'قراردادها', 'stroke-project', 'fill-project'],
         ['installments', 'اقساط', 'stroke-file', 'fill-file'],
         ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
         ['payments', 'پرداخت‌ها', 'stroke-ecommerce', 'fill-ecommerce'],
+        ['ecommerce', 'تجارت الکترونیک', 'stroke-ecommerce', 'fill-ecommerce', [
+            ['ecommerce/addProduct', 'افزودن محصول'],
+            ['ecommerce/products', 'فهرست محصولات'],
+            ['ecommerce/orders', 'فهرست سفارشات'],
+        ]],
+        ['review', 'بررسی موارد ارسالی', 'stroke-task', 'fill-task'],
         ['legal', 'حقوقی و شکایت‌ها', 'stroke-file', 'fill-file'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
-        ['imports', 'ورود دیتا', 'stroke-table', 'fill-table'],
         ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
         ['ai', 'تحلیل هوشمند', 'stroke-learning', 'fill-learning'],
         ['settings', 'تنظیمات', 'stroke-others', 'fill-others'],
     ];
 } elseif (Auth::role() === 'operator') {
     $nav = [
-        ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
-        ['operator', 'پیگیری‌ها', 'stroke-task', 'fill-task'],
+        ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
+        ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
-        ['users', 'کاربران', 'stroke-user', 'fill-user'],
+        ['contracts', 'قراردادها', 'stroke-project', 'fill-project'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
     ];
 } elseif (Auth::role() === 'lawyer') {
     $nav = [
+        ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
         ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
+        ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['lawyer', 'پرونده‌ها', 'stroke-file', 'fill-file'],
-        ['users', 'کاربران', 'stroke-user', 'fill-user'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
     ];
+    if ($canViewUsers) {
+        array_splice($nav, 2, 0, [['users', 'کاربران', 'stroke-user', 'fill-user']]);
+    }
 } else {
     $nav = [
         ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
+        ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['portal/contracts', 'قراردادها', 'stroke-project', 'fill-project'],
-        ['portal/installments', 'اقساط', 'stroke-file', 'fill-file'],
+        ['installments/panel', 'اقساط', 'stroke-file', 'fill-file'],
+        ['ecommerce/shop', 'فروشگاه', 'stroke-ecommerce', 'fill-ecommerce'],
+        ['ecommerce/cart', 'سبد خرید', 'stroke-board', 'fill-board'],
         ['portal/guaranteed', 'ضمانت‌ها', 'stroke-board', 'fill-board'],
+        ['portal/history', 'سوابق خرید', 'stroke-ecommerce', 'fill-ecommerce'],
+        ['calendar', 'تقویم', 'stroke-task', 'fill-task'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
     ];
 }
@@ -59,8 +114,9 @@ if (Auth::role() === 'admin') {
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= e($title ?? $systemName) ?></title>
-  <link rel="manifest" href="<?= e(asset_url('manifest.json')) ?>">
-  <link rel="icon" href="<?= e(template_asset_url('images/favicon.png')) ?>" type="image/x-icon">
+  <link rel="manifest" href="<?= e(url('manifest')) ?>">
+  <link rel="icon" href="<?= e($faviconPath ? asset_url($faviconPath) : template_asset_url('images/favicon.png')) ?>">
+  <link rel="apple-touch-icon" href="<?= e($appIconPath ? asset_url($appIconPath) : template_asset_url('images/favicon.png')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/font-awesome.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/icofont.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/themify.css')) ?>">
@@ -69,16 +125,17 @@ if (Auth::role() === 'admin') {
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/slick.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/slick-theme.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/scrollbar.css')) ?>">
+  <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/quill.snow.css')) ?>">
+  <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/quill.bubble.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/animate.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/bootstrap.rtl.min.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/style.css')) ?>">
   <link id="color" rel="stylesheet" href="<?= e(template_asset_url('css/color-1.css')) ?>" media="screen">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/responsive.css')) ?>">
-  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
 </head>
-<body onload="if (window.startTime) startTime()" data-user-id="<?= (int) Auth::id() ?>">
+<body onload="if (window.startTime) startTime()" data-user-id="<?= (int) Auth::id() ?>" data-notification-sound="<?= $notificationSoundEnabled ? '1' : '0' ?>" data-notification-volume="<?= e($notificationSoundVolume) ?>">
   <div class="loader-wrapper">
     <div class="loader-index"><span></span></div>
     <svg><defs></defs><filter id="goo"><feGaussianBlur in="SourceGraphic" stdDeviation="11" result="blur"></feGaussianBlur><feColorMatrix in="blur" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo"></feColorMatrix></filter></svg>
@@ -105,7 +162,7 @@ if (Auth::role() === 'admin') {
         <div class="header-logo-wrapper col-auto p-0">
           <div class="logo-wrapper">
             <a class="proma-template-logo" href="<?= e(url('dashboard')) ?>">
-              <span class="proma-logo-mark">پ</span><span><?= e($logoText) ?></span>
+              <?= $renderFullLogo() ?>
             </a>
           </div>
           <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="align-center"></i></div>
@@ -131,24 +188,34 @@ if (Auth::role() === 'admin') {
             <li>
               <div class="mode"><svg><use href="<?= e($sprite) ?>#moon"></use></svg></div>
             </li>
-            <li class="onhover-dropdown">
+            <?php if (($user['role'] ?? '') === 'admin'): ?>
+              <li class="proma-header-quick-action">
+                <a class="proma-header-contract-btn" href="<?= e(url('contracts', ['open' => 'create-contract'])) ?>" title="قرارداد جدید">
+                  <i data-feather="plus-circle"></i>
+                  <span>قرارداد جدید</span>
+                </a>
+              </li>
+            <?php endif; ?>
+            <li class="onhover-dropdown" data-notification-center data-feed-url="<?= e(url('notifications/feed')) ?>" data-read-url="<?= e(url('notifications/read')) ?>" data-latest-id="<?= (int) $latestNotificationId ?>">
               <div class="notification-box">
                 <svg><use href="<?= e($sprite) ?>#notification"></use></svg>
-                <?php if ($unreadNotifications): ?><span class="badge rounded-pill badge-secondary"><?= to_persian_digits($unreadNotifications) ?></span><?php endif; ?>
+                <span class="badge rounded-pill badge-secondary" data-notification-badge<?= $unreadNotifications ? '' : ' hidden' ?>><?= to_persian_digits($unreadNotifications) ?></span>
               </div>
               <div class="onhover-show-div notification-dropdown">
                 <h6 class="f-18 mb-0 dropdown-title">اعلان‌ها</h6>
-                <ul>
+                <ul data-notification-list>
                   <?php if (!$notifications): ?>
                     <li><p class="f-light mb-0">اعلان تازه‌ای ندارید.</p></li>
                   <?php else: foreach ($notifications as $item): ?>
-                    <li class="b-l-primary border-4">
+                    <li class="b-l-primary border-4" data-notification-item="<?= (int) $item['id'] ?>">
                       <a href="<?= e($item['url'] ?: url('dashboard')) ?>">
                         <p><?= e($item['title']) ?><span class="font-primary"><?= e($item['body']) ?></span></p>
+                        <small class="f-light"><?= e($item['relative_time'] ?? jdatetime($item['created_at'] ?? '')) ?></small>
                       </a>
                     </li>
                   <?php endforeach; endif; ?>
-                  <li>
+                  <li class="proma-notification-actions" data-notification-actions>
+                    <a class="btn btn-light btn-sm w-100" href="<?= e(url('notifications')) ?>">مشاهده همه</a>
                     <form method="post" action="<?= e(url('notifications/read')) ?>">
                       <?= csrf_field() ?>
                       <button class="btn btn-primary btn-sm w-100" type="submit">خواندن همه</button>
@@ -191,35 +258,63 @@ if (Auth::role() === 'admin') {
       <div class="sidebar-wrapper" sidebar-layout="stroke-svg">
         <div>
           <div class="logo-wrapper">
-            <a class="proma-template-logo" href="<?= e(url('dashboard')) ?>">
-              <span class="proma-logo-mark">پ</span><span><?= e($logoText) ?></span>
+            <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="grid"></i></div>
+            <a class="proma-template-logo proma-sidebar-brand" href="<?= e(url('dashboard')) ?>">
+              <span class="proma-logo-full"><?= $renderFullLogo() ?></span>
+              <span class="proma-logo-compact"><?= $renderCompactLogo() ?></span>
             </a>
             <div class="back-btn"><i class="fa fa-angle-left"></i></div>
-            <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="grid"></i></div>
           </div>
           <div class="logo-icon-wrapper">
-            <a href="<?= e(url('dashboard')) ?>"><span class="proma-logo-mark sm">پ</span></a>
+            <a href="<?= e(url('dashboard')) ?>"><?= $renderCompactLogo() ?></a>
           </div>
           <nav class="sidebar-main">
             <div class="left-arrow" id="left-arrow"><i data-feather="arrow-left"></i></div>
             <div id="sidebar-menu">
               <ul class="sidebar-links" id="simple-bar">
                 <li class="back-btn">
-                  <a href="<?= e(url('dashboard')) ?>"><span class="proma-logo-mark sm">پ</span></a>
+                  <a href="<?= e(url('dashboard')) ?>"><?= $renderCompactLogo() ?></a>
                   <div class="mobile-back text-end"><span>برگشت</span><i class="fa fa-angle-right ps-2" aria-hidden="true"></i></div>
                 </li>
                 <li class="pin-title sidebar-main-title"><div><h6>پین شده</h6></div></li>
                 <li class="sidebar-main-title"><div><h6>منوی سامانه</h6></div></li>
                 <?php foreach ($nav as $item): ?>
-                  <?php $active = strpos($route, $item[0]) === 0 || ($route === 'dashboard' && $item[0] === 'dashboard'); ?>
+                  <?php
+                    $children = $item[4] ?? [];
+                    $active = strpos($route, $item[0]) === 0 || ($route === 'dashboard' && $item[0] === 'dashboard');
+                    if (!$active && $children) {
+                        foreach ($children as $child) {
+                            if (strpos($route, $child[0]) === 0) {
+                                $active = true;
+                                break;
+                            }
+                        }
+                    }
+                  ?>
                   <li class="sidebar-list">
                     <i class="fa fa-thumb-tack"></i>
                     <?php if ($item[0] === 'chat' && $unreadMessages): ?><label class="badge badge-light-primary"><?= to_persian_digits($unreadMessages) ?></label><?php endif; ?>
-                    <a class="sidebar-link sidebar-title link-nav <?= $active ? 'active' : '' ?>" href="<?= e(url($item[0])) ?>">
-                      <svg class="stroke-icon"><use href="<?= e($sprite) ?>#<?= e($item[2]) ?>"></use></svg>
-                      <svg class="fill-icon"><use href="<?= e($sprite) ?>#<?= e($item[3]) ?>"></use></svg>
-                      <span><?= e($item[1]) ?></span>
-                    </a>
+                    <?php if ($item[0] === 'notifications' && $unreadNotifications): ?><label class="badge badge-light-primary"><?= to_persian_digits($unreadNotifications) ?></label><?php endif; ?>
+                    <?php if ($item[0] === 'review' && $pendingReviewCount): ?><label class="badge badge-light-danger"><?= to_persian_digits($pendingReviewCount) ?></label><?php endif; ?>
+                    <?php if ($children): ?>
+                      <a class="sidebar-link sidebar-title <?= $active ? 'active' : '' ?>" href="javascript:void(0)">
+                        <svg class="stroke-icon"><use href="<?= e($sprite) ?>#<?= e($item[2]) ?>"></use></svg>
+                        <svg class="fill-icon"><use href="<?= e($sprite) ?>#<?= e($item[3]) ?>"></use></svg>
+                        <span><?= e($item[1]) ?></span>
+                      </a>
+                      <ul class="sidebar-submenu" style="<?= $active ? 'display:block;' : '' ?>">
+                        <?php foreach ($children as $child): ?>
+                          <?php $childActive = strpos($route, $child[0]) === 0; ?>
+                          <li><a class="<?= $childActive ? 'active' : '' ?>" href="<?= e(url($child[0])) ?>"><?= e($child[1]) ?></a></li>
+                        <?php endforeach; ?>
+                      </ul>
+                    <?php else: ?>
+                      <a class="sidebar-link sidebar-title link-nav <?= $active ? 'active' : '' ?>" href="<?= e(url($item[0])) ?>">
+                        <svg class="stroke-icon"><use href="<?= e($sprite) ?>#<?= e($item[2]) ?>"></use></svg>
+                        <svg class="fill-icon"><use href="<?= e($sprite) ?>#<?= e($item[3]) ?>"></use></svg>
+                        <span><?= e($item[1]) ?></span>
+                      </a>
+                    <?php endif; ?>
                   </li>
                 <?php endforeach; ?>
               </ul>
@@ -315,6 +410,7 @@ if (Auth::role() === 'admin') {
   <script src="<?= e(template_asset_url('js/header-slick.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/height-equal.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/script.js')) ?>"></script>
+  <script src="<?= e(template_asset_url('js/editors/quill.js')) ?>"></script>
   <script src="<?= e(asset_url('assets/js/app.js')) ?>"></script>
 </body>
 </html>

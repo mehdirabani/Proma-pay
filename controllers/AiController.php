@@ -72,9 +72,35 @@ class AiController extends Controller
         redirect('ai');
     }
 
+    public function delete($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        if (!ConfirmationCode::verify('ai_log_delete_' . (int) $id, $_POST['confirm_text'] ?? '')) {
+            set_flash('error', 'عدد تایید حذف تحلیل درست وارد نشده است.');
+            redirect('ai');
+        }
+        AiActionLog::delete((int) $id);
+        set_flash('success', 'تحلیل انتخاب‌شده حذف شد.');
+        redirect('ai');
+    }
+
+    public function clear()
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        if (!ConfirmationCode::verify('ai_clear_logs', $_POST['clear_confirm_text'] ?? '')) {
+            set_flash('error', 'عدد تایید حذف سوابق درست وارد نشده است.');
+            redirect('ai');
+        }
+        AiActionLog::clear();
+        set_flash('success', 'همه سوابق تحلیل هوش مصنوعی حذف شدند.');
+        redirect('ai');
+    }
+
     protected function assistantPrompt()
     {
-        return 'تو دستیار داخلی سامانه مدیریت قرارداد و اقساط پرما پرداخت هستی. فقط در محدوده همین سامانه پاسخ بده و از فایل‌ها یا داده‌های بیرونی استفاده نکن. موجودیت‌ها: مشتریان، قراردادها، اقساط، پرداخت‌ها، اقساط معوق، پرونده‌های حقوقی، اپراتورها، وکلا و تنظیمات. خروجی را فقط JSON معتبر فارسی بده با کلیدهای summary، findings، data، proposed_actions و warnings. اگر تغییر دیتابیس لازم است، فقط پیشنهاد بده و never اجرا نکن. هر proposed_actions آرایه‌ای از آبجکت‌ها با کلیدهای type، label، description، requires_confirmation و payload باشد. actionهای مجاز برای اجرا بعد از تأیید فقط create_customer و create_contract هستند؛ بقیه را manual_review بگذار. برای قرارداد، پیش‌پرداخت را با کلید down_payment_amount بده و توضیح بده سود روی مانده قابل تقسیط محاسبه می‌شود.';
+        return 'تو دستیار داخلی سامانه مدیریت قرارداد و اقساط پروما هستی. فقط در محدوده همین سامانه پاسخ بده و از فایل‌ها یا داده‌های بیرونی استفاده نکن. موجودیت‌ها: مشتریان، قراردادها، اقساط، پرداخت‌ها، اقساط معوق، پرونده‌های حقوقی، اپراتورها، وکلا و تنظیمات. خروجی را فقط JSON معتبر فارسی بده با کلیدهای summary، findings، data، proposed_actions و warnings. اگر تغییر دیتابیس لازم است، فقط پیشنهاد بده و never اجرا نکن. هر proposed_actions آرایه‌ای از آبجکت‌ها با کلیدهای type، label، description، requires_confirmation و payload باشد. actionهای مجاز برای اجرا بعد از تأیید فقط create_customer و create_contract هستند؛ بقیه را manual_review بگذار. برای قرارداد، پیش‌پرداخت را با کلید down_payment_amount بده و توضیح بده سود روی مانده قابل تقسیط محاسبه می‌شود.';
     }
 
     protected function buildSystemContext($instruction)
@@ -157,7 +183,7 @@ class AiController extends Controller
                         'mobile' => $payload['mobile'],
                         'secondary_phone' => $payload['secondary_phone'] ?? '',
                         'email' => '',
-                        'password' => bin2hex(random_bytes(8)),
+                        'password' => '',
                         'status' => 'active',
                     ]);
                     $applied[] = 'مشتری شماره ' . to_persian_digits($id) . ' ساخته شد.';

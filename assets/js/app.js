@@ -120,6 +120,8 @@
 
   const initMoneyInputs = function () {
     document.querySelectorAll('[data-money]').forEach(function (input) {
+      if (input.dataset.moneyBound === '1') return;
+      input.dataset.moneyBound = '1';
       const format = function () {
         const raw = toEnglishDigits(input.value).replace(/[^\d.]/g, '');
         if (raw === '') {
@@ -136,29 +138,60 @@
   };
 
   const initModals = function () {
+    const closeTopmostModal = function () {
+      const openModals = Array.from(document.querySelectorAll('.modal.open'));
+      const modal = openModals[openModals.length - 1];
+      if (modal) modal.classList.remove('open');
+    };
+
     document.querySelectorAll('[data-open-modal]').forEach(function (button) {
-      button.addEventListener('click', function () {
+      if (button.dataset.modalOpenBound === '1') return;
+      button.dataset.modalOpenBound = '1';
+      button.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
         const modal = document.getElementById(button.getAttribute('data-open-modal'));
         if (modal) modal.classList.add('open');
       });
     });
 
     document.querySelectorAll('[data-close-modal]').forEach(function (button) {
-      button.addEventListener('click', function () {
+      if (button.dataset.modalCloseBound === '1') return;
+      button.dataset.modalCloseBound = '1';
+      button.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
         const modal = button.closest('.modal');
         if (modal) modal.classList.remove('open');
       });
     });
 
     document.querySelectorAll('.modal').forEach(function (modal) {
+      if (modal.dataset.modalBackdropBound === '1') return;
+      modal.dataset.modalBackdropBound = '1';
       modal.addEventListener('click', function (event) {
         if (event.target === modal) modal.classList.remove('open');
       });
     });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        closeTopmostModal();
+      }
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    const targetId = params.get('open') || (window.location.hash ? window.location.hash.slice(1) : '');
+    if (targetId && /^[a-z0-9_-]+$/i.test(targetId)) {
+      const targetModal = document.getElementById(targetId);
+      if (targetModal && targetModal.classList.contains('modal')) targetModal.classList.add('open');
+    }
   };
 
   const initFilters = function () {
     document.querySelectorAll('[data-select-filter]').forEach(function (input) {
+      if (input.dataset.selectFilterBound === '1') return;
+      input.dataset.selectFilterBound = '1';
       input.addEventListener('input', function () {
         const target = document.getElementById(input.getAttribute('data-select-filter'));
         if (!target) return;
@@ -171,6 +204,8 @@
     });
 
     document.querySelectorAll('[data-exclusive]').forEach(function (group) {
+      if (group.dataset.exclusiveBound === '1') return;
+      group.dataset.exclusiveBound = '1';
       const boxes = Array.from(group.querySelectorAll('input[type="checkbox"]'));
       boxes.forEach(function (box) {
         box.addEventListener('change', function () {
@@ -187,8 +222,559 @@
     });
   };
 
+  const hydrateAjaxContent = function () {
+    initMoneyInputs();
+    initModals();
+    initFilters();
+    initCustomerLiveSearch();
+    initGuarantorLiveSearch();
+    initUserLiveSearch();
+    initContractPickers();
+    initRepeaters();
+    initContractForms();
+    initContractNewCustomerPopup();
+    initPaymentMethodShells();
+    initPaymentPreviews();
+    initJalaliDateInputs();
+    initCalendarReminderFields();
+    initLoadingForms();
+    initRequiredLabels();
+    initCharts();
+    initCardLinks();
+    if (window.feather && typeof window.feather.replace === 'function') {
+      window.feather.replace();
+    }
+  };
+
+  const initAjaxFilters = function () {
+    document.querySelectorAll('form[data-ajax-filter]').forEach(function (form) {
+      if (form.dataset.ajaxFilterBound === '1') return;
+      form.dataset.ajaxFilterBound = '1';
+      const targetSelector = form.getAttribute('data-ajax-target');
+      const status = form.querySelector('[data-ajax-status]');
+      const delay = parseInt(form.getAttribute('data-ajax-delay') || '450', 10);
+      let timer = null;
+      let controller = null;
+
+      const setStatus = function (message, state) {
+        if (!status) return;
+        status.textContent = message || '';
+        status.classList.toggle('loading', state === 'loading');
+        status.classList.toggle('error', state === 'error');
+      };
+
+      const buildUrl = function () {
+        const url = new URL(form.getAttribute('action') || window.location.href, window.location.href);
+        const data = new FormData(form);
+        Array.from(url.searchParams.keys()).forEach(function (key) {
+          if (key !== 'route') url.searchParams.delete(key);
+        });
+        data.forEach(function (value, key) {
+          if (value !== null && String(value).trim() !== '') {
+            url.searchParams.set(key, value);
+          } else if (key !== 'route') {
+            url.searchParams.delete(key);
+          }
+        });
+        url.searchParams.set('ajax', '1');
+        return url;
+      };
+
+      const load = function () {
+        const target = targetSelector ? document.querySelector(targetSelector) : null;
+        if (!target) return;
+        if (controller) controller.abort();
+        controller = new AbortController();
+        const requestUrl = buildUrl();
+        setStatus('در حال جستجو...', 'loading');
+        target.classList.add('proma-ajax-loading');
+        fetch(requestUrl.toString(), {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          signal: controller.signal,
+          credentials: 'same-origin'
+        }).then(function (response) {
+          if (!response.ok) throw new Error('درخواست جستجو ناموفق بود.');
+          return response.text();
+        }).then(function (html) {
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          const next = doc.querySelector(targetSelector);
+          if (!next) throw new Error('بخش نتیجه در پاسخ پیدا نشد.');
+          target.innerHTML = next.innerHTML;
+          target.classList.remove('proma-ajax-loading');
+          setStatus('نتایج به‌روزرسانی شد.', '');
+          const cleanUrl = new URL(requestUrl.toString());
+          cleanUrl.searchParams.delete('ajax');
+          if (window.history) {
+            window.history.replaceState(null, '', cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+          }
+          hydrateAjaxContent();
+        }).catch(function (error) {
+          if (error.name === 'AbortError') return;
+          target.classList.remove('proma-ajax-loading');
+          setStatus('خطا در دریافت نتیجه. اتصال یا فیلترها را بررسی کنید.', 'error');
+          showToast('جستجو انجام نشد. چند لحظه بعد دوباره تلاش کنید.', 'error');
+        });
+      };
+
+      const schedule = function () {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(load, Math.max(150, delay));
+      };
+
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        window.clearTimeout(timer);
+        load();
+      });
+      form.querySelectorAll('input, select').forEach(function (field) {
+        if (field.type === 'hidden' || field.type === 'file') return;
+        field.addEventListener(field.tagName === 'SELECT' ? 'change' : 'input', schedule);
+      });
+    });
+  };
+
+  const initSettingsTabs = function () {
+    const activeInput = document.querySelector('[data-settings-active-tab]');
+    document.querySelectorAll('[data-settings-tab]').forEach(function (tab) {
+      tab.addEventListener('click', function (event) {
+        const key = tab.getAttribute('data-settings-tab');
+        const panel = document.querySelector('[data-settings-panel="' + key + '"]');
+        if (!panel) return;
+        event.preventDefault();
+        document.querySelectorAll('[data-settings-tab]').forEach(function (item) {
+          item.classList.toggle('active', item === tab);
+        });
+        document.querySelectorAll('[data-settings-panel]').forEach(function (item) {
+          item.classList.toggle('active', item === panel);
+        });
+        if (activeInput) activeInput.value = key;
+        if (window.history && tab.href) {
+          window.history.replaceState(null, '', tab.href);
+        }
+      });
+    });
+  };
+
+  const initCustomerLiveSearch = function () {
+    document.querySelectorAll('[data-customer-live-search]').forEach(function (box) {
+      if (box.dataset.customerLiveBound === '1') return;
+      box.dataset.customerLiveBound = '1';
+      const endpoint = box.getAttribute('data-search-url');
+      const input = box.querySelector('[data-customer-search-input]');
+      const results = box.querySelector('[data-customer-search-results]');
+      const form = box.closest('form');
+      const select = box.querySelector('[data-customer-select]') || (form ? form.querySelector('[data-customer-select]') : null);
+      if (!endpoint || !input || !results || !select) return;
+      let timer = null;
+
+      const close = function () {
+        results.hidden = true;
+        results.innerHTML = '';
+      };
+
+      const choose = function (item) {
+        if (select.tagName === 'SELECT') {
+          select.innerHTML = '';
+          const option = document.createElement('option');
+          option.value = String(item.id);
+          option.textContent = item.full_name + ' - ' + (item.national_id || '') + ' - ' + (item.mobile || '');
+          option.selected = true;
+          select.appendChild(option);
+        }
+        select.value = String(item.id);
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        input.value = item.full_name;
+        close();
+      };
+
+      const render = function (items) {
+        results.innerHTML = '';
+        if (!items.length) {
+          const empty = document.createElement('span');
+          empty.className = 'proma-live-empty';
+          empty.textContent = 'نتیجه‌ای پیدا نشد.';
+          results.appendChild(empty);
+          results.hidden = false;
+          return;
+        }
+        items.forEach(function (item) {
+          const button = document.createElement('button');
+          const title = document.createElement('strong');
+          const meta = document.createElement('small');
+          const badge = document.createElement('em');
+          button.type = 'button';
+          title.textContent = item.full_name || 'بدون نام';
+          meta.textContent = 'موبایل: ' + (item.mobile || '-') + ' | کد ملی: ' + (item.national_id || '-');
+          badge.textContent = item.status || '-';
+          button.appendChild(title);
+          button.appendChild(meta);
+          button.appendChild(badge);
+          button.addEventListener('click', function () { choose(item); });
+          results.appendChild(button);
+        });
+        results.hidden = false;
+      };
+
+      input.addEventListener('input', function () {
+        const query = input.value.trim();
+        select.value = '';
+        if (select.tagName === 'SELECT') {
+          select.innerHTML = '<option value=""></option>';
+        }
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        window.clearTimeout(timer);
+        if (toEnglishDigits(query).length < 2) {
+          close();
+          return;
+        }
+        timer = window.setTimeout(function () {
+          fetch(endpoint + '&q=' + encodeURIComponent(query)).then(function (response) {
+            return response.json();
+          }).then(function (json) {
+            render(json.ok && Array.isArray(json.items) ? json.items : []);
+          }).catch(function () {
+            close();
+          });
+        }, 260);
+      });
+
+      document.addEventListener('click', function (event) {
+        if (!box.contains(event.target)) close();
+      });
+    });
+  };
+
+  const initGuarantorLiveSearch = function () {
+    document.querySelectorAll('[data-guarantor-live-search]').forEach(function (box) {
+      if (box.dataset.guarantorLiveBound === '1') return;
+      box.dataset.guarantorLiveBound = '1';
+      const endpoint = box.getAttribute('data-search-url');
+      const input = box.querySelector('[data-guarantor-search-input]');
+      const results = box.querySelector('[data-guarantor-search-results]');
+      const chips = box.querySelector('[data-guarantor-chips]');
+      const form = box.closest('form');
+      const customerSelect = form ? form.querySelector('[data-customer-select]') : null;
+      if (!endpoint || !input || !results || !chips) return;
+      let timer = null;
+
+      const close = function () {
+        results.hidden = true;
+        results.innerHTML = '';
+      };
+
+      const selectedIds = function () {
+        return Array.from(chips.querySelectorAll('[data-guarantor-chip]')).map(function (chip) {
+          return chip.getAttribute('data-guarantor-id');
+        });
+      };
+
+      const removeChip = function (chip) {
+        if (chip) chip.remove();
+      };
+
+      const bindChip = function (chip) {
+        const closeButton = chip.querySelector('button');
+        if (!closeButton || closeButton.getAttribute('data-bound') === '1') return;
+        closeButton.setAttribute('data-bound', '1');
+        closeButton.addEventListener('click', function () {
+          removeChip(chip);
+          input.focus();
+        });
+      };
+
+      const addChip = function (item) {
+        const id = String(item.id || '');
+        if (!id) return;
+        if (customerSelect && customerSelect.value && String(customerSelect.value) === id) {
+          showToast('مشتری اصلی نمی‌تواند ضامن خودش باشد.', 'error');
+          return;
+        }
+        if (selectedIds().includes(id)) {
+          showToast('این ضامن قبلاً انتخاب شده است.', 'error');
+          return;
+        }
+        const chip = document.createElement('span');
+        const hidden = document.createElement('input');
+        const closeButton = document.createElement('button');
+        chip.className = 'proma-chip';
+        chip.setAttribute('data-guarantor-chip', '1');
+        chip.setAttribute('data-guarantor-id', id);
+        chip.appendChild(document.createTextNode((item.full_name || 'ضامن') + (item.mobile ? ' - ' + item.mobile : '')));
+        hidden.type = 'hidden';
+        hidden.name = 'guarantors[]';
+        hidden.value = id;
+        closeButton.type = 'button';
+        closeButton.textContent = '×';
+        closeButton.setAttribute('aria-label', 'حذف انتخاب');
+        chip.appendChild(hidden);
+        chip.appendChild(closeButton);
+        chips.appendChild(chip);
+        bindChip(chip);
+        input.value = '';
+        close();
+      };
+
+      const renderState = function (message, className) {
+        results.innerHTML = '';
+        const empty = document.createElement('span');
+        empty.className = className || 'proma-live-empty';
+        empty.textContent = message;
+        results.appendChild(empty);
+        results.hidden = false;
+      };
+
+      const render = function (items) {
+        results.innerHTML = '';
+        if (!items.length) {
+          renderState('موردی یافت نشد.', 'proma-live-empty');
+          return;
+        }
+        items.forEach(function (item) {
+          const button = document.createElement('button');
+          const title = document.createElement('strong');
+          const meta = document.createElement('small');
+          const badge = document.createElement('em');
+          button.type = 'button';
+          title.textContent = item.full_name || 'بدون نام';
+          meta.textContent = 'موبایل: ' + (item.mobile || '-') + ' | کد ملی: ' + (item.national_id || '-') + ' | شماره مشتری: ' + (item.customer_number || item.id || '-');
+          badge.textContent = 'ضامن';
+          button.appendChild(title);
+          button.appendChild(meta);
+          button.appendChild(badge);
+          button.addEventListener('click', function () { addChip(item); });
+          results.appendChild(button);
+        });
+        results.hidden = false;
+      };
+
+      chips.querySelectorAll('[data-guarantor-chip]').forEach(bindChip);
+      input.addEventListener('input', function () {
+        const query = input.value.trim();
+        window.clearTimeout(timer);
+        if (toEnglishDigits(query).length < 2) {
+          close();
+          return;
+        }
+        renderState('در حال جستجو...', 'proma-live-empty');
+        timer = window.setTimeout(function () {
+          fetch(endpoint + '&q=' + encodeURIComponent(query)).then(function (response) {
+            return response.json();
+          }).then(function (json) {
+            render(json.ok && Array.isArray(json.items) ? json.items : []);
+          }).catch(function () {
+            renderState('خطا در جستجو. دوباره تلاش کنید.', 'proma-live-empty');
+          });
+        }, 300);
+      });
+
+      document.addEventListener('click', function (event) {
+        if (!box.contains(event.target)) close();
+      });
+    });
+  };
+
+  const initUserLiveSearch = function () {
+    document.querySelectorAll('[data-user-live-search]').forEach(function (box) {
+      if (box.dataset.userLiveBound === '1') return;
+      box.dataset.userLiveBound = '1';
+      const endpoint = box.getAttribute('data-search-url');
+      const input = box.querySelector('[data-user-search-input]');
+      const results = box.querySelector('[data-user-search-results]');
+      const hidden = box.querySelector('[data-user-id-input]');
+      const chipRow = box.querySelector('[data-user-chip]');
+      if (!endpoint || !input || !results || !hidden) return;
+      let timer = null;
+
+      const close = function () {
+        results.hidden = true;
+        results.innerHTML = '';
+      };
+
+      const syncChip = function (item) {
+        if (!chipRow) return;
+        chipRow.innerHTML = '';
+        if (!item) return;
+        const chip = document.createElement('span');
+        const closeButton = document.createElement('button');
+        chip.className = 'proma-chip';
+        chip.appendChild(document.createTextNode(item.full_name + (item.role_label ? ' - ' + item.role_label : '')));
+        closeButton.type = 'button';
+        closeButton.textContent = '×';
+        closeButton.setAttribute('aria-label', 'حذف انتخاب');
+        closeButton.addEventListener('click', function () {
+          hidden.value = '';
+          input.value = '';
+          chipRow.innerHTML = '';
+          input.focus();
+        });
+        chip.appendChild(closeButton);
+        chipRow.appendChild(chip);
+      };
+
+      const choose = function (item) {
+        hidden.value = String(item.id);
+        input.value = item.full_name || '';
+        syncChip(item);
+        close();
+      };
+
+      const render = function (items) {
+        results.innerHTML = '';
+        if (!items.length) {
+          const empty = document.createElement('span');
+          empty.className = 'proma-live-empty';
+          empty.textContent = 'نتیجه‌ای پیدا نشد.';
+          results.appendChild(empty);
+          results.hidden = false;
+          return;
+        }
+        items.forEach(function (item) {
+          const button = document.createElement('button');
+          const title = document.createElement('strong');
+          const meta = document.createElement('small');
+          const badge = document.createElement('em');
+          button.type = 'button';
+          title.textContent = item.full_name || 'بدون نام';
+          meta.textContent = 'موبایل: ' + (item.mobile || '-') + ' | کد ملی: ' + (item.national_id || '-');
+          badge.textContent = item.role_label || item.role || '-';
+          button.appendChild(title);
+          button.appendChild(meta);
+          button.appendChild(badge);
+          button.addEventListener('click', function () { choose(item); });
+          results.appendChild(button);
+        });
+        results.hidden = false;
+      };
+
+      input.addEventListener('input', function () {
+        hidden.value = '';
+        if (chipRow) chipRow.innerHTML = '';
+        const value = input.value.trim();
+        window.clearTimeout(timer);
+        if (value.length < 2) {
+          close();
+          return;
+        }
+        timer = window.setTimeout(function () {
+          fetch(endpoint + '&q=' + encodeURIComponent(value)).then(function (response) {
+            return response.json();
+          }).then(function (json) {
+            render(json.items || []);
+          }).catch(function () {
+            render([]);
+          });
+        }, 220);
+      });
+
+      document.addEventListener('click', function (event) {
+        if (!box.contains(event.target)) close();
+      });
+    });
+  };
+
+  const initContractPickers = function () {
+    document.querySelectorAll('[data-contract-picker]').forEach(function (box) {
+      if (box.dataset.contractPickerBound === '1') return;
+      box.dataset.contractPickerBound = '1';
+      const endpoint = box.getAttribute('data-search-url');
+      const input = box.querySelector('[data-contract-picker-input]');
+      const hidden = box.querySelector('[data-contract-picker-id]');
+      const results = box.querySelector('[data-contract-picker-results]');
+      const options = Array.from(box.querySelectorAll('option[data-contract-id]'));
+      if (!input || !hidden) return;
+      let timer = null;
+
+      const close = function () {
+        if (!results) return;
+        results.hidden = true;
+        results.innerHTML = '';
+      };
+
+      const choose = function (item) {
+        hidden.value = String(item.id || '');
+        input.value = item.label || [item.contract_number, item.customer_name, item.mobile].filter(Boolean).join(' - ');
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        close();
+      };
+
+      const renderState = function (message) {
+        if (!results) return;
+        results.innerHTML = '';
+        const empty = document.createElement('span');
+        empty.className = 'proma-live-empty';
+        empty.textContent = message;
+        results.appendChild(empty);
+        results.hidden = false;
+      };
+
+      const render = function (items) {
+        if (!results) return;
+        results.innerHTML = '';
+        if (!items.length) {
+          renderState('قراردادی پیدا نشد.');
+          return;
+        }
+        items.forEach(function (item) {
+          const button = document.createElement('button');
+          const title = document.createElement('strong');
+          const meta = document.createElement('small');
+          const badge = document.createElement('em');
+          button.type = 'button';
+          title.textContent = item.contract_number || 'بدون شماره';
+          meta.textContent = (item.customer_name || '-') + ' | موبایل: ' + (item.mobile || '-') + ' | کد ملی: ' + (item.national_id || '-');
+          badge.textContent = item.status_label || item.status || '-';
+          button.appendChild(title);
+          button.appendChild(meta);
+          button.appendChild(badge);
+          button.addEventListener('click', function () { choose(item); });
+          results.appendChild(button);
+        });
+        results.hidden = false;
+      };
+
+      if (endpoint && results) {
+        input.addEventListener('input', function () {
+          const query = input.value.trim();
+          hidden.value = '';
+          window.clearTimeout(timer);
+          if (toEnglishDigits(query).length < 2) {
+            close();
+            return;
+          }
+          renderState('در حال جستجو...');
+          timer = window.setTimeout(function () {
+            const separator = endpoint.indexOf('?') === -1 ? '?' : '&';
+            fetch(endpoint + separator + 'q=' + encodeURIComponent(query)).then(function (response) {
+              return response.json();
+            }).then(function (json) {
+              render(json.ok && Array.isArray(json.items) ? json.items : []);
+            }).catch(function () {
+              renderState('خطا در جستجو. دوباره تلاش کنید.');
+            });
+          }, 260);
+        });
+        document.addEventListener('click', function (event) {
+          if (!box.contains(event.target)) close();
+        });
+        return;
+      }
+
+      if (!options.length) return;
+      const sync = function () {
+        const value = input.value.trim();
+        const exact = options.find(function (option) { return option.value === value; });
+        hidden.value = exact ? exact.getAttribute('data-contract-id') : '';
+      };
+      input.addEventListener('input', sync);
+      input.addEventListener('change', sync);
+      sync();
+    });
+  };
+
   const initRepeaters = function () {
     document.querySelectorAll('[data-repeater]').forEach(function (repeater) {
+      if (repeater.dataset.repeaterBound === '1') return;
+      repeater.dataset.repeaterBound = '1';
       const list = repeater.querySelector('[data-repeater-list]');
       const template = repeater.querySelector('[data-repeater-template]');
       const add = repeater.querySelector('[data-repeater-add]');
@@ -215,6 +801,8 @@
     });
 
     document.querySelectorAll('[data-guarantee-type]').forEach(function (select) {
+      if (select.dataset.guaranteeTypeBound === '1') return;
+      select.dataset.guaranteeTypeBound = '1';
       const section = select.closest('.proma-form-section') || select.closest('form');
       const other = section ? section.querySelector('[data-guarantee-other]') : null;
       const toggle = function () {
@@ -227,6 +815,8 @@
 
   const initContractForms = function () {
     document.querySelectorAll('[data-contract-form]').forEach(function (form) {
+      if (form.dataset.contractFormBound === '1') return;
+      form.dataset.contractFormBound = '1';
       const principal = form.querySelector('[name="principal_amount"]');
       const downPayment = form.querySelector('[name="down_payment_amount"]');
       const months = form.querySelector('[name="months"]');
@@ -252,6 +842,15 @@
         const target = form.querySelector(selector);
         if (target) target.textContent = text;
       };
+      const setHtml = function (selector, html, fallbackText) {
+        const target = form.querySelector(selector);
+        if (!target) return;
+        if (html) {
+          target.innerHTML = html;
+        } else {
+          target.textContent = fallbackText || '';
+        }
+      };
 
       const showError = function (message) {
         if (!error) return;
@@ -265,8 +864,20 @@
         const option = customerSelect.selectedOptions[0];
         if (!option || !option.value) return;
         const chip = document.createElement('span');
+        const close = document.createElement('button');
         chip.className = 'proma-chip';
-        chip.textContent = option.textContent;
+        chip.appendChild(document.createTextNode(option.textContent));
+        close.type = 'button';
+        close.textContent = '×';
+        close.addEventListener('click', function () {
+          customerSelect.value = '';
+          customerSelect.innerHTML = '<option value=""></option>';
+          const liveInput = form.querySelector('[data-customer-search-input]');
+          if (liveInput) liveInput.value = '';
+          syncCustomerChip();
+          syncGuarantorChips();
+        });
+        chip.appendChild(close);
         customerChip.appendChild(chip);
       };
 
@@ -291,6 +902,17 @@
           });
           chip.appendChild(close);
           guarantorChips.appendChild(chip);
+        });
+      };
+
+      const syncLiveGuarantorChips = function () {
+        if (!guarantorChips || guarantorSelect) return;
+        const customerId = customerSelect ? customerSelect.value : '';
+        if (!customerId) return;
+        guarantorChips.querySelectorAll('[data-guarantor-chip]').forEach(function (chip) {
+          if (chip.getAttribute('data-guarantor-id') === String(customerId)) {
+            chip.remove();
+          }
         });
       };
 
@@ -362,6 +984,7 @@
           if (customerSelect.value) clearNewCustomerDraft();
           syncCustomerChip();
           syncGuarantorChips();
+          syncLiveGuarantorChips();
         });
       }
       if (guarantorSelect) {
@@ -391,12 +1014,15 @@
 
       syncCustomerChip();
       syncGuarantorChips();
+      syncLiveGuarantorChips();
       updatePreview();
     });
   };
 
   const initContractNewCustomerPopup = function () {
     document.querySelectorAll('[data-contract-customer-popup]').forEach(function (modal) {
+      if (modal.dataset.newCustomerPopupBound === '1') return;
+      modal.dataset.newCustomerPopupBound = '1';
       const apply = modal.querySelector('[data-apply-new-customer]');
       const draft = modal.querySelector('[data-new-customer-draft]');
       const form = document.getElementById('create-contract-form');
@@ -441,6 +1067,8 @@
 
   const initPaymentPreviews = function () {
     document.querySelectorAll('[data-payment-preview]').forEach(function (form) {
+      if (form.dataset.paymentPreviewBound === '1') return;
+      form.dataset.paymentPreviewBound = '1';
       const endpoint = form.getAttribute('data-preview-url');
       const amount = form.querySelector('[name="amount"]');
       const date = form.querySelector('[name="payment_date"]');
@@ -465,7 +1093,7 @@
           }).then(function (json) {
             if (!json.ok || !json.preview || !json.preview.formatted) return;
             setText('[data-payment-remaining-before]', json.preview.formatted.remaining_before_payment);
-            setText('[data-payment-penalty]', json.preview.formatted.calculated_penalty);
+            setHtml('[data-payment-penalty]', json.preview.formatted.calculated_penalty_html, json.preview.formatted.calculated_penalty);
             setText('[data-payment-reward]', json.preview.formatted.calculated_reward);
             setText('[data-payment-payable]', json.preview.formatted.payable_on_payment_date);
             setText('[data-payment-remaining-after]', json.preview.formatted.remaining_after_payment);
@@ -480,6 +1108,192 @@
         date.addEventListener('change', update);
       }
       update();
+    });
+  };
+
+  const decodeBase64Utf8 = function (value) {
+    if (!value) return '';
+    try {
+      const binary = window.atob(value);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      if (window.TextDecoder) {
+        return new TextDecoder('utf-8').decode(bytes);
+      }
+      let fallback = '';
+      for (let j = 0; j < bytes.length; j++) {
+        fallback += '%' + ('00' + bytes[j].toString(16)).slice(-2);
+      }
+      return decodeURIComponent(fallback);
+    } catch (error) {
+      return '';
+    }
+  };
+
+  const hashString = function (value) {
+    let hash = 2166136261;
+    for (let i = 0; i < value.length; i++) {
+      hash ^= value.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  };
+
+  const createPseudoRandom = function (seed) {
+    let state = seed || 1;
+    return function () {
+      state ^= state << 13;
+      state ^= state >>> 17;
+      state ^= state << 5;
+      return (state >>> 0) / 4294967296;
+    };
+  };
+
+  const buildPaymentQrMatrix = function (payload) {
+    const size = 29;
+    const seed = hashString(payload || 'proma-payment');
+    const random = createPseudoRandom(seed || 1);
+    const matrix = [];
+    for (let y = 0; y < size; y++) {
+      matrix[y] = [];
+      for (let x = 0; x < size; x++) {
+        const inFinder = (x < 7 && y < 7) || (x >= size - 7 && y < 7) || (x < 7 && y >= size - 7);
+        let dark = false;
+        if (inFinder) {
+          dark = x === 0 || x === 6 || y === 0 || y === 6 || (x >= 2 && x <= 4 && y >= 2 && y <= 4);
+        } else if (x === 6 || y === 6) {
+          dark = ((x + y) % 2) === 0;
+        } else {
+          const charCode = payload ? payload.charCodeAt((x * 7 + y * 13) % payload.length) : 0;
+          dark = ((((seed >>> ((x + y) % 24)) & 1) ^ (((charCode + x + y) % 3) === 0 ? 1 : 0) ^ (random() > 0.58 ? 1 : 0)) === 1);
+        }
+        matrix[y][x] = dark;
+      }
+    }
+    return matrix;
+  };
+
+  const renderPaymentQrGrid = function (grid, payload) {
+    if (!grid) return;
+    const marker = String(hashString(payload || 'proma-payment'));
+    if (grid.dataset.qrRendered === marker) return;
+    const matrix = buildPaymentQrMatrix(payload || '');
+    grid.innerHTML = '';
+    matrix.forEach(function (row) {
+      row.forEach(function (dark) {
+        const cell = document.createElement('span');
+        cell.className = dark ? 'is-dark' : 'is-light';
+        grid.appendChild(cell);
+      });
+    });
+    grid.dataset.qrRendered = marker;
+  };
+
+  const buildPaymentQrDownloadHtml = function (payload) {
+    const matrix = buildPaymentQrMatrix(payload || '');
+    const rows = matrix.map(function (row) {
+      return '<div class="qr-row">' + row.map(function (dark) {
+        return '<span class="' + (dark ? 'is-dark' : 'is-light') + '"></span>';
+      }).join('') + '</div>';
+    }).join('');
+    const safePayload = String(payload || '').replace(/[&<>]/g, function (char) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[char] || char);
+    });
+    return '<!doctype html>' +
+      '<html lang="fa" dir="rtl">' +
+      '<head>' +
+      '<meta charset="utf-8">' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+      '<title>QR پرداخت</title>' +
+      '<style>' +
+      'body{margin:0;font-family:tahoma,Arial,sans-serif;background:#f4f7fb;color:#0f172a;display:grid;place-items:center;min-height:100vh;padding:24px;box-sizing:border-box}' +
+      '.sheet{width:min(100%,520px);background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:24px;box-shadow:0 20px 50px rgba(15,23,42,.08);padding:24px;display:grid;gap:18px}' +
+      '.sheet h1{margin:0;font-size:20px}' +
+      '.sheet p{margin:0;line-height:1.8;color:#475569;word-break:break-word}' +
+      '.qr{display:grid;grid-template-columns:repeat(29,minmax(0,1fr));gap:2px;padding:12px;border-radius:20px;background:#fff;box-shadow:inset 0 0 0 1px rgba(15,23,42,.06)}' +
+      '.qr-row{display:contents}' +
+      '.qr span{aspect-ratio:1;border-radius:2px;background:rgba(15,23,42,.08)}' +
+      '.qr span.is-dark{background:rgba(15,23,42,.92)}' +
+      '.meta{padding:14px 16px;border-radius:16px;background:#f8fafc;border:1px solid rgba(15,23,42,.06);font-size:14px;line-height:1.8;word-break:break-word}' +
+      '</style>' +
+      '</head>' +
+      '<body><div class="sheet"><h1>QR پرداخت</h1><div class="qr">' + rows + '</div><p class="meta">' + safePayload + '</p></div></body></html>';
+  };
+
+  const hydratePaymentCard = function (card) {
+    if (!card || card.dataset.paymentCardReady === '1') return;
+    const payload = decodeBase64Utf8(card.getAttribute('data-payment-qr-payload-b64') || '');
+    const grid = card.querySelector('[data-payment-qr-grid]');
+    if (grid && payload) {
+      renderPaymentQrGrid(grid, payload);
+    }
+    const download = card.querySelector('[data-payment-qr-download]');
+    if (download) {
+      download.addEventListener('click', function () {
+        if (!payload) return;
+        const name = card.getAttribute('data-payment-qr-download-name') || 'payment-qr.html';
+        const blob = new Blob([buildPaymentQrDownloadHtml(payload)], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(function () {
+          URL.revokeObjectURL(url);
+        }, 0);
+        showToast('QR پرداخت دانلود شد.', 'success');
+      });
+    }
+    card.dataset.paymentCardReady = '1';
+  };
+
+  const initPaymentMethodShells = function () {
+    document.querySelectorAll('[data-payment-method-shell]').forEach(function (shell) {
+      if (shell.dataset.paymentMethodBound === '1') return;
+      shell.dataset.paymentMethodBound = '1';
+      const toggles = Array.from(shell.querySelectorAll('[data-payment-method-toggle]'));
+      const panels = Array.from(shell.querySelectorAll('[data-payment-method-panel]'));
+      if (!panels.length) return;
+
+      const activate = function (key) {
+        const target = shell.querySelector('[data-payment-method-panel="' + key + '"]');
+        if (!target) return;
+        toggles.forEach(function (button) {
+          const active = button.getAttribute('data-payment-method-toggle') === key;
+          button.classList.toggle('active', active);
+          button.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        panels.forEach(function (panel) {
+          const active = panel === target;
+          panel.classList.toggle('active', active);
+          panel.hidden = !active;
+          if (active) {
+            panel.querySelectorAll('[data-payment-card]').forEach(hydratePaymentCard);
+          }
+        });
+      };
+
+      toggles.forEach(function (button) {
+        button.addEventListener('click', function () {
+          activate(button.getAttribute('data-payment-method-toggle'));
+        });
+      });
+
+      const activeButton = toggles.find(function (button) {
+        return button.classList.contains('active');
+      }) || toggles[0];
+      if (activeButton) {
+        activate(activeButton.getAttribute('data-payment-method-toggle'));
+      } else {
+        panels.forEach(function (panel) {
+          panel.hidden = false;
+          panel.classList.add('active');
+        });
+      }
     });
   };
 
@@ -555,14 +1369,22 @@
       if (!input || input.dataset.jalaliBound === '1' || input.type === 'hidden') return;
       input.dataset.jalaliBound = '1';
       input.setAttribute('autocomplete', 'off');
+      input.classList.add('proma-date-input');
+      const wrapper = document.createElement('span');
+      wrapper.className = 'proma-date-input-wrap';
+      input.insertAdjacentElement('beforebegin', wrapper);
+      wrapper.appendChild(input);
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = 'btn small secondary proma-date-trigger';
-      button.textContent = 'تقویم';
+      button.className = 'proma-date-trigger icon-only';
+      button.setAttribute('title', 'انتخاب تاریخ');
+      button.setAttribute('aria-label', 'انتخاب تاریخ');
+      button.innerHTML = '<i data-feather="calendar"></i>';
       button.addEventListener('click', function () {
         openForInput(input);
       });
-      input.insertAdjacentElement('afterend', button);
+      wrapper.appendChild(button);
+      if (window.feather && window.feather.replace) window.feather.replace();
     };
 
     document.querySelectorAll([
@@ -571,7 +1393,13 @@
       'input[name="due_date"]',
       'input[name="payment_date"]',
       'input[name="event_date"]',
+      'input[name="custom_reminder_date"]',
       'input[name="next_followup_date"]',
+      'input[name="promise_payment_date"]',
+      'input[name="action_date"]',
+      'input[name="notice_date"]',
+      'input[name="court_date"]',
+      'input[name="hearing_date"]',
       'input[name="date_from"]',
       'input[name="date_to"]',
       'input[data-jalali-input]'
@@ -618,6 +1446,18 @@
     }
   };
 
+  const initCalendarReminderFields = function () {
+    document.querySelectorAll('[data-calendar-reminder-type]').forEach(function (select) {
+      const form = select.closest('form');
+      const custom = form ? form.querySelector('[data-calendar-custom-reminder]') : null;
+      const toggle = function () {
+        if (custom) custom.hidden = select.value !== 'custom';
+      };
+      select.addEventListener('change', toggle);
+      toggle();
+    });
+  };
+
   const initSidebarCollapse = function () {
     const wrapper = document.getElementById('pageWrapper');
     if (!wrapper) return;
@@ -645,6 +1485,13 @@
         button.textContent = button.getAttribute('data-loading-text') || 'در حال پردازش...';
         button.disabled = true;
       });
+    });
+  };
+
+  const initRequiredLabels = function () {
+    document.querySelectorAll('label').forEach(function (label) {
+      const required = label.querySelector('input[required], select[required], textarea[required]');
+      if (required) label.classList.add('required-field');
     });
   };
 
@@ -727,12 +1574,12 @@
             legend: {
               display: isMini ? false : isCircle,
               position: 'bottom',
-              labels: { usePointStyle: true, boxWidth: 8, font: { family: 'Vazirmatn' } }
+              labels: { usePointStyle: true, boxWidth: 8, font: { family: 'YekanBakh' } }
             },
             tooltip: {
               rtl: true,
-              bodyFont: { family: 'Vazirmatn' },
-              titleFont: { family: 'Vazirmatn' },
+              bodyFont: { family: 'YekanBakh' },
+              titleFont: { family: 'YekanBakh' },
               callbacks: {
                 label: function (context) {
                   const value = context.parsed && typeof context.parsed === 'object' ? context.parsed.y : context.parsed;
@@ -746,12 +1593,12 @@
             x: { display: false },
             y: { display: false, beginAtZero: true }
           } : {
-            x: { grid: { display: false }, ticks: { font: { family: 'Vazirmatn' } } },
+            x: { grid: { display: false }, ticks: { font: { family: 'YekanBakh' } } },
             y: {
               beginAtZero: true,
               grid: { color: 'rgba(82, 82, 108, .08)' },
               ticks: {
-                font: { family: 'Vazirmatn' },
+                font: { family: 'YekanBakh' },
                 callback: function (value) { return Number(value).toLocaleString('fa-IR'); }
               }
             }
@@ -767,25 +1614,87 @@
 
     const history = document.querySelector('[data-chat-history]');
     const receiver = chatForm.querySelector('[name="receiver_id"]');
+    const channel = chatForm.querySelector('[name="channel_id"]');
     const input = chatForm.querySelector('[name="body"]');
     const token = chatForm.querySelector('[name="_csrf"]');
     const endpoint = chatForm.getAttribute('action');
     const fetchUrl = chatForm.getAttribute('data-fetch-url');
+    const attachmentTemplate = chatForm.getAttribute('data-attachment-url-template') || '';
+    const attachmentInput = chatForm.querySelector('[name="attachment"]');
+
+    const createVerifiedBadge = function (title) {
+      const badge = document.createElement('span');
+      const icon = document.createElement('i');
+      badge.className = 'proma-verified-badge';
+      badge.title = title || 'حساب رسمی';
+      icon.setAttribute('data-feather', 'check');
+      badge.appendChild(icon);
+      return badge;
+    };
+
+    const formatMessageTime = function (value) {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      const parts = raw.split(/\s+/);
+      const dateParts = (parts[0] || '').split(/[-/]/).map(function (part) { return Number(part); });
+      if (dateParts.length === 3 && dateParts[0] > 1600) {
+        const jalali = gregorianToJalali(dateParts[0], dateParts[1], dateParts[2]);
+        const timePart = parts[1] ? toPersianDigits(parts[1].slice(0, 5)) : '';
+        return formatJalaliDate(jalali[0], jalali[1], jalali[2]) + (timePart ? ' ' + timePart : '');
+      }
+      return toPersianDigits(raw);
+    };
 
     const addMessage = function (message) {
       const item = document.createElement('div');
-      item.className = 'message' + (String(message.sender_id) === chatForm.getAttribute('data-user-id') ? ' mine' : '');
+      const isSystem = Number(message.is_system || 0) === 1;
+      item.className = 'message' + (String(message.sender_id) === chatForm.getAttribute('data-user-id') && !isSystem ? ' mine' : '') + (isSystem ? ' system' : '');
       item.setAttribute('data-id', message.id);
-      item.innerHTML = '<div></div><small></small>';
-      item.querySelector('div').textContent = message.body;
-      item.querySelector('small').textContent = message.sender_name || '';
+      const body = document.createElement('div');
+      const meta = document.createElement('small');
+      const name = document.createElement('span');
+      const unit = document.createElement('span');
+      const time = document.createElement('span');
+      body.textContent = message.body || '';
+      meta.className = 'message-meta';
+      name.className = 'message-meta-name';
+      unit.className = 'message-meta-unit';
+      time.className = 'message-meta-time';
+      name.textContent = message.sender_name || '';
+      unit.textContent = message.target_unit || '';
+      time.textContent = formatMessageTime(message.created_at);
+      meta.appendChild(name);
+      if (isSystem) meta.appendChild(createVerifiedBadge('حساب رسمی'));
+      if (message.target_unit && !isSystem && message.target_unit !== message.sender_name) meta.appendChild(unit);
+      meta.appendChild(time);
+      item.appendChild(body);
+      item.appendChild(meta);
+      if (message.attachment_id) {
+        if (message.attachment_path) {
+          const link = document.createElement('a');
+          const image = document.createElement('img');
+          link.className = 'chat-attachment';
+          link.href = attachmentTemplate.replace('__ID__', message.attachment_id);
+          link.target = '_blank';
+          image.src = link.href;
+          image.alt = 'پیوست تصویر';
+          link.appendChild(image);
+          item.insertBefore(link, item.querySelector('small'));
+        } else {
+          const badge = document.createElement('span');
+          badge.className = 'badge muted';
+          badge.textContent = 'فایل بررسی و حذف شد';
+          item.insertBefore(badge, item.querySelector('small'));
+        }
+      }
       history.appendChild(item);
       history.querySelectorAll('.empty').forEach(function (empty) { empty.remove(); });
       history.scrollTop = history.scrollHeight;
+      if (window.feather && window.feather.replace) window.feather.replace();
     };
 
     const poll = function () {
-      if (!receiver.value) return;
+      if ((!receiver || !receiver.value) && (!channel || !channel.value)) return;
       const last = history.querySelector('.message:last-child');
       const after = last ? last.getAttribute('data-id') : 0;
       fetch(fetchUrl + '&after=' + encodeURIComponent(after)).then(function (response) {
@@ -798,17 +1707,21 @@
     chatForm.addEventListener('submit', function (event) {
       event.preventDefault();
       const body = input.value.trim();
-      if (!body) return;
+      const hasAttachment = attachmentInput && attachmentInput.files && attachmentInput.files.length > 0;
+      if (!body && !hasAttachment) return;
+      const formData = new FormData(chatForm);
       fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ _csrf: token.value, receiver_id: receiver.value, body: body })
+        body: formData
       }).then(function (response) {
         return response.json();
       }).then(function (json) {
         if (json.ok) {
           input.value = '';
+          if (attachmentInput) attachmentInput.value = '';
           poll();
+        } else if (json.message) {
+          showToast(json.message, 'error');
         }
       }).catch(function () {});
     });
@@ -817,10 +1730,232 @@
     history.scrollTop = history.scrollHeight;
   };
 
+  const initNotificationCenter = function () {
+    const center = document.querySelector('[data-notification-center]');
+    if (!center || !window.fetch) return;
+    const feedUrl = center.getAttribute('data-feed-url');
+    const readUrl = center.getAttribute('data-read-url');
+    const list = center.querySelector('[data-notification-list]');
+    const badge = center.querySelector('[data-notification-badge]');
+    const form = center.querySelector('form[action]');
+    const userId = document.body.getAttribute('data-user-id') || 'guest';
+    const storageKey = 'proma-notification-seen-' + userId;
+    const soundEnabled = document.body.getAttribute('data-notification-sound') === '1';
+    const volume = Math.max(0, Math.min(1, Number(document.body.getAttribute('data-notification-volume') || 0.45)));
+    let latestId = Number(center.getAttribute('data-latest-id') || 0);
+    if (!localStorage.getItem(storageKey)) {
+      localStorage.setItem(storageKey, String(latestId));
+    }
+
+    const playNotificationSound = function () {
+      if (!soundEnabled || !window.AudioContext && !window.webkitAudioContext) return;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      try {
+        const ctx = new AudioCtx();
+        const gain = ctx.createGain();
+        const oscillator = ctx.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 740;
+        gain.gain.value = volume * 0.08;
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start();
+        oscillator.frequency.exponentialRampToValueAtTime(520, ctx.currentTime + 0.16);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
+        window.setTimeout(function () {
+          oscillator.stop();
+          ctx.close();
+        }, 220);
+      } catch (error) {}
+    };
+
+    const itemHtml = function (item) {
+      const li = document.createElement('li');
+      li.className = 'b-l-primary border-4';
+      li.setAttribute('data-notification-item', item.id || '');
+      const link = document.createElement('a');
+      link.href = item.url || './index.php?route=dashboard';
+      const p = document.createElement('p');
+      p.textContent = item.title || '';
+      const span = document.createElement('span');
+      span.className = 'font-primary';
+      span.textContent = item.body || '';
+      p.appendChild(span);
+      const small = document.createElement('small');
+      small.className = 'f-light';
+      small.textContent = item.relative_time || '';
+      link.appendChild(p);
+      link.appendChild(small);
+      li.appendChild(link);
+      return li;
+    };
+
+    const render = function (feed) {
+      if (!feed) return;
+      const unread = Number(feed.unread_count || 0);
+      if (badge) {
+        badge.hidden = unread <= 0;
+        badge.textContent = unread.toLocaleString('fa-IR');
+      }
+      if (list) {
+        list.querySelectorAll('[data-notification-item], [data-notification-empty]').forEach(function (node) {
+          node.remove();
+        });
+        const marker = list.querySelector('[data-notification-actions]') || list.querySelector('li:last-child');
+        if (feed.items && feed.items.length) {
+          feed.items.forEach(function (item) {
+            list.insertBefore(itemHtml(item), marker || null);
+          });
+        } else {
+          const empty = document.createElement('li');
+          empty.setAttribute('data-notification-empty', '1');
+          const p = document.createElement('p');
+          p.className = 'f-light mb-0';
+          p.textContent = 'اعلان تازه‌ای ندارید.';
+          empty.appendChild(p);
+          list.insertBefore(empty, marker || null);
+        }
+      }
+      const incomingLatest = Number(feed.latest_id || 0);
+      const seen = Number(localStorage.getItem(storageKey) || 0);
+      if (incomingLatest > latestId && incomingLatest > seen) {
+        playNotificationSound();
+        localStorage.setItem(storageKey, String(incomingLatest));
+      }
+      latestId = Math.max(latestId, incomingLatest);
+      center.setAttribute('data-latest-id', String(latestId));
+    };
+
+    const fetchFeed = function () {
+      if (!feedUrl) return;
+      fetch(feedUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (response) { return response.json(); })
+        .then(function (json) { if (json.ok) render(json.feed); })
+        .catch(function () {});
+    };
+
+    center.addEventListener('mouseenter', function () {
+      localStorage.setItem(storageKey, String(latestId));
+    });
+    center.addEventListener('click', function () {
+      localStorage.setItem(storageKey, String(latestId));
+    });
+    if (form && readUrl) {
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        const token = form.querySelector('[name="_csrf"]');
+        fetch(readUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: new URLSearchParams({ _csrf: token ? token.value : '' })
+        }).then(function (response) {
+          return response.json();
+        }).then(function (json) {
+          if (json.ok) render(json.feed);
+        }).catch(function () {
+          form.submit();
+        });
+      });
+    }
+    setInterval(fetchFeed, 15000);
+  };
+
+  const initCopyShortcodes = function () {
+    document.querySelectorAll('[data-copy-shortcode]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const value = button.getAttribute('data-copy-shortcode') || button.textContent.trim();
+        const message = button.getAttribute('data-copy-message') || 'کپی شد.';
+        const done = function () {
+          showToast(message, 'success');
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(value).then(done).catch(function () {});
+        } else {
+          const temp = document.createElement('textarea');
+          temp.value = value;
+          document.body.appendChild(temp);
+          temp.select();
+          document.execCommand('copy');
+          temp.remove();
+          done();
+        }
+      });
+    });
+  };
+
+  const initPromaRichEditors = function () {
+    if (!window.Quill) return;
+    document.querySelectorAll('textarea[data-rich-editor]').forEach(function (textarea) {
+      if (textarea.dataset.richEditorReady === '1') return;
+      textarea.dataset.richEditorReady = '1';
+
+      const height = Number(textarea.getAttribute('data-rich-editor-height') || 360);
+      const shell = document.createElement('div');
+      shell.className = 'proma-rich-editor-shell';
+      shell.setAttribute('dir', 'rtl');
+
+      const editor = document.createElement('div');
+      editor.className = 'proma-rich-editor';
+      editor.style.minHeight = Math.max(220, height) + 'px';
+      shell.appendChild(editor);
+      textarea.parentNode.insertBefore(shell, textarea);
+      textarea.classList.add('proma-rich-source');
+
+      const quill = new window.Quill(editor, {
+        theme: 'snow',
+        placeholder: textarea.getAttribute('placeholder') || 'متن را وارد کنید...',
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ color: [] }, { background: [] }],
+            [{ align: [] }],
+            [{ list: 'ordered' }, { list: 'bullet' }],
+            ['blockquote', 'code-block'],
+            ['link', 'clean']
+          ]
+        }
+      });
+
+      const initial = textarea.value || '';
+      if (initial.trim() !== '') {
+        if (/<[a-z][\s\S]*>/i.test(initial)) {
+          quill.clipboard.dangerouslyPasteHTML(initial);
+        } else {
+          quill.clipboard.dangerouslyPasteHTML(initial.replace(/[&<>"']/g, function (char) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[char];
+          }).replace(/\r?\n/g, '<br>'));
+        }
+      }
+      quill.root.setAttribute('dir', 'rtl');
+      quill.root.classList.add('proma-quill-rtl');
+      try {
+        quill.format('direction', 'rtl');
+        quill.format('align', 'right');
+      } catch (error) {}
+
+      const sync = function () {
+        const html = quill.root.innerHTML.trim();
+        textarea.value = html === '<p><br></p>' ? '' : html;
+      };
+      quill.on('text-change', sync);
+      const form = textarea.closest('form');
+      if (form) {
+        form.addEventListener('submit', sync);
+      }
+    });
+  };
+
   const initCardLinks = function () {
     document.querySelectorAll('[data-card-href]').forEach(function (card) {
+      if (card.dataset.cardHrefBound === '1') return;
+      card.dataset.cardHrefBound = '1';
       card.addEventListener('click', function (event) {
-        if (event.target.closest('a,button,form,input,select,textarea,label')) return;
+        if (event.defaultPrevented) return;
+        if (event.target.closest('a,button,form,input,select,textarea,label,[role="button"],[data-open-modal],[data-close-modal],.modal')) return;
         const href = card.getAttribute('data-card-href');
         if (href) window.location.href = href;
       });
@@ -874,7 +2009,20 @@
   const initServiceWorker = function () {
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('service-worker.js').catch(function () {});
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        registrations.forEach(function (registration) {
+          registration.unregister();
+        });
+      }).catch(function () {});
+      if ('caches' in window) {
+        caches.keys().then(function (keys) {
+          keys.filter(function (key) {
+            return key.indexOf('proma-pay-') === 0;
+          }).forEach(function (key) {
+            caches.delete(key);
+          });
+        }).catch(function () {});
+      }
     });
   };
 
@@ -883,17 +2031,29 @@
     initMoneyInputs();
     initModals();
     initFilters();
+    initAjaxFilters();
+    initSettingsTabs();
+    initCustomerLiveSearch();
+    initGuarantorLiveSearch();
+    initUserLiveSearch();
+    initContractPickers();
     initRepeaters();
     initContractForms();
     initContractNewCustomerPopup();
+    initPaymentMethodShells();
     initPaymentPreviews();
     initJalaliDateInputs();
+    initCalendarReminderFields();
     initLoadingForms();
+    initRequiredLabels();
     initAiConnectionTest();
     initSidebarCollapse();
+    initNotificationCenter();
     initCharts();
     initChat();
     initCardLinks();
+    initCopyShortcodes();
+    initPromaRichEditors();
     initTour();
     initServiceWorker();
   });

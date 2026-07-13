@@ -1,21 +1,36 @@
 <?php
 
 return [
-    'app_name' => 'پرما پرداخت',
-    'asset_version' => '1.0.10',
+    'app_name' => 'پروما',
+    'version' => '1.0.15',
+    'asset_version' => '1.0.29',
     'timezone' => 'Asia/Tehran',
     'base_url' => '',
     'session_name' => 'proma_pay_session',
     'roles' => [
         'admin' => 'مدیر',
         'operator' => 'اپراتور',
-        'lawyer' => 'وکیل',
+        'lawyer' => 'واحد حقوقی',
         'customer' => 'مشتری',
+    ],
+    'departments' => [
+        '' => 'بدون واحد',
+        'management' => 'مدیریت',
+        'support' => 'پشتیبانی',
+        'installments' => 'واحد اقساط',
+        'legal' => 'واحد حقوقی',
+        'operations' => 'عملیات',
     ],
     'statuses' => [
         'active' => 'فعال',
         'inactive' => 'غیرفعال',
         'pending' => 'در انتظار پرداخت',
+        'new' => 'جدید',
+        'draft' => 'پیش‌نویس',
+        'processing' => 'در حال پردازش',
+        'completed' => 'تکمیل شده',
+        'cancelled' => 'لغو شده',
+        'reviewing' => 'در حال بررسی',
         'partial' => 'پرداخت جزئی',
         'paid' => 'پرداخت شده',
         'corrected' => 'اصلاح‌شده',
@@ -35,6 +50,7 @@ return [
     'payment_methods' => [
         'manual' => 'پرداخت دستی',
         'zibal' => 'درگاه زیبال',
+        'card_transfer' => 'کارت به کارت',
     ],
     'payment_types' => [
         'installment' => 'پرداخت قسط',

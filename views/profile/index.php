@@ -3,7 +3,7 @@
     <section class="card proma-profile-card">
       <div class="card-body">
         <div class="proma-avatar-choice <?= e($user['avatar_key'] ?? 'avatar-1') ?>"><?= e(mb_substr($user['full_name'], 0, 1, 'UTF-8')) ?></div>
-        <h4><?= e($user['full_name']) ?></h4>
+        <h4><?= e($user['full_name']) ?> <?php if (!empty($identityVerified)): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓ آبی</span><?php endif; ?></h4>
         <p><?= e(role_label($user['role'])) ?></p>
         <?php if ($latestRequest): ?>
           <span class="badge badge-light-<?= e(badge_class($latestRequest['status'])) ?>"><?= e(status_label($latestRequest['status'])) ?></span>
@@ -41,3 +41,41 @@
     </section>
   </div>
 </div>
+
+<section class="card">
+  <div class="card-header card-no-border"><h5>مدارک هویتی</h5></div>
+  <div class="card-body">
+    <form method="post" action="<?= e(url('profile/uploadIdentity')) ?>" enctype="multipart/form-data" class="form-grid three">
+      <?= csrf_field() ?>
+      <label>تصویر کارت ملی<input type="file" name="national_card" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"></label>
+      <label>تصویر شناسنامه<input type="file" name="birth_certificate" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"></label>
+      <label>توضیحات<input name="identity_note" placeholder="در صورت نیاز"></label>
+      <div class="full notice info">حداکثر حجم هر تصویر ۱۰ مگابایت است. مدارک جدید تا زمان تأیید مدیریت جایگزین مدارک قبلی نمی‌شوند.</div>
+      <div class="full"><button class="btn" type="submit">ارسال برای بررسی</button></div>
+    </form>
+
+    <div class="table-wrap" style="margin-top:16px">
+      <table>
+        <thead><tr><th>نوع مدرک</th><th>وضعیت</th><th>بارگذاری</th><th>بررسی</th><th>فایل</th></tr></thead>
+        <tbody>
+        <?php foreach (($identityDocuments ?? []) as $document): ?>
+          <tr>
+            <td><?= e(IdentityDocument::typeLabel($document['document_type'])) ?></td>
+            <td><span class="badge <?= e(badge_class($document['status'])) ?>"><?= e(status_label($document['status'])) ?></span></td>
+            <td><?= e(jdatetime($document['uploaded_at'])) ?></td>
+            <td><?= !empty($document['reviewed_at']) ? e(jdatetime($document['reviewed_at'])) : '-' ?></td>
+            <td>
+              <?php if (!empty($document['file_path'])): ?>
+                <a class="btn small secondary" href="<?= e(url('profile/identityFile/' . $document['id'])) ?>" target="_blank">مشاهده</a>
+              <?php else: ?>
+                <span class="badge muted">فایل بررسی و حذف شد</span>
+              <?php endif; ?>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+        <?php if (empty($identityDocuments)): ?><tr><td colspan="5" class="empty">مدرکی بارگذاری نشده است.</td></tr><?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

@@ -96,7 +96,7 @@ $medals = $medals ?? [];
           <td><?= to_persian_digits($item['installment_number']) ?></td>
           <td><?= e(jdate($item['due_date'])) ?></td>
           <td><?= money_toman($item['base_amount']) ?></td>
-          <td><?= money_toman($item['penalty']) ?></td>
+          <td><?= penalty_display_html($item) ?></td>
           <td><?= money_toman($item['reward']) ?></td>
           <td><?= money_toman($item['payable']) ?></td>
           <td><span class="badge <?= e(badge_class($item['status'])) ?>"><?= e(status_label($item['status'])) ?></span></td>

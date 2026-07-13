@@ -1,0 +1,15 @@
+PHP >= 7.4
+Recommended PHP: 8.1
+Tested up to: PHP 8.2
+MySQL >= 5.7
+MariaDB >= 10.3
+PDO
+pdo_mysql
+mbstring
+openssl
+json
+fileinfo
+curl
+zip optional
+gd optional
+mod_rewrite recommended

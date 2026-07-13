@@ -11,8 +11,7 @@ class DashboardController extends Controller
             return;
         }
         if ($role === 'operator') {
-            $this->operator();
-            return;
+            redirect('overdue');
         }
         if ($role === 'lawyer') {
             $this->lawyer();
@@ -57,6 +56,8 @@ class DashboardController extends Controller
              FROM payments
              WHERE status = 'pending'"
         ) ?: ['total' => 0, 'amount' => 0];
+        $pendingReceipts = PaymentReceipt::pendingCount();
+        $pendingIdentity = IdentityDocument::pendingCount();
 
         $kpis = [
             'customers' => $this->countValue("SELECT COUNT(*) AS total FROM users WHERE role = 'customer' AND status = 'active'"),
@@ -72,6 +73,9 @@ class DashboardController extends Controller
             'overdue_amount' => $overdueAmount,
             'pending_payments' => (int) $pendingPayment['total'],
             'pending_payment_amount' => (float) $pendingPayment['amount'],
+            'pending_receipts' => $pendingReceipts,
+            'pending_identity' => $pendingIdentity,
+            'pending_reviews' => $pendingReceipts + $pendingIdentity,
             'legal_open' => $this->countValue("SELECT COUNT(*) AS total FROM legal_cases WHERE status != 'closed'"),
             'collection_rate' => $dueMonth > 0 ? round(min(100, ($receivedMonth / $dueMonth) * 100), 1) : 0,
             'overdue_share' => $outstanding > 0 ? round(min(100, ($overdueAmount / $outstanding) * 100), 1) : 0,
@@ -165,7 +169,7 @@ class DashboardController extends Controller
             'bestCustomers' => $bestCustomers,
             'worstCustomers' => $worstCustomers,
             'operatorLoad' => $operatorLoad,
-            'overdue' => array_slice(Installment::overdue(), 0, 8),
+            'overdue' => Installment::overdue(null, null, null, 8),
         ]);
     }
 
@@ -287,6 +291,7 @@ class DashboardController extends Controller
             'installments' => Installment::all(['customer_id' => $customerId]),
             'payments' => Payment::recentForCustomer($customerId, 9),
             'medals' => Model::fetchAll('SELECT * FROM medals WHERE user_id = ? ORDER BY id DESC', [$customerId]),
+            'socialLinks' => configured_social_links(Settings::allKeyed()),
             'givenGuarantees' => Contract::all(['guarantor_id' => $customerId]),
             'receivedGuarantees' => Model::fetchAll(
                 "SELECT c.contract_number, c.id AS contract_id, u.full_name, u.mobile, u.national_id
@@ -299,4 +304,5 @@ class DashboardController extends Controller
             ),
         ]);
     }
+
 }
