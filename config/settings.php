@@ -3,7 +3,7 @@
 return [
     'app_name' => 'پروما',
     'version' => (require __DIR__ . '/version.php')['application'],
-    'asset_version' => '1.0.45',
+    'asset_version' => '1.0.46',
     'timezone' => 'Asia/Tehran',
     'base_url' => '',
     'session_name' => 'proma_pay_session',
@@ -55,6 +55,7 @@ return [
     'payment_methods' => [
         'manual' => 'پرداخت دستی',
         'zibal' => 'درگاه زیبال',
+        'zarinpal' => 'درگاه زرین‌پال',
         'card_transfer' => 'کارت به کارت',
     ],
     'payment_types' => [

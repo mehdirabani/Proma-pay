@@ -1,0 +1,41 @@
+{
+  "id": "proma-zarinpal",
+  "name": "درگاه پرداخت زرین‌پال پرما",
+  "description": "اتصال امن سامانه پرما پی به درگاه پرداخت زرین‌پال",
+  "version": "1.0.0",
+  "author": "Proma Pay",
+  "plugin_api_version": "1.0",
+  "requires_core": ">=1.2.6",
+  "requires_php": ">=8.1",
+  "provider": "Proma\\Plugins\\Zarinpal\\ZarinpalServiceProvider",
+  "permissions": [
+    {"key":"plugin.proma-zarinpal.view_zarinpal_transactions","label":"مشاهده تراکنش‌های زرین‌پال"},
+    {"key":"plugin.proma-zarinpal.manage_zarinpal_settings","label":"مدیریت تنظیمات زرین‌پال"},
+    {"key":"plugin.proma-zarinpal.enable_zarinpal","label":"فعال‌سازی زرین‌پال"},
+    {"key":"plugin.proma-zarinpal.use_zarinpal_sandbox","label":"استفاده از محیط آزمایشی زرین‌پال"},
+    {"key":"plugin.proma-zarinpal.create_zarinpal_test_payment","label":"ساخت پرداخت آزمایشی زرین‌پال"},
+    {"key":"plugin.proma-zarinpal.retry_zarinpal_verification","label":"تلاش مجدد تأیید زرین‌پال"},
+    {"key":"plugin.proma-zarinpal.review_zarinpal_transactions","label":"بررسی تراکنش‌های زرین‌پال"},
+    {"key":"plugin.proma-zarinpal.export_zarinpal_transactions","label":"خروجی تراکنش‌های زرین‌پال"}
+  ],
+  "dependencies": [],
+  "routes": [
+    {"path":"plugin/zarinpal/callback","handler":"Proma\\Plugins\\Zarinpal\\Controllers\\CallbackController@handle","method":"GET","permission":"","auth":false},
+    {"path":"plugin/zarinpal/transactions","handler":"Proma\\Plugins\\Zarinpal\\Controllers\\TransactionsController@index","method":"GET","permission":"plugin.proma-zarinpal.view_zarinpal_transactions"},
+    {"path":"plugin/zarinpal/transactions/retry/{transactionId}","handler":"Proma\\Plugins\\Zarinpal\\Controllers\\TransactionsController@retry","method":"POST","permission":"plugin.proma-zarinpal.retry_zarinpal_verification"},
+    {"path":"plugin/zarinpal/transactions/review/{transactionId}","handler":"Proma\\Plugins\\Zarinpal\\Controllers\\TransactionsController@review","method":"POST","permission":"plugin.proma-zarinpal.review_zarinpal_transactions"},
+    {"path":"plugin/zarinpal/transactions/export","handler":"Proma\\Plugins\\Zarinpal\\Controllers\\TransactionsController@export","method":"GET","permission":"plugin.proma-zarinpal.export_zarinpal_transactions"},
+    {"path":"plugin/zarinpal/settings","handler":"Proma\\Plugins\\Zarinpal\\Controllers\\SettingsController@index","method":"GET","permission":"plugin.proma-zarinpal.manage_zarinpal_settings"},
+    {"path":"plugin/zarinpal/settings/save","handler":"Proma\\Plugins\\Zarinpal\\Controllers\\SettingsController@save","method":"POST","permission":"plugin.proma-zarinpal.manage_zarinpal_settings"},
+    {"path":"plugin/zarinpal/sandbox","handler":"Proma\\Plugins\\Zarinpal\\Controllers\\SandboxController@index","method":"GET","permission":"plugin.proma-zarinpal.use_zarinpal_sandbox"},
+    {"path":"plugin/zarinpal/sandbox/create","handler":"Proma\\Plugins\\Zarinpal\\Controllers\\SandboxController@create","method":"POST","permission":"plugin.proma-zarinpal.create_zarinpal_test_payment"}
+  ],
+  "migrations": [
+    "migrations/2026_07_13_zarinpal_gateway.sql"
+  ],
+  "assets": [
+    "assets/css/zarinpal.css",
+    "assets/js/zarinpal.js"
+  ],
+  "settings": []
+}

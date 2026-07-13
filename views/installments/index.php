@@ -1,10 +1,32 @@
 <?php
 $customerMode = $customerMode ?? false;
 $paymentSettings = $paymentSettings ?? Settings::allKeyed();
-$zibalEnabled = (string) ($paymentSettings['zibal_enabled'] ?? '1') === '1';
-$zibalTestMode = (string) ($paymentSettings['zibal_test_mode'] ?? '0') === '1';
-$zibalMerchant = trim((string) ($paymentSettings['zibal_merchant'] ?? ''));
-$gatewayReady = $zibalEnabled && ($zibalTestMode || $zibalMerchant !== '');
+$gatewayOptions = [];
+$groupGatewayOptions = [];
+if ($customerMode && class_exists('PaymentGatewayRegistry')) {
+    try {
+        $gatewayRegistry = PaymentGatewayRegistry::boot();
+        $gatewayOptions = $gatewayRegistry->customerOptions(false);
+        $groupGatewayOptions = $gatewayRegistry->customerOptions(true);
+    } catch (Throwable $e) {
+        $gatewayOptions = [];
+        $groupGatewayOptions = [];
+    }
+}
+$gatewayReady = !empty($gatewayOptions);
+$groupGatewayReady = !empty($groupGatewayOptions);
+$defaultGatewayId = '';
+foreach ($gatewayOptions as $gatewayOption) {
+    if ($defaultGatewayId === '' || !empty($gatewayOption['default'])) {
+        $defaultGatewayId = (string) $gatewayOption['id'];
+    }
+}
+$defaultGroupGatewayId = '';
+foreach ($groupGatewayOptions as $gatewayOption) {
+    if ($defaultGroupGatewayId === '' || !empty($gatewayOption['default'])) {
+        $defaultGroupGatewayId = (string) $gatewayOption['id'];
+    }
+}
 $cardTransferEnabled = (string) ($paymentSettings['card_transfer_enabled'] ?? '1') === '1';
 $cardTransferBankName = trim((string) ($paymentSettings['card_transfer_bank_name'] ?? ''));
 $cardTransferBankLogoText = payment_card_logo_mark($cardTransferBankName, $paymentSettings['card_transfer_bank_logo_text'] ?? '');
@@ -82,16 +104,27 @@ $pageUrl = function ($page) use ($installmentsRoute) {
 <section class="card proma-installment-group-payment">
   <div class="card-header card-no-border"><div><h2>پرداخت آنلاین چند قسطی</h2><p class="text-muted">اقساط هر قرارداد جداگانه پرداخت می‌شوند و مبلغ اضافه به قسط بعدی همان قرارداد می‌رود.</p></div></div>
   <div class="card-body">
-    <?php if (!$gatewayReady): ?><div class="notice warning">درگاه آنلاین برای پرداخت گروهی فعال یا تنظیم نشده است.</div><?php endif; ?>
+    <?php if (!$groupGatewayReady): ?><div class="notice warning">درگاه آنلاین برای پرداخت گروهی فعال یا تنظیم نشده است.</div><?php endif; ?>
     <?php foreach ($installmentGroups as $group): ?>
-      <form method="post" action="<?= e(url('payments/zibalGroup')) ?>" class="proma-installment-group-form" data-payment-group-form>
-        <?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $group['contract_id'] ?>">
+      <form method="post" action="<?= e(url('payments/gatewayGroup')) ?>" class="proma-installment-group-form" data-payment-group-form data-disable-on-submit>
+        <?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $group['contract_id'] ?>"><input type="hidden" name="idempotency_key" value="<?= e(bin2hex(random_bytes(24))) ?>">
         <div class="proma-installment-group-head"><strong>قرارداد <?= e($group['contract_number']) ?></strong><span data-group-total><?= money_toman($group['total']) ?></span></div>
         <div class="proma-installment-group-items">
           <?php foreach ($group['items'] as $groupItem): ?><label class="proma-group-check"><input type="checkbox" name="installment_ids[]" value="<?= (int) $groupItem['id'] ?>" data-group-item data-amount="<?= e((string) (float) ($groupItem['payable'] ?? 0)) ?>" checked><span>قسط <?= to_persian_digits($groupItem['installment_number']) ?> - <?= e(jdate($groupItem['due_date'])) ?></span><strong><?= money_toman($groupItem['payable']) ?></strong></label><?php endforeach; ?>
         </div>
         <label class="proma-group-amount">مبلغ پرداخت<input name="amount" data-group-amount value="<?= e((string) (int) round($group['total'])) ?>" inputmode="numeric" required></label>
-        <button class="btn success" type="submit"<?= !$gatewayReady ? ' disabled' : '' ?>><i data-feather="credit-card"></i> پرداخت انتخاب‌شده‌ها با زیبال</button>
+        <?php if ($groupGatewayReady): ?>
+          <div class="proma-gateway-choice" role="radiogroup" aria-label="انتخاب درگاه پرداخت گروهی">
+            <?php foreach ($groupGatewayOptions as $gatewayOption): ?>
+              <label class="proma-gateway-card">
+                <input type="radio" name="gateway_id" value="<?= e($gatewayOption['id']) ?>"<?= checked($defaultGroupGatewayId === $gatewayOption['id']) ?>>
+                <span class="proma-gateway-card-icon"><i data-feather="credit-card"></i></span>
+                <span><strong><?= e($gatewayOption['name']) ?></strong><small><?= e($gatewayOption['environment']) ?></small></span>
+              </label>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+        <button class="btn success" type="submit"<?= !$groupGatewayReady ? ' disabled' : '' ?> data-submit-label="در حال اتصال به درگاه..."><i data-feather="credit-card"></i> پرداخت انتخاب‌شده‌ها</button>
       </form>
     <?php endforeach; ?>
   </div>
@@ -186,12 +219,24 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
 
             <?php if ($gatewayReady): ?>
             <div class="proma-payment-panel <?= $defaultPaymentMethod === 'gateway' ? 'active' : '' ?>" data-payment-method-panel="gateway"<?= $defaultPaymentMethod === 'gateway' ? '' : ' hidden' ?>>
-              <form method="post" action="<?= e(url('payments/zibal')) ?>" class="proma-payment-form">
+              <form method="post" action="<?= e(url('payments/gateway')) ?>" class="proma-payment-form" data-disable-on-submit>
                 <?= csrf_field() ?>
                 <input type="hidden" name="installment_id" value="<?= (int) $item['id'] ?>">
+                <input type="hidden" name="idempotency_key" value="<?= e(bin2hex(random_bytes(24))) ?>">
                 <div class="form-grid">
+                  <div class="full proma-gateway-field">
+                    <span class="proma-field-label">انتخاب درگاه پرداخت</span>
+                    <div class="proma-gateway-choice" role="radiogroup" aria-label="انتخاب درگاه پرداخت">
+                      <?php foreach ($gatewayOptions as $gatewayOption): ?>
+                        <label class="proma-gateway-card">
+                          <input type="radio" name="gateway_id" value="<?= e($gatewayOption['id']) ?>"<?= checked($defaultGatewayId === $gatewayOption['id']) ?>>
+                          <span class="proma-gateway-card-icon"><i data-feather="credit-card"></i></span>
+                          <span><strong><?= e($gatewayOption['name']) ?></strong><small><?= e($gatewayOption['environment']) ?> · <?= e($gatewayOption['description']) ?></small></span>
+                        </label>
+                      <?php endforeach; ?>
+                    </div>
+                  </div>
                   <label>مبلغ پرداختی<input name="amount" data-money value="<?= e(number_format((float) $item['payable'], 0)) ?>" required></label>
-                  <label class="full">توضیحات<input name="description" value="پرداخت آنلاین قسط"></label>
                   <div class="proma-preview-grid full">
                     <span><small>مبلغ امروز</small><strong><?= money_toman($item['payable']) ?></strong></span>
                     <span><small>جریمه امروز</small><span class="proma-preview-amount"><?= penalty_display_html($item) ?></span></span>
@@ -201,7 +246,7 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
                   <div class="notice info full">پرداخت آنلاین بر اساس مبلغ انتخابی شما انجام می‌شود.</div>
                 </div>
                 <div class="modal-footer">
-                  <button class="btn success" type="submit">ادامه و پرداخت</button>
+                  <button class="btn success" type="submit" data-submit-label="در حال اتصال به درگاه...">ادامه و پرداخت</button>
                   <button class="btn secondary" type="button" data-close-modal>بستن</button>
                 </div>
               </form>

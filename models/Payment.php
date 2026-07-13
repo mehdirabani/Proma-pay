@@ -340,7 +340,29 @@ class Payment extends Model
 
     public static function createPendingGateway($installmentId, $contractId, $userId, $amount, $trackId)
     {
-        return self::record($installmentId, $contractId, $userId, $amount, 'zibal', 'pending', $trackId, null, 'در انتظار تأیید درگاه');
+        return self::createPendingGatewayFor('zibal', $installmentId, $contractId, $userId, $amount, $trackId);
+    }
+
+    public static function createPendingGatewayFor($gatewayId, $installmentId, $contractId, $userId, $amount, $reference)
+    {
+        $gatewayId = strtolower(trim((string) $gatewayId));
+        $reference = trim((string) $reference);
+        if (!preg_match('/^[a-z][a-z0-9_-]{1,49}$/', $gatewayId) || $reference === '' || strlen($reference) > 100) {
+            throw new InvalidArgumentException('اطلاعات تراکنش درگاه معتبر نیست.');
+        }
+        return self::record($installmentId, $contractId, $userId, $amount, $gatewayId, 'pending', $reference, null, 'در انتظار تأیید درگاه ' . $gatewayId);
+    }
+
+    public static function failGateway($reference, $reason = '')
+    {
+        $reference = trim((string) $reference);
+        if ($reference === '') {
+            return 0;
+        }
+        return self::execute(
+            "UPDATE payments SET status = 'failed', description = ? WHERE gateway_track_id = ? AND status = 'pending'",
+            [substr(trim((string) $reason) ?: 'پرداخت در درگاه تکمیل نشد.', 0, 255), $reference]
+        );
     }
 
     public static function syncDownPayment($contractId, $userId, $amount, $paymentDate = null)
@@ -381,24 +403,40 @@ class Payment extends Model
         return self::record(null, (int) $contractId, $userId ?: null, $amount, 'manual', 'paid', null, null, 'پیش‌پرداخت قرارداد', $paymentDate, 'down_payment');
     }
 
-    public static function completeGateway($trackId, $refId, $amountToman)
+    public static function completeGateway($trackId, $refId, $amountToman, array $options = [])
     {
         self::ensureCorrectionSchema();
-        self::begin();
+        $startedTransaction = false;
+        if (!self::db()->inTransaction()) {
+            self::begin();
+            $startedTransaction = true;
+        }
         try {
             $payment = self::fetch('SELECT * FROM payments WHERE gateway_track_id = ? FOR UPDATE', [$trackId]);
             if (!$payment) {
-                self::rollBack();
+                if ($startedTransaction) {
+                    self::rollBack();
+                }
                 return ['ok' => false, 'message' => 'پرداخت پیدا نشد.'];
             }
             if ($payment['status'] === 'paid') {
-                self::commit();
-                return ['ok' => true, 'message' => 'این پرداخت قبلاً ثبت شده است.'];
+                if ($startedTransaction) {
+                    self::commit();
+                }
+                return ['ok' => true, 'message' => 'این پرداخت قبلاً ثبت شده است.', 'payment_id' => (int) $payment['id'], 'already_paid' => true];
+            }
+            if ($payment['status'] !== 'pending') {
+                if ($startedTransaction) {
+                    self::rollBack();
+                }
+                return ['ok' => false, 'message' => 'وضعیت پرداخت برای تأیید درگاه معتبر نیست.'];
             }
             $verifiedAmount = normalize_money($amountToman ?: 0);
             $expectedAmount = normalize_money($payment['amount'] ?? 0);
             if ($verifiedAmount <= 0 || $expectedAmount <= 0 || $verifiedAmount !== $expectedAmount) {
-                self::rollBack();
+                if ($startedTransaction) {
+                    self::rollBack();
+                }
                 if (class_exists('AuditLog')) {
                     AuditLog::record('payment', 'gateway_amount_mismatch', 'payment', (int) $payment['id'], [
                         'actor_user_id' => $payment['user_id'] ? (int) $payment['user_id'] : null,
@@ -436,11 +474,17 @@ class Payment extends Model
                     'actor_user_id' => $payment['user_id'] ? (int) $payment['user_id'] : null,
                 ], true);
             }
-            Notification::create($payment['user_id'], 'پرداخت جدید ثبت شد', 'پرداخت شما با موفقیت تأیید شد.', 'payment', url('installments/panel'));
-            self::commit();
-            return ['ok' => true, 'message' => 'پرداخت با موفقیت ثبت شد.'];
+            if (($options['notify'] ?? true) && class_exists('Notification')) {
+                Notification::create($payment['user_id'], 'پرداخت جدید ثبت شد', 'پرداخت شما با موفقیت تأیید شد.', 'payment', url('installments/panel'));
+            }
+            if ($startedTransaction) {
+                self::commit();
+            }
+            return ['ok' => true, 'message' => 'پرداخت با موفقیت ثبت شد.', 'payment_id' => (int) $payment['id'], 'already_paid' => false];
         } catch (Throwable $e) {
-            self::rollBack();
+            if ($startedTransaction) {
+                self::rollBack();
+            }
             throw $e;
         }
     }

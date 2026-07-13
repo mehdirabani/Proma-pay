@@ -39,4 +39,17 @@ php tests/static_v132.php
 php tests/static_v133.php
 ```
 
-تست‌های نصب تازه، migration، نصب افزونه و workflowهای مالی باید روی یک MySQL/MariaDB سالم و دیتابیس موقت اجرا شوند. در محیط توسعه فعلی MariaDB سیستم crash می‌کند و این تست‌ها تا رفع مشکل سرویس دیتابیس معتبر نیستند.
+تست‌های درگاه زرین‌پال و رجیستری درگاه نسخه `V1.3.4`:
+
+```text
+php tests/static_v134.php
+php plugins/PromaZarinpal/tests/static.php
+php plugins/PromaZarinpal/tests/Unit/AmountConverterTest.php
+php plugins/PromaZarinpal/tests/Unit/ZarinpalClientTest.php
+php plugins/PromaZarinpal/tests/Security/SecretCipherTest.php
+php plugins/PromaZarinpal/tests/Security/StaticSecurityTest.php
+php plugins/PromaZarinpal/tests/Sandbox/SandboxProtocolTest.php
+php plugins/PromaZarinpal/tests/Integration/OfficialProtocolTest.php
+```
+
+`tests/integration_zarinpal_v134.php` روی MySQL/MariaDB موقت اجرا می‌شود و DSN را از `PROMA_TEST_DB_DSN`، `PROMA_TEST_DB_USER` و `PROMA_TEST_DB_PASSWORD` می‌خواند.

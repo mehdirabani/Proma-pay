@@ -323,5 +323,22 @@ Implement one step at a time.
 
 ---
 
+## افزونه درگاه زرین‌پال
+
+مستندات درگاه رسمی زرین‌پال از این مسیرها در دسترس است:
+
+- `plugins/PROMA_ZARINPAL.md`
+- `plugins/ZARINPAL_INSTALLATION.md`
+- `plugins/ZARINPAL_CONFIGURATION.md`
+- `plugins/ZARINPAL_SANDBOX.md`
+- `plugins/ZARINPAL_SECURITY.md`
+- `plugins/ZARINPAL_TROUBLESHOOTING.md`
+- `workflows/ZARINPAL_SINGLE_PAYMENT.md`
+- `workflows/ZARINPAL_MULTI_PAYMENT.md`
+- `workflows/ZARINPAL_CALLBACK.md`
+- `workflows/ZARINPAL_RECONCILIATION.md`
+- `releases/V1.3.4.md`
+- `reports/PROMA_ZARINPAL_PLUGIN_IMPLEMENTATION_REPORT.md`
+
 ## پایان فایل
 ````

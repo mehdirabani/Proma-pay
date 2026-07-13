@@ -25,7 +25,8 @@ $assert(strpos($layout, 'cdn.jsdelivr.net/npm/chart.js') === false, 'Remote Char
 $assert(strpos($layout, "asset_url('assets/vendor/chart.umd.min.js')") !== false, 'Local Chart.js is not loaded.');
 $assert(is_file($root . '/assets/vendor/chart.umd.min.js'), 'Local Chart.js asset is missing.');
 $assert(strpos($build, "'plugins/'") !== false, 'Core package does not explicitly exclude plugins.');
-$assert(strpos($build, "PromaAccounting-' . \$pluginVersion") !== false, 'Canonical plugin package name is missing.');
+$assert(strpos($build, "['directory' => 'PromaAccounting', 'archive' => 'PromaAccounting']") !== false, 'Proma Accounting package declaration is missing.');
+$assert(strpos($build, "\$pluginArchiveName . '-' . \$pluginVersion . '.zip'") !== false, 'Canonical versioned plugin package naming is missing.');
 $assert(strpos($build, "'assets/vendor/chart.umd.min.js'") !== false, 'Update package omits local Chart.js.');
 
 $migrations = glob($root . '/plugins/PromaAccounting/migrations/*.sql') ?: [];

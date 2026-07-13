@@ -590,6 +590,21 @@ Codex باید این محدودیت‌ها را رعایت کند:
 
 ---
 
+### درگاه زرین‌پال
+
+برای تغییرات پرداخت زرین‌پال ابتدا این فایل‌ها خوانده شوند:
+
+```text
+docs/debug/PROMA_ZARINPAL_PLUGIN_AUDIT.md
+docs/plugins/PROMA_ZARINPAL.md
+docs/plugins/ZARINPAL_SECURITY.md
+docs/workflows/ZARINPAL_CALLBACK.md
+docs/workflows/ZARINPAL_RECONCILIATION.md
+plugins/PromaZarinpal/plugin.json
+```
+
+مرز مالکیت: هسته فقط registry و قرارداد عمومی درگاه را نگه می‌دارد. endpointها، Merchant، تراکنش اختصاصی، callback و گزارش زرین‌پال متعلق به افزونه‌اند.
+
 ## پایان فایل
 
 این فایل نقشه سریع پروژه است.

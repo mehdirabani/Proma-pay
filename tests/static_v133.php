@@ -12,7 +12,7 @@ $assert = static function ($condition, string $message): void {
 };
 
 $version = require $root . '/config/version.php';
-$assert(($version['application'] ?? '') === '1.3.3', 'Application version must be V1.3.3.');
+$assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.3.3', '>='), 'Application version must be V1.3.3 or newer.');
 
 $managerSource = (string) file_get_contents($root . '/core/PluginManager.php');
 $registrySource = (string) file_get_contents($root . '/models/PluginRegistry.php');

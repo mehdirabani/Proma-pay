@@ -92,6 +92,8 @@ class Settings extends Model
             'zibal_enabled' => '1',
             'zibal_test_mode' => '0',
             'zibal_merchant' => '',
+            'payment_default_gateway' => 'zibal',
+            'payment_allow_gateway_selection' => '1',
             'callback_base_url' => '',
             'card_transfer_enabled' => '1',
             'card_transfer_bank_name' => '',

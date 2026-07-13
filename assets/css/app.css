@@ -6420,3 +6420,80 @@ tr[data-card-href] {
 tr[data-card-href]:hover td {
   background: #fafaff;
 }
+.proma-gateway-field {
+  display: grid;
+  gap: 8px;
+}
+
+.proma-field-label {
+  color: #2f2f3b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.proma-gateway-choice {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.proma-gateway-card {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e3e5ee;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  min-height: 62px;
+  padding: 10px 12px;
+  position: relative;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.proma-gateway-card:hover,
+.proma-gateway-card:has(input:checked) {
+  border-color: #7366ff;
+  box-shadow: 0 5px 16px rgba(115, 102, 255, .12);
+}
+
+.proma-gateway-card input {
+  block-size: 18px;
+  flex: 0 0 18px;
+  inline-size: 18px;
+  margin: 0;
+}
+
+.proma-gateway-card-icon {
+  align-items: center;
+  background: #f0efff;
+  border-radius: 7px;
+  color: #6557ee;
+  display: inline-flex;
+  flex: 0 0 34px;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.proma-gateway-card-icon svg {
+  height: 17px;
+  width: 17px;
+}
+
+.proma-gateway-card > span:last-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.proma-gateway-card strong,
+.proma-gateway-card small {
+  overflow-wrap: anywhere;
+}
+
+.proma-gateway-card small {
+  color: #7c7f8d;
+  font-size: 11px;
+}

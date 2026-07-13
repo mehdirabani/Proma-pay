@@ -20,6 +20,13 @@ class PaymentsController extends Controller
 
     public function zibal()
     {
+        $_POST['gateway_id'] = 'zibal';
+        $_POST['_legacy_gateway'] = 'zibal';
+        return $this->gateway();
+    }
+
+    public function gateway()
+    {
         $this->requireRole('customer');
         $this->onlyPost();
         $installment = Installment::find((int) ($_POST['installment_id'] ?? 0));
@@ -32,29 +39,47 @@ class PaymentsController extends Controller
             set_flash('error', 'مبلغ پرداخت معتبر نیست.');
             redirect('installments/panel');
         }
-        $settings = Settings::allKeyed();
-        if ((string) ($settings['zibal_enabled'] ?? '1') !== '1') {
-            set_flash('error', 'پرداخت آنلاین در حال حاضر غیرفعال است.');
+        try {
+            $registry = PaymentGatewayRegistry::boot();
+            $gateway = ($_POST['_legacy_gateway'] ?? '') === 'zibal'
+                ? $registry->get('zibal')
+                : $registry->resolveCustomerGateway($_POST['gateway_id'] ?? '', false);
+            if (!$gateway || !$gateway->isEnabled()) {
+                throw new InvalidArgumentException('درگاه پرداخت انتخاب‌شده فعال یا تنظیم نشده است.');
+            }
+            $user = User::find((int) Auth::id());
+            $result = $gateway->createPayment([
+                'type' => 'single',
+                'installment_id' => (int) $installment['id'],
+                'installment_number' => (int) $installment['installment_number'],
+                'contract_id' => (int) $installment['contract_id'],
+                'contract_number' => (string) $installment['contract_number'],
+                'customer_id' => (int) Auth::id(),
+                'customer_name' => (string) ($installment['customer_name'] ?? ''),
+                'customer_mobile' => (string) ($user['mobile'] ?? ''),
+                'customer_email' => (string) ($user['email'] ?? ''),
+                'amount_toman' => (int) $amount,
+                'description' => 'پرداخت قسط قرارداد ' . $installment['contract_number'],
+                'idempotency_key' => $this->paymentIdempotencyKey($_POST['idempotency_key'] ?? '', 'single', (int) $installment['id']),
+            ]);
+            if (empty($result['redirect_url'])) {
+                throw new RuntimeException('نشانی انتقال درگاه دریافت نشد.');
+            }
+            redirect_raw($result['redirect_url']);
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException || $e instanceof RuntimeException ? $e->getMessage() : 'اتصال به درگاه پرداخت انجام نشد.');
             redirect('installments/panel');
         }
-        $zibalTestMode = (string) ($settings['zibal_test_mode'] ?? '0') === '1';
-        if (!$zibalTestMode && trim((string) ($settings['zibal_merchant'] ?? '')) === '') {
-            set_flash('error', 'مرچنت زیبال برای پرداخت آنلاین تنظیم نشده است.');
-            redirect('installments/panel');
-        }
-        $base = rtrim($settings['callback_base_url'] ?: detected_base_url(), '/');
-        $callback = $base . '/index.php?route=payments/callback';
-        $client = new ZibalClient($settings['zibal_merchant'], $zibalTestMode);
-        $request = $client->request($amount, $callback, 'پرداخت قسط قرارداد ' . $installment['contract_number']);
-        if (!$request['ok']) {
-            set_flash('error', $request['message']);
-            redirect('installments/panel');
-        }
-        Payment::createPendingGateway($installment['id'], $installment['contract_id'], Auth::id(), $amount, $request['track_id']);
-        redirect_raw($request['start_url']);
     }
 
     public function zibalGroup()
+    {
+        $_POST['gateway_id'] = 'zibal';
+        $_POST['_legacy_gateway'] = 'zibal';
+        return $this->gatewayGroup();
+    }
+
+    public function gatewayGroup()
     {
         $this->requireRole('customer');
         $this->onlyPost();
@@ -74,27 +99,52 @@ class PaymentsController extends Controller
             set_flash('error', 'حداقل یک قسط و مبلغ معتبر انتخاب کنید.');
             redirect('installments/panel');
         }
-        $settings = Settings::allKeyed();
-        $zibalTestMode = (string) ($settings['zibal_test_mode'] ?? '0') === '1';
-        if ((string) ($settings['zibal_enabled'] ?? '1') !== '1' || (!$zibalTestMode && trim((string) ($settings['zibal_merchant'] ?? '')) === '')) {
-            set_flash('error', 'پرداخت آنلاین در حال حاضر فعال یا تنظیم نشده است.');
-            redirect('installments/panel');
-        }
-        $base = rtrim($settings['callback_base_url'] ?: detected_base_url(), '/');
-        $callback = $base . '/index.php?route=payments/callback';
-        $client = new ZibalClient($settings['zibal_merchant'], $zibalTestMode);
-        $request = $client->request($amount, $callback, 'پرداخت چندقسطی قرارداد ' . ($installments[0]['contract_number'] ?? $contractId));
-        if (!$request['ok']) {
-            set_flash('error', $request['message']);
-            redirect('installments/panel');
-        }
         try {
-            PaymentGroupService::createPendingGateway($contractId, $ids, $amount, Auth::id(), $request['track_id'], 'zibal-group:' . hash('sha256', Auth::id() . '|' . $contractId . '|' . implode(',', $ids) . '|' . $amount . '|' . Csrf::token()));
+            $outstanding = Model::fetch(
+                "SELECT COALESCE(SUM(GREATEST(base_amount - paid_amount, 0)), 0) AS total FROM installments WHERE contract_id = ? AND status NOT IN ('paid', 'cancelled')",
+                [$contractId]
+            );
+            if ($amount > (int) round((float) ($outstanding['total'] ?? 0))) {
+                throw new InvalidArgumentException('مبلغ پرداخت از کل بدهی قابل تخصیص این قرارداد بیشتر است.');
+            }
+            $registry = PaymentGatewayRegistry::boot();
+            $gateway = ($_POST['_legacy_gateway'] ?? '') === 'zibal'
+                ? $registry->get('zibal')
+                : $registry->resolveCustomerGateway($_POST['gateway_id'] ?? '', true);
+            if (!$gateway || !$gateway->isEnabled() || !$gateway->supportsPaymentGroups()) {
+                throw new InvalidArgumentException('درگاه پرداخت انتخاب‌شده فعال یا تنظیم نشده است.');
+            }
+            $user = User::find((int) Auth::id());
+            $result = $gateway->createPayment([
+                'type' => 'group',
+                'contract_id' => $contractId,
+                'contract_number' => (string) ($installments[0]['contract_number'] ?? $contractId),
+                'installment_ids' => $ids,
+                'customer_id' => (int) Auth::id(),
+                'customer_name' => (string) ($installments[0]['customer_name'] ?? ''),
+                'customer_mobile' => (string) ($user['mobile'] ?? ''),
+                'customer_email' => (string) ($user['email'] ?? ''),
+                'amount_toman' => (int) $amount,
+                'description' => 'پرداخت چندقسطی قرارداد ' . ($installments[0]['contract_number'] ?? $contractId),
+                'idempotency_key' => $this->paymentIdempotencyKey($_POST['idempotency_key'] ?? '', 'group', $contractId),
+            ]);
+            if (empty($result['redirect_url'])) {
+                throw new RuntimeException('نشانی انتقال درگاه دریافت نشد.');
+            }
+            redirect_raw($result['redirect_url']);
         } catch (Throwable $e) {
-            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ذخیره پرداخت گروهی آنلاین انجام نشد.');
+            set_flash('error', $e instanceof InvalidArgumentException || $e instanceof RuntimeException ? $e->getMessage() : 'ذخیره پرداخت گروهی آنلاین انجام نشد.');
             redirect('installments/panel');
         }
-        redirect_raw($request['start_url']);
+    }
+
+    protected function paymentIdempotencyKey($provided, $type, $scopeId)
+    {
+        $provided = strtolower(trim((string) $provided));
+        if (!preg_match('/^[a-f0-9]{32,64}$/', $provided)) {
+            $provided = bin2hex(random_bytes(24));
+        }
+        return 'gateway:' . preg_replace('/[^a-z]/', '', (string) $type) . ':' . (int) Auth::id() . ':' . (int) $scopeId . ':' . $provided;
     }
 
     public function cardTransfer()

@@ -2289,7 +2289,19 @@
     });
   };
 
-  document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('form[data-disable-on-submit]').forEach(function (form) {
+    form.addEventListener('submit', function () {
+      if (form.dataset.submitting === '1') return;
+      form.dataset.submitting = '1';
+      form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (control) {
+        var label = control.getAttribute('data-submit-label');
+        if (label && control.tagName === 'BUTTON') control.textContent = label;
+        control.disabled = true;
+        control.setAttribute('aria-busy', 'true');
+      });
+    });
+  });
     initAuthTabs();
     initMoneyInputs();
     initModals();

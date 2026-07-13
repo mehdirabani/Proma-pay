@@ -115,12 +115,13 @@ class PaymentGroupService
         }
     }
 
-    public static function createPendingGateway($contractId, array $installmentIds, $amount, $userId, $trackId, $idempotencyKey = null)
+    public static function createPendingGateway($contractId, array $installmentIds, $amount, $userId, $trackId, $idempotencyKey = null, $gatewayId = 'zibal')
     {
         $contractId = (int) $contractId;
         $amount = self::moneyInteger($amount);
+        $gatewayId = strtolower(trim((string) $gatewayId));
         $installmentIds = array_values(array_unique(array_filter(array_map('intval', $installmentIds))));
-        if ($contractId <= 0 || $amount <= 0 || !$installmentIds) {
+        if ($contractId <= 0 || $amount <= 0 || !$installmentIds || !preg_match('/^[a-z][a-z0-9_-]{1,49}$/', $gatewayId)) {
             throw new InvalidArgumentException('اطلاعات پرداخت گروهی آنلاین معتبر نیست.');
         }
         $started = false;
@@ -146,11 +147,11 @@ class PaymentGroupService
             if (count($selected) !== count($installmentIds)) {
                 throw new InvalidArgumentException('یکی از اقساط انتخاب‌شده دیگر قابل پرداخت نیست.');
             }
-            $groupNumber = 'PG-Z-' . date('YmdHis') . '-' . strtoupper(bin2hex(random_bytes(3)));
+            $groupNumber = 'PG-' . strtoupper(substr($gatewayId, 0, 3)) . '-' . date('YmdHis') . '-' . strtoupper(bin2hex(random_bytes(3)));
             Model::execute(
                 'INSERT INTO payment_groups (group_number, contract_id, customer_id, created_by, requested_amount, method, status, gateway_track_id, idempotency_key, description, selection_json, created_at)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
-                [$groupNumber, $contractId, (int) $userId, (int) $userId, self::moneyDecimal($amount), 'zibal', 'pending', trim((string) $trackId), $idempotencyKey, 'پرداخت آنلاین چندقسطی', json_encode($installmentIds, JSON_UNESCAPED_UNICODE)]
+                [$groupNumber, $contractId, (int) $userId, (int) $userId, self::moneyDecimal($amount), $gatewayId, 'pending', trim((string) $trackId), $idempotencyKey, 'پرداخت آنلاین چندقسطی', json_encode($installmentIds, JSON_UNESCAPED_UNICODE)]
             );
             $groupId = (int) Model::lastInsertId();
             if (class_exists('AuditLog')) {
@@ -166,6 +167,18 @@ class PaymentGroupService
             }
             throw $e;
         }
+    }
+
+    public static function failGateway($groupId, $reason = '')
+    {
+        $groupId = (int) $groupId;
+        if ($groupId <= 0) {
+            return 0;
+        }
+        return Model::execute(
+            "UPDATE payment_groups SET status = 'failed', description = ? WHERE id = ? AND status = 'pending'",
+            [substr(trim((string) $reason) ?: 'پرداخت گروهی در درگاه تکمیل نشد.', 0, 255), $groupId]
+        );
     }
 
     public static function completeGateway($groupId, $amount, $refId, $actorId = null)
@@ -213,7 +226,8 @@ class PaymentGroupService
                 if ($chunk <= 0) {
                     continue;
                 }
-                $paymentId = Payment::record((int) $row['id'], (int) $group['contract_id'], (int) $group['customer_id'], self::moneyDecimal($chunk), 'zibal', 'paid', $group['gateway_track_id'], $refId, 'پرداخت آنلاین گروهی ' . $group['group_number'], date('Y-m-d'), 'installment');
+                $allocationTrackId = substr((string) $group['gateway_track_id'], 0, 80) . ':' . (int) $row['id'];
+                $paymentId = Payment::record((int) $row['id'], (int) $group['contract_id'], (int) $group['customer_id'], self::moneyDecimal($chunk), $group['method'], 'paid', $allocationTrackId, $refId, 'پرداخت آنلاین گروهی ' . $group['group_number'], date('Y-m-d'), 'installment');
                 Model::execute('UPDATE payments SET payment_group_id = ? WHERE id = ?', [(int) $group['id'], $paymentId]);
                 Model::execute('INSERT INTO payment_allocations (payment_group_id, payment_id, contract_id, installment_id, allocated_amount, created_at) VALUES (?, ?, ?, ?, ?, NOW())', [(int) $group['id'], $paymentId, (int) $group['contract_id'], (int) $row['id'], self::moneyDecimal($chunk)]);
                 $remaining -= $chunk;
