@@ -1,0 +1,119 @@
+@media (max-width: 1199.98px) {
+  .proma-accounting {
+    --pa-page-padding: 19px;
+    --pa-card-padding: 19px;
+    --pa-section-gap: 20px;
+  }
+  .proma-accounting-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .proma-accounting-dashboard-grid { grid-template-columns: 1fr; }
+  .proma-accounting-insight-grid { grid-template-columns: 1fr; }
+  .proma-accounting .span-4 { grid-column: span 6; }
+  .proma-accounting-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .proma-accounting-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .proma-accounting-filter-bar .btn { width: 100%; }
+  .proma-accounting-step-list small { display: none; }
+}
+
+@media (max-width: 991.98px) {
+  .proma-accounting-settings-layout,
+  .proma-accounting-help-layout { grid-template-columns: 1fr; }
+  .proma-accounting-settings-nav,
+  .proma-accounting-help-nav {
+    position: static;
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .proma-accounting-settings-nav a,
+  .proma-accounting-help-nav a { flex: 0 0 auto; white-space: nowrap; }
+  .proma-accounting-rule-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 767.98px) {
+  .proma-accounting {
+    --pa-page-padding: 13px;
+    --pa-card-padding: 15px;
+    --pa-section-gap: 16px;
+    padding-inline: 13px;
+    border-radius: 12px;
+  }
+  .proma-accounting-page-header { align-items: flex-start; flex-direction: column; padding: 15px; }
+  .proma-accounting-page-heading { align-items: flex-start; }
+  .proma-accounting-page-icon { width: 40px; height: 40px; border-radius: 11px; }
+  .proma-accounting-page-header h2 { font-size: 21px; }
+  .proma-accounting-page-header p { font-size: 12px; }
+  .proma-accounting-header-actions { width: 100%; }
+  .proma-accounting-header-actions .btn { flex: 1 1 130px; }
+  .proma-accounting .span-8,
+  .proma-accounting .span-6,
+  .proma-accounting .span-4 { grid-column: span 12; }
+  .proma-accounting-kpis,
+  .proma-accounting-kpis.is-compact,
+  .proma-accounting-summary-grid,
+  .proma-accounting-breakdown,
+  .proma-accounting-ledger-preview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .proma-accounting-kpi { min-height: 120px; padding: 15px; }
+  .proma-accounting-kpi strong { font-size: 17px; }
+  .proma-accounting-quick-actions { grid-template-columns: 1fr; }
+  .proma-accounting-balance-guide { grid-template-columns: 1fr; }
+  .proma-accounting-balance-guide > div { border-right: 0; border-top: 1px solid var(--pa-border); }
+  .proma-accounting-filter-bar { grid-template-columns: 1fr; }
+  .proma-accounting-filter-bar .btn { width: 100%; }
+  .proma-accounting-table-shell.is-card-mobile { display: none; }
+  .proma-accounting-mobile-list { display: block; }
+  .proma-accounting-help-content { grid-template-columns: 1fr; }
+  .proma-accounting-help-content > section.is-wide { grid-column: auto; }
+  .proma-accounting-choice-grid,
+  .proma-accounting-review-list { grid-template-columns: 1fr; }
+  .proma-accounting-sticky-actions { position: static; align-items: stretch; flex-direction: column; }
+  .proma-accounting-sticky-actions .btn { width: 100%; }
+  .proma-accounting-chart-wrap { min-height: 230px; }
+  .proma-accounting-rule-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 479.98px) {
+  .proma-accounting {
+    --pa-page-padding: 12px;
+    --pa-card-padding: 14px;
+  }
+  .proma-accounting-page-heading { gap: 10px; }
+  .proma-accounting-page-icon { display: none; }
+  .proma-accounting-kpis,
+  .proma-accounting-kpis.is-compact,
+  .proma-accounting-summary-grid,
+  .proma-accounting-breakdown,
+  .proma-accounting-ledger-preview,
+  .proma-accounting-confirm-grid { grid-template-columns: 1fr; }
+  .proma-accounting-section-heading { align-items: flex-start; }
+  .proma-accounting-section-heading > div:first-child { align-items: flex-start; }
+  .proma-accounting-data-card-grid { grid-template-columns: 1fr; }
+  .proma-accounting-inline-action { width: 100%; flex-wrap: wrap; }
+  .proma-accounting-inline-action .proma-accounting-control { min-width: 100%; }
+  .proma-accounting-setup-actions { align-items: stretch; flex-direction: column-reverse; }
+  .proma-accounting-setup-actions > * { width: 100%; }
+  .proma-accounting-dialog footer { align-items: stretch; flex-direction: column-reverse; }
+  .proma-accounting-dialog footer .btn { width: 100%; }
+  .proma-accounting-rule-meta { grid-template-columns: 1fr; }
+  .proma-accounting-settings-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+  .proma-accounting-settings-nav a {
+    min-width: 0;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .proma-accounting *,
+  .proma-accounting *::before,
+  .proma-accounting *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

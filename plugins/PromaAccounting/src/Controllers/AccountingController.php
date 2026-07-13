@@ -21,13 +21,22 @@ class AccountingController extends \Controller
             'title' => 'داشبورد حسابداری',
             'summary' => AccountingRepository::dashboard(),
             'accounts' => AccountingRepository::accounts('', 1, 8)['items'],
+            'series' => AccountingRepository::dashboardSeries(),
+            'recentEntries' => AccountingRepository::recentLedger(8),
+            'topSellers' => AccountingRepository::topSellers(5),
             'settings' => $settings,
         ]);
     }
 
     public function accounts()
     {
-        $result = AccountingRepository::accounts($_GET['q'] ?? '', $_GET['page'] ?? 1, 25, ['balance' => $_GET['balance'] ?? '']);
+        $filters = [
+            'balance' => $_GET['balance'] ?? '',
+            'role' => $_GET['role'] ?? '',
+            'status' => $_GET['status'] ?? '',
+            'sort' => $_GET['sort'] ?? 'name',
+        ];
+        $result = AccountingRepository::accounts($_GET['q'] ?? '', $_GET['page'] ?? 1, 25, $filters);
         $this->render('plugin:proma-accounting/accounts', ['title' => 'حساب کاربران', 'accounts' => $result['items'], 'pagination' => $result]);
     }
 
@@ -44,6 +53,7 @@ class AccountingController extends \Controller
             'entries' => $result['items'],
             'pagination' => $result,
             'balance' => LedgerService::balance((int) $userId),
+            'accountSummary' => AccountingRepository::accountSummary((int) $userId),
             'categories' => AccountingRepository::categories(),
         ]);
     }
@@ -90,7 +100,8 @@ class AccountingController extends \Controller
 
     public function sales()
     {
-        $result = AccountingRepository::sales($_GET['page'] ?? 1, 25);
+        $filters = ['q' => $_GET['q'] ?? '', 'status' => $_GET['status'] ?? ''];
+        $result = AccountingRepository::sales($_GET['page'] ?? 1, 25, $filters);
         $this->render('plugin:proma-accounting/sales', ['title' => 'فروش‌ها', 'sales' => $result['items'], 'pagination' => $result, 'staff' => AccountingRepository::staff('')]);
     }
 
@@ -104,8 +115,9 @@ class AccountingController extends \Controller
 
     public function commissions()
     {
-        $result = AccountingRepository::commissions($_GET['page'] ?? 1, 25);
-        $this->render('plugin:proma-accounting/commissions', ['title' => 'کمیسیون فروش', 'commissions' => $result['items'], 'pagination' => $result]);
+        $filters = ['q' => $_GET['q'] ?? '', 'status' => $_GET['status'] ?? '', 'seller_user_id' => $_GET['seller_user_id'] ?? 0];
+        $result = AccountingRepository::commissions($_GET['page'] ?? 1, 25, $filters);
+        $this->render('plugin:proma-accounting/commissions', ['title' => 'کمیسیون فروش', 'commissions' => $result['items'], 'pagination' => $result, 'staff' => AccountingRepository::staff('')]);
     }
 
     public function approveCommission($commissionId)

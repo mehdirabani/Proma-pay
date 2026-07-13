@@ -143,6 +143,7 @@ if (!$ecommerceEnabled) {
     }));
 }
 $pluginMenus = [];
+$pluginPageAssets = [];
 if (Auth::role() === 'admin' && class_exists('PluginManager')) {
     try {
         $pluginMenus = PluginManager::boot()->menus();
@@ -167,6 +168,13 @@ if (Auth::role() === 'admin' && class_exists('PluginManager')) {
         }
     } catch (Throwable $e) {
         $pluginMenus = [];
+    }
+}
+if (class_exists('PluginManager')) {
+    try {
+        $pluginPageAssets = PluginManager::boot()->assetsForRoute($route);
+    } catch (Throwable $e) {
+        $pluginPageAssets = [];
     }
 }
 $sidebarIcon = static function (array $item, string $sprite, bool $filled = false): string {
@@ -203,11 +211,11 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <link id="color" rel="stylesheet" href="<?= e(template_asset_url('css/color-1.css')) ?>" media="screen">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/responsive.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
-  <?php if (plugin_is_active('proma-accounting')): ?><link rel="stylesheet" href="<?= e(asset_url('plugins/PromaAccounting/assets/css/accounting.css')) ?>"><?php endif; ?>
+  <?php foreach ($pluginPageAssets as $pluginAsset): ?><?php if (($pluginAsset['type'] ?? '') === 'css'): ?><link rel="stylesheet" href="<?= e(asset_url($pluginAsset['path'])) ?>"><?php endif; ?><?php endforeach; ?>
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/forms.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/layout.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/contract-settings.css')) ?>">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+  <script src="<?= e(asset_url('assets/vendor/chart.umd.min.js')) ?>" defer></script>
 </head>
 <body onload="if (window.startTime) startTime()" data-user-id="<?= (int) Auth::id() ?>" data-notification-sound="<?= $notificationSoundEnabled ? '1' : '0' ?>" data-notification-volume="<?= e($notificationSoundVolume) ?>">
   <div class="loader-wrapper">
@@ -549,5 +557,6 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <script src="<?= e(template_asset_url('js/editors/quill.js')) ?>"></script>
   <script src="<?= e(asset_url('assets/js/app.js')) ?>"></script>
   <script src="<?= e(asset_url('assets/js/contract-template-editor.js')) ?>"></script>
+  <?php foreach ($pluginPageAssets as $pluginAsset): ?><?php if (($pluginAsset['type'] ?? '') === 'js'): ?><script src="<?= e(asset_url($pluginAsset['path'])) ?>"></script><?php endif; ?><?php endforeach; ?>
 </body>
 </html>

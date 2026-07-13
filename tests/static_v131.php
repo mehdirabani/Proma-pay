@@ -17,7 +17,7 @@ $assert = static function ($condition, string $message): void {
 };
 
 $version = require $root . '/config/version.php';
-$assert(($version['application'] ?? '') === '1.3.1', 'Application version must be V1.3.1.');
+$assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.3.1', '>='), 'Application version must be V1.3.1 or newer.');
 
 $plain = "ماده ۱\n\nمتن عادی و **بند مهم** ادامه متن.\n\n**کل این بند مهم است**";
 $rendered = ContractTemplateRenderer::render($plain, ContractTemplateRenderer::FORMAT_PLAIN);

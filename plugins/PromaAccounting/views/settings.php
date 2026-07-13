@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/components/ui.php';
 $settings = $settings ?? [];
 $previewInput = $previewInput ?? [];
 $type = ($settings['default_commission_type'] ?? 'percentage') === 'fixed' ? 'fixed' : 'percentage';
@@ -26,17 +27,7 @@ $signedMoney = static function ($value) {
 };
 ?>
 <div class="proma-accounting proma-accounting-settings" data-accounting-settings>
-  <header class="proma-accounting-page-header">
-    <div>
-      <span class="proma-accounting-eyebrow">حسابداری کاربران</span>
-      <h2>تنظیمات حسابداری</h2>
-      <p>قانون پیش‌فرض فقط زمانی استفاده می‌شود که برای فروشنده قانون اختصاصی فعال وجود نداشته باشد.</p>
-    </div>
-    <div class="proma-accounting-header-actions">
-      <a class="btn btn-light" href="<?= e(url('plugin/accounting/help', ['section' => 'commission'])) ?>"><i data-feather="book-open"></i><span>راهنما</span></a>
-      <a class="btn btn-light" href="<?= e(url('plugin/accounting/setup')) ?>"><i data-feather="check-square"></i><span>راه‌اندازی مرحله‌ای</span></a>
-    </div>
-  </header>
+  <?php ob_start(); ?><a class="btn btn-light" href="<?= e(url('plugin/accounting/help', ['section' => 'commission'])) ?>"><i data-feather="book-open"></i><span>راهنما</span></a><a class="btn btn-light" href="<?= e(url('plugin/accounting/setup')) ?>"><i data-feather="check-square"></i><span>راه‌اندازی مرحله‌ای</span></a><?php $headerActions = trim(ob_get_clean()); pa_page_header('پیکربندی مالی', 'تنظیمات حسابداری', 'قانون پیش‌فرض زمانی استفاده می‌شود که فروشنده قانون اختصاصی فعال نداشته باشد.', 'settings', $headerActions); ?>
 
   <section class="proma-accounting-summary" aria-labelledby="accounting-summary-title">
     <div class="proma-accounting-section-heading">
@@ -56,7 +47,10 @@ $signedMoney = static function ($value) {
 
   <form method="post" action="<?= e(url('plugin/accounting/settings/save')) ?>" class="proma-accounting-settings-form" data-accounting-dirty-form novalidate>
     <?= csrf_field() ?>
-    <section class="proma-accounting-panel">
+    <div class="proma-accounting-settings-layout">
+      <nav class="proma-accounting-settings-nav" data-accounting-settings-nav aria-label="بخش‌های تنظیمات حسابداری"><a class="is-active" href="#accounting-general"><i data-feather="percent"></i>عمومی</a><a href="#accounting-limits"><i data-feather="shield"></i>محدودیت</a><a href="#accounting-rounding"><i data-feather="corner-up-left"></i>گرد کردن</a><a href="#accounting-posting"><i data-feather="clock"></i>تأیید و ثبت</a></nav>
+      <div class="proma-accounting-settings-content">
+    <section class="proma-accounting-panel" id="accounting-general">
       <div class="proma-accounting-section-heading">
         <div><span class="proma-accounting-section-icon is-blue"><i data-feather="percent"></i></span><div><h3>تنظیمات عمومی کمیسیون</h3><p>نوع، مقدار و مبنای پیش‌فرض محاسبه را مشخص کنید.</p></div></div>
       </div>
@@ -81,7 +75,7 @@ $signedMoney = static function ($value) {
       </div>
     </section>
 
-    <section class="proma-accounting-panel">
+    <section class="proma-accounting-panel" id="accounting-limits">
       <div class="proma-accounting-section-heading">
         <div><span class="proma-accounting-section-icon is-green"><i data-feather="shield"></i></span><div><h3>محدودیت کمیسیون</h3><p>کف و سقف اختیاری برای هر فروش تعریف کنید.</p></div></div>
       </div>
@@ -93,7 +87,7 @@ $signedMoney = static function ($value) {
           </label>
           <div class="proma-accounting-dependent" id="minimum-commission-field">
             <label class="proma-accounting-label" for="minimum-commission">حداقل کمیسیون هر فروش</label>
-            <div class="proma-accounting-control proma-accounting-input-group"><input id="minimum-commission" name="minimum_commission" value="<?= e($settings['minimum_commission'] ?? '0') ?>" inputmode="numeric"><span>تومان</span></div>
+            <div class="proma-accounting-control proma-accounting-input-group"><input id="minimum-commission" name="minimum_commission" value="<?= e($settings['minimum_commission'] ?? '0') ?>" inputmode="numeric" data-accounting-money-input><span>تومان</span></div>
             <div class="proma-accounting-help">مثال: مبلغ اولیه ۱۸۰,۰۰۰ و حداقل ۲۵۰,۰۰۰؛ نتیجه ۲۵۰,۰۰۰ تومان.</div>
           </div>
         </div>
@@ -104,14 +98,14 @@ $signedMoney = static function ($value) {
           </label>
           <div class="proma-accounting-dependent" id="maximum-commission-field">
             <label class="proma-accounting-label" for="maximum-commission">حداکثر کمیسیون هر فروش</label>
-            <div class="proma-accounting-control proma-accounting-input-group"><input id="maximum-commission" name="maximum_commission" value="<?= e($settings['maximum_commission'] ?? '0') ?>" inputmode="numeric"><span>تومان</span></div>
+            <div class="proma-accounting-control proma-accounting-input-group"><input id="maximum-commission" name="maximum_commission" value="<?= e($settings['maximum_commission'] ?? '0') ?>" inputmode="numeric" data-accounting-money-input><span>تومان</span></div>
             <div class="proma-accounting-help">مثال: مبلغ اولیه ۱,۲۰۰,۰۰۰ و سقف ۸۰۰,۰۰۰؛ نتیجه ۸۰۰,۰۰۰ تومان.</div>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="proma-accounting-panel">
+    <section class="proma-accounting-panel" id="accounting-rounding">
       <div class="proma-accounting-section-heading">
         <div><span class="proma-accounting-section-icon is-amber"><i data-feather="corner-up-left"></i></span><div><h3>گرد کردن مبلغ</h3><p>گرد کردن پس از اعمال حداقل و حداکثر انجام می‌شود.</p></div></div>
       </div>
@@ -121,7 +115,7 @@ $signedMoney = static function ($value) {
       </div>
     </section>
 
-    <section class="proma-accounting-panel">
+    <section class="proma-accounting-panel" id="accounting-posting">
       <div class="proma-accounting-section-heading">
         <div><span class="proma-accounting-section-icon is-purple"><i data-feather="clock"></i></span><div><h3>شناسایی و ثبت در حساب</h3><p>زمان ایجاد کمیسیون و کنترل ثبت دفترکل را تعیین کنید.</p></div></div>
       </div>
@@ -133,16 +127,18 @@ $signedMoney = static function ($value) {
     </section>
 
     <div class="proma-accounting-sticky-actions"><span><i data-feather="info"></i> تنظیمات جدید فقط برای محاسبات آینده است.</span><button class="btn btn-primary" type="submit"><i data-feather="save"></i><span>ذخیره تنظیمات</span></button></div>
+      </div>
+    </div>
   </form>
 
   <section class="proma-accounting-panel proma-accounting-preview-panel" id="commission-preview">
     <div class="proma-accounting-section-heading">
-      <div><span class="proma-accounting-section-icon is-cyan"><i data-feather="calculator"></i></span><div><h3>پیش‌نمایش محاسبه کمیسیون</h3><p>این محاسبه با همان سرویس فروش واقعی انجام می‌شود و هیچ داده‌ای ذخیره نمی‌کند.</p></div></div>
+      <div><span class="proma-accounting-section-icon is-cyan"><i data-feather="dollar-sign"></i></span><div><h3>پیش‌نمایش محاسبه کمیسیون</h3><p>این محاسبه با همان سرویس فروش واقعی انجام می‌شود و هیچ داده‌ای ذخیره نمی‌کند.</p></div></div>
     </div>
     <form method="post" action="<?= e(url('plugin/accounting/settings/preview')) ?>" class="proma-accounting-form-grid">
       <?= csrf_field() ?>
       <div class="proma-accounting-field span-4"><label class="proma-accounting-label" for="preview-seller">فروشنده</label><div class="proma-accounting-control"><select id="preview-seller" name="seller_user_id"><option value="0">بدون قانون اختصاصی</option><?php foreach (($staff ?? []) as $person): ?><option value="<?= (int) $person['id'] ?>"<?= (int) ($previewInput['seller_user_id'] ?? 0) === (int) $person['id'] ? ' selected' : '' ?>><?= e($person['full_name']) ?></option><?php endforeach; ?></select></div></div>
-      <?php foreach (['principal_amount' => 'مبلغ کل قرارداد', 'down_payment_amount' => 'پیش‌پرداخت', 'financed_amount' => 'مبلغ تأمین مالی‌شده', 'profit_amount' => 'سود قرارداد', 'collected_amount' => 'مبلغ وصول‌شده'] as $key => $label): ?><div class="proma-accounting-field span-4"><label class="proma-accounting-label" for="preview-<?= e($key) ?>"><?= e($label) ?></label><div class="proma-accounting-control proma-accounting-input-group"><input id="preview-<?= e($key) ?>" name="<?= e($key) ?>" value="<?= e($previewInput[$key] ?? ($key === 'principal_amount' ? '20000000' : ($key === 'financed_amount' ? '15000000' : '5000000'))) ?>" inputmode="numeric"><span>تومان</span></div></div><?php endforeach; ?>
+      <?php foreach (['principal_amount' => 'مبلغ کل قرارداد', 'down_payment_amount' => 'پیش‌پرداخت', 'financed_amount' => 'مبلغ تأمین مالی‌شده', 'profit_amount' => 'سود قرارداد', 'collected_amount' => 'مبلغ وصول‌شده'] as $key => $label): ?><div class="proma-accounting-field span-4"><label class="proma-accounting-label" for="preview-<?= e($key) ?>"><?= e($label) ?></label><div class="proma-accounting-control proma-accounting-input-group"><input id="preview-<?= e($key) ?>" name="<?= e($key) ?>" value="<?= e($previewInput[$key] ?? ($key === 'principal_amount' ? '20000000' : ($key === 'financed_amount' ? '15000000' : '5000000'))) ?>" inputmode="numeric" data-accounting-money-input><span>تومان</span></div></div><?php endforeach; ?>
       <div class="span-12 proma-accounting-form-actions"><button class="btn btn-primary" type="submit"><i data-feather="play"></i><span>محاسبه پیش‌نمایش</span></button></div>
     </form>
     <?php if (!empty($preview)): ?><div class="proma-accounting-breakdown" aria-live="polite">

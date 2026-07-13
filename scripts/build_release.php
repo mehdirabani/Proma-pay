@@ -144,6 +144,7 @@ $updateRelativeFiles = [
     'assets/css/components/layout.css',
     'assets/js/app.js',
     'assets/js/contract-template-editor.js',
+    'assets/vendor/chart.umd.min.js',
     'config/settings.php',
     'config/version.php',
     'controllers/PluginsController.php',
@@ -177,6 +178,7 @@ $updateRelativeFiles = [
     'CHANGELOG.md',
     'docs/plugins/PLUGIN_UI_DESIGN_SYSTEM.md',
     'docs/plugins/PLUGIN_REINSTALLATION.md',
+    'docs/plugins/PROMA_ACCOUNTING_UI_GUIDE.md',
     'docs/debug/V1_2_9_UI_LAYOUT_AUDIT.md',
     'docs/contracts/CONTRACT_TEMPLATE_ENGINE.md',
     'docs/contracts/CONTRACT_TEMPLATE_EDITOR.md',
@@ -196,14 +198,21 @@ $updateRelativeFiles = [
     'docs/ui/CONTRACT_SETTINGS_UI.md',
     'docs/releases/V1.3.0.md',
     'docs/releases/V1.3.1.md',
+    'docs/releases/V1.3.2.md',
+    'docs/releases/PROMA_ACCOUNTING_V1.2.0.md',
     'docs/reports/CONTRACT_SETTINGS_AND_PRINT_ENGINE_REPORT.md',
     'docs/reports/V1_3_1_CONTRACT_PRINT_AND_TEMPLATE_VERSION_REPORT.md',
+    'docs/reports/PROMA_ACCOUNTING_MODERN_UI_REPORT.md',
+    'docs/debug/PROMA_ACCOUNTING_MODERN_UI_AUDIT.md',
+    'docs/screenshots/PROMA_ACCOUNTING_V1_1_0_BEFORE.png',
+    'docs/screenshots/PROMA_ACCOUNTING_V1_2_0_AFTER.png',
     'docs/debug/V1_3_0_CONTRACT_PRINT_AND_TEMPLATE_VERSION_AUDIT.md',
     'tests/README.md',
     'tests/static_v128.php',
     'tests/static_v129.php',
     'tests/static_v130.php',
     'tests/static_v131.php',
+    'tests/static_v132.php',
 ];
 $updateFiles = [];
 foreach ($updateRelativeFiles as $relativePath) {
@@ -261,7 +270,7 @@ foreach ($pluginIterator as $item) {
     $pluginFiles[$relativePath] = $item->getPathname();
 }
 ksort($pluginFiles, SORT_STRING);
-$pluginPath = $pluginDir . '/proma-accounting_v' . $pluginVersionSlug . '.zip';
+$pluginPath = $pluginDir . '/PromaAccounting-' . $pluginVersion . '.zip';
 $pluginZip = $openZip($pluginPath);
 foreach ($pluginFiles as $relativePath => $sourcePath) {
     $pluginZip->addFile($sourcePath, 'PromaAccounting/' . $relativePath);

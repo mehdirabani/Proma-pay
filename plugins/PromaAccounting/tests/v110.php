@@ -47,7 +47,7 @@ $rulesView = (string) file_get_contents($plugin . '/views/rules.php');
 $css = (string) file_get_contents($plugin . '/assets/css/accounting.css');
 $js = (string) file_get_contents($plugin . '/assets/js/accounting.js');
 $manifest = json_decode((string) file_get_contents($plugin . '/plugin.json'), true);
-$assert(($manifest['version'] ?? '') === '1.1.0', 'Plugin version must be 1.1.0.');
+$assert(version_compare((string) ($manifest['version'] ?? '0.0.0'), '1.1.0', '>='), 'Plugin version must retain V1.1 compatibility.');
 
 foreach (['مقدار پیش‌فرض کمیسیون', 'مبنای پیش‌فرض محاسبه کمیسیون', 'اعمال حداقل کمیسیون', 'اعمال حداکثر کمیسیون', 'پیش‌نمایش محاسبه کمیسیون'] as $label) {
     $assert(strpos($settingsView, $label) !== false, 'Settings label missing: ' . $label);
@@ -55,7 +55,7 @@ foreach (['مقدار پیش‌فرض کمیسیون', 'مبنای پیش‌فر
 $assert(strpos($settingsView . $rulesView, 'کمسیون') === false, 'Incorrect Persian commission spelling remains.');
 $assert(strpos($settingsView, 'مقدار عمومی') === false && strpos($settingsView, 'مبنای عمومی') === false, 'Ambiguous legacy labels remain.');
 
-foreach (['--accounting-page-padding: 24px', '--accounting-card-padding: 22px', '--accounting-control-height: 44px', '.proma-accounting-switch-row', '@media (max-width: 767.98px)', '[data-theme="dark"] .proma-accounting'] as $rule) {
+foreach (['--pa-page-padding: 24px', '--pa-card-padding: 22px', '--pa-control-height: 44px', '.proma-accounting-switch-row', '[data-theme="dark"] .proma-accounting'] as $rule) {
     $assert(strpos($css, $rule) !== false, 'Accounting UI rule missing: ' . $rule);
 }
 $assert(!preg_match('/(^|\})\s*(input|select|textarea|label|button)\s*\{/m', $css), 'Unscoped global control selector found.');

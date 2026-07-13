@@ -421,6 +421,45 @@ class PluginManager
         return $this->menus;
     }
 
+    public function assetsForRoute($route)
+    {
+        self::boot();
+        $route = trim((string) $route, '/');
+        $pluginId = '';
+        foreach ($this->routes as $item) {
+            if ($this->matchRoute($item['path'], $route) !== false) {
+                $pluginId = (string) ($item['plugin_id'] ?? '');
+                break;
+            }
+        }
+        if ($pluginId === '') {
+            return [];
+        }
+        $registered = PluginRegistry::find($pluginId);
+        if (!$registered || ($registered['status'] ?? '') !== 'active' || empty($registered['path'])) {
+            return [];
+        }
+        $manifest = $this->manifestFromRegistered($registered);
+        $base = self::displayPath($registered['path']);
+        $assets = [];
+        foreach ($manifest['assets'] ?? [] as $asset) {
+            $asset = trim(str_replace('\\', '/', (string) $asset), '/');
+            if ($asset === '' || strpos($asset, '..') !== false || !preg_match('/^[A-Za-z0-9._\/-]+$/', $asset)) {
+                continue;
+            }
+            $extension = strtolower((string) pathinfo($asset, PATHINFO_EXTENSION));
+            if (!in_array($extension, ['css', 'js'], true)) {
+                continue;
+            }
+            $fullPath = rtrim((string) $registered['path'], '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $asset);
+            if (!is_file($fullPath)) {
+                continue;
+            }
+            $assets[] = ['type' => $extension, 'path' => $base . '/' . $asset];
+        }
+        return $assets;
+    }
+
     public static function viewFile($pluginId, $view)
     {
         $plugin = PluginRegistry::find($pluginId);

@@ -26,4 +26,11 @@ php tests/static_v130.php
 php tests/static_v131.php
 ```
 
+تست انتشار رابط مدرن حسابداری، دارایی‌های route-scoped، Chart.js محلی و جداسازی ZIP پلاگین در `V1.3.2`:
+
+```text
+php plugins/PromaAccounting/tests/v120.php
+php tests/static_v132.php
+```
+
 تست‌های نصب تازه، migration، نصب افزونه و workflowهای مالی باید روی یک MySQL/MariaDB سالم و دیتابیس موقت اجرا شوند. در محیط توسعه فعلی MariaDB سیستم crash می‌کند و این تست‌ها تا رفع مشکل سرویس دیتابیس معتبر نیستند.
