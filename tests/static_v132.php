@@ -10,7 +10,7 @@ $assert = static function ($condition, string $message): void {
 };
 
 $version = require $root . '/config/version.php';
-$assert(($version['application'] ?? '') === '1.3.2', 'Application version must be V1.3.2.');
+$assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.3.2', '>='), 'Application version must be V1.3.2 or newer.');
 
 $plugin = json_decode((string) file_get_contents($root . '/plugins/PromaAccounting/plugin.json'), true);
 $assert(($plugin['version'] ?? '') === '1.2.0', 'Proma Accounting version must be 1.2.0.');

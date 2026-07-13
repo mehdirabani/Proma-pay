@@ -112,10 +112,69 @@ class PluginsController extends Controller
         PluginManager::requirePermission('update_plugins');
         $this->onlyPost();
         try {
-            PluginManager::instance()->update($pluginId, Auth::id());
-            set_flash('success', 'افزونه با migrationهای جدید به‌روزرسانی شد.');
+            if (!ConfirmationCode::verify('plugin_update_apply_' . sha1((string) $pluginId), $_POST['confirm_text'] ?? '')) {
+                throw new RuntimeException('عدد تایید نصب بروزرسانی افزونه درست نیست.');
+            }
+            $result = PluginManager::instance()->update($pluginId, Auth::id());
+            set_flash('success', 'افزونه از نسخه ' . ($result['from'] ?? '-') . ' به نسخه ' . ($result['to'] ?? '-') . ' بروزرسانی شد.');
+            if (!empty($result['cleanup_warning'])) {
+                set_flash('error', 'بروزرسانی نصب شد، اما پاک‌سازی نسخه ایمنی فایل‌ها کامل نشد: ' . $result['cleanup_warning']);
+            }
         } catch (Throwable $e) {
             set_flash('error', 'به‌روزرسانی افزونه انجام نشد: ' . $e->getMessage());
+        }
+        redirect('plugins');
+    }
+
+    public function updatePackage($pluginId)
+    {
+        $this->requireRole('admin');
+        PluginManager::requirePermission('update_plugins');
+        $this->onlyPost();
+        try {
+            if (!ConfirmationCode::verify('plugin_update_stage_' . sha1((string) $pluginId), $_POST['confirm_text'] ?? '')) {
+                throw new RuntimeException('عدد تایید بارگذاری نسخه جدید افزونه درست نیست.');
+            }
+            $result = PluginManager::instance()->stageUpdate($pluginId, $_FILES['plugin_update_zip'] ?? [], Auth::id());
+            set_flash('success', 'نسخه ' . ($result['to'] ?? '-') . ' برای افزونه «' . ($result['name'] ?? $pluginId) . '» آماده شد. اکنون نصب بروزرسانی را تایید کنید.');
+        } catch (Throwable $e) {
+            set_flash('error', 'آماده‌سازی بروزرسانی افزونه انجام نشد: ' . $e->getMessage());
+        }
+        redirect('plugins');
+    }
+
+    public function deleteFromHost()
+    {
+        $this->requireRole('admin');
+        PluginManager::requirePermission('uninstall_plugins');
+        $this->onlyPost();
+        try {
+            if (!ConfirmationCode::verify('plugins_delete_from_host', $_POST['confirm_text'] ?? '')) {
+                throw new RuntimeException('عدد تایید حذف کامل افزونه‌ها درست نیست.');
+            }
+            $pluginIds = array_values(array_unique(array_filter(array_map('trim', (array) ($_POST['plugin_ids'] ?? [])), static function ($id) {
+                return preg_match('/^[a-z][a-z0-9._-]{2,99}$/', (string) $id);
+            })));
+            if (!$pluginIds || count($pluginIds) > 50) {
+                throw new InvalidArgumentException('حداقل یک و حداکثر ۵۰ افزونه معتبر انتخاب کنید.');
+            }
+            $deleted = [];
+            $errors = [];
+            foreach ($pluginIds as $pluginId) {
+                try {
+                    $deleted[] = PluginManager::instance()->deleteFromHost($pluginId, Auth::id());
+                } catch (Throwable $e) {
+                    $errors[] = $pluginId . ': ' . $e->getMessage();
+                }
+            }
+            if ($deleted) {
+                set_flash('success', to_persian_digits(count($deleted)) . ' افزونه به‌طور کامل از پوشه plugins هاست حذف شد. داده‌های دیتابیس افزونه‌ها حفظ شده‌اند.');
+            }
+            if ($errors) {
+                set_flash('error', 'حذف برخی افزونه‌ها انجام نشد: ' . implode(' | ', $errors));
+            }
+        } catch (Throwable $e) {
+            set_flash('error', 'حذف افزونه‌ها از هاست انجام نشد: ' . $e->getMessage());
         }
         redirect('plugins');
     }

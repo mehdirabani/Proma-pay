@@ -36,6 +36,25 @@ class BackupService
         return Model::fetchAll('SELECT * FROM backup_logs ORDER BY id DESC LIMIT ' . max(1, (int) $limit));
     }
 
+    public static function deleteLogs(array $ids)
+    {
+        self::ensureSchema();
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static function ($id) {
+            return $id > 0;
+        })));
+        if (!$ids || count($ids) > 200) {
+            throw new InvalidArgumentException('حداقل یک و حداکثر ۲۰۰ لاگ معتبر انتخاب کنید.');
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        return Model::execute('DELETE FROM backup_logs WHERE id IN (' . $placeholders . ')', $ids);
+    }
+
+    public static function clearLogs()
+    {
+        self::ensureSchema();
+        return Model::execute('DELETE FROM backup_logs');
+    }
+
     public static function files()
     {
         $files = [];

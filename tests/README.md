@@ -33,4 +33,10 @@ php plugins/PromaAccounting/tests/v120.php
 php tests/static_v132.php
 ```
 
+تست چرخه بروزرسانی ZIP پلاگین، حذف فیزیکی امن و پاک‌سازی لاگ‌های بکاپ در `V1.3.3`:
+
+```text
+php tests/static_v133.php
+```
+
 تست‌های نصب تازه، migration، نصب افزونه و workflowهای مالی باید روی یک MySQL/MariaDB سالم و دیتابیس موقت اجرا شوند. در محیط توسعه فعلی MariaDB سیستم crash می‌کند و این تست‌ها تا رفع مشکل سرویس دیتابیس معتبر نیستند.

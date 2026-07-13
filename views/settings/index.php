@@ -456,13 +456,14 @@ if (!isset($tabs[$activeTab])) {
           </tbody>
         </table>
       </div>
-      <h3 class="proma-section-heading">لاگ عملیات بکاپ</h3>
+      <div class="proma-section-heading d-flex justify-content-between align-items-center flex-wrap gap-2"><h3 class="mb-0">لاگ عملیات بکاپ</h3><?php if (!empty($backupLogs)): ?><button class="btn small danger" type="button" data-open-modal="delete-backup-logs-modal"><i data-feather="trash-2"></i> حذف لاگ‌ها</button><?php endif; ?></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>زمان</th><th>عملیات</th><th>فایل</th><th>وضعیت</th><th>پیام</th></tr></thead>
+          <thead><tr><th><input type="checkbox" data-check-all="backup_log_ids" aria-label="انتخاب همه لاگ‌های بکاپ"></th><th>زمان</th><th>عملیات</th><th>فایل</th><th>وضعیت</th><th>پیام</th></tr></thead>
           <tbody>
             <?php foreach (($backupLogs ?? []) as $log): ?>
               <tr>
+                <td><input type="checkbox" name="log_ids[]" value="<?= (int) $log['id'] ?>" data-check-item="backup_log_ids" form="backup-log-delete-form" aria-label="انتخاب لاگ شماره <?= (int) $log['id'] ?>"></td>
                 <td><?= e(jdatetime($log['created_at'])) ?></td>
                 <td><?= e($log['action']) ?></td>
                 <td><?= e($log['file_name']) ?></td>
@@ -470,7 +471,7 @@ if (!isset($tabs[$activeTab])) {
                 <td><?= e($log['message']) ?></td>
               </tr>
             <?php endforeach; ?>
-            <?php if (empty($backupLogs)): ?><tr><td colspan="5" class="empty">هنوز لاگی ثبت نشده است.</td></tr><?php endif; ?>
+            <?php if (empty($backupLogs)): ?><tr><td colspan="6" class="empty">هنوز لاگی ثبت نشده است.</td></tr><?php endif; ?>
           </tbody>
         </table>
       </div>
@@ -579,6 +580,22 @@ if (!isset($tabs[$activeTab])) {
 <form id="settings-update-upload-form" method="post" action="<?= e(url('updates/upload')) ?>" enctype="multipart/form-data" data-loading-form>
   <?= csrf_field() ?>
 </form>
+
+<div class="modal" id="delete-backup-logs-modal">
+  <div class="modal-content">
+    <div class="modal-header"><h3>حذف لاگ‌های بکاپ</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن"><i data-feather="x"></i></button></div>
+    <form id="backup-log-delete-form" method="post" action="<?= e(url('backup/deleteLogs')) ?>" data-loading-form data-loading-text="در حال حذف لاگ‌ها...">
+      <div class="modal-body grid">
+        <?= csrf_field() ?>
+        <?php $deleteBackupLogsCode = ConfirmationCode::hint('backup_logs_delete'); ?>
+        <div class="notice warning">حذف لاگ‌های بکاپ روی فایل‌های بکاپ اثری ندارد. رویداد حذف در گزارش ممیزی اصلی سامانه باقی می‌ماند. برای تایید عدد <strong class="ltr"><?= e($deleteBackupLogsCode) ?></strong> را وارد کنید.</div>
+        <label>دامنه حذف<select name="delete_scope"><option value="selected">فقط لاگ‌های انتخاب‌شده</option><option value="all">همه لاگ‌های بکاپ</option></select></label>
+        <label>عدد تایید <span class="required">*</span><input name="confirm_text" required inputmode="numeric" autocomplete="off" placeholder="<?= e($deleteBackupLogsCode) ?>"></label>
+      </div>
+      <div class="modal-footer"><button class="btn danger" type="submit"><i data-feather="trash-2"></i> حذف لاگ‌ها</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
+    </form>
+  </div>
+</div>
 
 <div class="modal" id="restore-backup-modal">
   <div class="modal-content">

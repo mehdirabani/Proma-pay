@@ -148,12 +148,14 @@ $updateRelativeFiles = [
     'config/settings.php',
     'config/version.php',
     'controllers/PluginsController.php',
+    'controllers/BackupController.php',
     'controllers/SettingsController.php',
     'controllers/ContractsController.php',
     'core/ContractPermission.php',
     'core/PluginManager.php',
     'core/PluginStatus.php',
     'helpers/functions.php',
+    'helpers/BackupService.php',
     'manifest.json',
     'models/PluginRegistry.php',
     'models/ContractDocument.php',
@@ -199,6 +201,7 @@ $updateRelativeFiles = [
     'docs/releases/V1.3.0.md',
     'docs/releases/V1.3.1.md',
     'docs/releases/V1.3.2.md',
+    'docs/releases/V1.3.3.md',
     'docs/releases/PROMA_ACCOUNTING_V1.2.0.md',
     'docs/reports/CONTRACT_SETTINGS_AND_PRINT_ENGINE_REPORT.md',
     'docs/reports/V1_3_1_CONTRACT_PRINT_AND_TEMPLATE_VERSION_REPORT.md',
@@ -213,6 +216,7 @@ $updateRelativeFiles = [
     'tests/static_v130.php',
     'tests/static_v131.php',
     'tests/static_v132.php',
+    'tests/static_v133.php',
 ];
 $updateFiles = [];
 foreach ($updateRelativeFiles as $relativePath) {

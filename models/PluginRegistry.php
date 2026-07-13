@@ -76,6 +76,36 @@ class PluginRegistry extends Model
 
         $current = self::normalizeStatus($existing['status'] ?? 'discovered');
         $protected = ['installed', 'active', 'inactive', 'update_available'];
+        if ($current === PluginStatus::UPDATE_AVAILABLE) {
+            self::execute(
+                'UPDATE system_plugins
+                 SET name = ?, description = ?, path = ?, status = ?, last_error = NULL, deleted_at = NULL, updated_at = NOW()
+                 WHERE plugin_id = ?',
+                [$manifest['name'], trim((string) ($manifest['description'] ?? '')), $normalizedRoot, $current, $pluginId]
+            );
+            return $current;
+        }
+        if (in_array($current, [PluginStatus::INSTALLED, PluginStatus::ACTIVE, PluginStatus::INACTIVE], true)
+            && version_compare((string) $manifest['version'], (string) ($existing['version'] ?? '0.0.0'), '>')) {
+            $manifest['_update_previous_status'] = $current;
+            $manifest['_update_previous_version'] = (string) ($existing['version'] ?? '0.0.0');
+            $manifest['_update_candidate_version'] = (string) $manifest['version'];
+            $manifest['_update_backup_path'] = '';
+            self::execute(
+                'UPDATE system_plugins
+                 SET name = ?, description = ?, path = ?, status = ?, manifest_json = ?, last_error = NULL, deleted_at = NULL, updated_at = NOW()
+                 WHERE plugin_id = ?',
+                [
+                    $manifest['name'],
+                    trim((string) ($manifest['description'] ?? '')),
+                    $normalizedRoot,
+                    PluginStatus::UPDATE_AVAILABLE,
+                    json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    $pluginId,
+                ]
+            );
+            return PluginStatus::UPDATE_AVAILABLE;
+        }
         if (in_array($current, $protected, true)) {
             $nextStatus = $current;
         } elseif ($current === 'uploaded' && $preferredStatus === 'discovered') {
@@ -150,6 +180,37 @@ class PluginRegistry extends Model
         self::execute(
             'UPDATE system_plugins SET name = ?, description = ?, version = ?, path = ?, manifest_json = ?, updated_at = NOW(), last_error = NULL WHERE plugin_id = ?',
             [$manifest['name'], trim((string) ($manifest['description'] ?? '')), $manifest['version'], str_replace('\\', '/', $manifest['_root']), json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $manifest['id']]
+        );
+    }
+
+    public static function markUpdateAvailable($pluginId, array $candidate, $path, $previousStatus, $backupPath)
+    {
+        $existing = self::find($pluginId);
+        if (!$existing) {
+            throw new InvalidArgumentException('افزونه نصب‌شده برای بروزرسانی پیدا نشد.');
+        }
+        $candidate['_update_previous_status'] = self::normalizeStatus($previousStatus);
+        $candidate['_update_previous_version'] = (string) ($existing['version'] ?? '0.0.0');
+        $candidate['_update_candidate_version'] = (string) ($candidate['version'] ?? '0.0.0');
+        $candidate['_update_backup_path'] = str_replace('\\', '/', (string) $backupPath);
+        self::execute(
+            'UPDATE system_plugins
+             SET path = ?, status = ?, manifest_json = ?, last_error = NULL, updated_at = NOW()
+             WHERE plugin_id = ? AND deleted_at IS NULL',
+            [
+                str_replace('\\', '/', (string) $path),
+                PluginStatus::UPDATE_AVAILABLE,
+                json_encode($candidate, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                trim((string) $pluginId),
+            ]
+        );
+    }
+
+    public static function softDelete($pluginId)
+    {
+        self::execute(
+            'UPDATE system_plugins SET status = ?, deleted_at = NOW(), last_error = NULL, updated_at = NOW() WHERE plugin_id = ?',
+            [PluginStatus::REMOVED, trim((string) $pluginId)]
         );
     }
 

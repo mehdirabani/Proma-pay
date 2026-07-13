@@ -86,4 +86,32 @@ class BackupController extends Controller
         }
         redirect('settings', ['tab' => 'backup']);
     }
+
+    public function deleteLogs()
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            if (!ConfirmationCode::verify('backup_logs_delete', $_POST['confirm_text'] ?? '')) {
+                throw new RuntimeException('عدد تایید حذف لاگ‌های بکاپ درست نیست.');
+            }
+            $scope = (string) ($_POST['delete_scope'] ?? 'selected');
+            $count = $scope === 'all'
+                ? BackupService::clearLogs()
+                : BackupService::deleteLogs((array) ($_POST['log_ids'] ?? []));
+            try {
+                AuditLog::record('maintenance', 'backup_logs_deleted', 'backup_log', 0, [
+                    'actor_user_id' => Auth::id(),
+                    'severity' => 'high',
+                    'description' => 'حذف لاگ‌های بخش بکاپ توسط مدیر',
+                    'new_values' => ['scope' => $scope, 'deleted_count' => (int) $count],
+                ]);
+            } catch (Throwable $ignored) {
+            }
+            set_flash('success', to_persian_digits((int) $count) . ' لاگ از بخش بکاپ حذف شد.');
+        } catch (Throwable $e) {
+            set_flash('error', 'حذف لاگ‌های بکاپ انجام نشد: ' . $e->getMessage());
+        }
+        redirect('settings', ['tab' => 'backup']);
+    }
 }
