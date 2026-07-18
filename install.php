@@ -262,6 +262,8 @@ function create_schema(PDO $pdo)
             cancelled_at DATETIME NULL,
             cancelled_by BIGINT UNSIGNED NULL,
             cancellation_reason TEXT NULL,
+            previous_status VARCHAR(30) NULL,
+            cancellation_metadata_json LONGTEXT NULL,
             assigned_operator_id BIGINT UNSIGNED NULL,
             legal_status VARCHAR(30) NULL,
             notes TEXT NULL,
@@ -837,6 +839,15 @@ function ensure_install_schema_compatibility(PDO $pdo)
     ] as $column => $definition) {
         if (!installer_column_exists($pdo, 'messages', $column)) {
             $pdo->exec("ALTER TABLE messages ADD COLUMN {$column} {$definition}");
+        }
+    }
+
+    foreach ([
+        'previous_status' => 'VARCHAR(30) NULL AFTER cancellation_reason',
+        'cancellation_metadata_json' => 'LONGTEXT NULL AFTER previous_status',
+    ] as $column => $definition) {
+        if (!installer_column_exists($pdo, 'contracts', $column)) {
+            $pdo->exec("ALTER TABLE contracts ADD COLUMN {$column} {$definition}");
         }
     }
 

@@ -30,6 +30,15 @@ $assert(strpos($installer, "header('Location: install.php'") !== false, 'install
 $assert(strpos($installer, 'session_start') === false, 'installer.php must not create an installation session.');
 $assert(stripos($installer, 'ZipArchive') === false && stripos($installer, 'installer_import_dump') === false, 'installer.php must not contain easy-install behavior.');
 
+$installSchema = (string) file_get_contents($root . '/install.php');
+$contractsCreateStart = strpos($installSchema, 'CREATE TABLE IF NOT EXISTS contracts');
+$contractsCreateEnd = strpos($installSchema, 'CREATE TABLE IF NOT EXISTS contract_items', $contractsCreateStart);
+$contractsCreateSchema = substr($installSchema, $contractsCreateStart, $contractsCreateEnd - $contractsCreateStart);
+foreach (['previous_status VARCHAR(30) NULL', 'cancellation_metadata_json LONGTEXT NULL'] as $needle) {
+    $assert(strpos($contractsCreateSchema, $needle) !== false, 'Fresh install contracts schema is missing ' . $needle . '.');
+}
+$assert(strpos($installSchema, "installer_column_exists(\$pdo, 'contracts', \$column)") !== false, 'Installer compatibility repair is missing for contracts lifecycle columns.');
+
 $router = (string) file_get_contents($root . '/core/Router.php');
 $healthPosition = strpos($router, "health/live");
 $pluginPosition = strpos($router, 'PluginManager::boot()');
