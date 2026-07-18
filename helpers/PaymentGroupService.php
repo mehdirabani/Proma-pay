@@ -93,18 +93,27 @@ class PaymentGroupService
             }
             Model::execute('UPDATE payment_groups SET allocated_amount = ?, status = ?, completed_at = NOW() WHERE id = ?', [self::moneyDecimal($allocated), 'completed', $groupId]);
             if (class_exists('AuditLog')) {
-                AuditLog::record('payment', 'group_completed', 'payment_group', $groupId, [
-                    'actor_user_id' => $userId,
-                    'customer_id' => (int) $contract['customer_id'],
-                    'contract_id' => $contractId,
-                    'new_values' => ['requested_amount' => self::moneyDecimal($amount), 'allocated_amount' => self::moneyDecimal($allocated)],
-                ]);
+                try {
+                    AuditLog::record('payment', 'group_completed', 'payment_group', $groupId, [
+                        'actor_user_id' => $userId,
+                        'customer_id' => (int) $contract['customer_id'],
+                        'contract_id' => $contractId,
+                        'new_values' => ['requested_amount' => self::moneyDecimal($amount), 'allocated_amount' => self::moneyDecimal($allocated)],
+                    ]);
+                } catch (Throwable $e) {
+                    if (class_exists('PluginRegistry')) {
+                        PluginRegistry::logRuntimeError('payment.group.audit', $e);
+                    }
+                }
             }
-            if (class_exists('PluginManager')) {
-                PluginManager::fire('payment.group.completed', ['payment_group_id' => $groupId, 'contract_id' => $contractId, 'actor_user_id' => $userId], true);
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::safeEnqueuePluginHook('payment.group.completed', ['payment_group_id' => $groupId, 'contract_id' => $contractId, 'actor_user_id' => $userId], 'payment_group', $groupId);
             }
             if ($started) {
                 Model::commit();
+                if (class_exists('SystemOutbox')) {
+                    SystemOutbox::processPending(50);
+                }
             }
             return Model::fetch('SELECT * FROM payment_groups WHERE id = ?', [$groupId]);
         } catch (Throwable $e) {
@@ -155,7 +164,13 @@ class PaymentGroupService
             );
             $groupId = (int) Model::lastInsertId();
             if (class_exists('AuditLog')) {
-                AuditLog::record('payment', 'group_created', 'payment_group', $groupId, ['actor_user_id' => $userId, 'customer_id' => $userId, 'contract_id' => $contractId, 'new_values' => ['status' => 'pending', 'amount' => self::moneyDecimal($amount), 'installment_ids' => $installmentIds]]);
+                try {
+                    AuditLog::record('payment', 'group_created', 'payment_group', $groupId, ['actor_user_id' => $userId, 'customer_id' => $userId, 'contract_id' => $contractId, 'new_values' => ['status' => 'pending', 'amount' => self::moneyDecimal($amount), 'installment_ids' => $installmentIds]]);
+                } catch (Throwable $e) {
+                    if (class_exists('PluginRegistry')) {
+                        PluginRegistry::logRuntimeError('payment.group.audit', $e);
+                    }
+                }
             }
             if ($started) {
                 Model::commit();
@@ -238,13 +253,22 @@ class PaymentGroupService
             }
             Model::execute('UPDATE payment_groups SET allocated_amount = ?, status = \'completed\', description = ?, completed_at = NOW() WHERE id = ?', [self::moneyDecimal($allocated), 'پرداخت آنلاین چندقسطی - ref ' . trim((string) $refId), (int) $group['id']]);
             if (class_exists('AuditLog')) {
-                AuditLog::record('payment', 'group_completed', 'payment_group', (int) $group['id'], ['actor_user_id' => $actorId ?: $group['customer_id'], 'customer_id' => (int) $group['customer_id'], 'contract_id' => (int) $group['contract_id'], 'new_values' => ['allocated_amount' => self::moneyDecimal($allocated), 'gateway_ref_id' => $refId]]);
+                try {
+                    AuditLog::record('payment', 'group_completed', 'payment_group', (int) $group['id'], ['actor_user_id' => $actorId ?: $group['customer_id'], 'customer_id' => (int) $group['customer_id'], 'contract_id' => (int) $group['contract_id'], 'new_values' => ['allocated_amount' => self::moneyDecimal($allocated), 'gateway_ref_id' => $refId]]);
+                } catch (Throwable $e) {
+                    if (class_exists('PluginRegistry')) {
+                        PluginRegistry::logRuntimeError('payment.group.audit', $e);
+                    }
+                }
             }
-            if (class_exists('PluginManager')) {
-                PluginManager::fire('payment.group.completed', ['payment_group_id' => (int) $group['id'], 'contract_id' => (int) $group['contract_id'], 'actor_user_id' => $actorId ?: (int) $group['customer_id']], true);
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::safeEnqueuePluginHook('payment.group.completed', ['payment_group_id' => (int) $group['id'], 'contract_id' => (int) $group['contract_id'], 'actor_user_id' => $actorId ?: (int) $group['customer_id']], 'payment_group', (int) $group['id']);
             }
             if ($started) {
                 Model::commit();
+                if (class_exists('SystemOutbox')) {
+                    SystemOutbox::processPending(50);
+                }
             }
             return Model::fetch('SELECT * FROM payment_groups WHERE id = ?', [(int) $group['id']]);
         } catch (Throwable $e) {

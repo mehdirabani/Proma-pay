@@ -19,4 +19,5 @@ spl_autoload_register(function ($class) {
     }
 });
 
+ErrorHandler::install();
 Auth::start();

@@ -214,6 +214,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <?php foreach ($pluginPageAssets as $pluginAsset): ?><?php if (($pluginAsset['type'] ?? '') === 'css'): ?><link rel="stylesheet" href="<?= e(asset_url($pluginAsset['path'])) ?>"><?php endif; ?><?php endforeach; ?>
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/forms.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/layout.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/responsive.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/contract-settings.css')) ?>">
   <script src="<?= e(asset_url('assets/vendor/chart.umd.min.js')) ?>" defer></script>
 </head>

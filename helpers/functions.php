@@ -355,21 +355,19 @@ function to_persian_digits($value)
 
 function normalize_money($value)
 {
-    $value = to_english_digits($value);
-    $value = str_replace([',', '،', ' ', 'تومان'], '', $value);
-    return max(0, (float) $value);
+    return MoneyMath::amount($value);
 }
 
 function money_toman($value)
 {
-    return to_persian_digits(number_format(ceil((float) $value), 0)) . ' تومان';
+    return to_persian_digits(number_format(normalize_money($value), 0)) . ' تومان';
 }
 
 function penalty_display_html(array $item)
 {
-    $current = max(0, (float) ($item['penalty'] ?? $item['calculated_penalty'] ?? 0));
-    $normal = max(0, (float) ($item['normal_penalty'] ?? $current));
-    $legal = max(0, (float) ($item['legal_penalty'] ?? $current));
+    $current = normalize_money($item['penalty'] ?? $item['calculated_penalty'] ?? 0);
+    $normal = normalize_money($item['normal_penalty'] ?? $current);
+    $legal = normalize_money($item['legal_penalty'] ?? $current);
     $mode = (string) ($item['penalty_mode'] ?? 'normal');
 
     if ($mode !== 'legal' && $legal > $current) {

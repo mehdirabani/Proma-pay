@@ -527,6 +527,50 @@ CREATE TABLE `password_resets` (
   CONSTRAINT `fk_password_resets_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `payment_requests`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `payment_requests` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `request_uuid` varchar(64) NOT NULL,
+  `user_id` bigint(20) unsigned DEFAULT NULL,
+  `installment_id` bigint(20) unsigned NOT NULL,
+  `request_hash` char(64) NOT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'processing',
+  `payment_id` bigint(20) unsigned DEFAULT NULL,
+  `response_code` varchar(60) DEFAULT NULL,
+  `error_message` text DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_payment_requests_uuid` (`request_uuid`),
+  KEY `idx_payment_requests_installment` (`installment_id`),
+  KEY `idx_payment_requests_payment` (`payment_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `system_outbox`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `system_outbox` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `event_type` varchar(80) NOT NULL,
+  `aggregate_type` varchar(80) DEFAULT NULL,
+  `aggregate_id` bigint(20) unsigned DEFAULT NULL,
+  `payload_json` longtext NOT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'pending',
+  `attempts` int(10) unsigned NOT NULL DEFAULT 0,
+  `max_attempts` int(10) unsigned NOT NULL DEFAULT 5,
+  `last_error` text DEFAULT NULL,
+  `next_attempt_at` datetime DEFAULT NULL,
+  `processed_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_system_outbox_status` (`status`,`next_attempt_at`,`id`),
+  KEY `idx_system_outbox_aggregate` (`aggregate_type`,`aggregate_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `payment_corrections`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;

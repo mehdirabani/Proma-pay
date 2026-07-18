@@ -1,0 +1,71 @@
+:root {
+  color-scheme: light dark;
+  --proma-error-primary: #7366ff;
+  --proma-error-text: #202434;
+  --proma-error-muted: #677085;
+  --proma-error-surface: #ffffff;
+  --proma-error-bg: #f5f6fa;
+  --proma-error-line: #e7e9f1;
+}
+
+* { box-sizing: border-box; }
+
+.proma-error-body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  color: var(--proma-error-text);
+  background: var(--proma-error-bg);
+  font-family: YekanBakh, Tahoma, Arial, sans-serif;
+}
+
+.proma-error-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+
+.proma-error-card {
+  width: min(100%, 580px);
+  padding: clamp(28px, 6vw, 48px);
+  border: 1px solid var(--proma-error-line);
+  border-radius: 16px;
+  text-align: center;
+  background: var(--proma-error-surface);
+  box-shadow: 0 18px 50px rgba(34, 39, 61, .08);
+}
+
+.proma-error-mark {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  border-radius: 16px;
+  color: var(--proma-error-primary);
+  background: rgba(115, 102, 255, .12);
+  font-weight: 800;
+}
+
+.proma-error-mark span { font-size: 18px; direction: ltr; }
+.proma-error-kicker { margin: 0 0 6px; color: var(--proma-error-primary); font-size: 13px; font-weight: 800; }
+.proma-error-card h1 { margin: 0; font-size: clamp(21px, 4vw, 28px); line-height: 1.5; }
+.proma-error-message { max-width: 440px; margin: 16px auto 0; color: var(--proma-error-muted); line-height: 2; }
+.proma-error-request-id { margin: 20px 0 0; color: var(--proma-error-muted); font-size: 12px; }
+.proma-error-request-id code { display: inline-block; margin-inline-start: 6px; padding: 4px 7px; border-radius: 6px; color: var(--proma-error-text); background: #f3f4f8; }
+.proma-error-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 26px; }
+.proma-error-actions > * { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; border: 1px solid transparent; border-radius: 8px; font: inherit; font-weight: 800; cursor: pointer; }
+.proma-error-primary { color: #fff; background: var(--proma-error-primary); }
+.proma-error-secondary { color: var(--proma-error-text); border-color: var(--proma-error-line) !important; background: transparent; }
+.proma-error-support { margin: 22px 0 0; color: var(--proma-error-muted); font-size: 12px; line-height: 1.8; }
+
+@media (max-width: 420px) {
+  .proma-error-card { padding: 28px 20px; border-radius: 12px; }
+  .proma-error-actions > * { width: 100%; }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root { --proma-error-text: #eef0f7; --proma-error-muted: #b3bac9; --proma-error-surface: #20242d; --proma-error-bg: #15171d; --proma-error-line: #343946; }
+  .proma-error-request-id code { color: #eef0f7; background: #181b22; }
+}

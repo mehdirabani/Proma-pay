@@ -8,8 +8,14 @@ class Router
         if ($route === '') {
             $route = Auth::check() ? 'dashboard' : (ecommerce_is_enabled() ? 'ecommerce/landing' : 'auth/login');
         }
-        if (class_exists('PluginManager') && PluginManager::boot()->dispatchRoute($route)) {
-            return;
+        if (class_exists('PluginManager')) {
+            try {
+                if (PluginManager::boot()->dispatchRoute($route)) {
+                    return;
+                }
+            } catch (Throwable $e) {
+                ErrorHandler::log('plugin_route', $e, 500);
+            }
         }
         $parts = array_values(array_filter(explode('/', $route), 'strlen'));
         $controllerPart = $parts[0] ?? 'dashboard';
@@ -39,8 +45,6 @@ class Router
 
     protected function notFound()
     {
-        http_response_code(404);
-        $controller = new Controller();
-        $controller->render('errors/404', ['title' => 'صفحه پیدا نشد'], Auth::check() ? 'app' : 'auth');
+        ErrorHandler::respond(404);
     }
 }

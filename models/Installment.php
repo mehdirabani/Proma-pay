@@ -9,30 +9,7 @@ class Installment extends Model
         if (self::$schemaReady) {
             return;
         }
-        try {
-            self::execute('ALTER TABLE contracts ADD COLUMN legal_status VARCHAR(30) NULL AFTER assigned_operator_id');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('ALTER TABLE installments ADD COLUMN notes TEXT NULL AFTER status');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('ALTER TABLE installments ADD COLUMN guarantee_serial VARCHAR(190) NULL AFTER notes');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('ALTER TABLE installments ADD COLUMN is_custom TINYINT(1) NOT NULL DEFAULT 0 AFTER guarantee_serial');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('ALTER TABLE installments ADD COLUMN custom_title VARCHAR(190) NULL AFTER is_custom');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('ALTER TABLE installments ADD COLUMN custom_description TEXT NULL AFTER custom_title');
-        } catch (Throwable $e) {
-        }
+        // Installment schema is provisioned by installation and migrations, never by a page request.
         self::$schemaReady = true;
     }
 
@@ -338,7 +315,7 @@ class Installment extends Model
         if ($amount <= 0) {
             throw new InvalidArgumentException('مبلغ قسط معتبر نیست.');
         }
-        $paid = min((float) ($row['paid_amount'] ?? 0), $amount);
+        $paid = min(normalize_money($row['paid_amount'] ?? 0), $amount);
         $status = FinanceHelper::status($amount, $paid, $dueDate);
         self::execute(
             'UPDATE installments SET due_date = ?, base_amount = ?, paid_amount = ?, remaining_amount = ?, status = ?, notes = ?, guarantee_serial = ?, custom_title = ?, custom_description = ? WHERE id = ?',
@@ -394,12 +371,12 @@ class Installment extends Model
             foreach ($rows as $row) {
                 if ($action === 'cancel') {
                     $effective = (int) (self::fetch("SELECT COUNT(*) AS total FROM payments WHERE installment_id = ? AND status = 'paid' AND COALESCE(is_corrected, 0) = 0", [(int) $row['id']])['total'] ?? 0);
-                    if ($effective > 0 || (float) ($row['paid_amount'] ?? 0) > 0) {
+                    if ($effective > 0 || normalize_money($row['paid_amount'] ?? 0) > 0) {
                         throw new InvalidArgumentException('قسط دارای پرداخت مؤثر است و بدون اصلاحیه قابل لغو نیست.');
                     }
                     self::execute('UPDATE installments SET status = \'cancelled\', cancelled_at = NOW(), cancelled_by = ?, cancellation_reason = ?, updated_at = NOW() WHERE id = ?', [(int) $userId, $reason, (int) $row['id']]);
                 } elseif ($action === 'restore_pending') {
-                    if (($row['status'] ?? '') === 'paid' || (float) ($row['paid_amount'] ?? 0) > 0) {
+                    if (($row['status'] ?? '') === 'paid' || normalize_money($row['paid_amount'] ?? 0) > 0) {
                         throw new InvalidArgumentException('قسط پرداخت‌شده قابل بازگردانی مستقیم نیست.');
                     }
                     $status = ($row['due_date'] ?? '') < date('Y-m-d') ? 'overdue' : 'pending';
@@ -408,8 +385,10 @@ class Installment extends Model
                     if (($row['status'] ?? '') === 'cancelled') {
                         continue;
                     }
-                    $status = FinanceHelper::status((float) $row['base_amount'], (float) $row['paid_amount'], $row['due_date']);
-                    self::execute('UPDATE installments SET status = ?, remaining_amount = ?, updated_at = NOW() WHERE id = ?', [$status, max(0, (float) $row['base_amount'] - (float) $row['paid_amount']), (int) $row['id']]);
+                    $baseAmount = normalize_money($row['base_amount'] ?? 0);
+                    $paidAmount = normalize_money($row['paid_amount'] ?? 0);
+                    $status = FinanceHelper::status($baseAmount, $paidAmount, $row['due_date']);
+                    self::execute('UPDATE installments SET status = ?, remaining_amount = ?, updated_at = NOW() WHERE id = ?', [$status, max(0, $baseAmount - $paidAmount), (int) $row['id']]);
                 }
                 $updated++;
             }
@@ -420,11 +399,19 @@ class Installment extends Model
             if (class_exists('AuditLog')) {
                 AuditLog::record('installment', 'bulk_updated', 'installment_bulk_operation', $operationId, ['actor_user_id' => $userId, 'contract_id' => $contractId, 'new_values' => ['action' => $action, 'ids' => $ids, 'reason' => $reason]]);
             }
-            if (class_exists('PluginManager')) {
-                PluginManager::fire('installment.bulk_updated', ['contract_id' => $contractId, 'installment_ids' => $ids, 'actor_user_id' => $userId, 'action' => $action], true);
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::safeEnqueuePluginHook('installment.bulk_updated', [
+                    'contract_id' => $contractId,
+                    'installment_ids' => $ids,
+                    'actor_user_id' => $userId,
+                    'action' => $action,
+                ], 'installment_bulk_operation', $operationId);
             }
             Contract::syncCompletionStatuses($contractId);
             self::commit();
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::processPending(20);
+            }
             return ['updated' => $updated, 'operation_id' => $operationId];
         } catch (Throwable $e) {
             self::rollBack();
@@ -454,8 +441,11 @@ class Installment extends Model
         if (($installment['status'] ?? '') === 'cancelled') {
             return false;
         }
-        $value = normalize_money($value);
-        $discount = $type === 'percent' ? round(((float) $installment['penalty']) * $value / 100) : $value;
+        $rateUnits = $type === 'percent' ? MoneyMath::rateUnits($value) : 0;
+        $value = $type === 'percent' ? MoneyMath::rateLabel($rateUnits) : normalize_money($value);
+        $discount = $type === 'percent'
+            ? MoneyMath::ceilMulDiv(normalize_money($installment['penalty'] ?? 0), $rateUnits, MoneyMath::PERCENT_DENOMINATOR)
+            : $value;
         self::execute('UPDATE installments SET penalty_discount_amount = penalty_discount_amount + ? WHERE id = ?', [$discount, (int) $id]);
         self::execute(
             'INSERT INTO penalties (installment_id, type, amount, percent, created_by, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
@@ -470,7 +460,7 @@ class Installment extends Model
         if (!$installment) {
             return false;
         }
-        $amount = max(0, $installment['payable']);
+        $amount = normalize_money($installment['payable'] ?? 0);
         if ($amount > 0) {
             Payment::record($id, $installment['contract_id'], $userId, $amount, 'manual', 'paid', null, null, 'تسویه دستی قسط');
         }
@@ -487,8 +477,10 @@ class Installment extends Model
         if (($row['status'] ?? '') === 'cancelled') {
             return;
         }
-        $status = FinanceHelper::status((float) $row['base_amount'], (float) $row['paid_amount'], $row['due_date']);
-        self::execute('UPDATE installments SET status = ?, remaining_amount = ? WHERE id = ?', [$status, max(0, (float) $row['base_amount'] - (float) $row['paid_amount']), (int) $id]);
+        $baseAmount = normalize_money($row['base_amount'] ?? 0);
+        $paidAmount = normalize_money($row['paid_amount'] ?? 0);
+        $status = FinanceHelper::status($baseAmount, $paidAmount, $row['due_date']);
+        self::execute('UPDATE installments SET status = ?, remaining_amount = ? WHERE id = ?', [$status, max(0, $baseAmount - $paidAmount), (int) $id]);
     }
 
     public static function withPreview(array $rows)
@@ -496,10 +488,10 @@ class Installment extends Model
         $settings = Settings::allKeyed();
         foreach ($rows as &$row) {
             $storedStatus = $row['status'] ?? null;
-            $storedRemaining = (float) ($row['remaining_amount'] ?? ((float) ($row['base_amount'] ?? 0) - (float) ($row['paid_amount'] ?? 0)));
+            $storedRemaining = normalize_money($row['remaining_amount'] ?? (normalize_money($row['base_amount'] ?? 0) - normalize_money($row['paid_amount'] ?? 0)));
             $preview = FinanceHelper::preview($row, Payment::forInstallment($row['id']), $settings);
             $row = array_merge($row, $preview);
-            if ($row['status'] !== $storedStatus || $storedRemaining !== (float) ($preview['remaining_amount'] ?? 0)) {
+            if ($row['status'] !== $storedStatus || $storedRemaining !== normalize_money($preview['remaining_amount'] ?? 0)) {
                 self::execute('UPDATE installments SET status = ?, remaining_amount = ? WHERE id = ?', [$row['status'], $row['remaining_amount'], $row['id']]);
             }
         }

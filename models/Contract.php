@@ -9,23 +9,7 @@ class Contract extends Model
         if (self::$schemaReady) {
             return;
         }
-        try {
-            self::execute('ALTER TABLE contracts ADD COLUMN down_payment_amount BIGINT UNSIGNED NOT NULL DEFAULT 0 AFTER principal_amount');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('ALTER TABLE contracts ADD COLUMN legal_status VARCHAR(30) NULL AFTER assigned_operator_id');
-        } catch (Throwable $e) {
-        }
-        if (class_exists('Payment')) {
-            Payment::ensureCorrectionSchema();
-        }
-        if (class_exists('User')) {
-            User::ensureProfileColumns();
-        }
-        if (class_exists('ContractDocument')) {
-            ContractDocument::ensureSchema();
-        }
+        // Contract schema is provisioned by installation and migrations, never by a page request.
         self::$schemaReady = true;
     }
 
@@ -241,9 +225,9 @@ class Contract extends Model
             'total_installments' => (int) ($installments['total_installments'] ?? 0),
             'active_installments' => (int) ($installments['active_installments'] ?? 0),
             'paid_installments' => (int) ($installments['paid_installments'] ?? 0),
-            'outstanding_amount' => (float) ($installments['outstanding_amount'] ?? 0),
+            'outstanding_amount' => normalize_money($installments['outstanding_amount'] ?? 0),
             'confirmed_payment_count' => (int) ($payments['confirmed_payment_count'] ?? 0),
-            'confirmed_payment_amount' => (float) ($payments['confirmed_payment_amount'] ?? 0),
+            'confirmed_payment_amount' => normalize_money($payments['confirmed_payment_amount'] ?? 0),
         ];
     }
 
@@ -274,7 +258,7 @@ class Contract extends Model
                     'serial' => $serial,
                     'principal_amount' => normalize_money($data['principal_amount']),
                     'down_payment_amount' => normalize_money($data['down_payment_amount'] ?? 0),
-                    'monthly_interest_rate' => (float) to_english_digits($data['monthly_interest_rate']),
+                    'monthly_interest_rate' => MoneyMath::rateLabel(MoneyMath::rateUnits($data['monthly_interest_rate'] ?? 0)),
                     'interest_type' => $data['interest_type'] === 'compound' ? 'compound' : 'simple',
                     'months' => (int) to_english_digits($data['months']),
                     'start_date' => $data['start_date'],
@@ -299,15 +283,18 @@ class Contract extends Model
                 'guarantee' => $guarantee,
                 'guarantor_people' => $guarantorPeople,
             ], 'ثبت قرارداد', $data['created_by'] ?? null);
-            if (class_exists('PluginManager')) {
-                PluginManager::fire('contract.created', [
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::safeEnqueuePluginHook('contract.created', [
                     'contract_id' => $contractId,
                     'customer_id' => (int) $data['customer_id'],
                     'actor_user_id' => !empty($data['created_by']) ? (int) $data['created_by'] : null,
                     'seller_user_id' => !empty($data['seller_user_id']) ? (int) $data['seller_user_id'] : null,
-                ], true);
+                ], 'contract', $contractId);
             }
             self::commit();
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::processPending(25);
+            }
             return $contractId;
         } catch (Throwable $e) {
             self::rollBack();
@@ -345,7 +332,7 @@ class Contract extends Model
                     'customer_id' => (int) $data['customer_id'],
                     'principal_amount' => normalize_money($data['principal_amount']),
                     'down_payment_amount' => normalize_money($data['down_payment_amount'] ?? 0),
-                    'monthly_interest_rate' => (float) to_english_digits($data['monthly_interest_rate']),
+                    'monthly_interest_rate' => MoneyMath::rateLabel(MoneyMath::rateUnits($data['monthly_interest_rate'] ?? 0)),
                     'interest_type' => $data['interest_type'] === 'compound' ? 'compound' : 'simple',
                     'months' => (int) to_english_digits($data['months']),
                     'start_date' => $data['start_date'],
@@ -376,15 +363,18 @@ class Contract extends Model
                 'guarantee' => $guarantee,
                 'guarantor_people' => $guarantorPeople,
             ], $data['change_reason'] ?? 'ویرایش قرارداد', $data['updated_by'] ?? null);
-            if (class_exists('PluginManager')) {
-                PluginManager::fire('contract.updated', [
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::safeEnqueuePluginHook('contract.updated', [
                     'contract_id' => (int) $id,
                     'customer_id' => (int) $data['customer_id'],
                     'actor_user_id' => !empty($data['updated_by']) ? (int) $data['updated_by'] : null,
                     'seller_user_id' => !empty($data['seller_user_id']) ? (int) $data['seller_user_id'] : null,
-                ], true);
+                ], 'contract', (int) $id);
             }
             self::commit();
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::processPending(25);
+            }
             return true;
         } catch (Throwable $e) {
             self::rollBack();
@@ -565,11 +555,19 @@ class Contract extends Model
                 'old_values' => ['contract_number' => $contract['contract_number']],
                 'new_values' => ['reason' => $reason, 'corrected_payment_count' => $corrected, 'gateway_warning' => $snapshot['gateway_warning']],
             ]);
-            if (class_exists('PluginManager')) {
-                PluginManager::fire('contract.deleted', ['contract_id' => $contractId, 'customer_id' => (int) $contract['customer_id'], 'actor_user_id' => (int) $adminId], true);
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::safeEnqueuePluginHook('contract.deleted', [
+                    'contract_id' => $contractId,
+                    'customer_id' => (int) $contract['customer_id'],
+                    'actor_user_id' => (int) $adminId,
+                    'deleted' => true,
+                ], 'contract', $contractId);
             }
             self::execute('DELETE FROM contracts WHERE id = ?', [$contractId]);
             self::commit();
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::processPending(20);
+            }
             return ['corrected_payments' => $corrected, 'gateway_warning' => $snapshot['gateway_warning']];
         } catch (Throwable $e) {
             self::rollBack();
@@ -609,7 +607,7 @@ class Contract extends Model
                 );
             }
             $summary = self::cancellationSummary($contractId);
-            if ((int) $summary['confirmed_payment_count'] > 0 || (float) $summary['confirmed_payment_amount'] > 0 || (int) $summary['paid_installments'] > 0) {
+            if ((int) $summary['confirmed_payment_count'] > 0 || normalize_money($summary['confirmed_payment_amount'] ?? 0) > 0 || (int) $summary['paid_installments'] > 0) {
                 throw new InvalidArgumentException(
                     'این قرارداد دارای پرداخت مؤثر است. مبلغ پرداختی ' . money_toman($summary['confirmed_payment_amount']) . ' است؛ برای ادامه باید گزینه اصلاحیه مالی همین قرارداد را فعال کنید.'
                 );
@@ -662,12 +660,21 @@ class Contract extends Model
                     'cancellation_reason' => $reason,
                 ],
             ]);
-            if (class_exists('PluginManager')) {
-                PluginManager::fire('contract.cancelled', [
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::safeEnqueuePluginHook('contract.cancelled', [
                     'contract_id' => $contractId,
                     'customer_id' => (int) $contract['customer_id'],
                     'actor_user_id' => (int) $adminId,
-                ], true);
+                ], 'contract', $contractId);
+                SystemOutbox::safeEnqueueNotification(
+                    (int) $contract['customer_id'],
+                    'قرارداد لغو شد',
+                    'قرارداد شماره ' . ($contract['contract_number'] ?? '') . ' لغو شد. برای اطلاعات بیشتر با مجموعه تماس بگیرید.',
+                    'contract',
+                    url('contracts/show/' . $contractId),
+                    'contract',
+                    $contractId
+                );
             }
             self::commit();
         } catch (Throwable $e) {
@@ -675,15 +682,8 @@ class Contract extends Model
             throw $e;
         }
 
-        try {
-            Notification::create(
-                (int) $contract['customer_id'],
-                'قرارداد لغو شد',
-                'قرارداد شماره ' . ($contract['contract_number'] ?? '') . ' لغو شد. برای اطلاعات بیشتر با مجموعه تماس بگیرید.',
-                'contract',
-                url('contracts/show/' . $contractId)
-            );
-        } catch (Throwable $ignored) {
+        if (class_exists('SystemOutbox')) {
+            SystemOutbox::processPending(20);
         }
         return ['corrected_payments' => $correctedPayments ?? 0];
     }
@@ -713,8 +713,12 @@ class Contract extends Model
                 $newStatus = 'active';
                 self::execute("UPDATE contracts SET status = 'active', updated_at = NOW() WHERE id = ? AND status != 'cancelled'", [$contractId]);
             }
-            if ($newStatus !== $oldStatus && class_exists('PluginManager')) {
-                PluginManager::fire('contract.' . $newStatus, ['contract_id' => $contractId, 'old_status' => $oldStatus, 'new_status' => $newStatus], true);
+            if ($newStatus !== $oldStatus && class_exists('SystemOutbox')) {
+                SystemOutbox::safeEnqueuePluginHook('contract.' . $newStatus, [
+                    'contract_id' => $contractId,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                ], 'contract', $contractId);
             }
             return;
         }
@@ -748,7 +752,7 @@ class Contract extends Model
         $amount = FinanceHelper::installmentAmount(
             $financedAmount,
             (int) to_english_digits($data['months']),
-            (float) to_english_digits($data['monthly_interest_rate']),
+            MoneyMath::rateLabel(MoneyMath::rateUnits($data['monthly_interest_rate'] ?? 0)),
             $data['interest_type'] === 'compound' ? 'compound' : 'simple'
         );
         $months = max(1, (int) to_english_digits($data['months']));
@@ -769,7 +773,7 @@ class Contract extends Model
         $amount = FinanceHelper::installmentAmount(
             self::financedAmount($data),
             max(1, (int) to_english_digits($data['months'] ?? 1)),
-            (float) to_english_digits($data['monthly_interest_rate'] ?? 0),
+            MoneyMath::rateLabel(MoneyMath::rateUnits($data['monthly_interest_rate'] ?? 0)),
             ($data['interest_type'] ?? 'simple') === 'compound' ? 'compound' : 'simple'
         );
         $months = max(1, (int) to_english_digits($data['months'] ?? 1));
@@ -795,7 +799,7 @@ class Contract extends Model
                 continue;
             }
 
-            $paid = max(0, (float) ($existing['paid_amount'] ?? 0));
+            $paid = normalize_money($existing['paid_amount'] ?? 0);
             $remaining = max(0, $amount - $paid);
             $status = $remaining <= 0
                 ? 'paid'
@@ -810,7 +814,7 @@ class Contract extends Model
 
         foreach ($rows as $row) {
             $number = (int) $row['installment_number'];
-            if ($number <= $months || (float) ($row['paid_amount'] ?? 0) > 0 || ($row['status'] ?? '') === 'paid') {
+            if ($number <= $months || normalize_money($row['paid_amount'] ?? 0) > 0 || ($row['status'] ?? '') === 'paid') {
                 continue;
             }
             self::execute('DELETE FROM installments WHERE id = ? AND COALESCE(is_custom, 0) = 0', [(int) $row['id']]);

@@ -26,6 +26,7 @@ $layoutAppIconPath = $layoutLogoIconPath ?: $layoutFaviconPath;
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/forms.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/layout.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/responsive.css')) ?>">
 </head>
 <body>
   <main class="proma-auth-content">

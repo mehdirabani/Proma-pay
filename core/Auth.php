@@ -143,6 +143,9 @@ class Auth
     public static function requireLogin()
     {
         if (!self::check()) {
+            if (is_post()) {
+                ErrorHandler::abort(419);
+            }
             redirect('auth/login');
         }
     }
@@ -152,10 +155,7 @@ class Auth
         self::requireLogin();
         $roles = (array) $roles;
         if (!in_array($_SESSION['role'] ?? '', $roles, true)) {
-            http_response_code(403);
-            $controller = new Controller();
-            $controller->render('errors/403', ['title' => 'دسترسی غیرمجاز'], 'app');
-            exit;
+            ErrorHandler::abort(403);
         }
     }
 
@@ -173,10 +173,7 @@ class Auth
     {
         self::requireLogin();
         if (!self::isStaff()) {
-            http_response_code(403);
-            $controller = new Controller();
-            $controller->render('errors/403', ['title' => 'دسترسی غیرمجاز'], 'app');
-            exit;
+            ErrorHandler::abort(403);
         }
     }
 

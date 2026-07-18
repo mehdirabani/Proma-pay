@@ -454,6 +454,7 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
             <?= csrf_field() ?>
             <input type="hidden" name="redirect_to" value="contract">
             <input type="hidden" name="contract_id" value="<?= (int) $contract['id'] ?>">
+            <input type="hidden" name="payment_request_uuid" value="<?= e(bin2hex(random_bytes(16))) ?>">
             <label>مبلغ پرداختی<input name="amount" data-money required value="<?= e(number_format((float) ($installment['payable'] ?? $installment['remaining_amount'] ?? $installment['base_amount']), 0)) ?>"></label>
             <label>تاریخ پرداخت<input name="payment_date" value="<?= e(jdate(date('Y-m-d'))) ?>" required></label>
             <label>ساعت پرداخت<input name="payment_time" type="time" value="<?= e(date('H:i')) ?>"></label>

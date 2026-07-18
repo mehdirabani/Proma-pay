@@ -1,0 +1,144 @@
+/* Shared responsive and modal behavior for core pages and installed plugins. */
+html.proma-modal-open,
+body.proma-modal-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.modal {
+  z-index: 1080;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+
+.modal.open {
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.open .modal-content {
+  width: min(780px, 100%);
+  max-height: min(88dvh, 920px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.modal.open .modal-header,
+.modal.open .modal-footer {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.modal.open .modal-header {
+  justify-content: space-between;
+}
+
+.modal.open .modal-body {
+  min-width: 0;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal.open .modal-footer {
+  justify-content: flex-start;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.proma-page-content :is(.table-responsive, .table-wrap),
+.proma-public-content :is(.table-responsive, .table-wrap) {
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+}
+
+.proma-page-content :is(input, select, textarea, button, .btn),
+.proma-public-content :is(input, select, textarea, button, .btn) {
+  vertical-align: middle;
+}
+
+@media (max-width: 991.98px) {
+  .page-wrapper.compact-wrapper .page-header,
+  .page-wrapper.compact-wrapper .page-body-wrapper .page-body {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+
+  .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper {
+    max-height: 100dvh;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .proma-page-content .card-header,
+  .proma-page-content .card-footer,
+  .proma-page-content .actions,
+  .proma-page-content .proma-table-actions {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .modal {
+    align-items: flex-end !important;
+    padding: 0;
+    background: rgba(15, 23, 42, .62);
+  }
+
+  .modal.open .modal-content,
+  .modal.open .modal-content.proma-modal-lg,
+  .modal.open .modal-content.proma-modal-xl {
+    width: 100%;
+    max-width: 100%;
+    max-height: min(92dvh, 780px);
+    margin: 0;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .modal.open .modal-header {
+    min-height: 58px;
+    padding: 14px 16px 10px;
+  }
+
+  .modal.open .modal-header :is(h1, h2, h3, h4, h5, h6) {
+    max-width: calc(100% - 46px);
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.55;
+  }
+
+  .modal.open .modal-body {
+    padding: 16px;
+  }
+
+  .modal.open .modal-footer {
+    width: 100%;
+    gap: 8px;
+    padding: 10px 16px max(16px, env(safe-area-inset-bottom));
+  }
+
+  .modal.open .modal-footer > :is(.btn, button, input[type="submit"]) {
+    flex: 1 1 132px;
+  }
+
+  .proma-page-content :is(.actions, .proma-table-actions, .proma-field-actions) > :is(.btn, button),
+  .proma-public-content :is(.actions, .proma-field-actions) > :is(.btn, button) {
+    min-height: 44px;
+  }
+
+  .proma-page-content .table-responsive table,
+  .proma-public-content .table-responsive table {
+    min-width: max-content;
+  }
+}
+
+@media (max-width: 420px) {
+  .page-body > .container-fluid,
+  .proma-public-main {
+    padding-inline: 10px;
+  }
+
+  .modal.open .modal-footer > :is(.btn, button, input[type="submit"]) {
+    flex-basis: 100%;
+  }
+}

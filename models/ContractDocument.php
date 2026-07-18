@@ -9,116 +9,7 @@ class ContractDocument extends Model
         if (self::$schemaReady) {
             return;
         }
-
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS contract_items (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                contract_id BIGINT UNSIGNED NOT NULL,
-                product_model VARCHAR(190) NOT NULL,
-                imei_1 VARCHAR(80) NULL,
-                imei_2 VARCHAR(80) NULL,
-                description TEXT NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
-                INDEX idx_contract_items_contract (contract_id),
-                CONSTRAINT fk_contract_items_contract
-                    FOREIGN KEY (contract_id) REFERENCES contracts(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS contract_guarantees (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                contract_id BIGINT UNSIGNED NOT NULL,
-                guarantee_type VARCHAR(50) NOT NULL,
-                guarantee_count INT NOT NULL DEFAULT 1,
-                guarantee_serial VARCHAR(190) NULL,
-                guarantee_description TEXT NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
-                INDEX idx_contract_guarantees_contract (contract_id),
-                CONSTRAINT fk_contract_guarantees_contract
-                    FOREIGN KEY (contract_id) REFERENCES contracts(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS contract_guarantor_people (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                contract_id BIGINT UNSIGNED NOT NULL,
-                full_name VARCHAR(190) NOT NULL,
-                father_name VARCHAR(190) NULL,
-                national_id VARCHAR(20) NULL,
-                mobile VARCHAR(30) NULL,
-                address TEXT NULL,
-                relationship VARCHAR(100) NULL,
-                description TEXT NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
-                INDEX idx_contract_guarantor_people_contract (contract_id),
-                CONSTRAINT fk_contract_guarantor_people_contract
-                    FOREIGN KEY (contract_id) REFERENCES contracts(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS generated_contract_documents (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                contract_id BIGINT UNSIGNED NOT NULL,
-                rendered_title VARCHAR(190) NULL,
-                rendered_header TEXT NULL,
-                rendered_body LONGTEXT NOT NULL,
-                generated_by BIGINT UNSIGNED NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
-                UNIQUE KEY uq_generated_contract (contract_id),
-                CONSTRAINT fk_generated_contract_documents_contract
-                    FOREIGN KEY (contract_id) REFERENCES contracts(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS contract_change_logs (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                contract_id BIGINT UNSIGNED NOT NULL,
-                changed_by BIGINT UNSIGNED NULL,
-                change_type VARCHAR(80) NOT NULL,
-                old_value_json LONGTEXT NULL,
-                new_value_json LONGTEXT NULL,
-                reason TEXT NULL,
-                created_at DATETIME NOT NULL,
-                INDEX idx_contract_change_logs_contract (contract_id),
-                CONSTRAINT fk_contract_change_logs_contract
-                    FOREIGN KEY (contract_id) REFERENCES contracts(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-
-        try {
-            self::execute('ALTER TABLE installments ADD COLUMN guarantee_serial VARCHAR(190) NULL AFTER notes');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('ALTER TABLE generated_contract_documents ADD COLUMN rendered_title VARCHAR(190) NULL AFTER contract_id');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('ALTER TABLE generated_contract_documents ADD COLUMN rendered_header TEXT NULL AFTER rendered_title');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('ALTER TABLE generated_contract_documents ADD COLUMN template_version_id BIGINT UNSIGNED NULL AFTER contract_id');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute("ALTER TABLE generated_contract_documents ADD COLUMN template_status VARCHAR(30) NOT NULL DEFAULT 'legacy' AFTER template_version_id");
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('ALTER TABLE contract_document_versions ADD COLUMN template_version_id BIGINT UNSIGNED NULL AFTER contract_id');
-        } catch (Throwable $e) {
-        }
-
+        // Contract-document schema is provisioned by installation and migrations, never by a page request.
         self::$schemaReady = true;
     }
 
@@ -538,7 +429,7 @@ TEXT;
         $installments = Installment::all(['contract_id' => (int) $contractId]);
         $firstGuarantee = $guarantees[0] ?? [];
         $lastInstallment = $installments ? end($installments) : null;
-        $remaining = max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0));
+        $remaining = max(0, normalize_money($contract['principal_amount'] ?? 0) - normalize_money($contract['down_payment_amount'] ?? 0));
         $legalPenaltyClause = self::legalPenaltyClause($settings);
 
         $replace = [

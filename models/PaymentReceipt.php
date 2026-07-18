@@ -9,26 +9,7 @@ class PaymentReceipt extends Model
         if (self::$schemaReady) {
             return;
         }
-        Payment::ensureCorrectionSchema();
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS payment_receipts (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                payment_id BIGINT UNSIGNED NOT NULL,
-                installment_id BIGINT UNSIGNED NOT NULL,
-                contract_id BIGINT UNSIGNED NOT NULL,
-                customer_id BIGINT UNSIGNED NOT NULL,
-                amount DECIMAL(18,2) NOT NULL,
-                receipt_path VARCHAR(255) NOT NULL,
-                status VARCHAR(30) NOT NULL DEFAULT 'pending',
-                review_note TEXT NULL,
-                reviewed_by BIGINT UNSIGNED NULL,
-                submitted_at DATETIME NOT NULL,
-                reviewed_at DATETIME NULL,
-                KEY idx_payment_receipts_status (status),
-                KEY idx_payment_receipts_customer (customer_id),
-                CONSTRAINT fk_payment_receipts_payment FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
+        // Receipt tables are provisioned by installation and migrations, never by a page request.
         self::$schemaReady = true;
     }
 
@@ -40,7 +21,8 @@ class PaymentReceipt extends Model
             throw new InvalidArgumentException('قسط برای پرداخت پیدا نشد.');
         }
         $amount = normalize_money($amount);
-        if ($amount <= 0 || $amount > (float) $installment['payable']) {
+        $payable = normalize_money($installment['payable'] ?? $installment['remaining_amount'] ?? $installment['base_amount'] ?? 0);
+        if ($amount <= 0 || ($payable > 0 && $amount > $payable)) {
             throw new InvalidArgumentException('مبلغ پرداخت معتبر نیست.');
         }
         self::begin();
@@ -61,17 +43,24 @@ class PaymentReceipt extends Model
                  VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
                 [$paymentId, (int) $installmentId, (int) $installment['contract_id'], (int) $customerId, $amount, $receiptPath, 'pending']
             );
-            Notification::create((int) $customerId, 'رسید پرداخت دریافت شد', 'رسید کارت به کارت شما ثبت شد و در صف بررسی قرار گرفت.', 'payment_receipt', url('installments/panel'));
-            foreach (User::all('admin', null, 'active') as $admin) {
-                Notification::create(
-                    (int) $admin['id'],
-                    'رسید پرداخت جدید',
-                    'یک رسید کارت به کارت برای بررسی مدیریت ارسال شد.',
-                    'payment_receipt',
-                    url('review', ['tab' => 'receipts'])
-                );
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::safeEnqueueNotification((int) $customerId, 'رسید پرداخت دریافت شد', 'رسید کارت به کارت شما ثبت شد و در صف بررسی قرار گرفت.', 'payment_receipt', url('installments/panel'), 'payment_receipt', $paymentId);
+                foreach (User::all('admin', null, 'active') as $admin) {
+                    SystemOutbox::safeEnqueueNotification(
+                        (int) $admin['id'],
+                        'رسید پرداخت جدید',
+                        'یک رسید کارت به کارت برای بررسی مدیریت ارسال شد.',
+                        'payment_receipt',
+                        url('review', ['tab' => 'receipts']),
+                        'payment_receipt',
+                        $paymentId
+                    );
+                }
             }
             self::commit();
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::processPending(20, 'payment_receipt', $paymentId);
+            }
         } catch (Throwable $e) {
             self::rollBack();
             throw $e;
@@ -147,7 +136,7 @@ class PaymentReceipt extends Model
                 if ($actualAmount <= 0) {
                     throw new InvalidArgumentException('مبلغ تأییدشده باید بیشتر از صفر باشد.');
                 }
-                $payable = (float) ($installment['payable'] ?? $installment['remaining_amount'] ?? $installment['base_amount'] ?? 0);
+                $payable = normalize_money($installment['payable'] ?? $installment['remaining_amount'] ?? $installment['base_amount'] ?? 0);
                 if ($payable > 0 && $actualAmount > $payable) {
                     throw new InvalidArgumentException('مبلغ تأییدشده نمی‌تواند بیشتر از بدهی قابل پرداخت قسط باشد.');
                 }
@@ -176,14 +165,18 @@ class PaymentReceipt extends Model
                     ]
                 );
                 Payment::applyToInstallment((int) $receipt['installment_id']);
-                Notification::create((int) $receipt['customer_id'], 'رسید پرداخت تأیید شد', 'رسید کارت به کارت شما تأیید شد و روی قسط اعمال شد.', 'payment', url('installments/panel'));
+                if (class_exists('SystemOutbox')) {
+                    SystemOutbox::safeEnqueueNotification((int) $receipt['customer_id'], 'رسید پرداخت تأیید شد', 'رسید کارت به کارت شما تأیید شد و روی قسط اعمال شد.', 'payment', url('installments/panel'), 'payment_receipt', (int) $receipt['id']);
+                }
                 $botBody = 'رسید کارت به کارت شما تایید شد و روی قسط اعمال شد.';
             } else {
                 self::execute(
                     "UPDATE payments SET status = 'failed', description = ? WHERE id = ?",
                     ['رسید کارت به کارت رد شد', (int) $receipt['payment_id']]
                 );
-                Notification::create((int) $receipt['customer_id'], 'رسید پرداخت رد شد', 'رسید کارت به کارت شما تأیید نشد.', 'payment', url('installments/panel'));
+                if (class_exists('SystemOutbox')) {
+                    SystemOutbox::safeEnqueueNotification((int) $receipt['customer_id'], 'رسید پرداخت رد شد', 'رسید کارت به کارت شما تأیید نشد.', 'payment', url('installments/panel'), 'payment_receipt', (int) $receipt['id']);
+                }
                 $botBody = 'رسید کارت به کارت شما تایید نشد. وضعیت پرداخت دوباره در انتظار پرداخت است.';
             }
             UploadHelper::deleteRelative($receipt['receipt_path']);
@@ -191,9 +184,12 @@ class PaymentReceipt extends Model
                 "UPDATE payment_receipts
                  SET status = ?, amount = ?, receipt_path = '', review_note = ?, reviewed_by = ?, reviewed_at = NOW()
                  WHERE id = ?",
-                [$status, $status === 'approved' ? $actualAmount : (float) $receipt['amount'], trim((string) $note) ?: null, $adminId, $id]
+                [$status, $status === 'approved' ? $actualAmount : normalize_money($receipt['amount'] ?? 0), trim((string) $note) ?: null, $adminId, $id]
             );
             self::commit();
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::processPending(20, 'payment_receipt', (int) $receipt['id']);
+            }
             try {
                 Chat::botMessage((int) $receipt['customer_id'], $botBody, url('installments/panel'));
             } catch (Throwable $ignored) {

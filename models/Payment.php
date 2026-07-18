@@ -9,70 +9,7 @@ class Payment extends Model
         if (self::$correctionSchemaReady) {
             return;
         }
-        foreach ([
-            'is_corrected' => 'TINYINT(1) NOT NULL DEFAULT 0',
-            'correction_reason' => 'TEXT NULL',
-            'corrected_at' => 'DATETIME NULL',
-            'corrected_by' => 'BIGINT UNSIGNED NULL',
-            'correction_snapshot_json' => 'LONGTEXT NULL',
-            'payment_date' => 'DATE NULL',
-            'calculated_penalty' => 'DECIMAL(18,2) NOT NULL DEFAULT 0',
-            'calculated_reward' => 'DECIMAL(18,2) NOT NULL DEFAULT 0',
-            'remaining_before_payment' => 'DECIMAL(18,2) NULL',
-            'remaining_after_payment' => 'DECIMAL(18,2) NULL',
-            'payment_type' => "VARCHAR(40) NOT NULL DEFAULT 'installment'",
-        ] as $column => $definition) {
-            try {
-                self::execute("ALTER TABLE payments ADD COLUMN {$column} {$definition}");
-            } catch (Throwable $e) {
-            }
-        }
-        try {
-            self::execute('ALTER TABLE payments MODIFY installment_id BIGINT UNSIGNED NULL');
-        } catch (Throwable $e) {
-            try {
-                self::execute('ALTER TABLE payments DROP FOREIGN KEY fk_payment_installment');
-                self::execute('ALTER TABLE payments MODIFY installment_id BIGINT UNSIGNED NULL');
-                self::execute('ALTER TABLE payments ADD CONSTRAINT fk_payment_installment FOREIGN KEY (installment_id) REFERENCES installments(id) ON DELETE SET NULL');
-            } catch (Throwable $ignored) {
-            }
-        }
-        foreach ([
-            'remaining_amount' => 'DECIMAL(18,2) NOT NULL DEFAULT 0',
-            'last_payment_date' => 'DATE NULL',
-        ] as $column => $definition) {
-            try {
-                self::execute("ALTER TABLE installments ADD COLUMN {$column} {$definition}");
-            } catch (Throwable $e) {
-            }
-        }
-        try {
-            self::execute("UPDATE installments SET remaining_amount = GREATEST(base_amount - paid_amount, 0) WHERE remaining_amount = 0 AND paid_amount < base_amount");
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute("UPDATE payments SET payment_date = DATE(COALESCE(paid_at, created_at)) WHERE payment_date IS NULL AND status = 'paid'");
-        } catch (Throwable $e) {
-        }
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS payment_corrections (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                payment_id BIGINT UNSIGNED NOT NULL,
-                installment_id BIGINT UNSIGNED NULL,
-                contract_id BIGINT UNSIGNED NOT NULL,
-                customer_id BIGINT UNSIGNED NOT NULL,
-                reason TEXT NOT NULL,
-                snapshot_json LONGTEXT NOT NULL,
-                corrected_by BIGINT UNSIGNED NOT NULL,
-                created_at DATETIME NOT NULL,
-                UNIQUE KEY uq_payment_correction (payment_id),
-                KEY idx_payment_correction_installment (installment_id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-        try {
-            self::execute('ALTER TABLE payment_corrections MODIFY installment_id BIGINT UNSIGNED NULL');
-        } catch (Throwable $e) {
-        }
+        // Payment schema is provisioned by installation and migrations, never by a page request.
         self::$correctionSchemaReady = true;
     }
 
@@ -166,7 +103,7 @@ class Payment extends Model
         );
         $totals = [];
         foreach ($rows as $row) {
-            $totals[$row['month_key']] = (float) $row['total'];
+            $totals[$row['month_key']] = normalize_money($row['total'] ?? 0);
         }
         $data = [];
         for ($i = 0; $i < $months; $i++) {
@@ -191,7 +128,7 @@ class Payment extends Model
         );
         $totals = [];
         foreach ($rows as $row) {
-            $totals[$row['month_key']] = (float) $row['total'];
+            $totals[$row['month_key']] = normalize_money($row['total'] ?? 0);
         }
         $data = [];
         for ($i = 0; $i < $months; $i++) {
@@ -309,25 +246,27 @@ class Payment extends Model
                 self::applyToInstallment($installmentId);
                 self::storeSnapshot($paymentId, $before, self::installmentState($installmentId));
             }
-            if (class_exists('PluginManager')) {
-                PluginManager::fire('payment.created', [
-                    'payment_id' => $paymentId,
-                    'contract_id' => (int) $contractId,
-                    'installment_id' => $installmentId ? (int) $installmentId : null,
-                    'actor_user_id' => $userId ? (int) $userId : null,
-                    'status' => $status,
-                ], true);
+            self::recordPaymentAudit($paymentId, [
+                'actor_user_id' => $userId ? (int) $userId : null,
+                'contract_id' => (int) $contractId,
+                'installment_id' => $installmentId ? (int) $installmentId : null,
+                'status' => $status,
+                'amount' => $amount,
+                'method' => $method,
+                'payment_type' => $paymentType,
+            ]);
+            if (class_exists('SystemOutbox')) {
+                $createdPayload = self::paymentEventPayload($paymentId, $contractId, $installmentId, $userId, ['status' => $status]);
+                SystemOutbox::safeEnqueuePluginHook('payment.created', $createdPayload, 'payment', $paymentId);
                 if ($status === 'paid') {
-                    PluginManager::fire('payment.completed', [
-                        'payment_id' => $paymentId,
-                        'contract_id' => (int) $contractId,
-                        'installment_id' => $installmentId ? (int) $installmentId : null,
-                        'actor_user_id' => $userId ? (int) $userId : null,
-                    ], true);
+                    SystemOutbox::safeEnqueuePluginHook('payment.completed', self::paymentEventPayload($paymentId, $contractId, $installmentId, $userId), 'payment', $paymentId);
                 }
             }
             if ($startedTransaction) {
                 self::commit();
+                if (class_exists('SystemOutbox')) {
+                    SystemOutbox::processPending(25);
+                }
             }
             return $paymentId;
         } catch (Throwable $e) {
@@ -466,19 +405,27 @@ class Payment extends Model
             );
             self::applyToInstallment($payment['installment_id']);
             self::storeSnapshot((int) $payment['id'], $before, self::installmentState((int) $payment['installment_id']));
-            if (class_exists('PluginManager')) {
-                PluginManager::fire('payment.completed', [
-                    'payment_id' => (int) $payment['id'],
-                    'contract_id' => (int) $payment['contract_id'],
-                    'installment_id' => (int) $payment['installment_id'],
-                    'actor_user_id' => $payment['user_id'] ? (int) $payment['user_id'] : null,
-                ], true);
-            }
-            if (($options['notify'] ?? true) && class_exists('Notification')) {
-                Notification::create($payment['user_id'], 'پرداخت جدید ثبت شد', 'پرداخت شما با موفقیت تأیید شد.', 'payment', url('installments/panel'));
+            self::recordPaymentAudit((int) $payment['id'], [
+                'actor_type' => 'gateway',
+                'actor_user_id' => $payment['user_id'] ? (int) $payment['user_id'] : null,
+                'contract_id' => (int) $payment['contract_id'],
+                'installment_id' => (int) $payment['installment_id'],
+                'status' => 'paid',
+                'amount' => $verifiedAmount,
+                'method' => $payment['method'] ?? 'gateway',
+                'gateway_ref_id' => $refId,
+            ]);
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::safeEnqueuePluginHook('payment.completed', self::paymentEventPayload((int) $payment['id'], (int) $payment['contract_id'], (int) $payment['installment_id'], $payment['user_id']), 'payment', (int) $payment['id']);
+                if (($options['notify'] ?? true)) {
+                    SystemOutbox::safeEnqueueNotification($payment['user_id'], 'پرداخت جدید ثبت شد', 'پرداخت شما با موفقیت تأیید شد.', 'payment', url('installments/panel'), 'payment', (int) $payment['id']);
+                }
             }
             if ($startedTransaction) {
                 self::commit();
+                if (class_exists('SystemOutbox')) {
+                    SystemOutbox::processPending(25);
+                }
             }
             return ['ok' => true, 'message' => 'پرداخت با موفقیت ثبت شد.', 'payment_id' => (int) $payment['id'], 'already_paid' => false];
         } catch (Throwable $e) {
@@ -486,6 +433,38 @@ class Payment extends Model
                 self::rollBack();
             }
             throw $e;
+        }
+    }
+
+    protected static function paymentEventPayload($paymentId, $contractId, $installmentId, $userId, array $extra = [])
+    {
+        return $extra + [
+            'payment_id' => (int) $paymentId,
+            'contract_id' => (int) $contractId,
+            'installment_id' => $installmentId ? (int) $installmentId : null,
+            'actor_user_id' => $userId ? (int) $userId : null,
+        ];
+    }
+
+    protected static function recordPaymentAudit($paymentId, array $values)
+    {
+        if (!class_exists('AuditLog')) {
+            return;
+        }
+        try {
+            AuditLog::record('payment', 'payment_recorded', 'payment', (int) $paymentId, [
+                'actor_type' => $values['actor_type'] ?? 'user',
+                'actor_user_id' => $values['actor_user_id'] ?? null,
+                'customer_id' => $values['customer_id'] ?? null,
+                'contract_id' => $values['contract_id'] ?? null,
+                'installment_id' => $values['installment_id'] ?? null,
+                'new_values' => $values,
+                'description' => 'ثبت پرداخت مالی در هسته سامانه',
+            ]);
+        } catch (Throwable $e) {
+            if (class_exists('PluginRegistry')) {
+                PluginRegistry::logRuntimeError('payment.audit', $e);
+            }
         }
     }
 
@@ -504,12 +483,13 @@ class Payment extends Model
             [(int) $installmentId]
         );
         if ($latest) {
-            $paid = max(0, (float) $row['base_amount'] - (float) $latest['remaining_after_payment']);
+            $paid = max(0, normalize_money($row['base_amount'] ?? 0) - normalize_money($latest['remaining_after_payment'] ?? 0));
         } else {
-            $paid = min((float) $row['base_amount'], (float) self::fetch("SELECT COALESCE(SUM(amount), 0) AS total FROM payments WHERE installment_id = ? AND status = 'paid' AND COALESCE(is_corrected, 0) = 0 AND COALESCE(payment_type, 'installment') = 'installment'", [(int) $installmentId])['total']);
+            $paid = min(normalize_money($row['base_amount'] ?? 0), normalize_money(self::fetch("SELECT COALESCE(SUM(amount), 0) AS total FROM payments WHERE installment_id = ? AND status = 'paid' AND COALESCE(is_corrected, 0) = 0 AND COALESCE(payment_type, 'installment') = 'installment'", [(int) $installmentId])['total'] ?? 0));
         }
-        $status = FinanceHelper::status((float) $row['base_amount'], $paid, $row['due_date']);
-        self::execute('UPDATE installments SET paid_amount = ?, remaining_amount = ?, last_payment_date = (SELECT MAX(payment_date) FROM payments WHERE installment_id = ? AND status = ? AND COALESCE(is_corrected, 0) = 0), status = ? WHERE id = ?', [$paid, max(0, (float) $row['base_amount'] - $paid), (int) $installmentId, 'paid', $status, (int) $installmentId]);
+        $baseAmount = normalize_money($row['base_amount'] ?? 0);
+        $status = FinanceHelper::status($baseAmount, $paid, $row['due_date']);
+        self::execute('UPDATE installments SET paid_amount = ?, remaining_amount = ?, last_payment_date = (SELECT MAX(payment_date) FROM payments WHERE installment_id = ? AND status = ? AND COALESCE(is_corrected, 0) = 0), status = ? WHERE id = ?', [$paid, max(0, $baseAmount - $paid), (int) $installmentId, 'paid', $status, (int) $installmentId]);
         if (class_exists('Contract')) {
             Contract::syncCompletionStatuses();
         }
@@ -543,7 +523,7 @@ class Payment extends Model
                 if ($installmentId) {
                     self::fetch('SELECT id FROM installments WHERE id = ? FOR UPDATE', [$installmentId]);
                 }
-                $before = $installmentId ? self::installmentState($installmentId) : ['effective_amount' => (float) $payment['amount']];
+                $before = $installmentId ? self::installmentState($installmentId) : ['effective_amount' => normalize_money($payment['amount'] ?? 0)];
                 self::execute(
                     "UPDATE payments
                      SET is_corrected = 1, status = 'corrected', correction_reason = ?, corrected_at = NOW(), corrected_by = ?
@@ -559,11 +539,11 @@ class Payment extends Model
                     'installment_id' => $installmentId,
                     'contract_id' => (int) $payment['contract_id'],
                     'customer_id' => (int) $payment['customer_id'],
-                    'amount' => (float) $payment['amount'],
+                    'amount' => normalize_money($payment['amount'] ?? 0),
                     'payment_date' => $payment['payment_date'] ?: ($payment['paid_at'] ?: $payment['created_at']),
                     'before' => $before,
                     'after' => $after,
-                    'effective_amount_before' => (float) $payment['amount'],
+                    'effective_amount_before' => normalize_money($payment['amount'] ?? 0),
                     'effective_amount_after' => 0,
                 ], JSON_UNESCAPED_UNICODE);
                 self::execute(
@@ -580,8 +560,8 @@ class Payment extends Model
                         'contract_id' => $contractId,
                         'installment_id' => $installmentId,
                         'description' => 'اصلاحیه مالی هنگام لغو قرارداد',
-                        'old_values' => ['amount' => (float) $payment['amount'], 'effective_amount' => (float) $payment['amount']],
-                        'new_values' => ['amount' => (float) $payment['amount'], 'effective_amount' => 0, 'reason' => $reason],
+                        'old_values' => ['amount' => normalize_money($payment['amount'] ?? 0), 'effective_amount' => normalize_money($payment['amount'] ?? 0)],
+                        'new_values' => ['amount' => normalize_money($payment['amount'] ?? 0), 'effective_amount' => 0, 'reason' => $reason],
                     ]);
                 }
                 $corrected++;
@@ -636,7 +616,7 @@ class Payment extends Model
                 'installment_id' => (int) $payment['installment_id'],
                 'contract_id' => (int) $payment['contract_id'],
                 'customer_id' => (int) $payment['customer_id'],
-                'amount' => (float) $payment['amount'],
+                'amount' => normalize_money($payment['amount'] ?? 0),
                 'payment_date' => $payment['payment_date'] ?: ($payment['paid_at'] ?: $payment['created_at']),
                 'before' => self::installmentState((int) $payment['installment_id']),
                 'after' => self::installmentState((int) $payment['installment_id']),
@@ -674,10 +654,10 @@ class Payment extends Model
             return [];
         }
         return [
-            'paid_amount' => (float) $row['paid_amount'],
-            'remaining' => max(0, (float) $row['base_amount'] - (float) $row['paid_amount']),
-            'penalty' => (float) $row['penalty'],
-            'reward' => (float) $row['reward'],
+            'paid_amount' => normalize_money($row['paid_amount'] ?? 0),
+            'remaining' => max(0, normalize_money($row['base_amount'] ?? 0) - normalize_money($row['paid_amount'] ?? 0)),
+            'penalty' => normalize_money($row['penalty'] ?? 0),
+            'reward' => normalize_money($row['reward'] ?? 0),
             'status' => $row['status'],
         ];
     }
@@ -699,16 +679,16 @@ class Payment extends Model
             'installment_id' => (int) $payment['installment_id'],
             'contract_id' => (int) $payment['contract_id'],
             'customer_id' => (int) $payment['customer_id'],
-            'amount' => (float) $payment['amount'],
+            'amount' => normalize_money($payment['amount'] ?? 0),
             'payment_date' => $payment['payment_date'] ?: ($payment['paid_at'] ?: $payment['created_at']),
-            'paid_amount_before' => (float) ($before['paid_amount'] ?? 0),
-            'paid_amount_after' => (float) ($after['paid_amount'] ?? 0),
-            'remaining_before' => (float) ($before['remaining'] ?? 0),
-            'remaining_after' => (float) ($after['remaining'] ?? 0),
-            'penalty_before' => (float) ($before['penalty'] ?? 0),
-            'penalty_after' => (float) ($after['penalty'] ?? 0),
-            'reward_before' => (float) ($before['reward'] ?? 0),
-            'reward_after' => (float) ($after['reward'] ?? 0),
+            'paid_amount_before' => normalize_money($before['paid_amount'] ?? 0),
+            'paid_amount_after' => normalize_money($after['paid_amount'] ?? 0),
+            'remaining_before' => normalize_money($before['remaining'] ?? 0),
+            'remaining_after' => normalize_money($after['remaining'] ?? 0),
+            'penalty_before' => normalize_money($before['penalty'] ?? 0),
+            'penalty_after' => normalize_money($after['penalty'] ?? 0),
+            'reward_before' => normalize_money($before['reward'] ?? 0),
+            'reward_after' => normalize_money($after['reward'] ?? 0),
             'status_before' => $before['status'] ?? null,
             'status_after' => $after['status'] ?? null,
             'created_by' => $payment['user_id'] ? (int) $payment['user_id'] : null,

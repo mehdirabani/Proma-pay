@@ -36,6 +36,7 @@ try {
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/forms.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/layout.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/responsive.css')) ?>">
 </head>
 <body class="proma-public-body">
   <header class="proma-public-header">

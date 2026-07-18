@@ -154,6 +154,7 @@ $singleOperator = count($operators ?? []) === 1 ? $operators[0] : null;
                 <?= csrf_field() ?>
                 <input type="hidden" name="installment_id" value="<?= (int) $item['id'] ?>">
                 <input type="hidden" name="redirect_to" value="overdue">
+                <input type="hidden" name="payment_request_uuid" value="<?= e(bin2hex(random_bytes(16))) ?>">
                 <label>مبلغ<input name="amount" data-money value="<?= e(number_format((float) $item['payable'], 0)) ?>"></label>
                 <label>تاریخ پرداخت<input name="payment_date" value="<?= e(jdate(date('Y-m-d'))) ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
                 <label>ساعت پرداخت<input name="payment_time" type="time" value="<?= e($defaultPaymentTime) ?>" required></label>

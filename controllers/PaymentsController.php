@@ -261,13 +261,42 @@ class PaymentsController extends Controller
         }
         $group = Model::fetch('SELECT * FROM payment_groups WHERE gateway_track_id = ? LIMIT 1', [$trackId]);
         try {
+            $completed = false;
+            $paymentRecordId = 0;
             if ($group) {
-                PaymentGroupService::completeGateway((int) $group['id'], $verify['amount_toman'], $verify['ref_id'], (int) $group['customer_id']);
-                Notification::create((int) $group['customer_id'], 'پرداخت چندقسطی موفق شد', 'پرداخت آنلاین گروهی شما با موفقیت ثبت شد.', 'payment', url('installments/panel'));
+                $completedGroup = PaymentGroupService::completeGateway((int) $group['id'], $verify['amount_toman'], $verify['ref_id'], (int) $group['customer_id']);
+                if (class_exists('SystemOutbox')) {
+                    SystemOutbox::safeEnqueueNotification((int) $group['customer_id'], 'پرداخت چندقسطی موفق شد', 'پرداخت آنلاین گروهی شما با موفقیت ثبت شد.', 'payment', url('installments/panel'), 'payment_group', (int) ($completedGroup['id'] ?? $group['id']));
+                    SystemOutbox::processPending(10, 'payment_group', (int) ($completedGroup['id'] ?? $group['id']));
+                }
                 set_flash('success', 'پرداخت چندقسطی با موفقیت ثبت شد.');
+                $completed = true;
+                $paymentRecordId = (int) ($completedGroup['id'] ?? $group['id']);
             } else {
                 $result = Payment::completeGateway($trackId, $verify['ref_id'], $verify['amount_toman']);
                 set_flash($result['ok'] ? 'success' : 'error', $result['message']);
+                $completed = !empty($result['ok']);
+                $paymentRecordId = (int) ($result['payment_id'] ?? 0);
+            }
+            if ($completed) {
+                try {
+                    if (class_exists('AuditLog')) {
+                        \AuditLog::record('payment_gateway', (int) $verify['code'] === 101 ? 'zarinpal_recovered' : 'zarinpal_verified', 'zarinpal_transaction', $paymentRecordId, [
+                            'actor_type' => 'gateway',
+                            'customer_id' => (int) ($group['customer_id'] ?? 0),
+                            'contract_id' => (int) ($group['contract_id'] ?? 0),
+                            'new_values' => [
+                                'status' => 'paid',
+                                'ref_id' => substr((string) $verify['ref_id'], 0, 100),
+                                'verify_code' => (int) $verify['code'],
+                            ],
+                        ]);
+                    }
+                } catch (Throwable $auditError) {
+                    if (class_exists('PluginRegistry')) {
+                        PluginRegistry::logRuntimeError('payment_gateway.audit', $auditError);
+                    }
+                }
             }
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت نتیجه پرداخت انجام نشد.');

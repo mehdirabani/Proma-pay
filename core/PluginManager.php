@@ -136,10 +136,7 @@ class PluginManager
     public static function requirePermission($permission)
     {
         if (!self::can($permission)) {
-            http_response_code(403);
-            $controller = new Controller();
-            $controller->render('errors/403', ['title' => 'دسترسی غیرمجاز'], 'app');
-            exit;
+            ErrorHandler::abort(403);
         }
     }
 

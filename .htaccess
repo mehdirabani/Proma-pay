@@ -4,12 +4,22 @@ DirectoryIndex index.php
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Internal records and update archives are never public download targets.
+    RewriteRule ^storage/(?:logs|backups|updates|releases)/ - [F,L,NC]
+
     # HTTPS redirect is intentionally not forced here. Some shared hosts and
     # reverse proxies terminate SSL before PHP; forcing HTTPS in app code can
     # create redirect loops. Enable HTTPS from the hosting panel/CDN instead.
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^ index.php [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
 </IfModule>
 
 <FilesMatch "^(installed\.lock|\.env|composer\.(json|lock)|package(-lock)?\.json)$">

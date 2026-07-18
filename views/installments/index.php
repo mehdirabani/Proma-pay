@@ -286,6 +286,7 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
           <div class="modal-body form-grid">
             <?= csrf_field() ?>
             <input type="hidden" name="installment_id" value="<?= (int) $item['id'] ?>">
+            <input type="hidden" name="payment_request_uuid" value="<?= e(bin2hex(random_bytes(16))) ?>">
             <label>مبلغ<input name="amount" data-money value="<?= e(number_format((float) $item['payable'], 0)) ?>" required></label>
             <label>تاریخ پرداخت<input name="payment_date" value="<?= e($defaultPaymentDate) ?>" required placeholder="۱۴۰۳/۰۱/۰۱"></label>
             <label>ساعت پرداخت<input name="payment_time" type="time" value="<?= e($defaultPaymentTime) ?>" required></label>

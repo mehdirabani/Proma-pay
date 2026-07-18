@@ -83,24 +83,65 @@ class InstallmentsController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
-        $installment = Installment::find((int) $id);
-        if (!$installment) {
-            set_flash('error', 'قسط پیدا نشد.');
-            redirect('installments');
+        $redirectTo = $this->redirectRoute();
+        $requestUuid = PaymentRequest::normalizeUuid($_POST['payment_request_uuid'] ?? '');
+        try {
+            $installment = Installment::find((int) $id);
+            if (!$installment) {
+                set_flash('error', 'قسط پیدا نشد.');
+                redirect('installments');
+            }
+            if (($installment['status'] ?? '') === 'cancelled') {
+                throw new InvalidArgumentException('قسط لغو شده قابل پرداخت نیست.');
+            }
+            $amount = normalize_money($_POST['amount'] ?? 0);
+            if ($amount <= 0) {
+                throw new InvalidArgumentException('مبلغ پرداخت معتبر نیست.');
+            }
+            $paymentDate = parse_jalali_date($_POST['payment_date'] ?? '') ?: date('Y-m-d');
+            $paymentTime = normalize_time($_POST['payment_time'] ?? null) ?: date('H:i');
+            $preview = FinanceHelper::paymentPreview($installment, Payment::forInstallment((int) $id), Settings::allKeyed(), $amount, $paymentDate);
+            $maxPayable = normalize_money($preview['payable_on_payment_date'] ?? 0);
+            if ($maxPayable > 0 && $amount > $maxPayable) {
+                throw new InvalidArgumentException('مبلغ پرداخت از مبلغ قابل پرداخت این قسط بیشتر است.');
+            }
+            $requestHash = PaymentRequest::hash([
+                'installment_id' => (int) $id,
+                'amount' => $amount,
+                'payment_date' => $paymentDate,
+                'payment_time' => $paymentTime,
+                'description' => trim((string) ($_POST['description'] ?? 'پرداخت دستی')),
+                'actor_user_id' => Auth::id(),
+            ]);
+            $requestState = PaymentRequest::begin($requestUuid, Auth::id(), (int) $id, $requestHash);
+            if ($requestState['status'] === 'completed') {
+                set_flash('success', 'این پرداخت قبلاً ثبت شده بود و از ثبت تکراری جلوگیری شد.');
+                redirect($redirectTo);
+            }
+            $paymentId = Payment::record((int) $id, $installment['contract_id'], Auth::id(), $amount, 'manual', 'paid', null, null, $_POST['description'] ?? 'پرداخت دستی', $paymentDate, 'installment', $paymentTime);
+            try {
+                PaymentRequest::complete($requestUuid, $paymentId);
+            } catch (Throwable $requestError) {
+                if (class_exists('PluginRegistry')) {
+                    PluginRegistry::logRuntimeError('payment_request.complete', $requestError);
+                }
+            }
+            if (class_exists('SystemOutbox')) {
+                try {
+                    SystemOutbox::safeEnqueueNotification($installment['customer_id'], 'پرداخت جدید ثبت شد', 'یک پرداخت برای قسط شما ثبت شد.', 'payment', url('installments/panel'), 'payment', $paymentId);
+                    SystemOutbox::processPending(10, 'payment', $paymentId);
+                } catch (Throwable $outboxError) {
+                    if (class_exists('PluginRegistry')) {
+                        PluginRegistry::logRuntimeError('payment.manual.outbox', $outboxError);
+                    }
+                }
+            }
+            set_flash('success', 'پرداخت دستی ثبت شد.');
+        } catch (Throwable $e) {
+            PaymentRequest::fail($requestUuid, $e);
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت پرداخت انجام نشد. اگر مبلغ از حساب مشتری کم شده، گزارش پرداخت را بررسی کنید.');
         }
-        if (($installment['status'] ?? '') === 'cancelled') {
-            set_flash('error', 'قسط لغو شده قابل پرداخت نیست.');
-            redirect($this->redirectRoute());
-        }
-        if (normalize_money($_POST['amount'] ?? 0) <= 0) {
-            set_flash('error', 'مبلغ پرداخت معتبر نیست.');
-            redirect($this->redirectRoute());
-        }
-        $paymentDate = parse_jalali_date($_POST['payment_date'] ?? '') ?: date('Y-m-d');
-        Payment::record((int) $id, $installment['contract_id'], Auth::id(), $_POST['amount'] ?? 0, 'manual', 'paid', null, null, $_POST['description'] ?? 'پرداخت دستی', $paymentDate, 'installment', $_POST['payment_time'] ?? null);
-        Notification::create($installment['customer_id'], 'پرداخت جدید ثبت شد', 'یک پرداخت برای قسط شما ثبت شد.', 'payment', url('installments/panel'));
-        set_flash('success', 'پرداخت دستی ثبت شد.');
-        redirect($this->redirectRoute());
+        redirect($redirectTo);
     }
 
     public function previewPayment()
