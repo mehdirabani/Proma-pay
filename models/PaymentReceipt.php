@@ -43,6 +43,16 @@ class PaymentReceipt extends Model
                  VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
                 [$paymentId, (int) $installmentId, (int) $installment['contract_id'], (int) $customerId, $amount, $receiptPath, 'pending']
             );
+            $receiptId = (int) self::lastInsertId();
+            if (class_exists('FileRecord')) {
+                try {
+                    FileRecord::relatePath($receiptPath, 'payment_receipt', $receiptId, 'payment_receipt', (int) $customerId);
+                    FileRecord::relatePath($receiptPath, 'payment', (int) $paymentId, 'payment_receipt', (int) $customerId);
+                    FileRecord::relatePath($receiptPath, 'contract', (int) $installment['contract_id'], 'payment_receipt', (int) $customerId);
+                } catch (Throwable $e) {
+                    ErrorHandler::log('payment_receipt_file_relation', $e, 500);
+                }
+            }
             if (class_exists('SystemOutbox')) {
                 SystemOutbox::safeEnqueueNotification((int) $customerId, 'رسید پرداخت دریافت شد', 'رسید کارت به کارت شما ثبت شد و در صف بررسی قرار گرفت.', 'payment_receipt', url('installments/panel'), 'payment_receipt', $paymentId);
                 foreach (User::all('admin', null, 'active') as $admin) {

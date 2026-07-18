@@ -15,8 +15,9 @@ class CalendarController extends Controller
         $weekday = (int) date('w', strtotime($startDate));
         $monthTitle = $this->monthName($jm) . ' ' . to_persian_digits($jy);
         $events = Event::allVisibleBetween($startDate, $endDate, $viewer ?: ['id' => Auth::id(), 'role' => Auth::role()]);
-        $installmentEvents = Event::installmentCalendarEvents($startDate, $endDate, Auth::role() === 'customer' ? Auth::id() : null);
-        $events = array_merge($events, $installmentEvents);
+        if (Auth::role() === 'customer') {
+            $events = array_merge($events, Event::installmentCalendarEvents($startDate, $endDate, Auth::id()));
+        }
         usort($events, function ($a, $b) {
             return strcmp(($a['event_date'] ?? '') . ' ' . ($a['event_time'] ?? '23:59:59'), ($b['event_date'] ?? '') . ' ' . ($b['event_time'] ?? '23:59:59'));
         });

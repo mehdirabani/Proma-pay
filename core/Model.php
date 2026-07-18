@@ -36,18 +36,32 @@ class Model
     public static function fetch($sql, array $params = [])
     {
         $stmt = self::query($sql, $params);
-        $row = $stmt->fetch();
-        return $row ?: null;
+        try {
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } finally {
+            $stmt->closeCursor();
+        }
     }
 
     public static function fetchAll($sql, array $params = [])
     {
-        return self::query($sql, $params)->fetchAll();
+        $stmt = self::query($sql, $params);
+        try {
+            return $stmt->fetchAll();
+        } finally {
+            $stmt->closeCursor();
+        }
     }
 
     public static function execute($sql, array $params = [])
     {
-        return self::query($sql, $params)->rowCount();
+        $stmt = self::query($sql, $params);
+        try {
+            return $stmt->rowCount();
+        } finally {
+            $stmt->closeCursor();
+        }
     }
 
     public static function lastInsertId()

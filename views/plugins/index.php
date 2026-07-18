@@ -4,8 +4,11 @@ $plugins = $plugins ?? [];
 <div class="page-title"><div><h2>پلاگین‌ها</h2><p class="text-muted">افزونه‌های معتبر را فقط از منبع قابل اعتماد نصب کنید.</p></div></div>
 
 <section class="card proma-plugin-warning">
-  <strong>هشدار امنیتی</strong>
-  <span>نصب پلاگین به معنی اجرای کد PHP آن روی سرور است. بسته قبل از انتقال به پوشه افزونه‌ها از نظر مسیر ناامن، فایل خطرناک و Manifest بررسی می‌شود.</span>
+  <span class="proma-plugin-warning__icon" aria-hidden="true"><i data-feather="shield"></i></span>
+  <span class="proma-plugin-warning__content">
+    <strong class="proma-plugin-warning__title">هشدار امنیتی</strong>
+    <span class="proma-plugin-warning__text">نصب پلاگین به معنی اجرای کد PHP آن روی سرور است. بسته قبل از انتقال به پوشه افزونه‌ها از نظر مسیر ناامن، فایل خطرناک و Manifest بررسی می‌شود.</span>
+  </span>
 </section>
 
 <section class="card">
@@ -35,7 +38,7 @@ $plugins = $plugins ?? [];
         <?php $hasStagedUpdate = !empty($plugin['has_staged_update']) || $status === 'update_available'; ?>
         <tr>
           <td><?php if ($hasFiles): ?><input type="checkbox" name="plugin_ids[]" value="<?= e($plugin['id'] ?? '') ?>" data-check-item="plugin_ids" form="plugins-delete-host-form" aria-label="انتخاب <?= e($plugin['name'] ?? $plugin['id'] ?? 'پلاگین') ?>"><?php endif; ?></td>
-          <td><strong><?= e($plugin['name'] ?? $plugin['id'] ?? '-') ?></strong><br><small class="text-muted" dir="ltr"><?= e($plugin['id'] ?? '-') ?></small><?php if (!empty($plugin['last_error'])): ?><div class="text-danger small mt-1"><?= e($plugin['last_error']) ?></div><?php endif; ?></td>
+          <td><strong><?= e($plugin['name'] ?? $plugin['id'] ?? '-') ?></strong><br><small class="text-muted" dir="ltr"><?= e($plugin['id'] ?? '-') ?></small><?php if (!empty($plugin['last_error'])): ?><div class="text-danger small mt-1">آخرین خطای افزونه در گزارش امن سامانه ثبت شده است.</div><?php endif; ?></td>
           <td dir="ltr"><strong>v<?= e($installedVersion) ?></strong><?php if ($hasStagedUpdate && ($plugin['version'] ?? '') !== $installedVersion): ?><small class="d-block text-success">→ v<?= e($plugin['version']) ?></small><?php endif; ?></td>
           <td><span class="badge <?= e(badge_class($status)) ?>"><?= e(PluginStatus::label($status)) ?></span></td>
           <td>

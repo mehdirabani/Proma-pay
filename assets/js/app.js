@@ -303,6 +303,43 @@
     });
   };
 
+  const initContactActions = function () {
+    document.querySelectorAll('[data-copy-phone]').forEach(function (button) {
+      if (button.dataset.copyPhoneBound === '1') return;
+      button.dataset.copyPhoneBound = '1';
+      button.addEventListener('click', function () {
+        const value = String(button.getAttribute('data-copy-phone') || '').trim();
+        if (!value) {
+          showToast('شماره قابل کپی نیست.', 'error');
+          return;
+        }
+        const copied = function () { showToast('شماره تماس کپی شد.', 'success'); };
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          navigator.clipboard.writeText(value).then(copied).catch(function () { fallbackCopy(value, copied); });
+          return;
+        }
+        fallbackCopy(value, copied);
+      });
+    });
+  };
+
+  const fallbackCopy = function (value, onSuccess) {
+    const input = document.createElement('textarea');
+    input.value = value;
+    input.setAttribute('readonly', 'readonly');
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+    input.select();
+    try {
+      if (document.execCommand('copy')) onSuccess();
+      else showToast('کپی خودکار انجام نشد.', 'error');
+    } catch (error) {
+      showToast('کپی خودکار انجام نشد.', 'error');
+    }
+    input.remove();
+  };
+
   const hydrateAjaxContent = function () {
     initMoneyInputs();
     initModals();
@@ -322,6 +359,7 @@
     initRequiredLabels();
     initCharts();
     initCardLinks();
+    initContactActions();
     if (window.feather && typeof window.feather.replace === 'function') {
       window.feather.replace();
     }
@@ -2280,8 +2318,8 @@
   };
 
   const initCardLinks = function () {
-    if (document.documentElement.dataset.contractCardNavigationBound === '1') return;
-    document.documentElement.dataset.contractCardNavigationBound = '1';
+    if (document.documentElement.dataset.cardNavigationBound === '1') return;
+    document.documentElement.dataset.cardNavigationBound = '1';
     const interactiveSelector = 'a,button,input,select,textarea,label,[role="button"],[data-stop-card-navigation],[data-open-modal],[data-close-modal],.modal';
     const elementFromEvent = function (event) {
       if (event.target && event.target.nodeType === 1) return event.target;
@@ -2297,7 +2335,7 @@
       if (event.defaultPrevented) return;
       const target = elementFromEvent(event);
       if (!target || typeof target.closest !== 'function') return;
-      const card = target.closest('[data-contract-card][data-card-href]');
+      const card = target.closest('[data-card-href]');
       if (!card || isInternalInteractive(target, card)) return;
       const href = card.getAttribute('data-card-href');
       if (href) window.location.assign(href);
@@ -2305,7 +2343,7 @@
     document.addEventListener('keydown', function (event) {
       if (event.key !== 'Enter' && event.key !== ' ') return;
       const target = elementFromEvent(event);
-      if (!target || target !== target.closest('[data-contract-card][data-card-href]')) return;
+      if (!target || target !== target.closest('[data-card-href]')) return;
       if (isInternalInteractive(target, target)) return;
       event.preventDefault();
       const href = target.getAttribute('data-card-href');
@@ -2422,6 +2460,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initCharts();
     initChat();
     initCardLinks();
+    initContactActions();
     initCopyShortcodes();
     initPromaRichEditors();
     initTour();

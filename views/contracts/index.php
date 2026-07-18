@@ -68,8 +68,8 @@ for ($i = 0; $i < 6; $i++) {
           ?>
             <article class="proma-contract-card" data-contract-card data-card-href="<?= e(url('contracts/show/' . $cardContract['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده جزئیات قرارداد <?= e($cardContract['contract_number']) ?>">
               <?php if (!$readOnly): ?><div class="proma-card-top-actions" aria-label="عملیات سریع قرارداد">
-                <button class="proma-card-edit icon-btn" type="button" data-open-modal="edit-contract-<?= (int) $cardContract['id'] ?>" title="ویرایش قرارداد" aria-label="ویرایش قرارداد"><i data-feather="edit-2"></i></button>
-                <button class="proma-card-delete icon-btn" type="button" data-open-modal="delete-contract-<?= (int) $cardContract['id'] ?>" title="حذف دائمی قرارداد" aria-label="حذف دائمی قرارداد"><i data-feather="trash-2"></i></button>
+                <button class="proma-icon-button" type="button" data-open-modal="edit-contract-<?= (int) $cardContract['id'] ?>" title="ویرایش قرارداد" aria-label="ویرایش قرارداد"><?= proma_icon('edit') ?></button>
+                <button class="proma-icon-button danger" type="button" data-open-modal="delete-contract-<?= (int) $cardContract['id'] ?>" title="حذف دائمی قرارداد" aria-label="حذف دائمی قرارداد"><?= proma_icon('trash') ?></button>
               </div><?php endif; ?>
             <?php if (!$readOnly): ?>
               <label class="proma-card-select" title="انتخاب برای ویرایش دسته‌جمعی">
@@ -98,12 +98,12 @@ for ($i = 0; $i < 6; $i++) {
             <div class="proma-contract-card-footer">
               <span class="proma-contract-card-balance">مانده: <?= money_toman($stats['outstanding']) ?></span>
               <div class="proma-contract-card-actions" aria-label="عملیات قرارداد">
-                <button class="btn small info" type="button" data-open-modal="contract-chart-<?= (int) $cardContract['id'] ?>">نمودار</button>
-                <button class="btn small warning" type="button" data-open-modal="contract-timeline-<?= (int) $cardContract['id'] ?>">تایم‌لاین</button>
-                <a class="btn small success" href="<?= e(url('contracts/printDocument/' . $cardContract['id'])) ?>" target="_blank" rel="noopener"><i data-feather="printer"></i> چاپ قرارداد</a>
-                <a class="btn small success" href="<?= e(url('contracts/booklet/' . $cardContract['id'])) ?>" target="_blank">دفترچه</a>
+                <button class="proma-icon-button info" type="button" data-open-modal="contract-chart-<?= (int) $cardContract['id'] ?>" title="مشاهده نمودار قرارداد" aria-label="مشاهده نمودار قرارداد"><?= proma_icon('chart') ?></button>
+                <button class="proma-icon-button warning" type="button" data-open-modal="contract-timeline-<?= (int) $cardContract['id'] ?>" title="مشاهده تایم‌لاین قرارداد" aria-label="مشاهده تایم‌لاین قرارداد"><?= proma_icon('history') ?></button>
+                <a class="btn small success" href="<?= e(url('contracts/printDocument/' . $cardContract['id'])) ?>" target="_blank" rel="noopener"><?= proma_icon('printer') ?>چاپ قرارداد</a>
+                <a class="btn small success" href="<?= e(url('contracts/booklet/' . $cardContract['id'])) ?>" target="_blank"><?= proma_icon('book') ?>دفترچه</a>
                   <?php if (!$readOnly): ?>
-                  <?php if (($cardContract['status'] ?? '') !== 'cancelled'): ?><button class="btn small danger" type="button" data-open-modal="cancel-contract-<?= (int) $cardContract['id'] ?>"><i data-feather="slash"></i> لغو</button><?php endif; ?>
+                  <?php if (($cardContract['status'] ?? '') !== 'cancelled'): ?><button class="btn small danger" type="button" data-open-modal="cancel-contract-<?= (int) $cardContract['id'] ?>"><?= proma_icon('slash') ?>لغو</button><?php endif; ?>
                 <?php endif; ?>
               </div>
             </div>
@@ -638,11 +638,11 @@ for ($i = 0; $i < 6; $i++) {
   <?php $cancellationSummary = Contract::cancellationSummary((int) $contract['id']); ?>
   <div class="modal" id="cancel-contract-<?= (int) $contract['id'] ?>">
     <div class="modal-content">
-      <div class="modal-header"><h3>لغو قرارداد</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+      <div class="modal-header"><h3><?= proma_icon('slash') ?> لغو قرارداد</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن پنجره لغو قرارداد" title="بستن"><?= proma_icon('close') ?></button></div>
       <form method="post" action="<?= e(url('contracts/cancel/' . $contract['id'])) ?>">
         <div class="modal-body form-grid">
           <?= csrf_field() ?>
-          <div class="notice error">با لغو این قرارداد، قرارداد حذف نمی‌شود اما تمام اقساط فعال آن لغو خواهند شد و دیگر در محاسبات مطالبات و معوقات قرار نمی‌گیرند.</div>
+          <div class="notice error">لغو قرارداد باعث حذف سوابق مالی و پرداخت‌ها نمی‌شود و تنها قرارداد را از چرخه فعال وصول خارج می‌کند. تمام اقساط فعال نیز لغو می‌شوند و دیگر در مطالبات و معوقات قرار نمی‌گیرند.</div>
           <div class="proma-cancellation-summary">
             <span><small>قرارداد</small><strong><?= e($contract['contract_number']) ?></strong></span>
             <span><small>مشتری</small><strong><?= e($contract['customer_name']) ?></strong></span>
@@ -660,7 +660,7 @@ for ($i = 0; $i < 6; $i++) {
           <label class="proma-confirm-check"><input type="checkbox" name="confirm_cancel" value="1" required> پیامدهای لغو قرارداد را مطالعه کردم.</label>
           <label class="proma-confirm-check proma-danger-check"><input type="checkbox" name="correct_contract_payments" value="1"> برای پرداخت‌های موفق همین قرارداد، اصلاحیه مالی ثبت شود و اثر آن‌ها در محاسبات داخلی صفر شود. این عملیات بازگشت وجه بانکی انجام نمی‌دهد.</label>
         </div>
-        <div class="modal-footer"><button class="btn danger" type="submit">تأیید و لغو قرارداد</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
+        <div class="modal-footer"><button class="btn danger" type="submit"><?= proma_icon('slash') ?><span>لغو قطعی قرارداد</span></button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
       </form>
     </div>
   </div>

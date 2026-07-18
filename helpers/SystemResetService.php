@@ -63,7 +63,12 @@ class SystemResetService
 
     protected static function databaseTables()
     {
-        return Model::db()->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        $stmt = Model::db()->query('SHOW TABLES');
+        try {
+            return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        } finally {
+            $stmt->closeCursor();
+        }
     }
 
     protected static function clearDataDirectories()

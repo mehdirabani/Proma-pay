@@ -5,6 +5,7 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $tests = [
     'tests/static_v126.php',
+    'tests/static_v128.php',
     'tests/static_v129.php',
     'tests/static_v130.php',
     'tests/static_v131.php',
@@ -16,6 +17,7 @@ $tests = [
     'tests/error_response_v136.php',
     'tests/static_v136.php',
     'tests/static_v137.php',
+    'tests/static_v138.php',
     'plugins/PromaAccounting/tests/static.php',
     'plugins/PromaAccounting/tests/v110.php',
     'plugins/PromaAccounting/tests/v120.php',

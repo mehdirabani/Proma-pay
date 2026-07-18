@@ -37,6 +37,15 @@ class ChatAttachment extends Model
             'INSERT INTO chat_attachments (message_id, file_path, file_type, status, created_at) VALUES (?, ?, ?, ?, NOW())',
             [(int) $messageId, $filePath, $fileType, 'pending']
         );
+        $attachmentId = (int) self::lastInsertId();
+        if (class_exists('FileRecord')) {
+            try {
+                FileRecord::relatePath($filePath, 'chat_attachment', $attachmentId, 'chat_attachment');
+                FileRecord::relatePath($filePath, 'chat_message', (int) $messageId, 'chat_attachment');
+            } catch (Throwable $e) {
+                ErrorHandler::log('chat_attachment_file_relation', $e, 500);
+            }
+        }
     }
 
     public static function pending()

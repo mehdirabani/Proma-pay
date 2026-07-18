@@ -210,6 +210,17 @@ class LegalCaseLog extends Model
                 ]
             );
             $id = (int) self::lastInsertId();
+            if ($attachmentPath && class_exists('FileRecord')) {
+                try {
+                    FileRecord::relatePath($attachmentPath, 'legal_case_log', $id, 'legal_attachment', (int) $payload['registered_by']);
+                    FileRecord::relatePath($attachmentPath, 'contract', (int) $payload['contract_id'], 'legal_attachment', (int) $payload['registered_by']);
+                    if (!empty($payload['legal_case_id'])) {
+                        FileRecord::relatePath($attachmentPath, 'legal_case', (int) $payload['legal_case_id'], 'legal_attachment', (int) $payload['registered_by']);
+                    }
+                } catch (Throwable $e) {
+                    ErrorHandler::log('legal_log_file_relation', $e, 500);
+                }
+            }
             self::syncLegalCaseFromPayload($payload);
             self::notifyCaseStakeholders($payload, 'ثبت اقدام حقوقی', $payload['action_title']);
             return $id;
@@ -261,6 +272,18 @@ class LegalCaseLog extends Model
                     (int) $id,
                 ]
             );
+
+            if ($newAttachmentPath && $newAttachmentPath !== $attachmentPath && class_exists('FileRecord')) {
+                try {
+                    FileRecord::relatePath($newAttachmentPath, 'legal_case_log', (int) $id, 'legal_attachment', (int) $payload['registered_by']);
+                    FileRecord::relatePath($newAttachmentPath, 'contract', (int) $payload['contract_id'], 'legal_attachment', (int) $payload['registered_by']);
+                    if (!empty($payload['legal_case_id'])) {
+                        FileRecord::relatePath($newAttachmentPath, 'legal_case', (int) $payload['legal_case_id'], 'legal_attachment', (int) $payload['registered_by']);
+                    }
+                } catch (Throwable $e) {
+                    ErrorHandler::log('legal_log_file_relation_update', $e, 500);
+                }
+            }
 
             if ($newAttachmentPath !== $attachmentPath && $attachmentPath) {
                 UploadHelper::deleteRelative($attachmentPath);

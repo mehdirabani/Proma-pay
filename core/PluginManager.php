@@ -324,7 +324,8 @@ class PluginManager
             $result = method_exists($provider, 'healthCheck') ? $provider->healthCheck($this, $manifest) : true;
             return ['ok' => $result !== false, 'message' => $result === false ? 'بررسی provider ناموفق بود.' : 'افزونه سالم است.'];
         } catch (Throwable $e) {
-            return ['ok' => false, 'message' => $e->getMessage()];
+            ErrorHandler::log('plugin_health:' . (string) $pluginId, $e, 500);
+            return ['ok' => false, 'message' => 'بررسی سلامت افزونه انجام نشد. شناسه پیگیری: ' . ErrorHandler::requestId()];
         }
     }
 
@@ -650,15 +651,43 @@ class PluginManager
     {
         self::boot();
         $route = trim((string) $route, '/');
+        $requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+        $matched = [];
         foreach ($this->routes as $item) {
             $parameters = $this->matchRoute($item['path'], $route);
             if ($parameters === false) {
                 continue;
             }
+            $matched[] = [$item, $parameters];
+        }
+        if (!$matched) {
+            return false;
+        }
+        usort($matched, static function ($left, $right) use ($route) {
+            $leftPath = trim((string) ($left[0]['path'] ?? ''), '/');
+            $rightPath = trim((string) ($right[0]['path'] ?? ''), '/');
+            $leftExact = $leftPath === $route ? 1 : 0;
+            $rightExact = $rightPath === $route ? 1 : 0;
+            if ($leftExact !== $rightExact) {
+                return $rightExact <=> $leftExact;
+            }
+            $leftParams = substr_count($leftPath, '{');
+            $rightParams = substr_count($rightPath, '{');
+            if ($leftParams !== $rightParams) {
+                return $leftParams <=> $rightParams;
+            }
+            return strlen($rightPath) <=> strlen($leftPath);
+        });
+        if (trim((string) ($matched[0][0]['path'] ?? ''), '/') === $route) {
+            $matched = array_values(array_filter($matched, static function ($match) use ($route) {
+                return trim((string) ($match[0]['path'] ?? ''), '/') === $route;
+            }));
+        }
+        foreach ($matched as $match) {
+            [$item, $parameters] = $match;
             $options = $item['options'];
-            if (($options['method'] ?? '') !== '' && strtoupper((string) $options['method']) !== strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'))) {
-                http_response_code(405);
-                return true;
+            if (($options['method'] ?? '') !== '' && strtoupper((string) $options['method']) !== $requestMethod) {
+                continue;
             }
             if (($options['auth'] ?? true) && !Auth::check()) {
                 Auth::requireLogin();
@@ -677,7 +706,24 @@ class PluginManager
             call_user_func_array([$controller, $method], $parameters);
             return true;
         }
-        return false;
+        $allowed = [];
+        foreach ($matched as $match) {
+            $method = strtoupper((string) ($match[0]['options']['method'] ?? ''));
+            if ($method !== '') {
+                $allowed[$method] = true;
+            }
+        }
+        if (!$allowed && $requestMethod !== '') {
+            $allowed[$requestMethod] = true;
+        }
+        $allow = implode(', ', array_keys($allowed));
+        ErrorHandler::respond(
+            405,
+            'این آدرس از روش استفاده‌شده پشتیبانی نمی‌کند. صفحه را دوباره باز کرده و عملیات را از مسیر اصلی انجام دهید.',
+            [],
+            $allow !== '' ? ['Allow' => $allow] : []
+        );
+        return true;
     }
 
     protected function matchRoute($pattern, $route)

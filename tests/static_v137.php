@@ -11,8 +11,8 @@ $assert = static function ($condition, string $message): void {
     }
 };
 
-$assert(($version['application'] ?? '') === '1.3.7', 'Core version must be 1.3.7.');
-$assert(($version['display'] ?? '') === 'V1.3.7', 'Display version must be V1.3.7.');
+$assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.3.7', '>='), 'Core version must retain V1.3.7 lifecycle fixes.');
+$assert(preg_match('/^V\d+\.\d+\.\d+$/', (string) ($version['display'] ?? '')) === 1, 'Display version must remain semantic.');
 
 $requiredFiles = [
     'controllers/HealthController.php',
@@ -105,7 +105,7 @@ $templateEditorJs = (string) file_get_contents($root . '/assets/js/contract-temp
 $settings = (array) require $root . '/config/settings.php';
 $assert(strpos($appJs, 'window.PromaQuillHtml') !== false && strpos($appJs, 'typeof quill.pasteHTML') !== false, 'Quill compatibility helper is missing.');
 $assert(strpos($appJs, 'clipboard.dangerouslyPasteHTML(initial)') === false && strpos($templateEditorJs, 'clipboard.dangerouslyPasteHTML') === false, 'Unsupported Quill clipboard API is still used.');
-$assert(($settings['asset_version'] ?? '') === '1.3.7', 'Asset version must invalidate pre-V1.3.7 editor cache.');
+$assert(version_compare((string) ($settings['asset_version'] ?? '0.0.0'), '1.3.7', '>='), 'Asset version must invalidate pre-V1.3.7 editor cache.');
 
 $builder = (string) file_get_contents($root . '/scripts/build_release.php');
 $assert(strpos($builder, 'V1.3.7 release candidate is present') !== false, 'Release builder can mislabel the V1.3.7 candidate as an older archive.');

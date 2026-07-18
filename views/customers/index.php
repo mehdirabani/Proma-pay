@@ -54,7 +54,7 @@ $pageUrl = function ($page) use ($viewMode) {
 <?php if ($viewMode === 'cards'): ?>
 <section class="proma-profile-grid">
   <?php foreach ($customers as $item): ?>
-    <article class="card proma-profile-tile proma-customer-index-card" data-card-href="<?= e(url('customers/show/' . $item['id'])) ?>">
+    <article class="card proma-profile-tile proma-customer-index-card" data-card-href="<?= e(url('customers/show/' . $item['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده پرونده مشتری <?= e($item['full_name']) ?>">
       <div class="card-body">
         <div class="proma-profile-head">
           <span class="proma-progress-avatar" style="--progress: <?= (int) ($item['good_score'] ?? 0) ?>">
@@ -81,13 +81,13 @@ $pageUrl = function ($page) use ($viewMode) {
           <?php if (empty($item['medals'])): ?><span class="badge muted">بدون مدال</span><?php endif; ?>
         </div>
 
-        <div class="actions">
-          <a class="btn small secondary" href="<?= e(url('customers/show/' . $item['id'])) ?>">مشاهده</a>
-          <button class="btn small info" type="button" data-open-modal="customer-chart-<?= (int) $item['id'] ?>">نمودار</button>
-          <button class="btn small warning" type="button" data-open-modal="customer-timeline-<?= (int) $item['id'] ?>">تایم‌لاین</button>
-          <button class="btn small secondary" type="button" data-open-modal="customer-medals-<?= (int) $item['id'] ?>">مدال‌ها</button>
-          <button class="btn small icon-only" type="button" data-open-modal="edit-customer-<?= (int) $item['id'] ?>" title="ویرایش" aria-label="ویرایش"><i data-feather="edit-2"></i></button>
-          <button class="btn small danger icon-only" type="button" data-open-modal="delete-customer-<?= (int) $item['id'] ?>" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button>
+        <div class="actions proma-card-actions" aria-label="عملیات مشتری">
+          <a class="btn small secondary" href="<?= e(url('customers/show/' . $item['id'])) ?>"><?= proma_icon('eye') ?>مشاهده</a>
+          <button class="proma-icon-button info" type="button" data-open-modal="customer-chart-<?= (int) $item['id'] ?>" title="مشاهده نمودار پرداخت مشتری" aria-label="مشاهده نمودار پرداخت مشتری"><?= proma_icon('chart') ?></button>
+          <button class="proma-icon-button warning" type="button" data-open-modal="customer-timeline-<?= (int) $item['id'] ?>" title="مشاهده تایم‌لاین پرداخت مشتری" aria-label="مشاهده تایم‌لاین پرداخت مشتری"><?= proma_icon('history') ?></button>
+          <button class="proma-icon-button secondary" type="button" data-open-modal="customer-medals-<?= (int) $item['id'] ?>" title="مدال‌های مشتری" aria-label="مدال‌های مشتری"><?= proma_icon('award') ?></button>
+          <button class="proma-icon-button" type="button" data-open-modal="edit-customer-<?= (int) $item['id'] ?>" title="ویرایش مشتری" aria-label="ویرایش مشتری"><?= proma_icon('edit') ?></button>
+          <button class="proma-icon-button danger" type="button" data-open-modal="delete-customer-<?= (int) $item['id'] ?>" title="حذف مشتری" aria-label="حذف مشتری"><?= proma_icon('trash') ?></button>
         </div>
       </div>
     </article>

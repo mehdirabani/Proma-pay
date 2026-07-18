@@ -703,3 +703,58 @@ function sanitize_hex_color($value, $fallback = '#7366ff')
     }
     return $fallback;
 }
+
+function normalize_iran_phone($value)
+{
+    $digits = preg_replace('/\D+/', '', to_english_digits((string) $value));
+    if (strpos($digits, '0098') === 0) {
+        $digits = substr($digits, 4);
+    } elseif (strpos($digits, '98') === 0) {
+        $digits = substr($digits, 2);
+    }
+    if (strpos($digits, '0') === 0) {
+        $digits = substr($digits, 1);
+    }
+    return preg_match('/^9\d{9}$/', $digits) ? '+98' . $digits : '';
+}
+
+function format_iran_phone($value, $persianDigits = true)
+{
+    $canonical = normalize_iran_phone($value);
+    if ($canonical === '') {
+        return trim((string) $value);
+    }
+    $local = '0' . substr($canonical, 3);
+    $formatted = substr($local, 0, 4) . ' ' . substr($local, 4, 3) . ' ' . substr($local, 7, 4);
+    return $persianDigits ? to_persian_digits($formatted) : $formatted;
+}
+
+function proma_icon($name, $title = '', $class = '')
+{
+    $icons = [
+        'archive' => '<path d="M3 7h18v13H3z"/><path d="M2 3h20v4H2z"/><path d="M10 12h4"/>',
+        'award' => '<circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 21l5-3 5 3-1.5-8.5"/>',
+        'book' => '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5z"/><path d="M4 4.5v18"/>',
+        'chart' => '<path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/>',
+        'check' => '<path d="m5 12 4 4L19 6"/>',
+        'close' => '<path d="m6 6 12 12"/><path d="m18 6-12 12"/>',
+        'copy' => '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+        'download' => '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/>',
+        'edit' => '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/>',
+        'eye' => '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/>',
+        'file' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>',
+        'history' => '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>',
+        'more' => '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+        'phone' => '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .8 2.9a2 2 0 0 1-.5 2.1L8.1 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.4 1.9.7 2.9.8a2 2 0 0 1 1.6 1.9Z"/>',
+        'printer' => '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/>',
+        'slash' => '<path d="m4 4 16 16"/><circle cx="12" cy="12" r="9"/>',
+        'trash' => '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 15H6L5 6"/><path d="M10 11v5M14 11v5"/>',
+        'user' => '<circle cx="12" cy="8" r="4"/><path d="M4 22a8 8 0 0 1 16 0"/>',
+    ];
+    $name = isset($icons[$name]) ? $name : 'file';
+    $attributes = 'class="proma-icon ' . e(trim($class)) . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"';
+    if ($title !== '') {
+        $attributes = 'class="proma-icon ' . e(trim($class)) . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="' . e($title) . '" focusable="false"';
+    }
+    return '<svg ' . $attributes . '>' . $icons[$name] . '</svg>';
+}

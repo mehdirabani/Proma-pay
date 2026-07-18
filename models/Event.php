@@ -91,18 +91,32 @@ class Event extends Model
     public static function allVisibleBetween($startDate, $endDate, array $viewer)
     {
         self::ensureSchema();
-        if (($viewer['role'] ?? '') === 'customer') {
+        $role = (string) ($viewer['role'] ?? '');
+        $viewerId = (int) ($viewer['id'] ?? 0);
+        $select = 'SELECT e.*, u.full_name AS user_name, u.role AS user_role
+                   FROM events e
+                   LEFT JOIN users u ON u.id = COALESCE(e.assigned_user_id, e.user_id)';
+        $order = ' ORDER BY e.event_date ASC, COALESCE(e.event_time, "23:59:59") ASC, e.id ASC';
+        if ($role === 'admin') {
             return self::fetchAll(
-                'SELECT e.*, u.full_name AS user_name, u.role AS user_role
-                 FROM events e
-                 LEFT JOIN users u ON u.id = COALESCE(e.assigned_user_id, e.user_id)
-                 WHERE e.event_date >= ? AND e.event_date < ?
-                 AND COALESCE(e.assigned_user_id, e.user_id) = ?
-                 ORDER BY e.event_date ASC, COALESCE(e.event_time, "23:59:59") ASC, e.id ASC',
-                [$startDate, $endDate, (int) $viewer['id']]
+                $select . " WHERE e.event_date >= ? AND e.event_date < ? AND e.event_type != 'installment'" . $order,
+                [$startDate, $endDate]
             );
         }
-        return self::allBetween($startDate, $endDate);
+        if ($role === 'customer') {
+            return self::fetchAll(
+                $select . " WHERE e.event_date >= ? AND e.event_date < ?
+                 AND e.event_type != 'installment'
+                 AND COALESCE(e.assigned_user_id, e.user_id) = ?" . $order,
+                [$startDate, $endDate, $viewerId]
+            );
+        }
+        return self::fetchAll(
+            $select . " WHERE e.event_date >= ? AND e.event_date < ?
+             AND e.event_type != 'installment'
+             AND (e.assigned_user_id = ? OR e.user_id = ?)" . $order,
+            [$startDate, $endDate, $viewerId, $viewerId]
+        );
     }
 
     public static function installmentCalendarEvents($startDate, $endDate, $customerId = null)

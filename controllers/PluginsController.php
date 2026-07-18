@@ -22,7 +22,7 @@ class PluginsController extends Controller
             $manifest = PluginManager::instance()->upload($_FILES['plugin_zip'] ?? [], Auth::id());
             set_flash('success', 'پلاگین «' . ($manifest['name'] ?? $manifest['id']) . '» با موفقیت بررسی و بارگذاری شد. اکنون آن را نصب کنید.');
         } catch (Throwable $e) {
-            set_flash('error', 'بارگذاری پلاگین انجام نشد: ' . $e->getMessage());
+            $this->flashPluginError('plugin_upload', $e, 'بارگذاری پلاگین انجام نشد.');
         }
         redirect('plugins');
     }
@@ -36,7 +36,7 @@ class PluginsController extends Controller
             $plugins = PluginManager::instance()->rescan(Auth::id());
             set_flash('success', 'پوشه پلاگین‌ها بررسی شد و وضعیت ' . to_persian_digits(count($plugins)) . ' افزونه همگام شد.');
         } catch (Throwable $e) {
-            set_flash('error', 'بازبینی پوشه پلاگین‌ها انجام نشد: ' . $e->getMessage());
+            $this->flashPluginError('plugin_rescan', $e, 'بازبینی پوشه پلاگین‌ها انجام نشد.');
         }
         redirect('plugins');
     }
@@ -50,7 +50,7 @@ class PluginsController extends Controller
             PluginManager::instance()->install($pluginId, Auth::id());
             set_flash('success', 'پلاگین نصب شد. برای اجرای قابلیت‌ها آن را فعال کنید.');
         } catch (Throwable $e) {
-            set_flash('error', 'نصب پلاگین انجام نشد: ' . $e->getMessage());
+            $this->flashPluginError('plugin_install', $e, 'نصب پلاگین انجام نشد.');
         }
         redirect('plugins');
     }
@@ -64,7 +64,7 @@ class PluginsController extends Controller
             PluginManager::instance()->activate($pluginId, Auth::id());
             set_flash('success', 'پلاگین فعال شد.');
         } catch (Throwable $e) {
-            set_flash('error', 'فعال‌سازی پلاگین انجام نشد: ' . $e->getMessage());
+            $this->flashPluginError('plugin_activate', $e, 'فعال‌سازی پلاگین انجام نشد.');
         }
         redirect('plugins');
     }
@@ -78,7 +78,7 @@ class PluginsController extends Controller
             PluginManager::instance()->deactivate($pluginId, Auth::id());
             set_flash('success', 'پلاگین غیرفعال شد و داده‌های آن حفظ شدند.');
         } catch (Throwable $e) {
-            set_flash('error', 'غیرفعال‌سازی پلاگین انجام نشد: ' . $e->getMessage());
+            $this->flashPluginError('plugin_deactivate', $e, 'غیرفعال‌سازی پلاگین انجام نشد.');
         }
         redirect('plugins');
     }
@@ -92,7 +92,7 @@ class PluginsController extends Controller
             PluginManager::instance()->uninstall($pluginId, Auth::id());
             set_flash('success', 'پلاگین غیرفعال و ثبت آن حذف شد؛ داده‌های افزونه حفظ شده‌اند.');
         } catch (Throwable $e) {
-            set_flash('error', 'حذف پلاگین انجام نشد: ' . $e->getMessage());
+            $this->flashPluginError('plugin_uninstall', $e, 'حذف پلاگین انجام نشد.');
         }
         redirect('plugins');
     }
@@ -118,10 +118,10 @@ class PluginsController extends Controller
             $result = PluginManager::instance()->update($pluginId, Auth::id());
             set_flash('success', 'افزونه از نسخه ' . ($result['from'] ?? '-') . ' به نسخه ' . ($result['to'] ?? '-') . ' بروزرسانی شد.');
             if (!empty($result['cleanup_warning'])) {
-                set_flash('error', 'بروزرسانی نصب شد، اما پاک‌سازی نسخه ایمنی فایل‌ها کامل نشد: ' . $result['cleanup_warning']);
+                set_flash('error', 'بروزرسانی نصب شد، اما پاک‌سازی نسخه ایمنی فایل‌ها کامل نشد. شناسه پیگیری: ' . ErrorHandler::requestId());
             }
         } catch (Throwable $e) {
-            set_flash('error', 'به‌روزرسانی افزونه انجام نشد: ' . $e->getMessage());
+            $this->flashPluginError('plugin_update', $e, 'بروزرسانی افزونه کامل نشد. نسخه قبلی افزونه و اطلاعات حسابداری حفظ شده‌اند.');
         }
         redirect('plugins');
     }
@@ -138,7 +138,7 @@ class PluginsController extends Controller
             $result = PluginManager::instance()->stageUpdate($pluginId, $_FILES['plugin_update_zip'] ?? [], Auth::id());
             set_flash('success', 'نسخه ' . ($result['to'] ?? '-') . ' برای افزونه «' . ($result['name'] ?? $pluginId) . '» آماده شد. اکنون نصب بروزرسانی را تایید کنید.');
         } catch (Throwable $e) {
-            set_flash('error', 'آماده‌سازی بروزرسانی افزونه انجام نشد: ' . $e->getMessage());
+            $this->flashPluginError('plugin_update_package', $e, 'آماده‌سازی بروزرسانی افزونه انجام نشد.');
         }
         redirect('plugins');
     }
@@ -164,18 +164,25 @@ class PluginsController extends Controller
                 try {
                     $deleted[] = PluginManager::instance()->deleteFromHost($pluginId, Auth::id());
                 } catch (Throwable $e) {
-                    $errors[] = $pluginId . ': ' . $e->getMessage();
+                    ErrorHandler::log('plugin_delete_from_host_item:' . $pluginId, $e, 500);
+                    $errors[] = $pluginId;
                 }
             }
             if ($deleted) {
                 set_flash('success', to_persian_digits(count($deleted)) . ' افزونه به‌طور کامل از پوشه plugins هاست حذف شد. داده‌های دیتابیس افزونه‌ها حفظ شده‌اند.');
             }
             if ($errors) {
-                set_flash('error', 'حذف برخی افزونه‌ها انجام نشد: ' . implode(' | ', $errors));
+                set_flash('error', 'حذف برخی افزونه‌ها انجام نشد. شناسه پیگیری: ' . ErrorHandler::requestId());
             }
         } catch (Throwable $e) {
-            set_flash('error', 'حذف افزونه‌ها از هاست انجام نشد: ' . $e->getMessage());
+            $this->flashPluginError('plugin_delete_from_host', $e, 'حذف افزونه‌ها از هاست انجام نشد.');
         }
         redirect('plugins');
+    }
+
+    private function flashPluginError($kind, Throwable $e, $message)
+    {
+        ErrorHandler::log((string) $kind, $e, 500);
+        set_flash('error', (string) $message . ' شناسه پیگیری: ' . ErrorHandler::requestId());
     }
 }

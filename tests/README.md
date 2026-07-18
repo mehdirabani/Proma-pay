@@ -54,6 +54,12 @@ php plugins/PromaZarinpal/tests/Integration/OfficialProtocolTest.php
 
 `tests/integration_zarinpal_v134.php` روی MySQL/MariaDB موقت اجرا می‌شود و DSN را از `PROMA_TEST_DB_DSN`، `PROMA_TEST_DB_USER` و `PROMA_TEST_DB_PASSWORD` می‌خواند.
 
+تست رجیستری مرکزی فایل در `V1.3.8` نیز روی دیتابیس آزمایشی اجرا می‌شود و همان متغیرهای محیطی را می‌خواند:
+
+```text
+php tests/integration_v138_file_registry.php
+```
+
 تست رگرسیون پرداخت دستی و ایزولاسیون اعلان/پلاگین در `V1.3.5`:
 
 ```text

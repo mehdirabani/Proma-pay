@@ -482,7 +482,11 @@ class ScriptUpdateService
         }
         $stmt = Model::db()->query($statement);
         if ($stmt instanceof PDOStatement) {
-            self::drainStatement($stmt);
+            try {
+                self::drainStatement($stmt);
+            } finally {
+                $stmt->closeCursor();
+            }
         }
     }
 
@@ -498,7 +502,6 @@ class ScriptUpdateService
                 $hasMore = false;
             }
         } while ($hasMore);
-        $stmt->closeCursor();
     }
 
     protected static function splitSql($sql)

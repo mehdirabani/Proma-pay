@@ -1,0 +1,65 @@
+-- Proma Pay V1.3.8: central registry for private and public user uploads.
+CREATE TABLE IF NOT EXISTS files (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    file_uuid CHAR(32) NOT NULL,
+    original_name VARCHAR(255) NOT NULL,
+    stored_name VARCHAR(255) NOT NULL,
+    display_name VARCHAR(190) NOT NULL,
+    extension VARCHAR(20) NOT NULL,
+    mime_type VARCHAR(190) NOT NULL,
+    size_bytes BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    storage_disk VARCHAR(30) NOT NULL DEFAULT 'private',
+    storage_path VARCHAR(500) NOT NULL,
+    checksum_sha256 CHAR(64) NULL,
+    category VARCHAR(50) NOT NULL DEFAULT 'general',
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    visibility VARCHAR(20) NOT NULL DEFAULT 'private',
+    uploader_user_id BIGINT UNSIGNED NULL,
+    uploader_role VARCHAR(40) NULL,
+    related_entity_type VARCHAR(60) NULL,
+    related_entity_id BIGINT UNSIGNED NULL,
+    parent_file_id BIGINT UNSIGNED NULL,
+    version_number INT UNSIGNED NOT NULL DEFAULT 1,
+    description TEXT NULL,
+    tags_json LONGTEXT NULL,
+    metadata_json LONGTEXT NULL,
+    archived_at DATETIME NULL,
+    deleted_at DATETIME NULL,
+    deleted_by BIGINT UNSIGNED NULL,
+    deletion_reason TEXT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    UNIQUE KEY uq_files_uuid (file_uuid),
+    UNIQUE KEY uq_files_storage_path (storage_path),
+    KEY idx_files_status_created (status, created_at),
+    KEY idx_files_category (category),
+    KEY idx_files_uploader (uploader_user_id),
+    KEY idx_files_related (related_entity_type, related_entity_id),
+    KEY idx_files_parent (parent_file_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS file_relations (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    file_id BIGINT UNSIGNED NOT NULL,
+    entity_type VARCHAR(60) NOT NULL,
+    entity_id BIGINT UNSIGNED NOT NULL,
+    relation_type VARCHAR(60) NOT NULL DEFAULT 'attachment',
+    created_by BIGINT UNSIGNED NULL,
+    created_at DATETIME NOT NULL,
+    UNIQUE KEY uq_file_relation (file_id, entity_type, entity_id, relation_type),
+    KEY idx_file_relations_entity (entity_type, entity_id),
+    KEY idx_file_relations_file (file_id),
+    CONSTRAINT fk_file_relations_file FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS file_audit_logs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    file_id BIGINT UNSIGNED NOT NULL,
+    action VARCHAR(80) NOT NULL,
+    actor_user_id BIGINT UNSIGNED NULL,
+    details_json LONGTEXT NULL,
+    created_at DATETIME NOT NULL,
+    KEY idx_file_audit_file (file_id, created_at),
+    KEY idx_file_audit_actor (actor_user_id),
+    CONSTRAINT fk_file_audit_file FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

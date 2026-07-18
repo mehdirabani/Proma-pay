@@ -9,12 +9,12 @@ class UploadHelper
     public const MAX_IMAGE_SIZE = 10485760;
     public const MAX_DOCUMENT_SIZE = 10485760;
 
-    public static function storeImage(array $upload, $subdir, array $extensions = self::IMAGE_EXTENSIONS)
+    public static function storeImage(array $upload, $subdir, array $extensions = self::IMAGE_EXTENSIONS, array $context = [])
     {
-        return self::storeSecureFile($upload, $subdir, $extensions, self::MAX_IMAGE_SIZE);
+        return self::storeSecureFile($upload, $subdir, $extensions, self::MAX_IMAGE_SIZE, $context);
     }
 
-    public static function storeSecureFile(array $upload, $subdir, array $extensions = self::DOCUMENT_EXTENSIONS, $maxSize = self::MAX_DOCUMENT_SIZE)
+    public static function storeSecureFile(array $upload, $subdir, array $extensions = self::DOCUMENT_EXTENSIONS, $maxSize = self::MAX_DOCUMENT_SIZE, array $context = [])
     {
         if (empty($upload['tmp_name']) || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
             return null;
@@ -56,10 +56,12 @@ class UploadHelper
         if (!move_uploaded_file($upload['tmp_name'], $destination)) {
             throw new RuntimeException('ذخیره فایل انجام نشد.');
         }
-        return 'storage/secure_uploads/' . $safeSubdir . '/' . date('Y') . '/' . date('m') . '/' . $fileName;
+        $relativePath = 'storage/secure_uploads/' . $safeSubdir . '/' . date('Y') . '/' . date('m') . '/' . $fileName;
+        self::registerManagedFile($relativePath, $upload, array_merge(['category' => self::categoryFromSubdir($safeSubdir)], $context));
+        return $relativePath;
     }
 
-    public static function storePublicImage(array $upload, $subdir, array $extensions = self::LOGO_EXTENSIONS)
+    public static function storePublicImage(array $upload, $subdir, array $extensions = self::LOGO_EXTENSIONS, array $context = [])
     {
         if (empty($upload['tmp_name']) || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
             return null;
@@ -95,15 +97,23 @@ class UploadHelper
         if (!move_uploaded_file($upload['tmp_name'], $destination)) {
             throw new RuntimeException('ذخیره فایل انجام نشد.');
         }
-        return 'storage/uploads/' . $safeSubdir . '/' . $fileName;
+        $relativePath = 'storage/uploads/' . $safeSubdir . '/' . $fileName;
+        self::registerManagedFile($relativePath, $upload, array_merge([
+            'category' => self::categoryFromSubdir($safeSubdir),
+            'visibility' => 'public',
+        ], $context));
+        return $relativePath;
     }
 
     public static function absolutePath($relativePath)
     {
-        $relativePath = str_replace(['..', '\\'], ['', '/'], (string) $relativePath);
+        $relativePath = ltrim(str_replace(['..', '\\'], ['', '/'], (string) $relativePath), '/');
         $root = realpath(dirname(__DIR__));
         $path = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, ltrim($relativePath, '/'));
-        $secureRoot = realpath(self::secureBaseDir());
+        $allowedRoot = strpos($relativePath, 'storage/uploads/') === 0
+            ? $root . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'uploads'
+            : self::secureBaseDir();
+        $secureRoot = realpath($allowedRoot);
         $dir = realpath(dirname($path));
         if (!$secureRoot || !$dir || strpos($dir, $secureRoot) !== 0) {
             return null;
@@ -113,10 +123,17 @@ class UploadHelper
 
     public static function deleteRelative($relativePath)
     {
+        if (class_exists('FileRecord') && FileRecord::archiveByPath($relativePath, 'بایگانی فایل در جریان عملیاتی سیستم')) {
+            return true;
+        }
         $path = self::absolutePath($relativePath);
         if ($path && is_file($path)) {
-            @unlink($path);
+            if (!unlink($path)) {
+                throw new RuntimeException('حذف فایل امن انجام نشد.');
+            }
+            return true;
         }
+        return false;
     }
 
     protected static function secureBaseDir()
@@ -143,5 +160,23 @@ class UploadHelper
             }
         }
         return mime_content_type($path) ?: '';
+    }
+
+    protected static function registerManagedFile($relativePath, array $upload, array $context)
+    {
+        if (!class_exists('FileRecord')) {
+            return;
+        }
+        try {
+            FileRecord::registerStored($relativePath, $upload, $context);
+        } catch (Throwable $e) {
+            ErrorHandler::log('upload_file_registry', $e, 500);
+        }
+    }
+
+    protected static function categoryFromSubdir($subdir)
+    {
+        $first = explode('/', trim((string) $subdir, '/'))[0] ?? 'general';
+        return preg_replace('/[^a-z0-9_-]/i', '_', $first) ?: 'general';
     }
 }

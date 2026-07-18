@@ -55,6 +55,15 @@ class IdentityDocument extends Model
              VALUES (?, ?, ?, ?, ?, NOW())',
             [(int) $userId, $type, $filePath, 'pending', trim((string) $note) ?: null]
         );
+        $documentId = (int) self::lastInsertId();
+        if (class_exists('FileRecord')) {
+            try {
+                FileRecord::relatePath($filePath, 'identity_document', $documentId, 'identity_document', (int) $userId);
+                FileRecord::relatePath($filePath, 'user', (int) $userId, 'identity_document', (int) $userId);
+            } catch (Throwable $e) {
+                ErrorHandler::log('identity_document_file_relation', $e, 500);
+            }
+        }
         Notification::create((int) $userId, 'مدرک هویتی دریافت شد', 'مدرک هویتی شما ثبت شد و در صف بررسی قرار گرفت.', 'identity', url('profile'));
         foreach (User::all('admin', null, 'active') as $admin) {
             Notification::create(

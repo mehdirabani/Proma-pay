@@ -8,6 +8,109 @@ class Medal extends Model
         return self::fetchAll('SELECT * FROM medal_definitions' . $where . ' ORDER BY sort_order ASC, id ASC');
     }
 
+    public static function definitionsWithStats($filter = '')
+    {
+        $params = [];
+        $where = 'WHERE md.archived_at IS NULL';
+        if (in_array($filter, ['automatic', 'manual'], true)) {
+            $where .= ' AND md.award_type = ?';
+            $params[] = $filter;
+        } elseif ($filter === 'active') {
+            $where .= ' AND md.is_active = 1';
+        } elseif ($filter === 'inactive') {
+            $where .= ' AND md.is_active = 0';
+        }
+        return self::fetchAll(
+            'SELECT md.*,
+                    SUM(CASE WHEN um.revoked_at IS NULL THEN 1 ELSE 0 END) AS active_holders,
+                    SUM(CASE WHEN um.revoked_at IS NOT NULL THEN 1 ELSE 0 END) AS revoked_holders,
+                    MAX(um.awarded_at) AS last_awarded_at
+             FROM medal_definitions md
+             LEFT JOIN user_medals um ON um.medal_definition_id = md.id
+             ' . $where . '
+             GROUP BY md.id
+             ORDER BY md.sort_order ASC, md.id ASC',
+            $params
+        );
+    }
+
+    public static function managementSummary()
+    {
+        $definitions = self::fetch(
+            "SELECT COUNT(*) AS total,
+                    SUM(is_active = 1) AS active,
+                    SUM(award_type = 'automatic') AS automatic,
+                    SUM(award_type = 'manual') AS manual
+             FROM medal_definitions WHERE archived_at IS NULL"
+        ) ?: [];
+        $awards = self::fetch(
+            'SELECT SUM(revoked_at IS NULL) AS awarded, SUM(revoked_at IS NOT NULL) AS revoked FROM user_medals'
+        ) ?: [];
+        return array_merge([
+            'total' => 0,
+            'active' => 0,
+            'automatic' => 0,
+            'manual' => 0,
+            'awarded' => 0,
+            'revoked' => 0,
+        ], $definitions, $awards);
+    }
+
+    public static function history($limit = 20)
+    {
+        return self::fetchAll(
+            'SELECT h.*, um.user_id, md.title AS medal_title, md.icon_key, u.full_name AS user_name,
+                    actor.full_name AS actor_name
+             FROM user_medal_history h
+             JOIN user_medals um ON um.id = h.user_medal_id
+             JOIN medal_definitions md ON md.id = um.medal_definition_id
+             JOIN users u ON u.id = um.user_id
+             LEFT JOIN users actor ON actor.id = h.performed_by
+             ORDER BY h.id DESC LIMIT ' . max(1, min(100, (int) $limit))
+        );
+    }
+
+    public static function toggleDefinition($id, $actorId)
+    {
+        $definition = self::fetch('SELECT * FROM medal_definitions WHERE id = ? AND archived_at IS NULL LIMIT 1', [(int) $id]);
+        if (!$definition) {
+            throw new InvalidArgumentException('تعریف مدال پیدا نشد.');
+        }
+        $next = empty($definition['is_active']) ? 1 : 0;
+        self::execute('UPDATE medal_definitions SET is_active = ?, updated_at = NOW() WHERE id = ?', [$next, (int) $id]);
+        if (class_exists('AuditLog')) {
+            AuditLog::record('medal_definition', $next ? 'activated' : 'deactivated', 'medal_definition', (int) $id, [
+                'actor_user_id' => (int) $actorId,
+                'old_values' => ['is_active' => (int) $definition['is_active']],
+                'new_values' => ['is_active' => $next],
+            ]);
+        }
+        return $next === 1;
+    }
+
+    public static function synchronizeCustomers($actorId, $userId = null, $limit = 100)
+    {
+        $params = [];
+        $where = "WHERE role = 'customer' AND status = 'active'";
+        if ($userId) {
+            $where .= ' AND id = ?';
+            $params[] = (int) $userId;
+        }
+        $users = self::fetchAll('SELECT id FROM users ' . $where . ' ORDER BY id ASC LIMIT ' . max(1, min(500, (int) $limit)), $params);
+        $processed = 0;
+        foreach ($users as $user) {
+            self::evaluateCustomer((int) $user['id'], $actorId);
+            $processed++;
+        }
+        if (class_exists('AuditLog')) {
+            AuditLog::record('medal', 'synchronized', 'medal_definition', 0, [
+                'actor_user_id' => (int) $actorId,
+                'new_values' => ['processed_customers' => $processed, 'user_id' => $userId ? (int) $userId : null],
+            ]);
+        }
+        return $processed;
+    }
+
     public static function forUsers(array $userIds)
     {
         $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds))));

@@ -17,23 +17,25 @@ $singleOperator = count($operators ?? []) === 1 ? $operators[0] : null;
 <section class="card">
   <div class="card-header"><h2>فیلتر سررسید</h2></div>
   <div class="card-body">
-    <form method="get" action="<?= e(url('overdue')) ?>" class="form-grid three" style="margin-bottom:14px" data-ajax-filter data-ajax-target="[data-ajax-results='overdue']">
+    <form method="get" action="<?= e(url('overdue')) ?>" class="proma-filter-bar" data-ajax-filter data-ajax-target="[data-ajax-results='overdue']">
       <input type="hidden" name="route" value="overdue">
       <?php if ($bucket): ?><input type="hidden" name="bucket" value="<?= e($bucket) ?>"><?php endif; ?>
-      <label class="full">جستجو در مشتری و قرارداد
-        <input name="q" value="<?= e($search) ?>" placeholder="نام مشتری، شماره قرارداد، کد ملی یا شماره تماس">
-      </label>
-      <label>مرتب‌سازی
-        <select name="sort">
-          <option value="oldest"<?= selected($sort, 'oldest') ?>>قدیمی‌ترین سررسید</option>
-          <option value="newest"<?= selected($sort, 'newest') ?>>جدیدترین سررسید</option>
-          <option value="amount_desc"<?= selected($sort, 'amount_desc') ?>>بیشترین مبلغ قابل پرداخت</option>
-          <option value="amount_asc"<?= selected($sort, 'amount_asc') ?>>کمترین مبلغ قابل پرداخت</option>
-          <option value="name_asc"<?= selected($sort, 'name_asc') ?>>نام مشتری: الف تا ی</option>
-          <option value="name_desc"<?= selected($sort, 'name_desc') ?>>نام مشتری: ی تا الف</option>
-        </select>
-      </label>
-      <div class="actions"><button class="btn secondary" type="submit">جستجو</button><span class="proma-ajax-status" data-ajax-status></span></div>
+      <div class="proma-filter-bar__fields">
+        <label class="proma-filter-bar__search">جستجو در مشتری و قرارداد
+          <input name="q" value="<?= e($search) ?>" placeholder="نام مشتری، شماره قرارداد، کد ملی یا شماره تماس">
+        </label>
+        <label>مرتب‌سازی
+          <select name="sort">
+            <option value="oldest"<?= selected($sort, 'oldest') ?>>قدیمی‌ترین سررسید</option>
+            <option value="newest"<?= selected($sort, 'newest') ?>>جدیدترین سررسید</option>
+            <option value="amount_desc"<?= selected($sort, 'amount_desc') ?>>بیشترین مبلغ قابل پرداخت</option>
+            <option value="amount_asc"<?= selected($sort, 'amount_asc') ?>>کمترین مبلغ قابل پرداخت</option>
+            <option value="name_asc"<?= selected($sort, 'name_asc') ?>>نام مشتری: الف تا ی</option>
+            <option value="name_desc"<?= selected($sort, 'name_desc') ?>>نام مشتری: ی تا الف</option>
+          </select>
+        </label>
+      </div>
+      <div class="proma-filter-bar__actions"><button class="btn secondary" type="submit">جستجو</button><span class="proma-ajax-status" data-ajax-status></span></div>
     </form>
     <div class="tabs">
       <a class="tab-link <?= !$bucket ? 'active' : '' ?>" href="<?= e(url('overdue', array_filter(['q' => $search ?: null, 'sort' => $sort]))) ?>">همه</a>
@@ -79,13 +81,13 @@ $singleOperator = count($operators ?? []) === 1 ? $operators[0] : null;
           <td class="actions">
             <a class="icon-btn" href="<?= e(url('chat', ['contact' => $item['customer_id']])) ?>" title="باز کردن چت با مشتری"><i data-feather="message-square"></i></a>
             <button class="btn small secondary" type="button" data-open-modal="details-<?= (int) $item['id'] ?>">مشاهده</button>
+            <button class="btn small success" type="button" data-open-modal="call-<?= (int) $item['id'] ?>"><?= proma_icon('phone') ?><span>تماس</span></button>
             <?php if (Auth::role() === 'admin'): ?>
               <button class="btn small" type="button" data-open-modal="manual-overdue-<?= (int) $item['id'] ?>">پرداخت دستی</button>
               <button class="btn small warning" type="button" data-open-modal="discount-<?= (int) $item['id'] ?>">اصلاحیه</button>
               <button class="btn small info" type="button" data-open-modal="operator-<?= (int) $item['id'] ?>">ارسال به اپراتور</button>
               <button class="btn small danger" type="button" data-open-modal="lawyer-<?= (int) $item['id'] ?>">ارجاع حقوقی</button>
             <?php else: ?>
-              <button class="btn small success" type="button" data-open-modal="call-<?= (int) $item['id'] ?>">تماس با مشتری</button>
               <button class="btn small danger" type="button" data-open-modal="lawyer-<?= (int) $item['id'] ?>">ارسال به واحد حقوقی</button>
               <button class="btn small info" type="button" data-open-modal="followup-<?= (int) $item['id'] ?>">ثبت نتیجه پیگیری</button>
             <?php endif; ?>
@@ -98,25 +100,40 @@ $singleOperator = count($operators ?? []) === 1 ? $operators[0] : null;
               <div class="proma-contact-list">
                 <div class="proma-contact-row">
                   <span><strong><?= e($item['customer_name']) ?></strong><small>مشتری</small></span>
-                  <a class="btn small success" href="tel:<?= e(to_english_digits($item['mobile'])) ?>"><?= to_persian_digits($item['mobile']) ?></a>
+                  <?php $customerPhone = normalize_iran_phone($item['mobile']); ?>
+                  <span class="proma-contact-actions">
+                    <?php if ($customerPhone): ?><a class="btn small success" href="tel:<?= e($customerPhone) ?>">تماس</a><?php endif; ?>
+                    <button class="btn small secondary" type="button" data-copy-phone="<?= e($customerPhone ?: to_english_digits($item['mobile'])) ?>" aria-label="کپی شماره مشتری">کپی شماره</button>
+                    <small><?= e(format_iran_phone($item['mobile'])) ?></small>
+                  </span>
                 </div>
                 <?php if (!empty($item['secondary_phone'])): ?>
                   <div class="proma-contact-row">
                     <span><strong><?= e($item['customer_name']) ?></strong><small>شماره دوم مشتری</small></span>
-                    <a class="btn small success" href="tel:<?= e(to_english_digits($item['secondary_phone'])) ?>"><?= to_persian_digits($item['secondary_phone']) ?></a>
+                    <?php $secondaryPhone = normalize_iran_phone($item['secondary_phone']); ?>
+                    <span class="proma-contact-actions">
+                      <?php if ($secondaryPhone): ?><a class="btn small success" href="tel:<?= e($secondaryPhone) ?>">تماس</a><?php endif; ?>
+                      <button class="btn small secondary" type="button" data-copy-phone="<?= e($secondaryPhone ?: to_english_digits($item['secondary_phone'])) ?>">کپی شماره</button>
+                      <small><?= e(format_iran_phone($item['secondary_phone'])) ?></small>
+                    </span>
                   </div>
                 <?php endif; ?>
                 <?php foreach ($guarantorContacts as $contact): ?>
                   <div class="proma-contact-row">
                     <span><strong><?= e($contact['full_name']) ?></strong><small><?= e($contact['relationship'] ?: 'ضامن') ?></small></span>
-                    <a class="btn small warning" href="tel:<?= e(to_english_digits($contact['mobile'])) ?>"><?= to_persian_digits($contact['mobile']) ?></a>
+                    <?php $guarantorPhone = normalize_iran_phone($contact['mobile']); ?>
+                    <span class="proma-contact-actions">
+                      <?php if ($guarantorPhone): ?><a class="btn small warning" href="tel:<?= e($guarantorPhone) ?>">تماس</a><?php endif; ?>
+                      <button class="btn small secondary" type="button" data-copy-phone="<?= e($guarantorPhone ?: to_english_digits($contact['mobile'])) ?>">کپی شماره</button>
+                      <small><?= e(format_iran_phone($contact['mobile'])) ?></small>
+                    </span>
                   </div>
                 <?php endforeach; ?>
                 <?php if (empty($guarantorContacts)): ?><div class="empty">شماره ضامنی برای این قرارداد ثبت نشده است.</div><?php endif; ?>
               </div>
             </div>
             <div class="modal-footer">
-              <form method="post" action="<?= e(url('overdue/callLog/' . $item['id'])) ?>"><?= csrf_field() ?><input type="hidden" name="notes" value="تماس از modal سررسید گذشته"><button class="btn success" type="submit">ثبت در سوابق</button></form>
+              <form method="post" action="<?= e(url('overdue/callLog/' . $item['id'])) ?>"><?= csrf_field() ?><input type="hidden" name="notes" value="درخواست تماس از پنل سررسید گذشته"><button class="btn success" type="submit">ثبت اقدام تماس</button></form>
               <button class="btn secondary" type="button" data-close-modal>بستن</button>
             </div>
           </div>

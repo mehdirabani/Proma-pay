@@ -296,6 +296,81 @@ CREATE TABLE `identity_documents` (
   CONSTRAINT `fk_identity_documents_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `file_audit_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `file_audit_logs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `file_id` bigint(20) unsigned NOT NULL,
+  `action` varchar(80) NOT NULL,
+  `actor_user_id` bigint(20) unsigned DEFAULT NULL,
+  `details_json` longtext DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_file_audit_file` (`file_id`,`created_at`),
+  KEY `idx_file_audit_actor` (`actor_user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `file_relations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `file_relations` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `file_id` bigint(20) unsigned NOT NULL,
+  `entity_type` varchar(60) NOT NULL,
+  `entity_id` bigint(20) unsigned NOT NULL,
+  `relation_type` varchar(60) NOT NULL DEFAULT 'attachment',
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_file_relation` (`file_id`,`entity_type`,`entity_id`,`relation_type`),
+  KEY `idx_file_relations_entity` (`entity_type`,`entity_id`),
+  KEY `idx_file_relations_file` (`file_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `files`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `files` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `file_uuid` char(32) NOT NULL,
+  `original_name` varchar(255) NOT NULL,
+  `stored_name` varchar(255) NOT NULL,
+  `display_name` varchar(190) NOT NULL,
+  `extension` varchar(20) NOT NULL,
+  `mime_type` varchar(190) NOT NULL,
+  `size_bytes` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `storage_disk` varchar(30) NOT NULL DEFAULT 'private',
+  `storage_path` varchar(500) NOT NULL,
+  `checksum_sha256` char(64) DEFAULT NULL,
+  `category` varchar(50) NOT NULL DEFAULT 'general',
+  `status` varchar(20) NOT NULL DEFAULT 'active',
+  `visibility` varchar(20) NOT NULL DEFAULT 'private',
+  `uploader_user_id` bigint(20) unsigned DEFAULT NULL,
+  `uploader_role` varchar(40) DEFAULT NULL,
+  `related_entity_type` varchar(60) DEFAULT NULL,
+  `related_entity_id` bigint(20) unsigned DEFAULT NULL,
+  `parent_file_id` bigint(20) unsigned DEFAULT NULL,
+  `version_number` int(10) unsigned NOT NULL DEFAULT 1,
+  `description` text DEFAULT NULL,
+  `tags_json` longtext DEFAULT NULL,
+  `metadata_json` longtext DEFAULT NULL,
+  `archived_at` datetime DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `deleted_by` bigint(20) unsigned DEFAULT NULL,
+  `deletion_reason` text DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_files_uuid` (`file_uuid`),
+  UNIQUE KEY `uq_files_storage_path` (`storage_path`),
+  KEY `idx_files_status_created` (`status`,`created_at`),
+  KEY `idx_files_category` (`category`),
+  KEY `idx_files_uploader` (`uploader_user_id`),
+  KEY `idx_files_related` (`related_entity_type`,`related_entity_id`),
+  KEY `idx_files_parent` (`parent_file_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `import_batches`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;

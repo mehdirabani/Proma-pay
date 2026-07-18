@@ -207,7 +207,11 @@ class Ecommerce extends Model
 
         $imagePath = $existing['image_path'] ?? null;
         if ($upload && (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
-            $imagePath = UploadHelper::storePublicImage($upload, 'products', UploadHelper::IMAGE_EXTENSIONS);
+            $imagePath = UploadHelper::storePublicImage($upload, 'products', UploadHelper::IMAGE_EXTENSIONS, [
+                'uploader_user_id' => $userId ? (int) $userId : null,
+                'category' => 'products',
+                'source' => 'ecommerce_product',
+            ]);
         }
 
         $status = in_array(($data['status'] ?? 'active'), ['active', 'inactive', 'draft'], true) ? $data['status'] : 'active';
@@ -241,6 +245,7 @@ class Ecommerce extends Model
                  WHERE id = :id",
                 $updatePayload
             );
+            self::relateProductImage($imagePath, $id, $userId);
             return $id;
         }
 
@@ -251,7 +256,21 @@ class Ecommerce extends Model
              (:title, :slug, :sku, :category, :brand, :price, :sale_price, :stock_quantity, :short_description, :description, :image_path, :status, :is_featured, :created_by, NOW())",
             $payload
         );
-        return (int) self::lastInsertId();
+        $productId = (int) self::lastInsertId();
+        self::relateProductImage($imagePath, $productId, $userId);
+        return $productId;
+    }
+
+    protected static function relateProductImage($imagePath, $productId, $userId = null)
+    {
+        if (!$imagePath || !class_exists('FileRecord')) {
+            return;
+        }
+        try {
+            FileRecord::relatePath($imagePath, 'product', (int) $productId, 'product_image', $userId ? (int) $userId : null);
+        } catch (Throwable $e) {
+            ErrorHandler::log('ecommerce_product_file_relation', $e, 500);
+        }
     }
 
     public static function orders($limit = 100)

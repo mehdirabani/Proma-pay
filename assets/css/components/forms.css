@@ -331,6 +331,57 @@ table .actions {
   gap: 10px;
 }
 
+.proma-plugin-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 170, 5, .34);
+  background: rgba(255, 170, 5, .1);
+}
+
+.proma-plugin-warning__icon {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--proma-control-radius);
+  color: #9f6900;
+  background: rgba(255, 170, 5, .16);
+}
+
+.proma-plugin-warning__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.proma-plugin-warning__content {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.proma-plugin-warning__title,
+.proma-plugin-warning__text {
+  display: block;
+}
+
+.proma-plugin-warning__title {
+  margin-block-end: 4px;
+  color: var(--proma-control-text);
+}
+
+.proma-plugin-warning__text {
+  margin: 0;
+  color: var(--proma-control-muted);
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
 .proma-plugin-upload-form > label {
   min-width: min(300px, 100%);
   display: grid;
@@ -438,6 +489,10 @@ table td {
   .proma-plugin-upload-form > .btn,
   .proma-plugin-toolbar > form > .btn {
     width: 100%;
+  }
+
+  .proma-plugin-warning {
+    padding: 12px 14px;
   }
 }
 

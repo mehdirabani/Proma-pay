@@ -273,10 +273,20 @@ class BackupService
     protected static function databaseDump()
     {
         $pdo = Model::db();
-        $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+        $tablesStmt = $pdo->query('SHOW TABLES');
+        try {
+            $tables = $tablesStmt->fetchAll(PDO::FETCH_COLUMN);
+        } finally {
+            $tablesStmt->closeCursor();
+        }
         $sql = "SET FOREIGN_KEY_CHECKS=0;\n";
         foreach ($tables as $table) {
-            $create = $pdo->query('SHOW CREATE TABLE `' . str_replace('`', '``', $table) . '`')->fetch(PDO::FETCH_ASSOC);
+            $createStmt = $pdo->query('SHOW CREATE TABLE `' . str_replace('`', '``', $table) . '`');
+            try {
+                $create = $createStmt->fetch(PDO::FETCH_ASSOC);
+            } finally {
+                $createStmt->closeCursor();
+            }
             $sql .= "\nDROP TABLE IF EXISTS `{$table}`;\n" . array_values($create)[1] . ";\n";
             $rows = Model::fetchAll('SELECT * FROM `' . str_replace('`', '``', $table) . '`');
             foreach ($rows as $row) {

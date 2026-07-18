@@ -2,17 +2,27 @@
 
 class FileManagerController extends Controller
 {
-    private const MAX_FILE_SIZE = 10485760;
-    private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'zip', 'rar'];
-
     public function index()
     {
         $this->requireRole('admin');
+        $filters = [
+            'q' => trim((string) ($_GET['q'] ?? '')),
+            'category' => trim((string) ($_GET['category'] ?? '')),
+            'status' => trim((string) ($_GET['status'] ?? '')),
+            'visibility' => trim((string) ($_GET['visibility'] ?? '')),
+            'page' => max(1, (int) to_english_digits($_GET['page'] ?? 1)),
+            'per_page' => 25,
+        ];
+        $registryReady = FileRecord::isAvailable();
         $this->render('file-manager/index', [
-            'title' => 'مدیریت فایل',
-            'files' => $this->files(),
-            'maxFileSize' => self::MAX_FILE_SIZE,
-            'allowedExtensions' => self::ALLOWED_EXTENSIONS,
+            'title' => 'مدیریت فایل‌ها',
+            'registryReady' => $registryReady,
+            'filters' => $filters,
+            'filesPage' => $registryReady ? FileRecord::page($filters) : ['items' => [], 'total' => 0, 'page' => 1, 'pages' => 1, 'per_page' => 25],
+            'stats' => $registryReady ? FileRecord::stats() : ['total' => 0, 'total_size' => 0, 'active' => 0, 'archived' => 0, 'deleted' => 0, 'recent' => 0],
+            'categories' => $registryReady ? FileRecord::categories() : [],
+            'maxFileSize' => FileRecord::MAX_FILE_SIZE,
+            'allowedExtensions' => FileRecord::managedExtensions(),
         ]);
     }
 
@@ -21,124 +31,154 @@ class FileManagerController extends Controller
         $this->requireRole('admin');
         $this->onlyPost();
         try {
-            $upload = $_FILES['managed_file'] ?? null;
-            if (!$upload || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
-                throw new InvalidArgumentException('ابتدا فایل را انتخاب کنید.');
-            }
-            if ((int) ($upload['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK || !is_uploaded_file($upload['tmp_name'])) {
-                throw new InvalidArgumentException('فایل به‌درستی بارگذاری نشد.');
-            }
-            if ((int) ($upload['size'] ?? 0) > self::MAX_FILE_SIZE) {
-                throw new InvalidArgumentException('حجم فایل باید حداکثر ۱۰ مگابایت باشد.');
-            }
-
-            $extension = strtolower(pathinfo($upload['name'] ?? '', PATHINFO_EXTENSION));
-            if (!in_array($extension, self::ALLOWED_EXTENSIONS, true)) {
-                throw new InvalidArgumentException('فرمت فایل مجاز نیست.');
-            }
-
-            $dir = $this->baseDir();
-            $originalBase = pathinfo($upload['name'] ?? 'file', PATHINFO_FILENAME);
-            $safeBase = $this->safeSegment($originalBase) ?: 'file';
-            $fileName = date('Ymd-His') . '-' . bin2hex(random_bytes(4)) . '-' . $safeBase . '.' . $extension;
-            $destination = $dir . DIRECTORY_SEPARATOR . $fileName;
-            if (!move_uploaded_file($upload['tmp_name'], $destination)) {
-                throw new RuntimeException('ذخیره فایل انجام نشد.');
-            }
-
-            set_flash('success', 'فایل با موفقیت اضافه شد.');
+            FileRecord::storeManagedUpload($_FILES['managed_file'] ?? [], [
+                'uploader_user_id' => Auth::id(),
+                'uploader_role' => Auth::role(),
+                'display_name' => $_POST['display_name'] ?? '',
+                'category' => $_POST['category'] ?? 'general',
+                'visibility' => $_POST['visibility'] ?? 'private',
+                'description' => $_POST['description'] ?? '',
+                'tags' => $_POST['tags'] ?? '',
+                'source' => 'file_manager',
+            ]);
+            set_flash('success', 'فایل در فضای امن و فهرست مرکزی ثبت شد.');
         } catch (Throwable $e) {
-            set_flash('error', $e->getMessage());
+            ErrorHandler::log('file_manager_upload', $e, 500);
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'بارگذاری فایل انجام نشد. migration مدیریت فایل را بررسی کنید.');
         }
         redirect('file-manager');
     }
 
-    public function download($fileName)
+    public function download($uuid)
     {
         $this->requireRole('admin');
-        $path = $this->filePath((string) $fileName);
-        if (!$path || !is_file($path)) {
+        $file = FileRecord::findByUuid((string) $uuid);
+        if (!$file || ($file['status'] ?? '') === 'deleted') {
             http_response_code(404);
             echo 'فایل پیدا نشد.';
-            exit;
+            return;
         }
-        header('Content-Type: application/octet-stream');
-        header('Content-Disposition: attachment; filename="' . basename($path) . '"');
-        header('Content-Length: ' . filesize($path));
+        $path = FileRecord::absoluteStoragePath($file['storage_path'] ?? '');
+        if (!$path || !is_file($path)) {
+            http_response_code(404);
+            echo 'محتوای فایل در فضای ذخیره‌سازی پیدا نشد.';
+            return;
+        }
+        $name = trim(preg_replace('/[\r\n"]+/', '', (string) ($file['original_name'] ?: $file['display_name'])));
+        $name = $name ?: 'download';
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Type: ' . ($file['mime_type'] ?: 'application/octet-stream'));
+        header('Content-Disposition: attachment; filename="download"; filename*=UTF-8\'\'' . rawurlencode($name));
+        header('Content-Length: ' . (string) filesize($path));
         readfile($path);
         exit;
     }
 
-    public function delete($fileName)
+    public function update($uuid)
     {
         $this->requireRole('admin');
         $this->onlyPost();
-        $path = $this->filePath((string) $fileName);
-        if ($path && is_file($path)) {
-            @unlink($path);
-            set_flash('success', 'فایل حذف شد.');
-        } else {
-            set_flash('error', 'فایل پیدا نشد.');
+        try {
+            FileRecord::updateMetadata((string) $uuid, $_POST, Auth::id());
+            set_flash('success', 'اطلاعات فایل به‌روزرسانی شد. محتوای نسخه فعلی تغییر نکرد.');
+        } catch (Throwable $e) {
+            ErrorHandler::log('file_manager_metadata', $e, 500);
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ویرایش اطلاعات فایل انجام نشد.');
         }
         redirect('file-manager');
     }
 
-    private function files()
+    public function replace($uuid)
     {
-        $dir = $this->baseDir();
-        $items = [];
-        foreach (glob($dir . DIRECTORY_SEPARATOR . '*') ?: [] as $path) {
-            if (!is_file($path)) {
-                continue;
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            FileRecord::replace((string) $uuid, $_FILES['replacement_file'] ?? [], Auth::id(), $_POST['replacement_reason'] ?? '');
+            set_flash('success', 'نسخه جدید ثبت شد و نسخه قبلی بایگانی شد.');
+        } catch (Throwable $e) {
+            ErrorHandler::log('file_manager_replace', $e, 500);
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'جایگزینی نسخه فایل انجام نشد.');
+        }
+        redirect('file-manager');
+    }
+
+    public function relate($uuid)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            $file = FileRecord::findByUuid((string) $uuid);
+            if (!$file) {
+                throw new InvalidArgumentException('فایل انتخاب‌شده پیدا نشد.');
             }
-            $items[] = [
-                'name' => basename($path),
-                'size' => filesize($path),
-                'modified_at' => filemtime($path),
-                'extension' => strtolower(pathinfo($path, PATHINFO_EXTENSION)),
-            ];
+            FileRecord::addRelation(
+                (int) $file['id'],
+                $_POST['entity_type'] ?? '',
+                (int) ($_POST['entity_id'] ?? 0),
+                $_POST['relation_type'] ?? 'attachment',
+                Auth::id()
+            );
+            set_flash('success', 'ارتباط فایل با رکورد انتخاب‌شده ثبت شد.');
+        } catch (Throwable $e) {
+            ErrorHandler::log('file_manager_relation', $e, 500);
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت ارتباط فایل انجام نشد.');
         }
-        usort($items, function ($a, $b) {
-            return ($b['modified_at'] ?? 0) <=> ($a['modified_at'] ?? 0);
-        });
-        return $items;
+        redirect('file-manager');
     }
 
-    private function baseDir()
+    public function archive($uuid)
     {
-        $dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'file-manager';
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            FileRecord::archive((string) $uuid, Auth::id(), $_POST['reason'] ?? '');
+            set_flash('success', 'فایل بایگانی شد و از بین نرفت.');
+        } catch (Throwable $e) {
+            ErrorHandler::log('file_manager_archive', $e, 500);
+            set_flash('error', 'بایگانی فایل انجام نشد.');
         }
-        return $dir;
+        redirect('file-manager');
     }
 
-    private function filePath($fileName)
+    public function restore($uuid)
     {
-        $fileName = basename(rawurldecode((string) $fileName));
-        if ($fileName === '' || $fileName !== $this->safeFileName($fileName)) {
-            return null;
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            FileRecord::restore((string) $uuid, Auth::id(), $_POST['reason'] ?? '');
+            set_flash('success', 'فایل بازیابی شد.');
+        } catch (Throwable $e) {
+            ErrorHandler::log('file_manager_restore', $e, 500);
+            set_flash('error', 'بازیابی فایل انجام نشد.');
         }
-        $base = realpath($this->baseDir());
-        $path = $base . DIRECTORY_SEPARATOR . $fileName;
-        $dir = realpath(dirname($path));
-        if (!$base || !$dir || strpos($dir, $base) !== 0) {
-            return null;
-        }
-        return $path;
+        redirect('file-manager');
     }
 
-    private function safeFileName($value)
+    public function delete($uuid)
     {
-        $extension = strtolower(pathinfo($value, PATHINFO_EXTENSION));
-        $base = pathinfo($value, PATHINFO_FILENAME);
-        return $this->safeSegment($base) . ($extension !== '' ? '.' . $extension : '');
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            FileRecord::softDelete((string) $uuid, Auth::id(), $_POST['deletion_reason'] ?? '');
+            set_flash('success', 'فایل به‌صورت نرم حذف شد؛ سابقه و امکان ممیزی حفظ می‌شود.');
+        } catch (Throwable $e) {
+            ErrorHandler::log('file_manager_delete', $e, 500);
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'حذف فایل انجام نشد.');
+        }
+        redirect('file-manager');
     }
 
-    private function safeSegment($value)
+    public function sync()
     {
-        $value = to_english_digits((string) $value);
-        $value = preg_replace('/[^\p{L}\p{N}_-]+/u', '-', $value);
-        return trim((string) $value, '-_');
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            $count = FileRecord::backfillStorage(200);
+            set_flash('success', 'همگام‌سازی فایل‌ها انجام شد: ' . to_persian_digits($count) . ' فایل جدید ثبت شد.');
+        } catch (Throwable $e) {
+            ErrorHandler::log('file_manager_sync', $e, 500);
+            set_flash('error', 'همگام‌سازی فایل‌های قدیمی انجام نشد.');
+        }
+        redirect('file-manager');
     }
 }
