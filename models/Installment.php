@@ -362,6 +362,10 @@ class Installment extends Model
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         self::begin();
         try {
+            $contract = self::fetch('SELECT status FROM contracts WHERE id = ? FOR UPDATE', [$contractId]);
+            if (!$contract || in_array(($contract['status'] ?? ''), ['cancelled', 'completed', 'closed'], true)) {
+                throw new InvalidArgumentException('برای قرارداد لغو یا تسویه‌شده عملیات دسته‌جمعی قسط قابل انجام نیست.');
+            }
             $rows = self::fetchAll("SELECT * FROM installments WHERE contract_id = ? AND id IN ({$placeholders}) FOR UPDATE", array_merge([$contractId], $ids));
             if (count($rows) !== count($ids)) {
                 throw new InvalidArgumentException('یکی از اقساط انتخاب‌شده به این قرارداد تعلق ندارد.');

@@ -2187,6 +2187,31 @@
     });
   };
 
+  const setQuillHtml = function (quill, html) {
+    if (!quill) return;
+    const value = String(html || '');
+    if (quill.clipboard && typeof quill.clipboard.dangerouslyPasteHTML === 'function') {
+      quill.clipboard.dangerouslyPasteHTML(value);
+      return;
+    }
+    if (typeof quill.pasteHTML === 'function') {
+      quill.pasteHTML(value);
+      return;
+    }
+    if (quill.clipboard && typeof quill.clipboard.convert === 'function' && typeof quill.setContents === 'function') {
+      try {
+        quill.setContents(quill.clipboard.convert({ html: value, text: '' }), 'silent');
+        return;
+      } catch (error) {
+        quill.setContents(quill.clipboard.convert(value), 'silent');
+        return;
+      }
+    }
+    quill.root.innerHTML = value;
+    if (typeof quill.update === 'function') quill.update('silent');
+  };
+  window.PromaQuillHtml = setQuillHtml;
+
   const initPromaRichEditors = function () {
     if (!window.Quill) return;
     document.querySelectorAll('textarea[data-rich-editor]').forEach(function (textarea) {
@@ -2226,9 +2251,9 @@
       const initial = decodeHtmlEntities(textarea.value || '');
       if (initial.trim() !== '') {
         if (/<[a-z][\s\S]*>/i.test(initial)) {
-          quill.clipboard.dangerouslyPasteHTML(initial);
+          setQuillHtml(quill, initial);
         } else {
-          quill.clipboard.dangerouslyPasteHTML(initial.replace(/[&<>"']/g, function (char) {
+          setQuillHtml(quill, initial.replace(/[&<>"']/g, function (char) {
             return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[char];
           }).replace(/\r?\n/g, '<br>'));
         }

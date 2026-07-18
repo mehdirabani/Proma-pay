@@ -260,6 +260,7 @@ TEXT;
     public static function generate($contractId, $generatedBy = null)
     {
         self::ensureSchema();
+        self::assertEditableContract($contractId);
         $effectiveTemplate = ContractTemplateService::getEffectiveTemplate();
         $templateVersionId = !empty($effectiveTemplate['id']) ? (int) $effectiveTemplate['id'] : null;
         $rendered = self::render((int) $contractId);
@@ -287,6 +288,7 @@ TEXT;
     public static function saveRenderedBody($contractId, $body, $userId, $reason, $title = null, $header = null)
     {
         self::ensureSchema();
+        self::assertEditableContract($contractId);
         $body = trim((string) $body);
         if ($body === '') {
             throw new InvalidArgumentException('متن قرارداد نمی‌تواند خالی باشد.');
@@ -319,6 +321,7 @@ TEXT;
         if (!$version) {
             throw new InvalidArgumentException('نسخه قرارداد پیدا نشد.');
         }
+        self::assertEditableContract((int) $version['contract_id']);
         self::begin();
         try {
             self::execute('UPDATE contract_document_versions SET is_published = 0 WHERE contract_id = ?', [(int) $version['contract_id']]);
@@ -338,6 +341,7 @@ TEXT;
         if (!$version) {
             throw new InvalidArgumentException('نسخه قرارداد پیدا نشد.');
         }
+        self::assertEditableContract((int) $version['contract_id']);
         self::begin();
         try {
             self::execute('UPDATE contract_document_versions SET is_published = 0 WHERE contract_id = ?', [(int) $version['contract_id']]);
@@ -375,6 +379,17 @@ TEXT;
                 throw $e;
             }
             return null;
+        }
+    }
+
+    protected static function assertEditableContract($contractId)
+    {
+        $contract = Contract::find((int) $contractId);
+        if (!$contract) {
+            throw new InvalidArgumentException('قرارداد پیدا نشد.');
+        }
+        if (($contract['status'] ?? '') === 'cancelled') {
+            throw new InvalidArgumentException('قرارداد لغوشده فقط قابل مشاهده و چاپ است و متن آن قابل تغییر نیست.');
         }
     }
 

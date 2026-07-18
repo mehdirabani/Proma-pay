@@ -60,7 +60,11 @@
       editor.value = value;
       if (editor._promaQuill) {
         if (/<[a-z][\s\S]*>/i.test(value)) {
-          editor._promaQuill.clipboard.dangerouslyPasteHTML(value);
+          if (typeof window.PromaQuillHtml === 'function') {
+            window.PromaQuillHtml(editor._promaQuill, value);
+          } else if (typeof editor._promaQuill.pasteHTML === 'function') {
+            editor._promaQuill.pasteHTML(value);
+          }
         } else {
           editor._promaQuill.setText(value);
         }
@@ -108,7 +112,11 @@
         const sourceMode = button.getAttribute('data-template-mode') === 'source';
         const shell = editor.previousElementSibling && editor.previousElementSibling.classList.contains('proma-rich-editor-shell') ? editor.previousElementSibling : null;
         if (!sourceMode && editor._promaQuill && !editor.classList.contains('proma-rich-source')) {
-          editor._promaQuill.clipboard.dangerouslyPasteHTML(editor.value);
+          if (typeof window.PromaQuillHtml === 'function') {
+            window.PromaQuillHtml(editor._promaQuill, editor.value);
+          } else if (typeof editor._promaQuill.pasteHTML === 'function') {
+            editor._promaQuill.pasteHTML(editor.value);
+          }
         }
         if (shell) shell.hidden = sourceMode;
         editor.classList.toggle('proma-rich-source', !sourceMode);

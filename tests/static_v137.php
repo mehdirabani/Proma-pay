@@ -3,12 +3,16 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
+$version = require $root . '/config/version.php';
 
 $assert = static function ($condition, string $message): void {
     if (!$condition) {
         throw new RuntimeException($message);
     }
 };
+
+$assert(($version['application'] ?? '') === '1.3.7', 'Core version must be 1.3.7.');
+$assert(($version['display'] ?? '') === 'V1.3.7', 'Display version must be V1.3.7.');
 
 $requiredFiles = [
     'controllers/HealthController.php',
@@ -69,6 +73,12 @@ $assert(strpos($deleteMethod, 'eligible_for_permanent_delete') !== false, 'Perma
 $assert(strpos($deleteMethod, 'hash_equals') !== false, 'Permanent deletion must require typed contract confirmation.');
 $assert(strpos($contract, 'contract_cancel_outbox') !== false && strpos($contract, 'contract_delete_outbox') !== false, 'Post-commit outbox failures are not isolated.');
 
+$installment = (string) file_get_contents($root . '/models/Installment.php');
+$assert(strpos($installment, 'برای قرارداد لغو یا تسویه‌شده عملیات دسته‌جمعی قسط قابل انجام نیست.') !== false, 'Cancelled contracts can still run bulk installment actions.');
+
+$contractDocument = (string) file_get_contents($root . '/models/ContractDocument.php');
+$assert(strpos($contractDocument, 'assertEditableContract') !== false && strpos($contractDocument, 'قرارداد لغوشده فقط قابل مشاهده و چاپ است') !== false, 'Cancelled contract documents are still mutable.');
+
 $contractsController = (string) file_get_contents($root . '/controllers/ContractsController.php');
 $assert(strpos($contractsController, 'confirm_delete_mistake') !== false && strpos($contractsController, 'confirm_contract_number') !== false, 'Delete controller confirmation is incomplete.');
 
@@ -81,14 +91,25 @@ foreach (['views/contracts/index.php', 'views/contracts/show.php'] as $view) {
     $assert(strpos($deleteModal, 'correct_contract_payments') === false, 'Delete UI must not offer payment correction as a deletion bypass.');
 }
 
+$contractShow = (string) file_get_contents($root . '/views/contracts/show.php');
+$assert(strpos($contractShow, '$canManageActiveContract') !== false && strpos($contractShow, 'فقط برای مشاهده و چاپ') !== false, 'Cancelled contract UI still shows mutable controls.');
+
 $tokens = (string) file_get_contents($root . '/assets/css/design-system/tokens.css');
 foreach (['#6a1b9a', '#4a148c', '#8e24aa', '#b388ff', '#f5f5f5', '#212121'] as $color) {
     $assert(stripos($tokens, $color) !== false, 'Design token is missing: ' . $color . '.');
 }
 $assert(strpos($tokens, '.form-group') !== false && strpos($tokens, '[required]') !== false, 'Legacy form groups are not covered by the unified required-field design.');
 
+$appJs = (string) file_get_contents($root . '/assets/js/app.js');
+$templateEditorJs = (string) file_get_contents($root . '/assets/js/contract-template-editor.js');
+$settings = (array) require $root . '/config/settings.php';
+$assert(strpos($appJs, 'window.PromaQuillHtml') !== false && strpos($appJs, 'typeof quill.pasteHTML') !== false, 'Quill compatibility helper is missing.');
+$assert(strpos($appJs, 'clipboard.dangerouslyPasteHTML(initial)') === false && strpos($templateEditorJs, 'clipboard.dangerouslyPasteHTML') === false, 'Unsupported Quill clipboard API is still used.');
+$assert(($settings['asset_version'] ?? '') === '1.3.7', 'Asset version must invalidate pre-V1.3.7 editor cache.');
+
 $builder = (string) file_get_contents($root . '/scripts/build_release.php');
 $assert(strpos($builder, 'V1.3.7 release candidate is present') !== false, 'Release builder can mislabel the V1.3.7 candidate as an older archive.');
+$assert(strpos($builder, "'install.php'") !== false, 'Update package must include install.php when installer schema changes.');
 
 $errorView = (string) file_get_contents($root . '/views/errors/system.php');
 $assert(strpos($errorView, 'صفحه اصلی') === false, 'Error page still contains a duplicate home action.');
