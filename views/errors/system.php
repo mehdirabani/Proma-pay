@@ -5,9 +5,11 @@ $safeMessage = (string) ($message ?? 'در پردازش درخواست خطای�
 $safeRequestId = (string) ($requestId ?? '');
 $isSessionError = $safeStatus === 419;
 $isAuthError = $safeStatus === 401;
-$isNotFound = $safeStatus === 404;
+$isSafeRetry = in_array($safeStatus, [500, 502, 503, 504], true) && strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'GET';
+$isFinancialRoute = preg_match('#(?:payment|installment|settlement|gateway)#i', (string) ($_GET['route'] ?? '')) === 1;
 $actionUrl = $isSessionError || $isAuthError ? url('auth/login') : url('');
-$actionLabel = $isSessionError || $isAuthError ? 'ورود به سامانه' : 'بازگشت به صفحه اصلی';
+$actionLabel = $isSessionError || $isAuthError ? 'ورود به سامانه' : 'رفتن به داشبورد';
+$retryUrl = (string) ($_SERVER['REQUEST_URI'] ?? url(''));
 ?>
 <!doctype html>
 <html lang="fa" dir="rtl">
@@ -32,8 +34,8 @@ $actionLabel = $isSessionError || $isAuthError ? 'ورود به سامانه' : 
         <p class="proma-error-request-id">شناسه پیگیری <code dir="ltr"><?= e($safeRequestId) ?></code></p>
       <?php endif; ?>
       <div class="proma-error-actions">
-        <a class="proma-error-primary" href="<?= e($actionUrl) ?>"><?= e($actionLabel) ?></a>
-        <a class="proma-error-secondary" href="<?= e(url('')) ?>">صفحه اصلی</a>
+        <?php if ($isSafeRetry && !$isFinancialRoute): ?><a class="proma-error-primary" href="<?= e($retryUrl) ?>">تلاش دوباره</a><?php elseif ($isFinancialRoute): ?><a class="proma-error-primary" href="<?= e(url('payments')) ?>">بررسی وضعیت عملیات</a><?php else: ?><a class="proma-error-primary" href="<?= e($actionUrl) ?>"><?= e($actionLabel) ?></a><?php endif; ?>
+        <a class="proma-error-secondary" href="<?= e($actionUrl) ?>">بازگشت</a>
       </div>
       <p class="proma-error-support">در صورت تکرار خطا، شناسه پیگیری را در اختیار پشتیبانی قرار دهید.</p>
     </section>

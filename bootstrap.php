@@ -20,4 +20,7 @@ spl_autoload_register(function ($class) {
 });
 
 ErrorHandler::install();
-Auth::start();
+$healthRoute = trim((string) ($_GET['route'] ?? ''), '/');
+if (!in_array($healthRoute, ['health/live', 'health/ready'], true)) {
+    Auth::start();
+}

@@ -14,14 +14,12 @@ class LedgerService
         if ($account) {
             return $account;
         }
-        try {
-            \Model::execute(
-                'INSERT INTO accounting_user_accounts (user_id, account_number, status, opening_balance, current_balance, created_at) VALUES (?, ?, \'active\', 0, 0, NOW())',
-                [$userId, 'ACC-' . str_pad((string) $userId, 8, '0', STR_PAD_LEFT)]
-            );
-        } catch (\Throwable $e) {
-            // A concurrent request may have created the unique account already.
-        }
+        // The unique user_id key makes this safe under concurrent first use while
+        // preserving real database errors instead of hiding them as a timeout.
+        \Model::execute(
+            'INSERT INTO accounting_user_accounts (user_id, account_number, status, opening_balance, current_balance, created_at) VALUES (?, ?, \'active\', 0, 0, NOW()) ON DUPLICATE KEY UPDATE user_id = VALUES(user_id)',
+            [$userId, 'ACC-' . str_pad((string) $userId, 8, '0', STR_PAD_LEFT)]
+        );
         $account = \Model::fetch('SELECT * FROM accounting_user_accounts WHERE user_id = ? LIMIT 1', [$userId]);
         if (!$account) {
             throw new \RuntimeException('حساب کاربر ساخته نشد.');
@@ -46,6 +44,7 @@ class LedgerService
         if ($description === '') {
             throw new \InvalidArgumentException('شرح سند دفترکل الزامی است.');
         }
+        $requestHash = hash('sha256', implode('|', [(int) $userId, trim((string) $entryType), $direction, $amount, $description, (int) $actorId]));
         $started = false;
         if (!\Model::db()->inTransaction()) {
             \Model::begin();
@@ -53,12 +52,10 @@ class LedgerService
         }
         try {
             if ($idempotencyKey !== null) {
-                $existing = \Model::fetch('SELECT id FROM accounting_ledger_entries WHERE idempotency_key = ? LIMIT 1 FOR UPDATE', [(string) $idempotencyKey]);
-                if ($existing) {
-                    if ($started) {
-                        \Model::commit();
-                    }
-                    return (int) $existing['id'];
+                $existing = AccountingIdempotencyService::begin((string) $idempotencyKey, $requestHash, (int) $actorId, (int) $userId, trim((string) $entryType));
+                if ($existing !== null) {
+                    if ($started) { \Model::commit(); }
+                    return $existing;
                 }
             }
             $account = self::accountFor($userId);
@@ -74,6 +71,9 @@ class LedgerService
             );
             $entryId = (int) \Model::lastInsertId();
             \Model::execute('UPDATE accounting_user_accounts SET current_balance = ?, updated_at = NOW() WHERE id = ?', [Money::decimal($after), (int) $account['id']]);
+            if ($idempotencyKey !== null) {
+                AccountingIdempotencyService::complete((string) $idempotencyKey, $entryId);
+            }
             if (class_exists('AuditLog')) {
                 \AuditLog::record('accounting', 'ledger_posted', 'accounting_ledger_entry', $entryId, [
                     'actor_user_id' => $actorId,

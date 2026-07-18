@@ -2,14 +2,17 @@
 
 declare(strict_types=1);
 
+$root = dirname(__DIR__);
+$versionInfo = require $root . '/config/version.php';
+$version = (string) ($versionInfo['application'] ?? '0.0.0');
+$candidateMigration = $root . '/database/migrations/2026_07_18_contract_lifecycle_schema_repair_v137.sql';
+if (is_file($candidateMigration) && version_compare($version, '1.3.7', '<')) {
+    throw new RuntimeException('V1.3.7 release candidate is present. Update config/version.php only after the staging release gate passes; no archive may be labeled V' . $version . '.');
+}
 if (!class_exists('ZipArchive')) {
     fwrite(STDERR, "PHP ZipArchive extension is required.\n");
     exit(1);
 }
-
-$root = dirname(__DIR__);
-$versionInfo = require $root . '/config/version.php';
-$version = (string) ($versionInfo['application'] ?? '0.0.0');
 $versionSlug = str_replace('.', '-', $version);
 $pluginPackages = [
     ['directory' => 'PromaAccounting', 'archive' => 'PromaAccounting'],
@@ -139,6 +142,7 @@ $updateRelativeFiles = [
     '.gitignore',
     '.htaccess',
     'assets/css/app.css',
+    'assets/css/design-system/tokens.css',
     'assets/css/components/forms.css',
     'assets/css/components/contract-print.css',
     'assets/css/components/contract-settings.css',
@@ -150,11 +154,14 @@ $updateRelativeFiles = [
     'assets/vendor/chart.umd.min.js',
     'config/settings.php',
     'bootstrap.php',
+    'index.php',
+    'installer.php',
     'config/version.php',
     'controllers/PluginsController.php',
     'controllers/BackupController.php',
     'controllers/SettingsController.php',
     'controllers/ContractsController.php',
+    'controllers/HealthController.php',
     'core/Auth.php',
     'core/ContractPermission.php',
     'core/Controller.php',
@@ -168,6 +175,7 @@ $updateRelativeFiles = [
     'helpers/functions.php',
     'helpers/MoneyMath.php',
     'helpers/BackupService.php',
+    'helpers/ScriptUpdateService.php',
     'manifest.json',
     'models/PluginRegistry.php',
     'models/Contract.php',
@@ -197,6 +205,7 @@ $updateRelativeFiles = [
     'database/migrations/2026_07_13_contract_print_compact_version_retention.sql',
     'database/migrations/2026_07_13_payment_reliability_v135.sql',
     'database/migrations/2026_07_18_runtime_schema_gate_v136.sql',
+    'database/migrations/2026_07_18_contract_lifecycle_schema_repair_v137.sql',
     'controllers/PaymentsController.php',
     'core/PaymentGatewayProviderInterface.php',
     'core/PaymentGatewayRegistry.php',
@@ -235,6 +244,14 @@ $updateRelativeFiles = [
     'docs/reports/PROMA_ACCOUNTING_MODERN_UI_REPORT.md',
     'docs/reports/PROMA_PAY_V1_3_5_PAYMENT_RELIABILITY_REPORT.md',
     'docs/reports/PROMA_PAY_V1_3_6_RELIABILITY_AND_FAILURE_EXPERIENCE_REPORT.md',
+    'docs/debug/CONTRACT_CANCELLATION_AUDIT_V1_3_6.md',
+    'docs/debug/CONTRACT_DELETE_AUDIT_V1_3_6.md',
+    'docs/incidents/V1_3_6_TIMEOUT_INVESTIGATION.md',
+    'docs/incidents/INTERMITTENT_TIMEOUT_INVESTIGATION.md',
+    'docs/qa/V1_3_7_TEST_RESULTS.md',
+    'docs/qa/V1_3_7_RELEASE_CHECKLIST.md',
+    'docs/qa/V1_3_7_PLUGIN_TESTS.md',
+    'docs/qa/V1_3_7_INSTALL_AND_UPGRADE.md',
     'docs/debug/PROMA_ACCOUNTING_MODERN_UI_AUDIT.md',
     'docs/screenshots/PROMA_ACCOUNTING_V1_1_0_BEFORE.png',
     'docs/screenshots/PROMA_ACCOUNTING_V1_2_0_AFTER.png',
@@ -264,11 +281,18 @@ $updateRelativeFiles = [
     'tests/static_v134.php',
     'tests/static_v135.php',
     'tests/static_v136.php',
+    'tests/static_v137.php',
     'tests/financial_precision_v136.php',
     'tests/error_response_v136.php',
     'tools/release-gate.php',
     'static-errors/500.html',
     'static-errors/503.html',
+    'static-errors/400.html',
+    'static-errors/403.html',
+    'static-errors/404.html',
+    'static-errors/429.html',
+    'static-errors/502.html',
+    'static-errors/504.html',
     'tests/integration_zarinpal_v134.php',
 ];
 $updateFiles = [];
@@ -299,6 +323,7 @@ $updateManifest = [
         'database/migrations/2026_07_13_contract_print_compact_version_retention.sql',
         'database/migrations/2026_07_13_payment_reliability_v135.sql',
         'database/migrations/2026_07_18_runtime_schema_gate_v136.sql',
+        'database/migrations/2026_07_18_contract_lifecycle_schema_repair_v137.sql',
     ],
     'preserves' => ['config/database.php', 'plugins/', 'storage/', 'uploads/'],
 ];

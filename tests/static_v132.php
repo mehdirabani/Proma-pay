@@ -13,7 +13,7 @@ $version = require $root . '/config/version.php';
 $assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.3.2', '>='), 'Application version must be V1.3.2 or newer.');
 
 $plugin = json_decode((string) file_get_contents($root . '/plugins/PromaAccounting/plugin.json'), true);
-$assert(($plugin['version'] ?? '') === '1.2.0', 'Proma Accounting version must be 1.2.0.');
+$assert(($plugin['version'] ?? '') === '1.2.1', 'Proma Accounting version must be 1.2.1.');
 $assert(($plugin['requires_core'] ?? '') === '1.3.2', 'Proma Accounting must require core 1.3.2.');
 
 $layout = (string) file_get_contents($root . '/views/layouts/app.php');
@@ -30,6 +30,8 @@ $assert(strpos($build, "\$pluginArchiveName . '-' . \$pluginVersion . '.zip'") !
 $assert(strpos($build, "'assets/vendor/chart.umd.min.js'") !== false, 'Update package omits local Chart.js.');
 
 $migrations = glob($root . '/plugins/PromaAccounting/migrations/*.sql') ?: [];
-$assert(count($migrations) === 2, 'UI release must not introduce accounting migrations.');
+$assert(count($migrations) === 3, 'Accounting migration inventory is incomplete.');
+$assert(in_array('migrations/2026_07_18_accounting_request_integrity.sql', $plugin['migrations'] ?? [], true), 'Accounting request-integrity migration is not declared in the plugin manifest.');
+$assert(is_file($root . '/plugins/PromaAccounting/src/Services/AccountingIdempotencyService.php'), 'Accounting idempotency service is missing.');
 
 echo "STATIC_V132_OK\n";

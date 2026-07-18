@@ -646,34 +646,39 @@ for ($i = 0; $i < 6; $i++) {
           <div class="proma-cancellation-summary">
             <span><small>قرارداد</small><strong><?= e($contract['contract_number']) ?></strong></span>
             <span><small>مشتری</small><strong><?= e($contract['customer_name']) ?></strong></span>
+            <span><small>وضعیت</small><strong><?= e(status_label($contract['status'] ?? '')) ?></strong></span>
             <span><small>اقساط فعال</small><strong><?= to_persian_digits($cancellationSummary['active_installments'] ?? 0) ?></strong></span>
+            <span><small>اقساط معوق</small><strong><?= to_persian_digits($cancellationSummary['overdue_installments'] ?? 0) ?></strong></span>
             <span><small>مانده فعال</small><strong><?= money_toman($cancellationSummary['outstanding_amount'] ?? 0) ?></strong></span>
             <span><small>پرداخت ثبت‌شده</small><strong><?= money_toman($cancellationSummary['confirmed_payment_amount'] ?? 0) ?></strong></span>
+            <span><small>تعداد پرداخت</small><strong><?= to_persian_digits($cancellationSummary['confirmed_payment_count'] ?? 0) ?></strong></span>
+            <span><small>سند قرارداد</small><strong><?= to_persian_digits($cancellationSummary['document_count'] ?? 0) ?></strong></span>
+            <span><small>پرونده حقوقی</small><strong><?= to_persian_digits($cancellationSummary['legal_case_count'] ?? 0) ?></strong></span>
+            <span><small>وابستگی حسابداری</small><strong><?= to_persian_digits($cancellationSummary['accounting_relation_count'] ?? 0) ?></strong></span>
           </div>
           <label>علت لغو قرارداد<textarea name="cancellation_reason" required minlength="3" rows="3"></textarea></label>
-          <label class="proma-confirm-check"><input type="checkbox" name="confirm_cancel" value="1" required> از لغو قرارداد و اقساط فعال آن اطمینان دارم.</label>
+          <label class="proma-confirm-check"><input type="checkbox" name="confirm_cancel" value="1" required> پیامدهای لغو قرارداد را مطالعه کردم.</label>
           <label class="proma-confirm-check proma-danger-check"><input type="checkbox" name="correct_contract_payments" value="1"> برای پرداخت‌های موفق همین قرارداد، اصلاحیه مالی ثبت شود و اثر آن‌ها در محاسبات داخلی صفر شود. این عملیات بازگشت وجه بانکی انجام نمی‌دهد.</label>
         </div>
         <div class="modal-footer"><button class="btn danger" type="submit">تأیید و لغو قرارداد</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
       </form>
     </div>
   </div>
-  <?php $deleteCode = ConfirmationCode::hint('contract_delete_' . (int) $contract['id']); $deletionPreview = Contract::deletionPreview((int) $contract['id']); ?>
+  <?php $deletionPreview = Contract::deletionPreview((int) $contract['id']); $canPermanentlyDelete = !empty($deletionPreview['eligible_for_permanent_delete']); ?>
   <div class="modal" id="delete-contract-<?= (int) $contract['id'] ?>">
     <div class="modal-content">
-      <div class="modal-header"><h3>حذف دائمی قرارداد آزمایشی/اشتباه</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+      <div class="modal-header"><h3>حذف قرارداد آزمایشی یا اشتباهی</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن"><i data-feather="x"></i></button></div>
       <form method="post" action="<?= e(url('contracts/delete/' . $contract['id'])) ?>">
         <div class="modal-body form-grid">
           <?= csrf_field() ?>
-          <div class="notice error full">این عملیات فقط برای قرارداد اشتباه یا آزمایشی است. قبل از حذف snapshot کامل قرارداد در آرشیو ثبت می‌شود و مشتری حذف نخواهد شد.</div>
-          <div class="proma-cancellation-summary full"><span><small>پرداخت مؤثر</small><strong><?= to_persian_digits($deletionPreview['effective_payment_count'] ?? 0) ?></strong></span><span><small>پرونده حقوقی</small><strong><?= to_persian_digits($deletionPreview['legal_case_count'] ?? 0) ?></strong></span><span><small>پرداخت درگاه</small><strong><?= to_persian_digits($deletionPreview['gateway_payment_count'] ?? 0) ?></strong></span></div>
-          <label class="full">علت حذف<textarea name="deletion_reason" required minlength="5" rows="3" placeholder="مثلاً قرارداد آزمایشی اشتباه ثبت شده است"></textarea></label>
-          <label class="proma-confirm-check proma-danger-check"><input type="checkbox" name="correct_contract_payments" value="1"> اگر پرداخت مؤثر وجود دارد، اصلاحیه مالی همین قرارداد ثبت و اثر داخلی آن صفر شود.</label>
-          <label class="proma-confirm-check proma-danger-check"><input type="checkbox" name="confirm_gateway_risk" value="1"> می‌دانم حذف سوابق سامانه به معنی بازگشت وجه بانکی تراکنش‌های زیبال نیست.</label>
-          <p class="full small text-muted">برای تأیید، عدد <strong class="ltr"><?= e($deleteCode) ?></strong> را وارد کنید.</p>
-          <label class="full">عدد تأیید<input name="confirm_text" required inputmode="numeric" autocomplete="off"></label>
+          <div class="notice <?= $canPermanentlyDelete ? 'success' : 'error' ?> full"><?= $canPermanentlyDelete ? 'این قرارداد فقط به‌عنوان رکورد آزمایشی یا اشتباهی و بدون سابقه مالی، حقوقی، سند یا حسابداری قابل حذف است.' : 'این قرارداد دارای سابقه مالی یا حقوقی است و قابل حذف نیست. از گزینه لغو یا بایگانی استفاده کنید.' ?></div>
+          <div class="proma-cancellation-summary full"><span><small>کل پرداخت‌ها</small><strong><?= to_persian_digits($deletionPreview['payment_count'] ?? 0) ?></strong></span><span><small>رسیدها</small><strong><?= to_persian_digits($deletionPreview['dependencies']['payment_receipt_count'] ?? 0) ?></strong></span><span><small>پرونده حقوقی</small><strong><?= to_persian_digits($deletionPreview['legal_case_count'] ?? 0) ?></strong></span><span><small>اسناد قرارداد</small><strong><?= to_persian_digits(($deletionPreview['dependencies']['generated_document_count'] ?? 0) + ($deletionPreview['dependencies']['document_version_count'] ?? 0)) ?></strong></span></div>
+          <?php if (!$canPermanentlyDelete): ?><p class="full small text-muted">وابستگی‌های مانع: <?= e(implode('، ', $deletionPreview['blocking_dependencies'] ?? [])) ?></p><?php endif; ?>
+          <label class="full">علت حذف<textarea name="deletion_reason" required minlength="5" rows="3" placeholder="مثلاً قرارداد آزمایشی اشتباه ثبت شده است"<?= $canPermanentlyDelete ? '' : ' disabled' ?>></textarea></label>
+          <label class="full">برای تأیید، شماره قرارداد را وارد کنید<input name="confirm_contract_number" required autocomplete="off" placeholder="<?= e($contract['contract_number']) ?>"<?= $canPermanentlyDelete ? '' : ' disabled' ?>></label>
+          <label class="proma-confirm-check proma-danger-check"><input type="checkbox" name="confirm_delete_mistake" value="1" required<?= $canPermanentlyDelete ? '' : ' disabled' ?>> تأیید می‌کنم این قرارداد آزمایشی یا اشتباهی است و حذف آن سوابق مالی واقعی را تحت تأثیر قرار نمی‌دهد.</label>
         </div>
-        <div class="modal-footer"><button class="btn danger" type="submit">آرشیو و حذف دائمی</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
+        <div class="modal-footer"><button class="btn danger" type="submit"<?= $canPermanentlyDelete ? '' : ' disabled' ?>>حذف قطعی قرارداد آزمایشی</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
       </form>
     </div>
   </div>

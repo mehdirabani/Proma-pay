@@ -8,6 +8,11 @@ class Router
         if ($route === '') {
             $route = Auth::check() ? 'dashboard' : (ecommerce_is_enabled() ? 'ecommerce/landing' : 'auth/login');
         }
+        if ($route === 'health/live' || $route === 'health/ready') {
+            $health = new HealthController();
+            $health->respond($route === 'health/live');
+            return;
+        }
         if (class_exists('PluginManager')) {
             try {
                 if (PluginManager::boot()->dispatchRoute($route)) {

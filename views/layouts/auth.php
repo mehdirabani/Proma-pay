@@ -22,9 +22,10 @@ $layoutAppIconPath = $layoutLogoIconPath ?: $layoutFaviconPath;
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/bootstrap.rtl.min.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/style.css')) ?>">
   <link id="color" rel="stylesheet" href="<?= e(template_asset_url('css/color-1.css')) ?>" media="screen">
-  <link rel="stylesheet" href="<?= e(template_asset_url('css/responsive.css')) ?>">
-  <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
-  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/forms.css')) ?>">
+   <link rel="stylesheet" href="<?= e(template_asset_url('css/responsive.css')) ?>">
+   <link rel="stylesheet" href="<?= e(asset_url('assets/css/app.css')) ?>">
+   <link rel="stylesheet" href="<?= e(asset_url('assets/css/design-system/tokens.css')) ?>">
+   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/forms.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/layout.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/responsive.css')) ?>">
 </head>

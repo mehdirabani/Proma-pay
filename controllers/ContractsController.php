@@ -645,8 +645,8 @@ class ContractsController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
-        if (!ConfirmationCode::verify('contract_delete_' . (int) $id, $_POST['confirm_text'] ?? '')) {
-            set_flash('error', 'عدد تأیید حذف قرارداد درست وارد نشده است.');
+        if (empty($_POST['confirm_delete_mistake'])) {
+            set_flash('error', 'برای حذف قرارداد آزمایشی یا اشتباهی باید پیامدهای حذف را تأیید کنید.');
             redirect('contracts');
         }
         try {
@@ -654,17 +654,9 @@ class ContractsController extends Controller
                 (int) $id,
                 Auth::id(),
                 $_POST['deletion_reason'] ?? '',
-                !empty($_POST['correct_contract_payments']),
-                !empty($_POST['confirm_gateway_risk'])
+                $_POST['confirm_contract_number'] ?? ''
             );
-            $message = 'قرارداد پس از ثبت آرشیو حذف شد.';
-            if (!empty($result['corrected_payments'])) {
-                $message .= ' تعداد ' . to_persian_digits($result['corrected_payments']) . ' پرداخت با اصلاحیه scoped صفر شد.';
-            }
-            if (!empty($result['gateway_warning'])) {
-                $message .= ' ' . $result['gateway_warning'];
-            }
-            set_flash('success', $message);
+            set_flash('success', 'قرارداد آزمایشی یا اشتباهی پس از ثبت آرشیو حذف شد. هیچ سابقه مالی حذف یا اصلاح نشد.');
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'حذف قرارداد انجام نشد.');
         }

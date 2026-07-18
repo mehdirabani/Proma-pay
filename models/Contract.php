@@ -210,6 +210,7 @@ class Contract extends Model
             "SELECT COUNT(*) AS total_installments,
                     SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN 1 ELSE 0 END) AS active_installments,
                     SUM(CASE WHEN status = 'paid' OR paid_amount > 0 THEN 1 ELSE 0 END) AS paid_installments,
+                    SUM(CASE WHEN due_date < CURDATE() AND status NOT IN ('paid', 'cancelled') AND GREATEST(base_amount - paid_amount, 0) > 0 THEN 1 ELSE 0 END) AS overdue_installments,
                     COALESCE(SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN GREATEST(base_amount - paid_amount, 0) ELSE 0 END), 0) AS outstanding_amount
              FROM installments
              WHERE contract_id = ?",
@@ -221,13 +222,23 @@ class Contract extends Model
              WHERE contract_id = ? AND status = 'paid' AND COALESCE(is_corrected, 0) = 0",
             [$contractId]
         ) ?: [];
+        $legalCaseCount = (int) (self::fetch('SELECT COUNT(*) AS total FROM legal_cases WHERE contract_id = ?', [$contractId])['total'] ?? 0);
+        $documentCount = self::contractDependencyCount('generated_contract_documents', $contractId)
+            + self::contractDependencyCount('contract_document_versions', $contractId);
+        $accountingCount = self::contractDependencyCount('plugin_accounting_sales', $contractId)
+            + self::contractDependencyCount('plugin_accounting_commissions', $contractId)
+            + self::contractDependencyCount('accounting_ledger_entries', $contractId);
         return [
             'total_installments' => (int) ($installments['total_installments'] ?? 0),
             'active_installments' => (int) ($installments['active_installments'] ?? 0),
             'paid_installments' => (int) ($installments['paid_installments'] ?? 0),
+            'overdue_installments' => (int) ($installments['overdue_installments'] ?? 0),
             'outstanding_amount' => normalize_money($installments['outstanding_amount'] ?? 0),
             'confirmed_payment_count' => (int) ($payments['confirmed_payment_count'] ?? 0),
             'confirmed_payment_amount' => normalize_money($payments['confirmed_payment_amount'] ?? 0),
+            'legal_case_count' => $legalCaseCount,
+            'document_count' => $documentCount,
+            'accounting_relation_count' => $accountingCount,
         ];
     }
 
@@ -488,6 +499,38 @@ class Contract extends Model
         ) ?: [];
         $installments = self::fetch('SELECT COUNT(*) AS total, SUM(CASE WHEN status = \'paid\' OR paid_amount > 0 THEN 1 ELSE 0 END) AS paid FROM installments WHERE contract_id = ?', [$contractId]) ?: [];
         $legal = (int) (self::fetch('SELECT COUNT(*) AS total FROM legal_cases WHERE contract_id = ?', [$contractId])['total'] ?? 0);
+        $dependencyCounts = [
+            'payment_correction_count' => self::contractDependencyCount('payment_corrections', $contractId),
+            'payment_receipt_count' => self::contractDependencyCount('payment_receipts', $contractId),
+            'payment_group_count' => self::contractDependencyCount('payment_groups', $contractId),
+            'payment_allocation_count' => self::contractDependencyCount('payment_allocations', $contractId),
+            'generated_document_count' => self::contractDependencyCount('generated_contract_documents', $contractId),
+            'document_version_count' => self::contractDependencyCount('contract_document_versions', $contractId),
+            'bulk_operation_count' => self::contractDependencyCount('installment_bulk_operations', $contractId),
+            'operator_call_count' => self::contractDependencyCount('operator_calls', $contractId),
+            'accounting_sale_count' => self::contractDependencyCount('plugin_accounting_sales', $contractId),
+            'accounting_commission_count' => self::contractDependencyCount('plugin_accounting_commissions', $contractId),
+            'accounting_ledger_count' => self::contractDependencyCount('accounting_ledger_entries', $contractId),
+        ];
+        $blockingDependencies = [];
+        foreach ([
+            'payment_count' => (int) ($payments['total'] ?? 0),
+            'payment_correction_count' => $dependencyCounts['payment_correction_count'],
+            'payment_receipt_count' => $dependencyCounts['payment_receipt_count'],
+            'payment_group_count' => $dependencyCounts['payment_group_count'],
+            'payment_allocation_count' => $dependencyCounts['payment_allocation_count'],
+            'legal_case_count' => $legal,
+            'generated_document_count' => $dependencyCounts['generated_document_count'],
+            'document_version_count' => $dependencyCounts['document_version_count'],
+            'operator_call_count' => $dependencyCounts['operator_call_count'],
+            'accounting_sale_count' => $dependencyCounts['accounting_sale_count'],
+            'accounting_commission_count' => $dependencyCounts['accounting_commission_count'],
+            'accounting_ledger_count' => $dependencyCounts['accounting_ledger_count'],
+        ] as $key => $count) {
+            if ($count > 0) {
+                $blockingDependencies[] = $key;
+            }
+        }
         return [
             'contract' => $contract,
             'payment_count' => (int) ($payments['total'] ?? 0),
@@ -497,10 +540,33 @@ class Contract extends Model
             'installment_count' => (int) ($installments['total'] ?? 0),
             'paid_installment_count' => (int) ($installments['paid'] ?? 0),
             'legal_case_count' => $legal,
+            'dependencies' => $dependencyCounts,
+            'blocking_dependencies' => $blockingDependencies,
+            'eligible_for_permanent_delete' => !$blockingDependencies,
         ];
     }
 
-    public static function deleteContractSafely($id, $adminId, $reason, $correctPayments = false, $gatewayAcknowledged = false)
+    protected static function contractDependencyCount($table, $contractId)
+    {
+        $allowedTables = [
+            'payment_corrections', 'payment_receipts', 'payment_groups', 'payment_allocations',
+            'generated_contract_documents', 'contract_document_versions', 'installment_bulk_operations',
+            'operator_calls', 'plugin_accounting_sales', 'plugin_accounting_commissions', 'accounting_ledger_entries',
+        ];
+        if (!in_array($table, $allowedTables, true)) {
+            throw new InvalidArgumentException('جدول وابستگی قرارداد معتبر نیست.');
+        }
+        $exists = self::fetch(
+            'SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1',
+            [$table]
+        );
+        if (!$exists) {
+            return 0;
+        }
+        return (int) (self::fetch('SELECT COUNT(*) AS total FROM `' . $table . '` WHERE contract_id = ?', [(int) $contractId])['total'] ?? 0);
+    }
+
+    public static function deleteContractSafely($id, $adminId, $reason, $typedContractNumber)
     {
         $contractId = (int) $id;
         $reason = trim((string) $reason);
@@ -513,25 +579,12 @@ class Contract extends Model
             if (!$contract) {
                 throw new InvalidArgumentException('قرارداد پیدا نشد.');
             }
-            $legalCount = (int) (self::fetch('SELECT COUNT(*) AS total FROM legal_cases WHERE contract_id = ?', [$contractId])['total'] ?? 0);
-            if ($legalCount > 0) {
-                throw new InvalidArgumentException('قرارداد دارای سابقه حقوقی است و برای حفظ سوابق قابل حذف دائمی نیست.');
-            }
-            $gateway = (int) (self::fetch("SELECT COUNT(*) AS total FROM payments WHERE contract_id = ? AND method = 'zibal' AND status IN ('paid','pending')", [$contractId])['total'] ?? 0);
-            if ($gateway > 0 && !$gatewayAcknowledged) {
-                throw new InvalidArgumentException('این قرارداد پرداخت درگاه دارد. هشدار عدم بازگشت وجه بانکی را تایید کنید.');
+            if (!hash_equals((string) ($contract['contract_number'] ?? ''), trim((string) $typedContractNumber))) {
+                throw new InvalidArgumentException('شماره قرارداد را دقیقاً مطابق قرارداد وارد کنید.');
             }
             $summary = self::deletionPreview($contractId);
-            $corrected = 0;
-            if ((int) $summary['effective_payment_count'] > 0) {
-                if (!$correctPayments) {
-                    throw new InvalidArgumentException('قرارداد پرداخت مؤثر دارد. برای حذف آزمایشی باید اصلاحیه مالی همین قرارداد را تایید کنید.');
-                }
-                $corrected = Payment::correctForContract($contractId, 'اصلاحیه مالی حذف قرارداد: ' . $reason, $adminId);
-            }
-            $after = self::deletionPreview($contractId);
-            if ((int) $after['effective_payment_count'] > 0 || (int) $after['paid_installment_count'] > 0) {
-                throw new InvalidArgumentException('پس از اصلاحیه هنوز پرداخت مؤثر باقی مانده است. حذف متوقف شد.');
+            if (empty($summary['eligible_for_permanent_delete'])) {
+                throw new InvalidArgumentException('این قرارداد دارای سابقه مالی، حقوقی، سند یا وابستگی عملیاتی است و قابل حذف نیست. از گزینه لغو یا بایگانی استفاده کنید.');
             }
             $snapshot = [
                 'contract' => $contract,
@@ -540,20 +593,20 @@ class Contract extends Model
                 'documents' => self::fetchAll('SELECT * FROM generated_contract_documents WHERE contract_id = ?', [$contractId]),
                 'document_versions' => self::fetchAll('SELECT * FROM contract_document_versions WHERE contract_id = ?', [$contractId]),
                 'change_logs' => self::fetchAll('SELECT * FROM contract_change_logs WHERE contract_id = ?', [$contractId]),
-                'gateway_warning' => $gateway > 0 ? 'حذف قرارداد تراکنش درگاه را از بانک برنمی‌گرداند.' : null,
+                'deletion_preview' => $summary,
             ];
             self::execute(
                 'INSERT INTO contract_deletion_archives (contract_id, contract_number, customer_id, deletion_reason, gateway_warning, corrected_payment_count, snapshot_json, deleted_by, created_at)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())',
-                [$contractId, $contract['contract_number'], (int) $contract['customer_id'], $reason, $snapshot['gateway_warning'], $corrected, json_encode($snapshot, JSON_UNESCAPED_UNICODE), (int) $adminId]
+                [$contractId, $contract['contract_number'], (int) $contract['customer_id'], $reason, null, 0, json_encode($snapshot, JSON_UNESCAPED_UNICODE), (int) $adminId]
             );
             AuditLog::record('contract', 'deleted', 'contract', $contractId, [
                 'actor_user_id' => $adminId,
                 'customer_id' => (int) $contract['customer_id'],
                 'contract_id' => $contractId,
-                'description' => 'حذف دائمی قرارداد پس از آرشیو',
+                'description' => 'حذف دائمی قرارداد آزمایشی یا اشتباهی پس از آرشیو',
                 'old_values' => ['contract_number' => $contract['contract_number']],
-                'new_values' => ['reason' => $reason, 'corrected_payment_count' => $corrected, 'gateway_warning' => $snapshot['gateway_warning']],
+                'new_values' => ['reason' => $reason, 'eligibility' => $summary['blocking_dependencies']],
             ]);
             if (class_exists('SystemOutbox')) {
                 SystemOutbox::safeEnqueuePluginHook('contract.deleted', [
@@ -563,12 +616,19 @@ class Contract extends Model
                     'deleted' => true,
                 ], 'contract', $contractId);
             }
+            if (self::contractDependencyCount('installment_bulk_operations', $contractId) > 0) {
+                self::execute('DELETE FROM installment_bulk_operations WHERE contract_id = ?', [$contractId]);
+            }
             self::execute('DELETE FROM contracts WHERE id = ?', [$contractId]);
             self::commit();
             if (class_exists('SystemOutbox')) {
-                SystemOutbox::processPending(20);
+                try {
+                    SystemOutbox::processPending(20);
+                } catch (Throwable $outboxError) {
+                    ErrorHandler::log('contract_delete_outbox', $outboxError, 500);
+                }
             }
-            return ['corrected_payments' => $corrected, 'gateway_warning' => $snapshot['gateway_warning']];
+            return ['deleted' => true];
         } catch (Throwable $e) {
             self::rollBack();
             throw $e;
@@ -621,9 +681,15 @@ class Contract extends Model
             );
             $oldStatus = $contract['status'];
             $cancelledInstallmentIds = array_map('intval', array_column($installments, 'id'));
+            $cancellationMetadata = json_encode([
+                'previous_status' => $oldStatus,
+                'cancelled_installment_ids' => $cancelledInstallmentIds,
+                'financial_summary_before_cancellation' => $summary,
+                'corrected_payment_count' => $correctedPayments,
+            ], JSON_UNESCAPED_UNICODE);
             $updatedRows = self::execute(
-                'UPDATE contracts SET status = ?, cancelled_at = NOW(), cancelled_by = ?, cancellation_reason = ?, updated_at = NOW() WHERE id = ?',
-                ['cancelled', (int) $adminId, $reason, $contractId]
+                'UPDATE contracts SET status = ?, cancelled_at = NOW(), cancelled_by = ?, cancellation_reason = ?, previous_status = ?, cancellation_metadata_json = ?, updated_at = NOW() WHERE id = ?',
+                ['cancelled', (int) $adminId, $reason, $oldStatus, $cancellationMetadata, $contractId]
             );
             if ($updatedRows < 1) {
                 $fresh = self::fetch('SELECT status FROM contracts WHERE id = ? LIMIT 1', [$contractId]);
@@ -683,7 +749,11 @@ class Contract extends Model
         }
 
         if (class_exists('SystemOutbox')) {
-            SystemOutbox::processPending(20);
+            try {
+                SystemOutbox::processPending(20);
+            } catch (Throwable $outboxError) {
+                ErrorHandler::log('contract_cancel_outbox', $outboxError, 500);
+            }
         }
         return ['corrected_payments' => $correctedPayments ?? 0];
     }

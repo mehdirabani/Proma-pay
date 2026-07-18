@@ -15,6 +15,17 @@ $tests = [
     'tests/financial_precision_v136.php',
     'tests/error_response_v136.php',
     'tests/static_v136.php',
+    'tests/static_v137.php',
+    'plugins/PromaAccounting/tests/static.php',
+    'plugins/PromaAccounting/tests/v110.php',
+    'plugins/PromaAccounting/tests/v120.php',
+    'plugins/PromaZarinpal/tests/static.php',
+    'plugins/PromaZarinpal/tests/Unit/AmountConverterTest.php',
+    'plugins/PromaZarinpal/tests/Unit/ZarinpalClientTest.php',
+    'plugins/PromaZarinpal/tests/Integration/OfficialProtocolTest.php',
+    'plugins/PromaZarinpal/tests/Sandbox/SandboxProtocolTest.php',
+    'plugins/PromaZarinpal/tests/Security/SecretCipherTest.php',
+    'plugins/PromaZarinpal/tests/Security/StaticSecurityTest.php',
 ];
 
 $failed = [];

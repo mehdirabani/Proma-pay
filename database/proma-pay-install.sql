@@ -201,6 +201,8 @@ CREATE TABLE `contracts` (
   `cancelled_at` datetime DEFAULT NULL,
   `cancelled_by` bigint(20) unsigned DEFAULT NULL,
   `cancellation_reason` text DEFAULT NULL,
+  `previous_status` varchar(30) DEFAULT NULL,
+  `cancellation_metadata_json` longtext DEFAULT NULL,
   `assigned_operator_id` bigint(20) unsigned DEFAULT NULL,
   `legal_status` varchar(30) DEFAULT NULL,
   `notes` text DEFAULT NULL,

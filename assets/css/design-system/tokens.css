@@ -1,0 +1,167 @@
+:root {
+  --proma-brand-900: #4a148c;
+  --proma-brand-700: #6a1b9a;
+  --proma-brand-600: #8e24aa;
+  --proma-brand-200: #b388ff;
+  --proma-surface: #ffffff;
+  --proma-canvas: #f5f5f5;
+  --proma-ink: #212121;
+  --proma-muted: #667085;
+  --proma-line: #e5e7eb;
+  --proma-positive: #16803c;
+  --proma-danger: #c62828;
+  --proma-radius: 8px;
+  --proma-shadow: 0 6px 18px rgba(33, 33, 33, .05);
+  --proma-control-focus: var(--proma-brand-700);
+}
+
+html { background: var(--proma-canvas); }
+
+body,
+.page-wrapper.compact-wrapper,
+.page-wrapper.compact-wrapper .page-body-wrapper,
+.page-wrapper.compact-wrapper .page-body-wrapper .page-body {
+  color: var(--proma-ink);
+  background: var(--proma-canvas);
+}
+
+:where(.btn, button, .icon-btn, .actions a) > :is(i, svg),
+:where(.btn, button, .icon-btn, .actions a) [data-feather] {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.btn,
+.icon-btn,
+.proma-icon-button {
+  border-radius: var(--proma-radius);
+}
+
+.btn:not(.secondary):not(.success):not(.danger):not(.warning):not(.light) {
+  background: var(--proma-brand-700);
+  border-color: var(--proma-brand-700);
+}
+
+.btn:not(.secondary):not(.success):not(.danger):not(.warning):not(.light):hover,
+.btn:not(.secondary):not(.success):not(.danger):not(.warning):not(.light):focus-visible {
+  background: var(--proma-brand-900);
+  border-color: var(--proma-brand-900);
+}
+
+.btn.success { background: var(--proma-positive); border-color: var(--proma-positive); }
+.btn.danger { background: var(--proma-danger); border-color: var(--proma-danger); }
+
+.card,
+.modal-content,
+.proma-settings-section,
+.proma-accounting-card {
+  border: 1px solid var(--proma-line);
+  border-radius: var(--proma-radius);
+  background: var(--proma-surface);
+  box-shadow: var(--proma-shadow);
+}
+
+.card-header,
+.modal-header {
+  border-color: var(--proma-line);
+}
+
+.card :is(h1, h2, h3, h4),
+.modal-header h3,
+.page-title {
+  color: var(--proma-ink);
+  letter-spacing: 0;
+}
+
+table :is(th, td) { vertical-align: middle; }
+table thead th { color: var(--proma-muted); font-weight: 700; }
+table tbody tr { border-color: var(--proma-line); }
+
+:where(.form-group, .form-field) {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  margin: 0 0 18px;
+}
+
+:where(.form-group, .form-field) > label:not(.check) {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 0;
+  color: var(--proma-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.65;
+}
+
+:where(.form-group, .form-field) > :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+  box-sizing: border-box;
+  margin: 0;
+  border-color: var(--proma-line);
+  border-radius: var(--proma-radius);
+}
+
+:where(.form-group, .form-field):has(> :is(input, select, textarea)[required]) > label:not(.check)::after {
+  content: "*";
+  color: var(--proma-danger);
+  font-weight: 800;
+}
+
+:where(.form-group, .form-field) > .input-group,
+:where(.form-group, .form-field) > .proma-input-group {
+  min-height: 44px;
+  align-items: stretch;
+}
+
+.form-grid > label:not(.required-field):has(:is(input, select, textarea)[required]),
+.proma-form-grid > label:not(.required-field):has(:is(input, select, textarea)[required]) {
+  position: relative;
+  padding-inline-start: 14px;
+}
+
+.form-grid > label:not(.required-field):has(:is(input, select, textarea)[required])::before,
+.proma-form-grid > label:not(.required-field):has(:is(input, select, textarea)[required])::before {
+  content: "*";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  color: var(--proma-danger);
+  font-weight: 800;
+  line-height: 1.65;
+}
+
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper {
+  height: 100dvh;
+  background: var(--proma-surface);
+  border-inline-start: 1px solid var(--proma-line);
+}
+
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main,
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper #simple-bar,
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .simplebar-content-wrapper {
+  min-height: 0;
+}
+
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-link:hover,
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-link.active {
+  color: var(--proma-brand-700);
+}
+
+body.dark-only,
+[data-theme="dark"] {
+  --proma-surface: #20242b;
+  --proma-canvas: #171a20;
+  --proma-ink: #f2f4f7;
+  --proma-muted: #a7b0bf;
+  --proma-line: #363c47;
+  --proma-shadow: none;
+}
+
+@media (max-width: 767.98px) {
+  :where(.form-group, .form-field) {
+    margin-block-end: 16px;
+  }
+}

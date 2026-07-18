@@ -80,10 +80,11 @@ class AccountingController extends \Controller
         if ($description === '') {
             throw new \InvalidArgumentException('شرح عملیات الزامی است.');
         }
-        $idempotency = trim((string) ($_POST['operation_key'] ?? ''));
-        if ($idempotency === '') {
-            $idempotency = 'manual:' . hash('sha256', $userId . '|' . $entryType . '|' . ($_POST['amount'] ?? '') . '|' . $description . '|' . \Csrf::token());
+        $idempotency = trim((string) ($_POST['accounting_request_uuid'] ?? ''));
+        if (!preg_match('/^[a-f0-9]{32}$/i', $idempotency)) {
+            throw new \InvalidArgumentException('کد پیگیری عملیات مالی معتبر نیست. صفحه را تازه‌سازی کرده و دوباره تلاش کنید.');
         }
+        $idempotency = 'manual:' . strtolower($idempotency);
         $category = \Model::fetch('SELECT id FROM accounting_categories WHERE category_type = ? AND is_active = 1 ORDER BY is_system DESC, id LIMIT 1', [$map[$entryType][2]]);
         LedgerService::post($userId, $entryType, $map[$entryType][0], $_POST['amount'] ?? 0, $description, \Auth::id(), 'manual', null, ['label' => $map[$entryType][1], 'method' => trim((string) ($_POST['method'] ?? '')), 'tracking' => trim((string) ($_POST['tracking'] ?? ''))], $idempotency, $category['id'] ?? null, $_POST['contract_id'] ?? null, $_POST['commission_id'] ?? null);
         \set_flash('success', 'سند دفترکل با موفقیت ثبت شد.');

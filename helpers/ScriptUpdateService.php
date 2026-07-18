@@ -427,8 +427,8 @@ class ScriptUpdateService
     protected static function runUpdateMigration($migrationName, $sql)
     {
         self::ensureMigrationSchema();
-        $exists = Model::fetch('SELECT id FROM migrations WHERE migration_name = ? AND status = ?', [$migrationName, 'success']);
-        if ($exists) {
+        $migration = Model::fetch('SELECT id, status FROM migrations WHERE migration_name = ? LIMIT 1', [$migrationName]);
+        if ($migration && ($migration['status'] ?? '') === 'success') {
             return;
         }
         if (preg_match('/\b(drop\s+table|truncate\s+table|delete\s+from)\b/i', (string) $sql)) {
@@ -436,10 +436,17 @@ class ScriptUpdateService
         }
         Model::begin();
         try {
-            Model::execute(
-                'INSERT INTO migrations (migration_name, batch, source_type, source_id, status, started_at, executed_by) VALUES (?, ?, ?, ?, ?, NOW(), ?)',
-                [$migrationName, 1, 'update', $migrationName, 'running', Auth::id()]
-            );
+            if ($migration) {
+                Model::execute(
+                    'UPDATE migrations SET status = ?, started_at = NOW(), finished_at = NULL, error_message = NULL, executed_by = ? WHERE id = ?',
+                    ['running', Auth::id(), (int) $migration['id']]
+                );
+            } else {
+                Model::execute(
+                    'INSERT INTO migrations (migration_name, batch, source_type, source_id, status, started_at, executed_by) VALUES (?, ?, ?, ?, ?, NOW(), ?)',
+                    [$migrationName, 1, 'update', $migrationName, 'running', Auth::id()]
+                );
+            }
             self::executeSqlBatch((string) $sql);
             Model::execute(
                 'UPDATE migrations SET status = ?, finished_at = NOW() WHERE migration_name = ?',
@@ -448,6 +455,14 @@ class ScriptUpdateService
             Model::commit();
         } catch (Throwable $e) {
             Model::rollBack();
+            try {
+                Model::execute(
+                    'UPDATE migrations SET status = ?, finished_at = NOW(), error_message = ? WHERE migration_name = ?',
+                    ['failed', mb_substr($e->getMessage(), 0, 2000, 'UTF-8'), $migrationName]
+                );
+            } catch (Throwable $statusError) {
+                ErrorHandler::log('update_migration_status', $statusError, 500);
+            }
             throw $e;
         }
     }
