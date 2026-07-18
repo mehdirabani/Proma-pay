@@ -53,8 +53,9 @@ class InstallmentsController extends Controller
             set_flash('error', 'تاریخ سررسید معتبر نیست.');
             redirect($redirectTo);
         }
-        if (trim((string) ($_POST['notes'] ?? '')) === '') {
-            set_flash('error', 'توضیحات قسط سفارشی الزامی است.');
+        $customerDescription = trim((string) ($_POST['customer_description'] ?? $_POST['notes'] ?? ''));
+        if ($customerDescription === '') {
+            set_flash('error', 'توضیح قابل نمایش برای مشتری الزامی است.');
             redirect($redirectTo);
         }
         if ((int) ($_POST['contract_id'] ?? 0) <= 0) {
@@ -62,7 +63,16 @@ class InstallmentsController extends Controller
             redirect($redirectTo);
         }
         try {
-            Installment::createCustom((int) $_POST['contract_id'], $dueDate, $_POST['base_amount'], $_POST['notes'] ?? '', $_POST['guarantee_serial'] ?? '');
+            Installment::createCustom(
+                (int) $_POST['contract_id'],
+                $dueDate,
+                $_POST['base_amount'],
+                $customerDescription,
+                $_POST['guarantee_serial'] ?? '',
+                $_POST['custom_title'] ?? '',
+                $_POST['internal_note'] ?? '',
+                isset($_POST['customer_visible'])
+            );
             set_flash('success', 'قسط سفارشی ثبت شد.');
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت قسط انجام نشد.');

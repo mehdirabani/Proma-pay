@@ -10,9 +10,10 @@ $pluginRoot = dirname(__DIR__);
 $manifest = json_decode((string) file_get_contents($pluginRoot . '/plugin.json'), true);
 $version = (string) ($manifest['version'] ?? '0.0.0');
 $projectRoot = dirname($pluginRoot, 2);
-$output = $projectRoot . '/dist/plugins/PromaAccounting-v' . $version . '.zip';
+$outputDir = $projectRoot . '/dist/plugins/PromaAccounting';
+$output = $outputDir . '/PromaAccounting-v' . $version . '.zip';
 
-if (!is_dir(dirname($output)) && !mkdir(dirname($output), 0775, true) && !is_dir(dirname($output))) {
+if (!is_dir($outputDir) && !mkdir($outputDir, 0775, true) && !is_dir($outputDir)) {
     throw new RuntimeException('Cannot create plugin output directory.');
 }
 if (is_file($output) && !unlink($output)) {

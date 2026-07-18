@@ -264,6 +264,8 @@ DROP TABLE IF EXISTS `generated_contract_documents`;
 CREATE TABLE `generated_contract_documents` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `contract_id` bigint(20) unsigned NOT NULL,
+  `template_version_id` bigint(20) unsigned DEFAULT NULL,
+  `template_status` varchar(30) NOT NULL DEFAULT 'legacy',
   `rendered_title` varchar(190) DEFAULT NULL,
   `rendered_header` text DEFAULT NULL,
   `rendered_body` longtext NOT NULL,
@@ -429,6 +431,9 @@ CREATE TABLE `installments` (
   `is_custom` tinyint(1) NOT NULL DEFAULT 0,
   `custom_title` varchar(190) DEFAULT NULL,
   `custom_description` text DEFAULT NULL,
+  `internal_note` text DEFAULT NULL,
+  `customer_visible` tinyint(1) NOT NULL DEFAULT 1,
+  `created_reason` varchar(100) DEFAULT NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),

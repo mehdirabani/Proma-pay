@@ -36,6 +36,12 @@ class SettingsController extends Controller
                 }
                 if ($key === 'zibal_merchant') {
                     $rawValue = preg_replace('/\s+/', '', $rawValue);
+                } elseif ($key === 'footer_text') {
+                    $rawValue = trim(preg_replace('/\s+/u', ' ', strip_tags($rawValue)));
+                    $rawValue = mb_substr($rawValue, 0, 180, 'UTF-8');
+                    if ($rawValue === '') {
+                        $rawValue = Settings::defaults()['footer_text'];
+                    }
                 } elseif ($key === 'callback_base_url') {
                     $rawValue = $this->normalizeBaseUrl($rawValue);
                 } elseif (in_array($key, ['email_from_address', 'email_reply_to'], true)) {

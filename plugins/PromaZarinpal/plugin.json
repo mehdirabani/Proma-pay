@@ -2,7 +2,7 @@
   "id": "proma-zarinpal",
   "name": "درگاه پرداخت زرین‌پال پرما",
   "description": "اتصال امن سامانه پرما پی به درگاه پرداخت زرین‌پال",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Proma Pay",
   "plugin_api_version": "1.0",
   "requires_core": ">=1.2.6",

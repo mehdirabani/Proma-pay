@@ -18,6 +18,8 @@ $tests = [
     'tests/static_v136.php',
     'tests/static_v137.php',
     'tests/static_v138.php',
+    'tests/static_v139.php',
+    'tests/static_accounting_update_2014.php',
     'plugins/PromaAccounting/tests/static.php',
     'plugins/PromaAccounting/tests/v110.php',
     'plugins/PromaAccounting/tests/v120.php',

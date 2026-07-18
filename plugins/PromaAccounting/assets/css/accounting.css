@@ -292,10 +292,10 @@
   min-width: 0;
   margin: 0;
   padding: 0 12px;
-  border: 1px solid #dcd7e3;
-  border-radius: 10px;
+  border: 1px solid transparent;
+  border-radius: var(--proma-field-radius, 12px);
   color: var(--pa-text);
-  background: var(--pa-surface);
+  background: var(--proma-field-bg, #f7f7fa);
   box-shadow: none;
   font: inherit;
   font-size: 13px;
@@ -304,16 +304,17 @@
 }
 .proma-accounting-control > textarea { height: auto; min-height: 96px; padding-block: 10px; resize: vertical; }
 .proma-accounting-control > :is(input, select, textarea):focus,
-.proma-accounting-input-group > input:focus { border-color: var(--pa-primary); outline: 0; box-shadow: 0 0 0 3px rgba(106, 27, 154, .12); }
-.proma-accounting-control > :is(input, select, textarea)[aria-invalid="true"] { border-color: var(--pa-danger); box-shadow: 0 0 0 3px rgba(217, 74, 74, .1); }
-.proma-accounting-control > :is(input, select, textarea):disabled { color: #8e8996; border-color: var(--pa-border); background: #f1eff4; cursor: not-allowed; }
+.proma-accounting-input-group > input:focus { border-color: transparent; outline: 0; background: var(--proma-field-bg-focus, #fff); box-shadow: inset 0 -2px 0 var(--proma-field-focus, var(--pa-primary)), 0 6px 18px rgba(74, 20, 140, .06); }
+.proma-accounting-control > :is(input, select, textarea)[aria-invalid="true"] { border-color: transparent; background: rgba(200, 59, 69, .06); box-shadow: inset 0 -2px 0 var(--proma-field-error, var(--pa-danger)); }
+.proma-accounting-control > :is(input, select, textarea):disabled { color: #8e8996; border-color: transparent; background: var(--proma-field-bg-disabled, #f1eff4); cursor: not-allowed; }
 .proma-accounting-help { min-height: 19px; margin-top: 6px; color: var(--pa-muted); font-size: 11px; line-height: 1.7; }
 .proma-accounting-context-help { margin-top: 5px; color: var(--pa-muted); font-size: 11px; }
 .proma-accounting-context-help summary { width: max-content; max-width: 100%; color: var(--pa-primary); cursor: pointer; font-weight: 700; }
 .proma-accounting-context-help p { margin: 7px 0 0; padding: 10px 12px; border-right: 3px solid var(--pa-accent); border-radius: 8px; background: var(--pa-surface-soft); line-height: 1.85; }
-.proma-accounting-input-group { min-width: 0; display: flex; align-items: stretch; direction: rtl; }
-.proma-accounting-input-group > input:not([type="checkbox"]):not([type="radio"]) { border-radius: 0 10px 10px 0; }
-.proma-accounting-input-group > span { min-width: 72px; height: var(--pa-control-height); display: inline-flex; align-items: center; justify-content: center; padding: 0 10px; border: 1px solid #dcd7e3; border-right: 0; border-radius: 10px 0 0 10px; color: #625c6c; background: #f4f1f6; font-size: 11px; white-space: nowrap; }
+.proma-accounting-input-group { min-width: 0; display: flex; align-items: stretch; direction: rtl; border: 1px solid transparent; border-radius: var(--proma-field-radius, 12px); background: var(--proma-field-bg, #f7f7fa); }
+.proma-accounting-input-group:focus-within { background: var(--proma-field-bg-focus, #fff); box-shadow: inset 0 -2px 0 var(--proma-field-focus, var(--pa-primary)), 0 6px 18px rgba(74, 20, 140, .06); }
+.proma-accounting-input-group > input:not([type="checkbox"]):not([type="radio"]) { border: 0; border-radius: 0 12px 12px 0; background: transparent; box-shadow: none; }
+.proma-accounting-input-group > span { min-width: 72px; height: var(--pa-control-height); display: inline-flex; align-items: center; justify-content: center; padding: 0 10px; border: 0; border-radius: 12px 0 0 12px; color: #625c6c; background: transparent; font-size: 11px; white-space: nowrap; }
 
 .proma-accounting-switch-row {
   position: relative;
@@ -334,7 +335,7 @@
 .proma-accounting-switch::after { content: ""; position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(36, 26, 44, .24); transition: transform .18s ease; }
 .proma-accounting-switch-row > input:checked + .proma-accounting-switch { background: var(--pa-primary); }
 .proma-accounting-switch-row > input:checked + .proma-accounting-switch::after { transform: translateX(-18px); }
-.proma-accounting-switch-row > input:focus-visible + .proma-accounting-switch { outline: 3px solid rgba(106, 27, 154, .2); outline-offset: 2px; }
+.proma-accounting-switch-row > input:focus-visible + .proma-accounting-switch { outline: 0; box-shadow: 0 0 0 3px rgba(106, 27, 154, .2); }
 .proma-accounting-switch-row > span:last-child { min-width: 0; display: grid; gap: 2px; }
 .proma-accounting-switch-row strong { color: var(--pa-text); font-size: 12px; line-height: 1.7; }
 .proma-accounting-switch-row small { color: var(--pa-muted); font-size: 11px; line-height: 1.6; }
@@ -551,12 +552,12 @@ body.dark-only .proma-accounting .proma-accounting-table th,
 body.dark-only .proma-accounting .proma-accounting-control > :is(input, select, textarea),
 body.dark-only .proma-accounting .proma-accounting-input-group > input,
 [data-theme="dark"] .proma-accounting .proma-accounting-control > :is(input, select, textarea),
-[data-theme="dark"] .proma-accounting .proma-accounting-input-group > input { border-color: #4a4351; color: var(--pa-text); background: #242128; }
+[data-theme="dark"] .proma-accounting .proma-accounting-input-group > input { border-color: transparent; color: var(--proma-field-text, var(--pa-text)); background: var(--proma-field-bg); }
 body.dark-only .proma-accounting .proma-accounting-input-group > span,
-[data-theme="dark"] .proma-accounting .proma-accounting-input-group > span { border-color: #4a4351; color: #d3cdd8; background: #302b35; }
+[data-theme="dark"] .proma-accounting .proma-accounting-input-group > span { border-color: transparent; color: var(--proma-field-text, #d3cdd8); background: transparent; }
 body.dark-only .proma-accounting .proma-accounting-sticky-actions,
 [data-theme="dark"] .proma-accounting .proma-accounting-sticky-actions { background: rgba(36, 33, 40, .96); }
 body.dark-only .proma-accounting .btn-light,
 [data-theme="dark"] .proma-accounting .btn-light { border-color: #4a4351; color: #eeeaf1; background: #302b35; }
 body.dark-only .proma-accounting .proma-accounting-help-search input,
-[data-theme="dark"] .proma-accounting .proma-accounting-help-search input { border-color: #4a4351; color: var(--pa-text); background: var(--pa-surface); }
+[data-theme="dark"] .proma-accounting .proma-accounting-help-search input { border-color: transparent; color: var(--proma-field-text, var(--pa-text)); background: var(--proma-field-bg); }

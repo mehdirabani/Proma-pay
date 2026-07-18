@@ -135,6 +135,7 @@ foreach ($installments as $item) {
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
     }
+    .coupon-custom-description { grid-column: 1 / -1; }
     .coupon-footer {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -275,13 +276,16 @@ foreach ($installments as $item) {
             </div>
             <div class="coupon-number">قسط <?= to_persian_digits($item['installment_number']) ?></div>
           </div>
-          <div class="coupon-body">
-            <div><small>نام مشتری</small><strong><?= e($contract['customer_name']) ?></strong></div>
-            <div><small>کد ملی</small><strong><?= to_persian_digits($contract['national_id']) ?></strong></div>
-            <div><small>تاریخ سررسید</small><strong><?= e(jdate($item['due_date'])) ?></strong></div>
-            <div><small>مبلغ قسط</small><strong><?= money_toman($item['base_amount']) ?></strong></div>
-            <div><small>وضعیت</small><strong><?= e(status_label($item['status'])) ?></strong></div>
-          </div>
+            <div class="coupon-body">
+              <div><small>نام مشتری</small><strong><?= e($contract['customer_name']) ?></strong></div>
+              <div><small>کد ملی</small><strong><?= to_persian_digits($contract['national_id']) ?></strong></div>
+              <div><small>تاریخ سررسید</small><strong><?= e(jdate($item['due_date'])) ?></strong></div>
+              <div><small>مبلغ قسط</small><strong><?= money_toman($item['base_amount']) ?></strong></div>
+              <div><small>وضعیت</small><strong><?= e(status_label($item['status'])) ?></strong></div>
+              <?php if (!empty($item['is_custom']) && !empty($item['customer_visible']) && trim((string) ($item['custom_description'] ?? $item['notes'] ?? '')) !== ''): ?>
+                <div class="coupon-custom-description"><small>دلیل ایجاد</small><strong><?= e(trim((string) ($item['custom_description'] ?? $item['notes'] ?? ''))) ?></strong></div>
+              <?php endif; ?>
+            </div>
           <div class="coupon-footer">
             <span>امضا/مهر دریافت‌کننده:</span>
             <span>تاریخ پرداخت:</span>

@@ -13,6 +13,10 @@ $v138Migration = $root . '/database/migrations/2026_07_18_file_registry_v138.sql
 if (is_file($v138Migration) && version_compare($version, '1.3.8', '<')) {
     throw new RuntimeException('V1.3.8 release candidate is present. Update config/version.php only after the staging release gate passes; no archive may be labeled V' . $version . '.');
 }
+$v139Migration = $root . '/database/migrations/2026_07_19_custom_installment_visibility_and_footer.sql';
+if (is_file($v139Migration) && version_compare($version, '1.3.9', '<')) {
+    throw new RuntimeException('V1.3.9 release candidate is present. Update config/version.php only after the staging release gate passes; no archive may be labeled V' . $version . '.');
+}
 if (!class_exists('ZipArchive')) {
     fwrite(STDERR, "PHP ZipArchive extension is required.\n");
     exit(1);
@@ -161,10 +165,12 @@ $updateRelativeFiles = [
     'index.php',
     'installer.php',
     'install.php',
+    'database/proma-pay-install.sql',
     'config/version.php',
     'controllers/PluginsController.php',
     'controllers/BackupController.php',
     'controllers/SettingsController.php',
+    'controllers/InstallmentsController.php',
     'controllers/ContractsController.php',
     'controllers/CalendarController.php',
     'controllers/FileManagerController.php',
@@ -210,6 +216,7 @@ $updateRelativeFiles = [
     'views/errors/system.php',
     'views/contracts/show.php',
     'views/contracts/index.php',
+    'views/contracts/booklet.php',
     'views/customers/index.php',
     'views/overdue/index.php',
     'views/file-manager/index.php',
@@ -227,6 +234,7 @@ $updateRelativeFiles = [
     'database/migrations/2026_07_18_runtime_schema_gate_v136.sql',
     'database/migrations/2026_07_18_contract_lifecycle_schema_repair_v137.sql',
     'database/migrations/2026_07_18_file_registry_v138.sql',
+    'database/migrations/2026_07_19_custom_installment_visibility_and_footer.sql',
     'controllers/PaymentsController.php',
     'core/PaymentGatewayProviderInterface.php',
     'core/PaymentGatewayRegistry.php',
@@ -294,6 +302,37 @@ $updateRelativeFiles = [
     'docs/releases/V1.3.6.md',
     'docs/releases/V1.3.7.md',
     'docs/releases/V1.3.8.md',
+    'docs/releases/V1.3.9.md',
+    'docs/ui/FORM_CONTROL_STYLE_AUDIT.md',
+    'docs/ui/BORDERLESS_FORM_DESIGN_SYSTEM.md',
+    'docs/ui/FORM_CONTROL_COMPONENTS.md',
+    'docs/ui/FORM_ACCESSIBILITY.md',
+    'docs/ui/FORM_RESPONSIVE_RESULTS.md',
+    'docs/ui/FORM_VISUAL_REGRESSION_RESULTS.md',
+    'docs/ui/cards/CUSTOMER_CARD_AUDIT.md',
+    'docs/ui/cards/CONTRACT_CARD_AUDIT.md',
+    'docs/ui/cards/CUSTOMER_CONTRACT_CARD_DESIGN.md',
+    'docs/plugins/PLUGIN_FORM_CONTROL_STANDARD.md',
+    'docs/installments/CUSTOM_INSTALLMENT_DESCRIPTION_AUDIT.md',
+    'docs/installments/CUSTOM_INSTALLMENT_DESCRIPTION_STANDARD.md',
+    'docs/print/CONTRACT_PRINT_REFINEMENT_AUDIT.md',
+    'docs/print/CONTRACT_PRINT_A4_STANDARD.md',
+    'docs/settings/FOOTER_TEXT_SETTING.md',
+    'docs/qa/FORM_CONTROL_BUG_REGISTER.md',
+    'docs/qa/FORM_CONTROL_TEST_RESULTS.md',
+    'docs/qa/V1_3_9_TEST_RESULTS.md',
+    'docs/qa/cards-print/TEST_RESULTS.md',
+    'docs/qa/cards-print/RESPONSIVE_RESULTS.md',
+    'docs/qa/cards-print/PRINT_RESULTS.md',
+    'docs/qa/cards-print/ACCESSIBILITY_RESULTS.md',
+    'docs/qa/cards-print/SECURITY_RESULTS.md',
+    'docs/qa/cards-print/BUG_REGISTER.md',
+    'docs/qa/cards-print/RELEASE_CHECKLIST.md',
+    'docs/accounting-qa/CURRENT_STATE_AUDIT.md',
+    'docs/accounting-qa/PDO_2014_ROOT_CAUSE.md',
+    'docs/accounting-qa/ROUTE_METHOD_MATRIX.md',
+    'docs/accounting-qa/UPDATE_DATA_PRESERVATION.md',
+    'docs/accounting-qa/PLUGIN_UPDATE_BUG_REGISTER.md',
     'docs/qa/core-redesign/CURRENT_SOURCE_AND_UI_AUDIT.md',
     'docs/qa/core-redesign/BUG_REGISTER.md',
     'docs/qa/modal/MODAL_INVENTORY.md',
@@ -313,6 +352,7 @@ $updateRelativeFiles = [
     'tests/static_v136.php',
     'tests/static_v137.php',
     'tests/static_v138.php',
+    'tests/static_v139.php',
     'tests/financial_precision_v136.php',
     'tests/error_response_v136.php',
     'tools/release-gate.php',
@@ -326,6 +366,9 @@ $updateRelativeFiles = [
     'static-errors/504.html',
     'tests/integration_zarinpal_v134.php',
     'tests/integration_v138_file_registry.php',
+    'tests/integration_v139_custom_installments.php',
+    'tests/integration_v139_contract_print_schema.php',
+    'tests/static_accounting_update_2014.php',
 ];
 $updateFiles = [];
 foreach ($updateRelativeFiles as $relativePath) {
@@ -357,6 +400,7 @@ $updateManifest = [
         'database/migrations/2026_07_18_runtime_schema_gate_v136.sql',
         'database/migrations/2026_07_18_contract_lifecycle_schema_repair_v137.sql',
         'database/migrations/2026_07_18_file_registry_v138.sql',
+        'database/migrations/2026_07_19_custom_installment_visibility_and_footer.sql',
     ],
     'preserves' => ['config/database.php', 'plugins/', 'storage/', 'uploads/'],
 ];

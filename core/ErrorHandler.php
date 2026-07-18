@@ -72,6 +72,11 @@ class ErrorHandler
             self::log('exception', $exception, $status);
         }
 
+        if (PHP_SAPI === 'cli') {
+            fwrite(STDERR, sprintf("[PromaPay][%s][HTTP_%d] %s\n", self::requestId(), $status, self::sanitizeLogText($exception->getMessage())));
+            exit(1);
+        }
+
         self::emit($status, $message, $details, $headers);
     }
 
@@ -105,6 +110,12 @@ class ErrorHandler
             (string) ($error['file'] ?? ''),
             (int) ($error['line'] ?? 0)
         ), 500);
+
+        if (PHP_SAPI === 'cli') {
+            fwrite(STDERR, sprintf("[PromaPay][%s][HTTP_500] Fatal error\n", self::requestId()));
+            exit(1);
+        }
+
         self::emit(500);
     }
 

@@ -150,19 +150,22 @@ class PluginManager
         $manifest = $this->manifestById($pluginId);
         $this->assertRequirements($manifest);
         $existing = PluginRegistry::find($manifest['id']);
-        if ($existing && in_array($existing['status'], ['installed', 'active', 'inactive'], true)) {
+        if ($existing && in_array($existing['status'], ['installed', 'active', 'inactive', 'update_available', 'installing', 'updating'], true)) {
             throw new InvalidArgumentException('این افزونه قبلاً نصب شده است.');
         }
         $this->ensureRegistryTables();
-        PluginRegistry::upsert($manifest, $manifest['_root'], $userId);
+        PluginRegistry::upsert($manifest, $manifest['_root'], $userId, PluginStatus::INSTALLING);
         try {
             $this->runMigrations($manifest);
             $provider = $this->providerFor($manifest);
             $provider->install($this, $manifest);
             $this->registerManifestPermissions($manifest);
+            $this->assertProviderHealth($provider, $manifest);
+            PluginRegistry::updateManifest($manifest);
+            PluginRegistry::setStatus($manifest['id'], PluginStatus::INSTALLED);
             $this->audit('plugin', 'installed', $manifest['id'], $userId, ['version' => $manifest['version']]);
         } catch (Throwable $e) {
-            PluginRegistry::setStatus($manifest['id'], 'failed', $e->getMessage());
+            PluginRegistry::setStatus($manifest['id'], PluginStatus::INSTALLATION_FAILED, $e->getMessage());
             throw $e;
         }
     }
@@ -171,14 +174,17 @@ class PluginManager
     {
         $registered = PluginRegistry::find($pluginId);
         if (!$registered || !in_array($registered['status'], ['installed', 'inactive'], true)) {
-            throw new InvalidArgumentException('افزونه باید ابتدا نصب و سالم باشد.');
+            throw new InvalidArgumentException('فعال‌سازی افزونه ممکن نیست. نصب یا بروزرسانی افزونه به‌طور کامل انجام نشده است. ابتدا عملیات تعمیر افزونه را اجرا کنید.');
         }
         $manifest = $this->manifestFromRegistered($registered);
         $this->assertRequirements($manifest);
         $provider = $this->loadProvider($registered, false);
+        $this->assertMigrationsCurrent($manifest);
+        $this->assertProviderHealth($provider, $manifest);
         if (method_exists($provider, 'activate')) {
             $provider->activate($this, $manifest);
         }
+        $this->assertProviderHealth($provider, $manifest);
         PluginRegistry::setStatus($manifest['id'], 'active');
         $this->audit('plugin', 'activated', $manifest['id'], $userId);
     }
@@ -241,6 +247,7 @@ class PluginManager
         }
         $cleanupWarning = '';
         try {
+            PluginRegistry::setStatus($pluginId, PluginStatus::UPDATING);
             $this->assertRequirements($manifest);
             $provider = $this->loadProvider($registered, false);
             $this->runMigrations($manifest);
@@ -250,6 +257,8 @@ class PluginManager
             if ($resumeStatus === 'active' && !empty($storedManifest['_update_previous_version']) && method_exists($provider, 'activate')) {
                 $provider->activate($this, $manifest);
             }
+            $this->assertMigrationsCurrent($manifest);
+            $this->assertProviderHealth($provider, $manifest);
             PluginRegistry::updateManifest($manifest);
             PluginRegistry::setStatus($manifest['id'], $resumeStatus);
             $backupPath = trim((string) ($storedManifest['_update_backup_path'] ?? ''));
@@ -262,7 +271,7 @@ class PluginManager
             }
             $this->audit('plugin', 'updated', $manifest['id'], $userId, ['from' => $current, 'to' => $manifest['version'], 'status' => $resumeStatus, 'cleanup_warning' => $cleanupWarning ?: null]);
         } catch (Throwable $e) {
-            PluginRegistry::setStatus($pluginId, 'failed', $e->getMessage());
+            $this->restoreFailedUpdate($pluginId, $registered, $storedManifest, $e);
             throw $e;
         }
         return ['from' => $current, 'to' => $manifest['version'], 'status' => $resumeStatus, 'cleanup_warning' => $cleanupWarning];
@@ -844,9 +853,61 @@ class PluginManager
                     PluginRegistry::recordMigration($manifest['id'], $name, hash('sha256', $sql), 'failed', (int) round((microtime(true) - $started) * 1000), $e->getMessage());
                 } catch (Throwable $ignored) {
                 }
+                PluginRegistry::setStatus($manifest['id'], PluginStatus::MIGRATION_FAILED, $e->getMessage());
                 throw new RuntimeException('اجرای migration افزونه ' . $name . ' ناموفق بود: ' . $e->getMessage(), 0, $e);
             }
         }
+    }
+
+    protected function assertMigrationsCurrent(array $manifest)
+    {
+        foreach ($manifest['migrations'] ?? [] as $migration) {
+            $name = basename(str_replace('\\', '/', (string) $migration));
+            if ($name === '') {
+                continue;
+            }
+            if (!PluginRegistry::migrationDone($manifest['id'], $name)) {
+                throw new RuntimeException('migration افزونه کامل نیست: ' . $name);
+            }
+        }
+    }
+
+    protected function assertProviderHealth($provider, array $manifest)
+    {
+        if (method_exists($provider, 'healthCheck') && $provider->healthCheck($this, $manifest) === false) {
+            PluginRegistry::setStatus($manifest['id'], PluginStatus::HEALTH_FAILED, 'بررسی سلامت افزونه ناموفق بود.');
+            throw new RuntimeException('بررسی سلامت افزونه ناموفق بود.');
+        }
+    }
+
+    protected function restoreFailedUpdate($pluginId, array $registered, array $storedManifest, Throwable $error)
+    {
+        $backupPath = trim((string) ($storedManifest['_update_backup_path'] ?? ''));
+        $candidatePath = trim((string) ($registered['path'] ?? ''));
+        $previousStatus = PluginRegistry::normalizeStatus($storedManifest['_update_previous_status'] ?? 'inactive');
+        if (!in_array($previousStatus, [PluginStatus::ACTIVE, PluginStatus::INACTIVE, PluginStatus::INSTALLED], true)) {
+            $previousStatus = PluginStatus::INACTIVE;
+        }
+
+        if ($backupPath !== '' && is_dir($backupPath) && $candidatePath !== '') {
+            try {
+                if (is_dir($candidatePath) && realpath($candidatePath) !== realpath($backupPath)) {
+                    $this->removePluginFiles($candidatePath);
+                }
+                if (!is_dir($candidatePath) && !rename($backupPath, $candidatePath)) {
+                    throw new RuntimeException('بازگردانی پوشه قبلی افزونه انجام نشد.');
+                }
+                $restoredManifest = PluginManifest::read($candidatePath);
+                PluginRegistry::updateManifest($restoredManifest);
+                PluginRegistry::setStatus($pluginId, $previousStatus, 'بروزرسانی کامل نشد و نسخه قبلی افزونه بازیابی شد.');
+                $this->audit('plugin', 'update_rolled_back', $pluginId, null, ['status' => $previousStatus]);
+                return;
+            } catch (Throwable $rollbackError) {
+                ErrorHandler::log('plugin_update_rollback:' . (string) $pluginId, $rollbackError, 500);
+            }
+        }
+
+        PluginRegistry::setStatus($pluginId, PluginStatus::REPAIR_REQUIRED, $error->getMessage());
     }
 
     protected function registerManifestPermissions(array $manifest)

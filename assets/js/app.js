@@ -2317,6 +2317,21 @@
     });
   };
 
+  const initSettingResets = function () {
+    document.querySelectorAll('[data-reset-setting]').forEach(function (button) {
+      if (button.dataset.resetBound === '1') return;
+      button.dataset.resetBound = '1';
+      button.addEventListener('click', function () {
+        const name = button.getAttribute('data-reset-setting') || '';
+        const input = name ? document.querySelector('[name="' + name + '"]') : null;
+        if (!input) return;
+        input.value = button.getAttribute('data-reset-value') || '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.focus();
+      });
+    });
+  };
+
   const initCardLinks = function () {
     if (document.documentElement.dataset.cardNavigationBound === '1') return;
     document.documentElement.dataset.cardNavigationBound = '1';
@@ -2462,6 +2477,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initCardLinks();
     initContactActions();
     initCopyShortcodes();
+    initSettingResets();
     initPromaRichEditors();
     initTour();
     initServiceWorker();

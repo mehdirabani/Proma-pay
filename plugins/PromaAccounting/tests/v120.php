@@ -11,8 +11,15 @@ $assert = static function ($condition, string $message): void {
 };
 
 $manifest = json_decode((string) file_get_contents($plugin . '/plugin.json'), true);
-$assert(($manifest['version'] ?? '') === '1.2.1', 'Plugin version must be 1.2.1.');
+$assert(($manifest['version'] ?? '') === '1.2.3', 'Plugin version must be 1.2.3.');
 $assert(($manifest['requires_core'] ?? '') === '1.3.2', 'Plugin must require route-scoped asset support from core 1.3.2.');
+$routeOrder = array_map(static fn (array $route): string => (string) ($route['path'] ?? ''), $manifest['routes'] ?? []);
+$ledgerPostIndex = array_search('plugin/accounting/ledger/post', $routeOrder, true);
+$ledgerReverseIndex = array_search('plugin/accounting/ledger/reverse/{entryId}', $routeOrder, true);
+$ledgerDynamicIndex = array_search('plugin/accounting/ledger/{userId}', $routeOrder, true);
+$assert($ledgerPostIndex !== false && $ledgerDynamicIndex !== false && $ledgerPostIndex < $ledgerDynamicIndex, 'Specific ledger post route must be registered before dynamic ledger route.');
+$assert($ledgerReverseIndex !== false && $ledgerDynamicIndex !== false && $ledgerReverseIndex < $ledgerDynamicIndex, 'Specific ledger reverse route must be registered before dynamic ledger route.');
+$assert(in_array('plugin/accounting/rules/delete/{ruleId}', $routeOrder, true), 'Commission rule delete route is missing.');
 foreach (['assets/css/accounting.css', 'assets/css/accounting-responsive.css', 'assets/js/accounting.js'] as $asset) {
     $assert(in_array($asset, $manifest['assets'] ?? [], true), 'Manifest asset missing: ' . $asset);
     $assert(is_file($plugin . '/' . $asset), 'Asset file missing: ' . $asset);
@@ -52,7 +59,7 @@ foreach (['dashboard', 'accounts', 'ledger', 'sales', 'commissions', 'rules', 's
 $migrations = glob($plugin . '/migrations/*.sql') ?: [];
 $assert(count($migrations) === 3, 'Request-integrity migration is missing.');
 $manifest = json_decode((string) file_get_contents($plugin . '/plugin.json'), true);
-$assert(($manifest['version'] ?? '') === '1.2.1', 'Accounting request-integrity changes require plugin version 1.2.1.');
+$assert(($manifest['version'] ?? '') === '1.2.3', 'Accounting request-integrity changes require plugin version 1.2.3.');
 $integrityMigration = (string) file_get_contents($plugin . '/migrations/2026_07_18_accounting_request_integrity.sql');
 $assert(strpos($integrityMigration, 'accounting_requests') !== false, 'Accounting request idempotency table is missing.');
 $ledger = (string) file_get_contents($plugin . '/src/Services/LedgerService.php');
@@ -60,6 +67,9 @@ $controller = (string) file_get_contents($plugin . '/src/Controllers/AccountingC
 $idempotency = (string) file_get_contents($plugin . '/src/Services/AccountingIdempotencyService.php');
 $assert(strpos($ledger, 'AccountingIdempotencyService::begin') !== false, 'Ledger request idempotency coordination is missing.');
 $assert(strpos($controller, 'accounting_request_uuid') !== false, 'Financial form request UUID is not required.');
+$assert(strpos($controller, 'function ledgerPostFallback') !== false, 'Ledger POST fallback route handler is missing.');
+$assert(strpos($controller, 'function deleteRule') !== false, 'Commission rule delete handler is missing.');
+$assert(strpos($controller, 'commission_rule_updated') !== false, 'Commission rule update audit is missing.');
 $assert(strpos($idempotency, 'ON DUPLICATE KEY UPDATE request_uuid = request_uuid') !== false, 'Concurrent accounting requests are not atomically coordinated.');
 
 echo "PROMA_ACCOUNTING_V120_OK\n";

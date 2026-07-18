@@ -23,8 +23,8 @@
 .proma-zp-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
 .proma-zp-grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
 .proma-zp-grid label{align-content:start;display:grid;font-size:12px;font-weight:700;gap:7px;margin:0;min-width:0}
-.proma-zp-grid input,.proma-zp-grid select{border:1px solid #dfe2eb;border-radius:7px;height:44px;padding:0 12px;width:100%}
-.proma-zp-grid input:focus,.proma-zp-grid select:focus{border-color:#7366ff;box-shadow:0 0 0 3px rgba(115,102,255,.1);outline:0}
+.proma-zp-grid input:not([type=checkbox]):not([type=radio]),.proma-zp-grid select{border:1px solid transparent;border-radius:var(--proma-field-radius,12px);height:44px;padding:0 14px;width:100%;background:var(--proma-field-bg,#f7f7fa);outline:0}
+.proma-zp-grid input:not([type=checkbox]):not([type=radio]):focus,.proma-zp-grid select:focus{border-color:transparent;background:var(--proma-field-bg-focus,#fff);box-shadow:inset 0 -2px 0 var(--proma-field-focus,#6a1b9a),0 6px 18px rgba(74,20,140,.06);outline:0}
 .proma-zp-grid small{color:#858894;font-size:10px;font-weight:400;overflow-wrap:anywhere}
 .proma-zp-grid .full{grid-column:1/-1}
 .proma-zp-grid .span-two{grid-column:span 2}

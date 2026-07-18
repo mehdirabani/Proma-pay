@@ -6,6 +6,7 @@ $logoPath = trim((string) ($layoutSettings['logo_path'] ?? ''));
 $logoIconPath = trim((string) ($layoutSettings['logo_icon_path'] ?? ''));
 $faviconPath = trim((string) ($layoutSettings['favicon_path'] ?? ''));
 $appIconPath = $logoIconPath ?: $faviconPath;
+$footerText = $layoutSettings['footer_text'] ?? 'پروما پی سامانه جامع پرداخت';
 $landingEnabled = landing_is_enabled();
 $publicHomeRoute = $landingEnabled ? 'ecommerce/landing' : 'ecommerce/shop';
 $publicCartSummary = ['quantity' => 0, 'total' => 0];
@@ -63,7 +64,7 @@ try {
   </main>
 
   <footer class="proma-public-footer">
-    <span><?= e($systemName) ?></span>
+    <span><?= e($footerText) ?></span>
     <a href="<?= e(url('auth/register')) ?>">ساخت حساب مشتری</a>
   </footer>
 

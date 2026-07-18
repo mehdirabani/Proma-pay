@@ -67,28 +67,34 @@ for ($i = 0; $i < 6; $i++) {
           $progress = (int) $stats['total'] > 0 ? (int) round(((int) $stats['paid'] / (int) $stats['total']) * 100) : 0;
           ?>
             <article class="proma-contract-card" data-contract-card data-card-href="<?= e(url('contracts/show/' . $cardContract['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده جزئیات قرارداد <?= e($cardContract['contract_number']) ?>">
-              <?php if (!$readOnly): ?><div class="proma-card-top-actions" aria-label="عملیات سریع قرارداد">
-                <button class="proma-icon-button" type="button" data-open-modal="edit-contract-<?= (int) $cardContract['id'] ?>" title="ویرایش قرارداد" aria-label="ویرایش قرارداد"><?= proma_icon('edit') ?></button>
-                <button class="proma-icon-button danger" type="button" data-open-modal="delete-contract-<?= (int) $cardContract['id'] ?>" title="حذف دائمی قرارداد" aria-label="حذف دائمی قرارداد"><?= proma_icon('trash') ?></button>
-              </div><?php endif; ?>
-            <?php if (!$readOnly): ?>
-              <label class="proma-card-select" title="انتخاب برای ویرایش دسته‌جمعی">
-                <input type="checkbox" name="contract_ids[]" value="<?= (int) $cardContract['id'] ?>">
-                <span>انتخاب</span>
-              </label>
-            <?php endif; ?>
-            <div class="proma-contract-card-main">
-              <span class="proma-progress-avatar" style="--progress: <?= $progress ?>">
-                <?php $cardAvatar = avatar_key_for($cardContract['avatar_key'] ?? null, $cardContract['customer_id'] ?? $cardContract['id']); ?>
-                <span class="proma-avatar-choice <?= e($cardAvatar) ?>" aria-label="<?= e($cardContract['customer_name']) ?>"><img data-avatar-image src="<?= e(avatar_asset_url($cardAvatar)) ?>" alt="آواتار <?= e($cardContract['customer_name']) ?>" loading="lazy"></span>
-              </span>
-              <div>
-                <span class="proma-contract-badge"><?= e($cardContract['contract_number']) ?></span>
-                <span class="badge <?= e(badge_class($cardContract['status'] ?? '')) ?>"><?= e(status_label($cardContract['status'] ?? '')) ?></span>
-                <h6><?= e($cardContract['customer_name']) ?></h6>
-                <p><?= money_toman($financedAmount) ?></p>
-              </div>
-            </div>
+              <header class="proma-contract-card__header">
+                <div class="proma-contract-card-main proma-contract-card__identity">
+                  <span class="proma-progress-avatar" style="--progress: <?= $progress ?>">
+                    <?php $cardAvatar = avatar_key_for($cardContract['avatar_key'] ?? null, $cardContract['customer_id'] ?? $cardContract['id']); ?>
+                    <span class="proma-avatar-choice <?= e($cardAvatar) ?>" aria-label="<?= e($cardContract['customer_name']) ?>"><img data-avatar-image src="<?= e(avatar_asset_url($cardAvatar)) ?>" alt="آواتار <?= e($cardContract['customer_name']) ?>" loading="lazy"></span>
+                  </span>
+                  <div>
+                    <h6><?= e($cardContract['customer_name']) ?></h6>
+                    <p><?= money_toman($financedAmount) ?></p>
+                  </div>
+                </div>
+                <div class="proma-contract-card__controls" aria-label="انتخاب و عملیات سریع قرارداد">
+                  <?php if (!$readOnly): ?>
+                    <label class="proma-card-select" title="انتخاب برای ویرایش دسته‌جمعی">
+                      <input type="checkbox" name="contract_ids[]" value="<?= (int) $cardContract['id'] ?>" aria-label="انتخاب قرارداد <?= e($cardContract['contract_number']) ?>">
+                      <span>انتخاب</span>
+                    </label>
+                    <div class="proma-card-top-actions" aria-label="عملیات سریع قرارداد">
+                      <button class="proma-icon-button" type="button" data-open-modal="edit-contract-<?= (int) $cardContract['id'] ?>" title="ویرایش قرارداد" aria-label="ویرایش قرارداد"><?= proma_icon('edit') ?></button>
+                      <button class="proma-icon-button danger" type="button" data-open-modal="delete-contract-<?= (int) $cardContract['id'] ?>" title="حذف دائمی قرارداد" aria-label="حذف دائمی قرارداد"><?= proma_icon('trash') ?></button>
+                    </div>
+                  <?php endif; ?>
+                </div>
+                <div class="proma-contract-card__meta">
+                  <span class="proma-contract-badge"><?= e($cardContract['contract_number']) ?></span>
+                  <span class="badge <?= e(badge_class($cardContract['status'] ?? '')) ?>"><?= e(status_label($cardContract['status'] ?? '')) ?></span>
+                </div>
+              </header>
             <div class="proma-contract-stats four">
               <span><strong><?= to_persian_digits($stats['total']) ?></strong><small>کل اقساط</small></span>
               <span><strong><?= to_persian_digits($stats['paid']) ?></strong><small>پرداخت‌شده</small></span>
@@ -100,10 +106,10 @@ for ($i = 0; $i < 6; $i++) {
               <div class="proma-contract-card-actions" aria-label="عملیات قرارداد">
                 <button class="proma-icon-button info" type="button" data-open-modal="contract-chart-<?= (int) $cardContract['id'] ?>" title="مشاهده نمودار قرارداد" aria-label="مشاهده نمودار قرارداد"><?= proma_icon('chart') ?></button>
                 <button class="proma-icon-button warning" type="button" data-open-modal="contract-timeline-<?= (int) $cardContract['id'] ?>" title="مشاهده تایم‌لاین قرارداد" aria-label="مشاهده تایم‌لاین قرارداد"><?= proma_icon('history') ?></button>
-                <a class="btn small success" href="<?= e(url('contracts/printDocument/' . $cardContract['id'])) ?>" target="_blank" rel="noopener"><?= proma_icon('printer') ?>چاپ قرارداد</a>
-                <a class="btn small success" href="<?= e(url('contracts/booklet/' . $cardContract['id'])) ?>" target="_blank"><?= proma_icon('book') ?>دفترچه</a>
+                <a class="proma-icon-button success" href="<?= e(url('contracts/printDocument/' . $cardContract['id'])) ?>" target="_blank" rel="noopener" title="چاپ قرارداد" aria-label="چاپ قرارداد"><?= proma_icon('printer') ?></a>
+                <a class="proma-icon-button success" href="<?= e(url('contracts/booklet/' . $cardContract['id'])) ?>" target="_blank" title="چاپ دفترچه اقساط" aria-label="چاپ دفترچه اقساط"><?= proma_icon('book') ?></a>
                   <?php if (!$readOnly): ?>
-                  <?php if (($cardContract['status'] ?? '') !== 'cancelled'): ?><button class="btn small danger" type="button" data-open-modal="cancel-contract-<?= (int) $cardContract['id'] ?>"><?= proma_icon('slash') ?>لغو</button><?php endif; ?>
+                  <?php if (($cardContract['status'] ?? '') !== 'cancelled'): ?><button class="proma-icon-button danger" type="button" data-open-modal="cancel-contract-<?= (int) $cardContract['id'] ?>" title="لغو قرارداد" aria-label="لغو قرارداد"><?= proma_icon('slash') ?></button><?php endif; ?>
                 <?php endif; ?>
               </div>
             </div>
@@ -627,8 +633,11 @@ for ($i = 0; $i < 6; $i++) {
           <label>قرارداد<input value="<?= e($contract['contract_number']) ?> - <?= e($contract['customer_name']) ?>" disabled></label>
           <label>سررسید<input name="due_date" value="<?= e($defaultFirstDueDate ?? '') ?>" required placeholder="۱۴۰۳/۰۱/۰۱"></label>
           <label>مبلغ پایه<input name="base_amount" data-money required></label>
+          <label>عنوان قسط<input name="custom_title" maxlength="100" placeholder="مثلاً هزینه خدمات اضافه"></label>
           <label>شناسه ضمانت<input name="guarantee_serial" dir="ltr" placeholder="شماره چک یا سفته"></label>
-          <label class="full">توضیحات<input name="notes" required placeholder="علت یا توضیح قسط دلخواه"></label>
+          <label class="full">توضیح قسط برای مشتری<textarea name="customer_description" required rows="3" placeholder="علت ایجاد این قسط را به زبان قابل نمایش برای مشتری بنویسید."></textarea><small class="proma-form-help">این توضیح در پنل مدیریت و پنل مشتری نمایش داده می‌شود.</small></label>
+          <label class="full">یادداشت داخلی<textarea name="internal_note" rows="2" placeholder="نکته داخلی برای مدیریت؛ این متن به مشتری نمایش داده نمی‌شود."></textarea><small class="proma-form-help">این یادداشت فقط برای کاربران مجاز مدیریت قابل مشاهده است.</small></label>
+          <label class="proma-confirm-check full"><input type="checkbox" name="customer_visible" value="1" checked> توضیح قسط در پنل مشتری نمایش داده شود.</label>
         </div>
         <div class="modal-footer"><button class="btn" type="submit">ثبت قسط</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
       </form>

@@ -249,7 +249,15 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
         <?php foreach ($installments as $installment): ?>
           <tr>
             <?php if ($canManageActiveContract): ?><td><input type="checkbox" name="installment_ids[]" value="<?= (int) $installment['id'] ?>" data-check-item="installment_ids" aria-label="انتخاب قسط <?= e($installment['installment_number']) ?>"></td><?php endif; ?>
-            <td><?= to_persian_digits($installment['installment_number']) ?></td>
+            <td>
+              <?= to_persian_digits($installment['installment_number']) ?>
+              <?php if (!empty($installment['is_custom'])): ?>
+                <span class="badge info">قسط دلخواه</span>
+                <?php $contractCustomDescription = trim((string) ($installment['custom_description'] ?? $installment['notes'] ?? '')); ?>
+                <?php if ($contractCustomDescription !== ''): ?><small class="proma-custom-installment-description">دلیل ایجاد: <?= e($contractCustomDescription) ?></small><?php endif; ?>
+                <?php if ($canManageActiveContract && !empty($installment['internal_note'])): ?><small class="proma-custom-installment-description muted">یادداشت داخلی: <?= e($installment['internal_note']) ?></small><?php endif; ?>
+              <?php endif; ?>
+            </td>
             <td><?= e(jdate($installment['due_date'])) ?></td>
             <td><?= money_toman($installment['base_amount']) ?></td>
             <td dir="ltr"><?= e(to_persian_digits($installment['guarantee_serial'] ?? '')) ?></td>
@@ -450,8 +458,11 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
           <label>قرارداد<input value="<?= e($contract['contract_number']) ?> - <?= e($contract['customer_name']) ?>" disabled></label>
           <label>سررسید<input name="due_date" value="<?= e(jdate(FinanceHelper::addMonths(date('Y-m-d'), 1))) ?>" required placeholder="۱۴۰۵/۰۱/۰۱"></label>
           <label>مبلغ پایه<input name="base_amount" data-money required></label>
+          <label>عنوان قسط<input name="custom_title" maxlength="100" placeholder="مثلاً هزینه خدمات اضافه"></label>
           <label>شناسه ضمانت<input name="guarantee_serial" dir="ltr" placeholder="شماره چک یا سفته"></label>
-          <label class="full">توضیحات<input name="notes" required placeholder="علت یا توضیح قسط دلخواه"></label>
+          <label class="full">توضیح قسط برای مشتری<textarea name="customer_description" required rows="3" placeholder="علت ایجاد این قسط را به زبان قابل نمایش برای مشتری بنویسید."></textarea><small class="proma-form-help">این توضیح در پنل مدیریت و پنل مشتری نمایش داده می‌شود.</small></label>
+          <label class="full">یادداشت داخلی<textarea name="internal_note" rows="2" placeholder="نکته داخلی برای مدیریت؛ این متن به مشتری نمایش داده نمی‌شود."></textarea><small class="proma-form-help">این یادداشت فقط برای کاربران مجاز مدیریت قابل مشاهده است.</small></label>
+          <label class="proma-confirm-check full"><input type="checkbox" name="customer_visible" value="1" checked> توضیح قسط در پنل مشتری نمایش داده شود.</label>
         </div>
         <div class="modal-footer"><button class="btn" type="submit">ثبت قسط</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
       </form>

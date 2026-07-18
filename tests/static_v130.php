@@ -39,13 +39,13 @@ $blocked = ContractTemplateService::validateTemplate('<script>alert(1)</script>'
 $assert($blocked['valid'] === false, 'Unsafe template validation failed.');
 
 $compact = ContractPrintProfile::fromPreset('compact');
-$assert((float) $compact['margin_top'] === 5.0, 'Current compact top margin must be 5mm.');
-$assert((float) $compact['body_line_height'] === 1.22, 'Current compact line height must be 1.22.');
+$assert((float) $compact['margin_top'] === 4.0, 'Current compact top margin must be 4mm.');
+$assert((float) $compact['body_line_height'] === 1.18, 'Current compact line height must be 1.18.');
 $clamped = ContractPrintProfile::validate(['margin_top' => -8, 'body_line_height' => 9, 'logo_width' => 900]);
 $assert((float) $clamped['margin_top'] === 4.0, 'Top margin lower bound failed.');
-$assert((float) $clamped['body_line_height'] === 1.35, 'Official compact line height upper bound failed.');
+$assert((float) $clamped['body_line_height'] === 1.3, 'Official compact line height upper bound failed.');
 $assert((float) $clamped['logo_width'] === 60.0, 'Logo width upper bound failed.');
-$assert(strpos(ContractPrintProfile::styleVariables($compact), '--contract-body-line-height:1.22') !== false, 'Print CSS variables missing.');
+$assert(strpos(ContractPrintProfile::styleVariables($compact), '--contract-body-line-height:1.18') !== false, 'Print CSS variables missing.');
 
 $printCss = (string) file_get_contents($root . '/assets/css/components/contract-print.css');
 $assert(strpos($printCss, 'thead { display: table-header-group; }') !== false, 'Repeating table header rule missing.');

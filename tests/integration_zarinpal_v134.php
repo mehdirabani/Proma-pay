@@ -25,11 +25,24 @@ $property->setValue(null, $pdo);
 $_SESSION['user_id'] = 1;
 $_SESSION['role'] = 'admin';
 
-$pdo->exec("INSERT INTO users (role, username, full_name, national_id, mobile, email, password_hash, status, created_at)
-            VALUES ('customer','zp-customer','مشتری تست زرین پال','0012345678','09120000000','customer@example.test','test','active',NOW())");
+$token = bin2hex(random_bytes(5));
+$customerName = 'مشتری تست زرین پال';
+$nationalId = '9' . str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT);
+$mobile = '09' . str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT);
+$email = 'zp-' . $token . '@example.test';
+$contractNumber = 'ZP-QA-' . $token . '-1';
+$cancelContractNumber = 'ZP-QA-' . $token . '-2';
+$sandboxContractNumber = 'ZP-QA-' . $token . '-3';
+$idempotencyPrefix = 'gateway:qa:' . $token . ':';
+
+$createUser = $pdo->prepare('INSERT INTO users (role, username, full_name, national_id, mobile, email, password_hash, status, created_at)
+    VALUES (\'customer\', ?, ?, ?, ?, ?, \'test\', \'active\', NOW())');
+$createUser->execute(['zp-customer-' . $token, $customerName, $nationalId, $mobile, $email]);
 $customerId = (int) $pdo->lastInsertId();
-$pdo->exec("INSERT INTO contracts (customer_id, contract_number, prefix, serial, principal_amount, monthly_interest_rate, interest_type, months, start_date, first_due_date, status, created_at)
-            VALUES ({$customerId},'ZP-TEST-1','ZP',1,600000,0,'simple',3,CURDATE(),CURDATE(),'active',NOW())");
+$contractSerial = random_int(100000, 999999);
+$createContract = $pdo->prepare('INSERT INTO contracts (customer_id, contract_number, prefix, serial, principal_amount, monthly_interest_rate, interest_type, months, start_date, first_due_date, status, created_at)
+    VALUES (?, ?, \'ZP\', ?, ?, 0, \'simple\', ?, CURDATE(), CURDATE(), \'active\', NOW())');
+$createContract->execute([$customerId, $contractNumber, $contractSerial, 600000, 3]);
 $contractId = (int) $pdo->lastInsertId();
 for ($number = 1; $number <= 3; $number++) {
     $pdo->exec("INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, created_at)
@@ -38,8 +51,14 @@ for ($number = 1; $number <= 3; $number++) {
 $installmentIds = array_map('intval', $pdo->query("SELECT id FROM installments WHERE contract_id={$contractId} ORDER BY installment_number")->fetchAll(PDO::FETCH_COLUMN));
 
 $manager = PluginManager::instance();
-$manager->install('proma-zarinpal', $customerId);
-$manager->activate('proma-zarinpal', $customerId);
+$registered = PluginRegistry::find('proma-zarinpal');
+if (!$registered || ($registered['status'] ?? '') === 'removed') {
+    $manager->install('proma-zarinpal', $customerId);
+}
+if (!PluginManager::isActive('proma-zarinpal')) {
+    $manager->activate('proma-zarinpal', $customerId);
+}
+PluginManager::boot();
 if (!PluginManager::isActive('proma-zarinpal')) {
     throw new RuntimeException('Plugin activation failed.');
 }
@@ -67,7 +86,17 @@ $settings->save([
     'sandbox_financial_effects' => '1',
 ], $customerId);
 
-$authorities = [str_repeat('S', 36), 'S' . str_repeat('B', 35), 'S' . str_repeat('C', 35), 'S' . str_repeat('D', 35)];
+$authorityStem = str_pad(strtoupper($token), 34, 'A');
+$authorities = [
+    'S' . $authorityStem . '1',
+    'S' . $authorityStem . '2',
+    'S' . $authorityStem . '3',
+    'S' . $authorityStem . '4',
+];
+$singleAuthority = $authorities[0];
+$groupAuthority = $authorities[1];
+$cancelAuthority = $authorities[2];
+$sandboxAuthority = $authorities[3];
 $requestIndex = 0;
 $verifyCode = 100;
 $transport = static function ($url, array $payload) use (&$authorities, &$requestIndex, &$verifyCode) {
@@ -89,25 +118,25 @@ $callback = new Proma\Plugins\Zarinpal\Services\ZarinpalCallbackService($reposit
 
 $single = $requestService->create([
     'type' => 'single', 'installment_id' => $installmentIds[0], 'installment_number' => 1,
-    'contract_id' => $contractId, 'contract_number' => 'ZP-TEST-1', 'customer_id' => $customerId,
-    'customer_name' => 'مشتری تست زرین پال', 'customer_mobile' => '09120000000', 'customer_email' => 'customer@example.test',
-    'amount_toman' => 200000, 'idempotency_key' => 'gateway:single:test:' . str_repeat('1', 40),
+    'contract_id' => $contractId, 'contract_number' => $contractNumber, 'customer_id' => $customerId,
+    'customer_name' => $customerName, 'customer_mobile' => $mobile, 'customer_email' => $email,
+    'amount_toman' => 200000, 'idempotency_key' => $idempotencyPrefix . 'single',
 ]);
 if (empty($single['ok']) || strpos($single['redirect_url'], 'https://sandbox.zarinpal.com/pg/StartPay/') !== 0) {
     throw new RuntimeException('Sandbox single request failed.');
 }
 $singleDuplicateRequest = $requestService->create([
     'type' => 'single', 'installment_id' => $installmentIds[0], 'installment_number' => 1,
-    'contract_id' => $contractId, 'contract_number' => 'ZP-TEST-1', 'customer_id' => $customerId,
-    'customer_name' => 'مشتری تست زرین پال', 'customer_mobile' => '09120000000', 'customer_email' => 'customer@example.test',
-    'amount_toman' => 200000, 'idempotency_key' => 'gateway:single:test:' . str_repeat('1', 40),
+    'contract_id' => $contractId, 'contract_number' => $contractNumber, 'customer_id' => $customerId,
+    'customer_name' => $customerName, 'customer_mobile' => $mobile, 'customer_email' => $email,
+    'amount_toman' => 200000, 'idempotency_key' => $idempotencyPrefix . 'single',
 ]);
 if (($singleDuplicateRequest['transaction_id'] ?? 0) !== ($single['transaction_id'] ?? -1) || $requestIndex !== 1) {
     throw new RuntimeException('Duplicate request idempotency failed.');
 }
-$first = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => str_repeat('S', 36), 'Status' => 'OK']);
-$duplicate = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => str_repeat('S', 36), 'Status' => 'OK']);
-$lateNok = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => str_repeat('S', 36), 'Status' => 'NOK']);
+$first = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => $singleAuthority, 'Status' => 'OK']);
+$duplicate = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => $singleAuthority, 'Status' => 'OK']);
+$lateNok = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => $singleAuthority, 'Status' => 'NOK']);
 $singlePaymentCount = (int) $pdo->query("SELECT COUNT(*) FROM payments WHERE installment_id={$installmentIds[0]} AND status='paid'")->fetchColumn();
 if (empty($first['ok']) || empty($duplicate['ok']) || empty($lateNok['ok']) || $singlePaymentCount !== 1) {
     throw new RuntimeException('Single callback idempotency failed.');
@@ -118,13 +147,13 @@ $group = $requestService->create([
     // Only one installment is selected; the verified overpayment must be
     // allocated to the next eligible installment by the core service.
     'type' => 'group', 'installment_ids' => [$installmentIds[1]],
-    'contract_id' => $contractId, 'contract_number' => 'ZP-TEST-1', 'customer_id' => $customerId,
-    'customer_name' => 'مشتری تست زرین پال', 'customer_mobile' => '09120000000', 'customer_email' => 'customer@example.test',
-    'amount_toman' => 400000, 'idempotency_key' => 'gateway:group:test:' . str_repeat('2', 40),
+    'contract_id' => $contractId, 'contract_number' => $contractNumber, 'customer_id' => $customerId,
+    'customer_name' => $customerName, 'customer_mobile' => $mobile, 'customer_email' => $email,
+    'amount_toman' => 400000, 'idempotency_key' => $idempotencyPrefix . 'group',
 ]);
-$groupFirst = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => 'S' . str_repeat('B', 35), 'Status' => 'OK']);
-$groupDuplicate = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => 'S' . str_repeat('B', 35), 'Status' => 'OK']);
-$groupId = (int) $pdo->query("SELECT id FROM payment_groups WHERE method='zarinpal' LIMIT 1")->fetchColumn();
+$groupFirst = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => $groupAuthority, 'Status' => 'OK']);
+$groupDuplicate = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => $groupAuthority, 'Status' => 'OK']);
+$groupId = (int) $pdo->query("SELECT id FROM payment_groups WHERE method='zarinpal' AND contract_id={$contractId} ORDER BY id DESC LIMIT 1")->fetchColumn();
 $allocationCount = (int) $pdo->query("SELECT COUNT(*) FROM payment_allocations WHERE payment_group_id={$groupId}")->fetchColumn();
 $trackCount = (int) $pdo->query("SELECT COUNT(DISTINCT gateway_track_id) FROM payments WHERE payment_group_id={$groupId}")->fetchColumn();
 if (empty($group['ok']) || empty($groupFirst['ok']) || empty($groupDuplicate['ok']) || $allocationCount !== 2 || $trackCount !== 2) {
@@ -157,19 +186,18 @@ if (!$externalCallbackRejected || strpos((string) ($maskedSettings['sandbox_merc
     throw new RuntimeException('Settings validation or Merchant masking failed.');
 }
 
-$pdo->exec("INSERT INTO contracts (customer_id, contract_number, prefix, serial, principal_amount, monthly_interest_rate, interest_type, months, start_date, first_due_date, status, created_at)
-            VALUES ({$customerId},'ZP-TEST-NOK','ZP',2,100000,0,'simple',1,CURDATE(),CURDATE(),'active',NOW())");
+$createContract->execute([$customerId, $cancelContractNumber, $contractSerial + 1, 100000, 1]);
 $cancelContractId = (int) $pdo->lastInsertId();
 $pdo->exec("INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, created_at)
             VALUES ({$cancelContractId},1,CURDATE(),100000,0,100000,'pending',NOW())");
 $cancelInstallmentId = (int) $pdo->lastInsertId();
 $cancelRequest = $requestService->create([
     'type' => 'single', 'installment_id' => $cancelInstallmentId, 'installment_number' => 1,
-    'contract_id' => $cancelContractId, 'contract_number' => 'ZP-TEST-NOK', 'customer_id' => $customerId,
-    'customer_name' => 'مشتری تست زرین پال', 'customer_mobile' => '09120000000', 'customer_email' => 'customer@example.test',
-    'amount_toman' => 100000, 'idempotency_key' => 'gateway:single:nok:' . str_repeat('3', 40),
+    'contract_id' => $cancelContractId, 'contract_number' => $cancelContractNumber, 'customer_id' => $customerId,
+    'customer_name' => $customerName, 'customer_mobile' => $mobile, 'customer_email' => $email,
+    'amount_toman' => 100000, 'idempotency_key' => $idempotencyPrefix . 'nok',
 ]);
-$cancelled = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => 'S' . str_repeat('C', 35), 'Status' => 'NOK']);
+$cancelled = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => $cancelAuthority, 'Status' => 'NOK']);
 $cancelPaidCount = (int) $pdo->query("SELECT COUNT(*) FROM payments WHERE installment_id={$cancelInstallmentId} AND status='paid'")->fetchColumn();
 if (empty($cancelRequest['ok']) || !empty($cancelled['ok']) || $cancelPaidCount !== 0) {
     throw new RuntimeException('NOK callback changed financial state.');
@@ -178,8 +206,7 @@ if (empty($cancelRequest['ok']) || !empty($cancelled['ok']) || $cancelPaidCount 
 $sandboxSettings = $settings->all(false);
 $sandboxSettings['sandbox_financial_effects'] = '0';
 $settings->save($sandboxSettings, 1);
-$pdo->exec("INSERT INTO contracts (customer_id, contract_number, prefix, serial, principal_amount, monthly_interest_rate, interest_type, months, start_date, first_due_date, status, created_at)
-            VALUES ({$customerId},'ZP-SANDBOX-SAFE','ZP',3,150000,0,'simple',1,CURDATE(),CURDATE(),'active',NOW())");
+$createContract->execute([$customerId, $sandboxContractNumber, $contractSerial + 2, 150000, 1]);
 $sandboxContractId = (int) $pdo->lastInsertId();
 $pdo->exec("INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, created_at)
             VALUES ({$sandboxContractId},1,CURDATE(),150000,0,150000,'pending',NOW())");
@@ -187,11 +214,11 @@ $sandboxInstallmentId = (int) $pdo->lastInsertId();
 $verifyCode = 100;
 $sandboxRequest = $requestService->create([
     'type' => 'single', 'installment_id' => $sandboxInstallmentId, 'installment_number' => 1,
-    'contract_id' => $sandboxContractId, 'contract_number' => 'ZP-SANDBOX-SAFE', 'customer_id' => $customerId,
-    'customer_name' => 'مشتری تست زرین پال', 'customer_mobile' => '09120000000', 'customer_email' => 'customer@example.test',
-    'amount_toman' => 150000, 'idempotency_key' => 'gateway:sandbox:safe:' . str_repeat('4', 40),
+    'contract_id' => $sandboxContractId, 'contract_number' => $sandboxContractNumber, 'customer_id' => $customerId,
+    'customer_name' => $customerName, 'customer_mobile' => $mobile, 'customer_email' => $email,
+    'amount_toman' => 150000, 'idempotency_key' => $idempotencyPrefix . 'sandbox',
 ]);
-$sandboxVerified = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => 'S' . str_repeat('D', 35), 'Status' => 'OK']);
+$sandboxVerified = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => $sandboxAuthority, 'Status' => 'OK']);
 $sandboxTransactionStatus = (string) $pdo->query("SELECT status FROM proma_zarinpal_transactions WHERE contract_id={$sandboxContractId} LIMIT 1")->fetchColumn();
 $sandboxPaidCount = (int) $pdo->query("SELECT COUNT(*) FROM payments WHERE installment_id={$sandboxInstallmentId} AND status='paid'")->fetchColumn();
 $sandboxInstallment = $pdo->query("SELECT paid_amount, remaining_amount, status FROM installments WHERE id={$sandboxInstallmentId}")->fetch();
@@ -230,7 +257,7 @@ $merchantRows = $pdo->query("SELECT setting_value, encrypted_value FROM proma_za
 if (!empty($merchantRows['setting_value']) || strpos((string) $merchantRows['encrypted_value'], '123e4567') !== false) {
     throw new RuntimeException('Merchant storage is not encrypted.');
 }
-$rawCardCount = (int) $pdo->query("SELECT COUNT(*) FROM proma_zarinpal_transactions WHERE card_pan_masked NOT LIKE '%*%' AND card_pan_masked IS NOT NULL")->fetchColumn();
+$rawCardCount = (int) $pdo->query("SELECT COUNT(*) FROM proma_zarinpal_transactions WHERE contract_id IN ({$contractId}, {$cancelContractId}, {$sandboxContractId}) AND card_pan_masked NOT LIKE '%*%' AND card_pan_masked IS NOT NULL")->fetchColumn();
 if ($rawCardCount !== 0) {
     throw new RuntimeException('Unmasked card data was stored.');
 }

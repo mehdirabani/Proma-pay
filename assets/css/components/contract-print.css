@@ -15,33 +15,33 @@
 }
 
 :root {
-  --contract-margin-top: 5mm;
-  --contract-margin-right: 8mm;
+  --contract-margin-top: 4mm;
+  --contract-margin-right: 7mm;
   --contract-margin-bottom: 7mm;
-  --contract-margin-left: 8mm;
-  --contract-body-font-size: 6px;
-  --contract-important-font-size: 7px;
-  --contract-heading-font-size: 7px;
-  --contract-body-line-height: 1.22;
-  --contract-important-line-height: 1.22;
-  --contract-heading-line-height: 1.2;
-  --contract-paragraph-spacing: 1px;
-  --contract-section-top-spacing: 2px;
-  --contract-section-bottom-spacing: 1px;
+  --contract-margin-left: 7mm;
+  --contract-body-font-size: 7px;
+  --contract-important-font-size: 8px;
+  --contract-heading-font-size: 8px;
+  --contract-body-line-height: 1.18;
+  --contract-important-line-height: 1.18;
+  --contract-heading-line-height: 1.16;
+  --contract-paragraph-spacing: .5px;
+  --contract-section-top-spacing: 1px;
+  --contract-section-bottom-spacing: .5px;
   --contract-list-spacing: 1px;
   --contract-list-indent: 10px;
   --contract-header-top-spacing: 0px;
-  --contract-header-bottom-spacing: 2px;
-  --contract-header-divider-spacing: 2px;
-  --contract-logo-width: 30mm;
-  --contract-logo-height: 11mm;
-  --contract-table-font-size: 5.5px;
-  --contract-table-heading-font-size: 6px;
-  --contract-table-line-height: 1.15;
-  --contract-table-cell-vertical-padding: 1px;
+  --contract-header-bottom-spacing: 1px;
+  --contract-header-divider-spacing: 1px;
+  --contract-logo-width: 32mm;
+  --contract-logo-height: 12mm;
+  --contract-table-font-size: 6.2px;
+  --contract-table-heading-font-size: 6.7px;
+  --contract-table-line-height: 1.12;
+  --contract-table-cell-vertical-padding: .5px;
   --contract-table-cell-horizontal-padding: 2px;
-  --contract-table-margin: 2px;
-  --contract-signature-top-spacing: 6mm;
+  --contract-table-margin: 1px;
+  --contract-signature-top-spacing: 5mm;
   --contract-signature-box-height: 15mm;
 }
 
@@ -95,12 +95,13 @@ body {
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 1px 4mm;
-  min-height: 0;
+  min-height: 16mm;
   margin: var(--contract-header-top-spacing) 0 var(--contract-header-bottom-spacing);
-  padding: 0 0 2px;
+  padding: 1.5mm 2.5mm 1mm;
   overflow: hidden;
-  border: 1px solid #263244;
-  background: #fff;
+  border: .35mm solid #263244;
+  border-radius: 3.5mm;
+  background: #fbfcff;
   page-break-inside: avoid;
   break-inside: avoid;
 }
@@ -110,11 +111,11 @@ body {
 .proma-letterhead-logo { min-width: 0; padding: 1px 3px; }
 .proma-letterhead-number { grid-column: 1; text-align: right; }
 .proma-letterhead-logo { grid-column: 2; display: grid; place-items: center; width: var(--contract-logo-width); min-height: 0; }
-.proma-letterhead-meta { grid-column: 3; display: grid; gap: 1px; color: #344054; font-size: 6px; line-height: 1.2; text-align: left; }
+.proma-letterhead-meta { grid-column: 3; display: grid; gap: 1px; color: #344054; font-size: 6.5px; line-height: 1.2; text-align: left; }
 
 .proma-letterhead-number small,
-.proma-letterhead-meta small { display: block; margin: 0; color: #667085; font-size: 6px; font-weight: 400; line-height: 1.2; }
-.proma-letterhead-number strong { display: block; color: #111827; font-family: Tahoma, Arial, sans-serif; font-size: 8.5px; font-weight: 700; line-height: 1.15; white-space: nowrap; }
+.proma-letterhead-meta small { display: block; margin: 0; color: #667085; font-size: 6.5px; font-weight: 400; line-height: 1.2; }
+.proma-letterhead-number strong { display: block; color: #111827; font-family: Tahoma, Arial, sans-serif; font-size: 9px; font-weight: 700; line-height: 1.15; white-space: nowrap; }
 .proma-letterhead-meta span { display: block; overflow-wrap: anywhere; }
 .proma-letterhead-logo img { display: block; max-width: var(--contract-logo-width); max-height: var(--contract-logo-height); object-fit: contain; }
 .proma-letterhead-logo-fallback { max-width: var(--contract-logo-width); color: #263244; font-size: 8px; font-weight: 700; line-height: 1.15; text-align: center; overflow-wrap: anywhere; }
@@ -122,13 +123,13 @@ body {
 .proma-letterhead-title {
   grid-column: 1 / -1;
   margin: var(--contract-header-divider-spacing) 0 0;
-  padding: 2px 3px;
-  border-top: 1px solid #263244;
-  background: #f5f7fa;
+  padding: 1.5px 3px;
+  border-top: .25mm solid #263244;
+  background: #f1f4fa;
   text-align: center;
 }
-.proma-letterhead-title h1 { margin: 0; color: #111827; font-size: 8px; font-weight: 700; line-height: 1.2; }
-.proma-letterhead-title p { margin: 1px 0 0; color: #475467; font-size: 6px; line-height: 1.2; white-space: pre-line; }
+.proma-letterhead-title h1 { margin: 0; color: #111827; font-size: 9px; font-weight: 700; line-height: 1.16; }
+.proma-letterhead-title p { margin: 1px 0 0; color: #475467; font-size: 6.4px; line-height: 1.16; white-space: pre-line; }
 
 .contract-print-body,
 .contract-document-body {

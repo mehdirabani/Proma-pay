@@ -70,11 +70,11 @@ class AccountingServiceProvider implements \PluginServiceProviderInterface
 
     public function update(\PluginManager $manager, array $manifest)
     {
-        $status = \Model::fetch("SELECT setting_value FROM plugin_accounting_settings WHERE setting_key = 'setup_status' LIMIT 1");
-        $hasHistory = (bool) \Model::fetch('SELECT id FROM accounting_ledger_entries LIMIT 1')
-            || (bool) \Model::fetch('SELECT id FROM plugin_accounting_sales LIMIT 1');
+        $status = self::safeFetch("SELECT setting_value FROM plugin_accounting_settings WHERE setting_key = 'setup_status' LIMIT 1");
+        $hasHistory = (bool) self::safeFetch('SELECT id FROM accounting_ledger_entries LIMIT 1')
+            || (bool) self::safeFetch('SELECT id FROM plugin_accounting_sales LIMIT 1');
         if (($status['setting_value'] ?? '') === 'pending' && $hasHistory) {
-            \Model::execute("UPDATE plugin_accounting_settings SET setting_value = 'skipped', updated_at = NOW() WHERE setting_key = 'setup_status'");
+            self::safeExecute("UPDATE plugin_accounting_settings SET setting_value = 'skipped', updated_at = NOW() WHERE setting_key = 'setup_status'");
         }
     }
 
@@ -86,12 +86,35 @@ class AccountingServiceProvider implements \PluginServiceProviderInterface
     public function healthCheck(\PluginManager $manager, array $manifest)
     {
         try {
-            \Model::fetch('SELECT id FROM accounting_user_accounts LIMIT 1');
-            \Model::fetch('SELECT id FROM accounting_ledger_entries LIMIT 1');
-            \Model::fetch('SELECT setting_key FROM plugin_accounting_settings LIMIT 1');
+            self::safeFetch('SELECT id FROM accounting_user_accounts LIMIT 1');
+            self::safeFetch('SELECT id FROM accounting_ledger_entries LIMIT 1');
+            self::safeFetch('SELECT setting_key FROM plugin_accounting_settings LIMIT 1');
             return true;
         } catch (\Throwable $e) {
             return false;
+        }
+    }
+
+    protected static function safeFetch($sql, array $params = [])
+    {
+        $stmt = \Model::db()->prepare($sql);
+        try {
+            $stmt->execute($params);
+            $row = $stmt->fetch();
+            return $row ?: null;
+        } finally {
+            $stmt->closeCursor();
+        }
+    }
+
+    protected static function safeExecute($sql, array $params = [])
+    {
+        $stmt = \Model::db()->prepare($sql);
+        try {
+            $stmt->execute($params);
+            return $stmt->rowCount();
+        } finally {
+            $stmt->closeCursor();
         }
     }
 }

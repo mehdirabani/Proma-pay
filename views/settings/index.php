@@ -75,7 +75,7 @@ if (!isset($tabs[$activeTab])) {
     <div class="card-body form-grid">
       <label>نام سامانه<input name="system_name" value="<?= e($settings['system_name']) ?>"></label>
       <label>متن نشان<input name="logo_text" value="<?= e($settings['logo_text']) ?>"></label>
-      <label class="full">متن فوتر<input name="footer_text" value="<?= e($settings['footer_text'] ?? '') ?>"></label>
+      <label class="full">متن فوتر سامانه<input name="footer_text" value="<?= e($settings['footer_text'] ?? '') ?>" maxlength="180" aria-describedby="footer-text-help"><small id="footer-text-help" class="proma-form-help">این متن در پایین صفحات سامانه نمایش داده می‌شود. HTML و اسکریپت در این بخش پذیرفته نمی‌شود.</small><button class="btn small secondary" type="button" data-reset-setting="footer_text" data-reset-value="پروما پی سامانه جامع پرداخت">بازنشانی متن پیش‌فرض</button></label>
       <label>لوگوی اصلی<input type="file" name="logo_file" accept=".jpg,.jpeg,.png,.webp,.svg,image/jpeg,image/png,image/webp,image/svg+xml"></label>
       <label>لوگوی کوچک / آیکن<input type="file" name="logo_icon_file" accept=".jpg,.jpeg,.png,.webp,.svg,image/jpeg,image/png,image/webp,image/svg+xml"></label>
       <label>فاوآیکن مرورگر<input type="file" name="favicon_file" accept=".ico,.jpg,.jpeg,.png,.webp,.svg,image/x-icon,image/vnd.microsoft.icon,image/jpeg,image/png,image/webp,image/svg+xml"></label>

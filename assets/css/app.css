@@ -4153,38 +4153,67 @@ label:has(> input[data-select-filter="customer-select"]) {
 }
 
 .proma-contract-card {
-  position: relative;
   min-height: 196px;
   display: grid;
   gap: 12px;
   padding: 16px;
   border: 1px solid var(--proma-line);
-  border-radius: 8px;
-  background: linear-gradient(135deg, #fff, #f8faff);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(31, 36, 48, .045);
+}
+
+.proma-contract-card__header {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "identity controls"
+    "meta controls";
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.proma-contract-card__identity { grid-area: identity; }
+.proma-contract-card__meta {
+  grid-area: meta;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.proma-contract-card__controls {
+  grid-area: controls;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 44px;
 }
 
 .proma-card-select {
-  position: absolute;
-  inset-block-start: 10px;
-  inset-inline-start: 10px;
-  z-index: 2;
+  position: static;
   display: inline-flex !important;
   grid-auto-flow: column;
   align-items: center !important;
   gap: 6px !important;
-  min-height: 30px;
-  padding: 5px 8px;
-  border: 1px solid var(--proma-line);
-  border-radius: 8px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
   color: var(--proma-muted) !important;
-  background: rgba(255, 255, 255, .92);
+  background: #f6f5fb;
   font-size: 12px !important;
+  cursor: pointer;
 }
 
 .proma-card-select input {
-  width: 15px !important;
-  min-height: 15px !important;
-  height: 15px !important;
+  width: 18px !important;
+  min-height: 18px !important;
+  height: 18px !important;
   margin: 0;
 }
 
@@ -4207,11 +4236,12 @@ label:has(> input[data-select-filter="customer-select"]) {
 }
 
 .proma-contract-card h6 {
-  margin: 10px 0 4px;
-  overflow: hidden;
+  margin: 0 0 4px;
+  overflow: visible;
   color: var(--proma-text);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .proma-contract-card p {
@@ -4293,6 +4323,23 @@ label:has(> input[data-select-filter="customer-select"]) {
   overflow: visible;
   padding-bottom: 0;
 }
+
+.proma-contract-card-actions .proma-icon-button {
+  flex: 0 0 40px;
+}
+
+.proma-custom-installment-description {
+  display: block;
+  max-width: 260px;
+  margin-top: 5px;
+  color: var(--proma-muted);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.proma-custom-installment-description.muted { color: #7a8190; }
 
 .proma-filter-bar {
   display: flex;
@@ -6823,10 +6870,6 @@ input[type="checkbox"]:not(.switch-options input):focus-visible {
   background: rgba(220, 53, 69, .06);
 }
 
-.proma-contract-card {
-  position: relative;
-}
-
 .proma-card-edit {
   width: 36px;
   height: 36px;
@@ -6848,16 +6891,14 @@ input[type="checkbox"]:not(.switch-options input):focus-visible {
 }
 
 .proma-card-top-actions {
-  position: absolute;
-  inset-block-start: 14px;
-  inset-inline-end: 14px;
-  z-index: 3;
+  position: static;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.proma-card-top-actions .icon-btn {
+.proma-card-top-actions .icon-btn,
+.proma-card-top-actions .proma-icon-button {
   width: 36px;
   height: 36px;
   padding: 0;
@@ -6878,6 +6919,29 @@ input[type="checkbox"]:not(.switch-options input):focus-visible {
 .proma-card-top-actions svg {
   width: 17px;
   height: 17px;
+}
+
+@media (max-width: 480px) {
+  .proma-contract-card { padding: 14px; }
+  .proma-contract-card__header {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "identity"
+      "meta"
+      "controls";
+  }
+  .proma-contract-card__controls {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .proma-card-select { flex: 1 1 auto; }
+  .proma-card-top-actions { margin-inline-start: auto; }
+  .proma-contract-card-actions {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(40px, 1fr));
+    gap: 6px;
+  }
+  .proma-contract-card-actions .proma-icon-button { width: 100%; }
 }
 
 /* Keep the sidebar viewport independent from the page height so its final item is scrollable. */

@@ -1,21 +1,37 @@
 :root {
-  --proma-control-height: 44px;
-  --proma-control-min-height: 44px;
-  --proma-control-padding-inline: 12px;
+  --proma-field-height: 44px;
+  --proma-field-radius: 12px;
+  --proma-field-bg: #f7f7fa;
+  --proma-field-bg-hover: #f2eff7;
+  --proma-field-bg-focus: #fff;
+  --proma-field-bg-disabled: #eef0f4;
+  --proma-field-text: #21242b;
+  --proma-field-placeholder: #9296a1;
+  --proma-field-label: #555b66;
+  --proma-field-focus: var(--proma-brand-700, #6a1b9a);
+  --proma-field-error: #c83b45;
+  --proma-field-success: #16865c;
+  --proma-field-padding-inline: 14px;
+  --proma-field-transition: 160ms ease;
+
+  /* Backwards-compatible aliases for existing Core and plugin markup. */
+  --proma-control-height: var(--proma-field-height);
+  --proma-control-min-height: var(--proma-field-height);
+  --proma-control-padding-inline: var(--proma-field-padding-inline);
   --proma-control-padding-block: 9px;
-  --proma-control-radius: 8px;
+  --proma-control-radius: var(--proma-field-radius);
   --proma-control-font-size: 14px;
   --proma-control-line-height: 1.6;
   --proma-field-gap: 7px;
   --proma-form-column-gap: 16px;
   --proma-form-row-gap: 18px;
   --proma-label-min-height: 24px;
-  --proma-control-border: #d9e0ea;
-  --proma-control-bg: #fff;
-  --proma-control-text: #1f2937;
+  --proma-control-border: transparent;
+  --proma-control-bg: var(--proma-field-bg);
+  --proma-control-text: var(--proma-field-text);
   --proma-control-muted: #667085;
-  --proma-control-focus: var(--proma-brand-700, #6a1b9a);
-  --proma-control-danger: #dc3545;
+  --proma-control-focus: var(--proma-field-focus);
+  --proma-control-danger: var(--proma-field-error);
 }
 
 .proma-form-grid,
@@ -88,12 +104,9 @@
 }
 
 .proma-form-control,
-.form-grid input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]),
-.form-grid select:not([multiple]),
-.install-form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]),
-.install-form select:not([multiple]),
-.modal input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]),
-.modal select:not([multiple]),
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]),
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) select:not([multiple]),
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) textarea,
 .proma-live-search > input:not([type="checkbox"]):not([type="radio"]),
 .proma-input-group > input,
 .proma-input-group > select {
@@ -102,62 +115,75 @@
   min-height: var(--proma-control-min-height);
   box-sizing: border-box;
   margin: 0;
-  border: 1px solid var(--proma-control-border);
-  border-radius: var(--proma-control-radius);
+  border: 1px solid transparent;
+  border-radius: var(--proma-field-radius);
   padding: var(--proma-control-padding-block) var(--proma-control-padding-inline);
   color: var(--proma-control-text);
-  background: var(--proma-control-bg);
+  background: var(--proma-field-bg);
   box-shadow: none;
   font: inherit;
   font-size: var(--proma-control-font-size);
   font-weight: 400;
   line-height: var(--proma-control-line-height);
   vertical-align: middle;
+  outline: none;
+  transition: background-color var(--proma-field-transition), box-shadow var(--proma-field-transition), color var(--proma-field-transition);
+}
+
+.proma-form-control:hover:not(:disabled):not([readonly]),
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]), select:not([multiple]), textarea):hover:not(:disabled):not([readonly]),
+.proma-live-search > input:hover:not(:disabled):not([readonly]) {
+  background: var(--proma-field-bg-hover);
 }
 
 .proma-form-control:focus,
-.form-grid input:focus,
-.form-grid select:focus,
-.form-grid textarea:focus,
-.install-form input:focus,
-.install-form select:focus,
-.install-form textarea:focus,
-.modal input:focus,
-.modal select:focus,
-.modal textarea:focus,
-.proma-live-search > input:focus {
-  border-color: var(--proma-control-focus);
-  outline: 0;
-  box-shadow: 0 0 0 3px rgba(115, 102, 255, .14);
+.proma-form-control:focus-visible,
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]), select:not([multiple]), textarea):focus,
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]), select:not([multiple]), textarea):focus-visible,
+.proma-live-search > input:focus,
+.proma-live-search > input:focus-visible {
+  border-color: transparent;
+  outline: none;
+  background: var(--proma-field-bg-focus);
+  box-shadow: inset 0 -2px 0 var(--proma-field-focus), 0 6px 18px rgba(74, 20, 140, .06);
 }
 
 .proma-form-control::placeholder,
-.form-grid input::placeholder,
-.form-grid textarea::placeholder,
-.modal input::placeholder,
-.modal textarea::placeholder {
-  color: #98a2b3;
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) :is(input, textarea)::placeholder {
+  color: var(--proma-field-placeholder);
   opacity: 1;
 }
 
 .proma-form-control:disabled,
-.proma-form-control[readonly],
-.form-grid :is(input, select, textarea):disabled,
-.form-grid :is(input, textarea)[readonly],
-.modal :is(input, select, textarea):disabled,
-.modal :is(input, textarea)[readonly] {
-  color: #667085;
-  border-color: #e4e7ec;
-  background: #f2f4f7;
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) :is(input, select, textarea):disabled {
+  color: #8a8e98;
+  border-color: transparent;
+  background: var(--proma-field-bg-disabled);
   cursor: not-allowed;
+  opacity: 1;
 }
 
+.proma-form-control[readonly],
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) :is(input, textarea)[readonly] {
+  border-color: transparent;
+  background: #f1f1f4;
+  cursor: default;
+}
+
+.proma-form-field--error :is(.proma-form-control, input, select, textarea),
 .proma-form-control[aria-invalid="true"],
-.form-grid [aria-invalid="true"],
-.modal [aria-invalid="true"],
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) [aria-invalid="true"],
 .proma-form-control.is-invalid {
-  border-color: var(--proma-control-danger);
-  box-shadow: 0 0 0 3px rgba(220, 53, 69, .1);
+  border-color: transparent;
+  background: rgba(200, 59, 69, .06);
+  box-shadow: inset 0 -2px 0 var(--proma-field-error);
+}
+
+.proma-form-field--success :is(.proma-form-control, input, select, textarea),
+.proma-form-control.is-valid {
+  border-color: transparent;
+  background: rgba(22, 134, 92, .05);
+  box-shadow: inset 0 -2px 0 var(--proma-field-success);
 }
 
 .proma-form-help,
@@ -178,7 +204,7 @@
 textarea.proma-form-control {
   width: 100%;
   height: auto;
-  min-height: 100px;
+  min-height: 112px;
   resize: vertical;
   padding-block: 10px;
 }
@@ -201,12 +227,39 @@ select[multiple].proma-form-control {
   align-items: stretch;
 }
 
+.proma-input-group,
+.input-group {
+  border: 1px solid transparent;
+  border-radius: var(--proma-field-radius);
+  background: var(--proma-field-bg);
+  transition: background-color var(--proma-field-transition), box-shadow var(--proma-field-transition);
+}
+
+.proma-input-group:hover,
+.input-group:hover { background: var(--proma-field-bg-hover); }
+
+.proma-input-group:focus-within,
+.input-group:focus-within {
+  background: var(--proma-field-bg-focus);
+  box-shadow: inset 0 -2px 0 var(--proma-field-focus), 0 6px 18px rgba(74, 20, 140, .06);
+}
+
 .proma-input-group > *,
 .input-group > * {
   min-height: var(--proma-control-height);
   margin: 0;
   border-radius: 0;
 }
+
+.proma-input-group > :is(input, select),
+.input-group > :is(input, select) {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.proma-input-group > :is(input, select):focus,
+.input-group > :is(input, select):focus { outline: none; }
 
 .proma-input-group > :first-child,
 .input-group > :first-child {
@@ -232,6 +285,51 @@ select[multiple].proma-form-control {
   justify-content: center;
   padding-inline: 12px;
   line-height: 1;
+}
+
+.proma-input-prefix,
+.proma-input-suffix { color: var(--proma-control-muted); font-size: 12px; white-space: nowrap; }
+
+.proma-form-field:focus-within .proma-form-label,
+.form-grid > label:focus-within,
+.install-form > label:focus-within { color: var(--proma-field-focus); }
+
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) select:not([multiple]) {
+  appearance: none;
+  padding-inline-start: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 14px center;
+}
+
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) input:-webkit-autofill,
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) input:-webkit-autofill:hover,
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--proma-field-text);
+  -webkit-box-shadow: 0 0 0 1000px var(--proma-field-bg) inset;
+  caret-color: var(--proma-field-text);
+}
+
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) input[type="file"] {
+  width: 100%;
+  min-height: var(--proma-field-height);
+  padding: 5px;
+  border: 1px dashed rgba(106, 27, 154, .28);
+  border-radius: var(--proma-field-radius);
+  color: var(--proma-control-muted);
+  background: var(--proma-field-bg);
+}
+
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) input[type="file"]::file-selector-button {
+  min-height: 32px;
+  margin-inline-end: 8px;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--proma-field-focus);
+  background: rgba(106, 27, 154, .09);
+  font: inherit;
+  cursor: pointer;
 }
 
 .proma-field-actions {
@@ -266,6 +364,21 @@ label.check {
 .proma-group-check input,
 label.check input {
   flex: 0 0 auto;
+}
+
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) :is(input[type="checkbox"], input[type="radio"]) {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  accent-color: var(--proma-field-focus);
+  vertical-align: middle;
+}
+
+:is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) :is(input[type="checkbox"], input[type="radio"]):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(106, 27, 154, .2);
 }
 
 label.required-field {
@@ -498,9 +611,16 @@ table td {
 
 body.dark-only,
 [data-theme="dark"] {
-  --proma-control-border: #3f4754;
-  --proma-control-bg: #20242b;
-  --proma-control-text: #f2f4f7;
+  --proma-field-bg: #20232a;
+  --proma-field-bg-hover: #272b33;
+  --proma-field-bg-focus: #292d36;
+  --proma-field-bg-disabled: #1b1e24;
+  --proma-field-text: #f3f4f6;
+  --proma-field-placeholder: #8f95a3;
+  --proma-field-label: #c4c7ce;
+  --proma-control-border: transparent;
+  --proma-control-bg: var(--proma-field-bg);
+  --proma-control-text: var(--proma-field-text);
   --proma-control-muted: #98a2b3;
 }
 
@@ -511,6 +631,6 @@ body.dark-only .form-grid :is(input, textarea)[readonly],
 [data-theme="dark"] .proma-form-control:disabled,
 [data-theme="dark"] .proma-form-control[readonly] {
   color: #98a2b3;
-  border-color: #343a46;
-  background: #171a20;
+  border-color: transparent;
+  background: var(--proma-field-bg-disabled);
 }

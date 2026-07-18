@@ -134,7 +134,7 @@ $tabs = [
         <?= csrf_field() ?>
         <div class="card-body form-grid two">
           <label class="full">تراکم چاپ<select name="preset" data-print-profile-input><?php foreach ($printPresets as $presetKey => $presetValues): ?><option value="<?= e($presetKey) ?>" <?= $printProfile['preset'] === $presetKey ? 'selected' : '' ?>><?= e($presetValues['label'] ?? $presetKey) ?></option><?php endforeach; ?><option value="custom" <?= $printProfile['preset'] === 'custom' ? 'selected' : '' ?>>سفارشی</option></select></label>
-          <div class="notice info full">در پروفایل رسمی فشرده، متن معمولی حداکثر ۶px و عنوان‌ها و بندهای مهم حداکثر ۷px هستند.</div>
+          <div class="notice info full">در پروفایل رسمی فشرده، متن معمولی تا ۷px و عنوان‌ها و بندهای مهم تا ۸px خوانا باقی می‌مانند؛ تراکم از فاصله‌گذاری کنترل می‌شود، نه از کوچک‌کردن افراطی فونت.</div>
           <?php $printFields = [
             'margin_top' => ['حاشیه بالا', 4, 25, .5, 'mm'], 'margin_right' => ['حاشیه راست', 7, 25, .5, 'mm'],
             'margin_bottom' => ['حاشیه پایین', 7, 30, .5, 'mm'], 'margin_left' => ['حاشیه چپ', 7, 25, .5, 'mm'],

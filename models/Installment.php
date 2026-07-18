@@ -278,7 +278,7 @@ class Installment extends Model
         }
     }
 
-    public static function createCustom($contractId, $dueDate, $amount, $notes = '', $guaranteeSerial = '', $title = '')
+    public static function createCustom($contractId, $dueDate, $amount, $description = '', $guaranteeSerial = '', $title = '', $internalNote = '', $customerVisible = true)
     {
         self::ensureSchema();
         $contract = self::fetch('SELECT status FROM contracts WHERE id = ? LIMIT 1', [(int) $contractId]);
@@ -290,11 +290,18 @@ class Installment extends Model
         }
         $number = (int) self::fetch('SELECT COALESCE(MAX(installment_number), 0) + 1 AS n FROM installments WHERE contract_id = ?', [$contractId])['n'];
         $amount = normalize_money($amount);
+        $description = trim((string) $description);
+        if ($description === '') {
+            throw new InvalidArgumentException('توضیح قابل نمایش برای مشتری را وارد کنید.');
+        }
+        $title = trim((string) $title) ?: 'قسط سفارشی';
         self::execute(
-            'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, notes, guarantee_serial, is_custom, custom_title, custom_description, created_at)
-             VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, 1, ?, ?, NOW())',
-            [(int) $contractId, $number, $dueDate, $amount, $amount, $dueDate < date('Y-m-d') ? 'overdue' : 'pending', trim((string) $notes), trim(to_english_digits($guaranteeSerial)) ?: null, trim((string) $title) ?: null, trim((string) $notes) ?: null]
+            'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, notes, guarantee_serial, is_custom, custom_title, custom_description, internal_note, customer_visible, created_reason, created_at)
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, NOW())',
+            [(int) $contractId, $number, $dueDate, $amount, $amount, $dueDate < date('Y-m-d') ? 'overdue' : 'pending', $description, trim(to_english_digits($guaranteeSerial)) ?: null, $title, $description, trim((string) $internalNote) ?: null, $customerVisible ? 1 : 0, $title]
         );
+
+        return (int) self::lastInsertId();
     }
 
     public static function updateInstallment($id, array $data)
@@ -318,17 +325,20 @@ class Installment extends Model
         $paid = min(normalize_money($row['paid_amount'] ?? 0), $amount);
         $status = FinanceHelper::status($amount, $paid, $dueDate);
         self::execute(
-            'UPDATE installments SET due_date = ?, base_amount = ?, paid_amount = ?, remaining_amount = ?, status = ?, notes = ?, guarantee_serial = ?, custom_title = ?, custom_description = ? WHERE id = ?',
+            'UPDATE installments SET due_date = ?, base_amount = ?, paid_amount = ?, remaining_amount = ?, status = ?, notes = ?, guarantee_serial = ?, custom_title = ?, custom_description = ?, internal_note = ?, customer_visible = ?, created_reason = ? WHERE id = ?',
             [
                 $dueDate,
                 $amount,
                 $paid,
                 max(0, $amount - $paid),
                 $status,
-                trim((string) ($data['notes'] ?? $row['notes'] ?? '')) ?: null,
+                trim((string) ($data['customer_description'] ?? $data['notes'] ?? $row['notes'] ?? '')) ?: null,
                 trim(to_english_digits($data['guarantee_serial'] ?? $row['guarantee_serial'] ?? '')) ?: null,
                 trim((string) ($data['custom_title'] ?? $row['custom_title'] ?? '')) ?: null,
-                trim((string) ($data['custom_description'] ?? $data['notes'] ?? $row['custom_description'] ?? '')) ?: null,
+                trim((string) ($data['customer_description'] ?? $data['custom_description'] ?? $data['notes'] ?? $row['custom_description'] ?? '')) ?: null,
+                trim((string) ($data['internal_note'] ?? $row['internal_note'] ?? '')) ?: null,
+                array_key_exists('customer_visible', $data) ? (!empty($data['customer_visible']) ? 1 : 0) : (int) ($row['customer_visible'] ?? 1),
+                trim((string) ($data['custom_title'] ?? $data['created_reason'] ?? $row['created_reason'] ?? '')) ?: null,
                 (int) $id,
             ]
         );

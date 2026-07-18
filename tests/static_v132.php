@@ -13,7 +13,7 @@ $version = require $root . '/config/version.php';
 $assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.3.2', '>='), 'Application version must be V1.3.2 or newer.');
 
 $plugin = json_decode((string) file_get_contents($root . '/plugins/PromaAccounting/plugin.json'), true);
-$assert(($plugin['version'] ?? '') === '1.2.1', 'Proma Accounting version must be 1.2.1.');
+$assert(($plugin['version'] ?? '') === '1.2.3', 'Proma Accounting version must be 1.2.3.');
 $assert(($plugin['requires_core'] ?? '') === '1.3.2', 'Proma Accounting must require core 1.3.2.');
 
 $layout = (string) file_get_contents($root . '/views/layouts/app.php');

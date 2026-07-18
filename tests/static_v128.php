@@ -37,11 +37,11 @@ $assert(strpos($pluginView, 'plugins/rescan') !== false, 'Plugin rescan action i
 $assert(strpos($pluginView, "PluginStatus::canInstall") !== false, 'Plugin install action is not centralized.');
 
 $formsCss = (string) file_get_contents($root . '/assets/css/components/forms.css');
-$assert(strpos($formsCss, '--proma-control-height: 44px') !== false, 'Shared control height is not defined.');
+$assert(strpos($formsCss, '--proma-field-height: 44px') !== false && strpos($formsCss, '--proma-control-height: var(--proma-field-height)') !== false, 'Shared control height is not defined.');
 $assert(strpos($formsCss, 'textarea.proma-form-control') !== false, 'Textarea exception is missing.');
 
 $printCss = (string) file_get_contents($root . '/assets/css/components/contract-print.css');
-$assert(strpos($printCss, '--contract-margin-top: 5mm') !== false, 'Current official compact A4 top margin is missing.');
+$assert(strpos($printCss, '--contract-margin-top: 4mm') !== false, 'Current official compact A4 top margin is missing.');
 $assert(strpos($printCss, 'var(--contract-margin-top)') !== false, 'Print margins are not profile-driven.');
 $assert(strpos($printCss, 'grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr)') !== false, 'Symmetric letterhead grid is missing.');
 

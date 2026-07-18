@@ -160,7 +160,16 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
         <tr>
           <td><?= e($item['contract_number']) ?></td>
           <td><?= e($item['customer_name']) ?></td>
-          <td><?= to_persian_digits($item['installment_number']) ?></td>
+          <td>
+            <strong><?= to_persian_digits($item['installment_number']) ?></strong>
+            <?php if (!empty($item['is_custom'])): ?>
+              <span class="badge info">قسط دلخواه</span>
+              <?php if (!$customerMode || !empty($item['customer_visible'])): ?>
+                <?php $customInstallmentDescription = trim((string) ($item['custom_description'] ?? $item['notes'] ?? '')); ?>
+                <?php if ($customInstallmentDescription !== ''): ?><small class="proma-custom-installment-description">دلیل ایجاد: <?= e($customInstallmentDescription) ?></small><?php endif; ?>
+              <?php endif; ?>
+            <?php endif; ?>
+          </td>
           <td><?= e(jdate($item['due_date'])) ?></td>
           <td><?= money_toman($item['base_amount']) ?></td>
           <td><?= penalty_display_html($item) ?></td>
@@ -344,8 +353,11 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
         </label>
         <label>سررسید<input name="due_date" value="<?= e($defaultDueDate ?? '') ?>" required placeholder="۱۴۰۳/۰۱/۰۱"></label>
         <label>مبلغ پایه<input name="base_amount" data-money required></label>
+        <label>عنوان قسط<input name="custom_title" maxlength="100" placeholder="مثلاً هزینه خدمات اضافه"></label>
         <label>شناسه ضمانت<input name="guarantee_serial" dir="ltr" placeholder="شماره چک یا سفته"></label>
-        <label class="full">توضیحات<input name="notes" required placeholder="علت یا توضیح قسط سفارشی"></label>
+        <label class="full">توضیح قسط برای مشتری<textarea name="customer_description" required rows="3" placeholder="علت ایجاد این قسط را به زبان قابل نمایش برای مشتری بنویسید."></textarea><small class="proma-form-help">این توضیح در پنل مدیریت و پنل مشتری نمایش داده می‌شود.</small></label>
+        <label class="full">یادداشت داخلی<textarea name="internal_note" rows="2" placeholder="نکته داخلی برای مدیریت؛ این متن به مشتری نمایش داده نمی‌شود."></textarea><small class="proma-form-help">این یادداشت فقط برای کاربران مجاز مدیریت قابل مشاهده است.</small></label>
+        <label class="proma-confirm-check full"><input type="checkbox" name="customer_visible" value="1" checked> توضیح قسط در پنل مشتری نمایش داده شود.</label>
       </div>
       <div class="modal-footer"><button class="btn" type="submit">ثبت قسط</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
     </form>

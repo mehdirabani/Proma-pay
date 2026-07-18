@@ -75,7 +75,7 @@ class PluginRegistry extends Model
         }
 
         $current = self::normalizeStatus($existing['status'] ?? 'discovered');
-        $protected = ['installed', 'active', 'inactive', 'update_available'];
+        $protected = ['installed', 'active', 'inactive', 'update_available', 'installing', 'updating', 'installation_failed', 'update_failed', 'migration_failed', 'health_failed', 'repair_required'];
         if ($current === PluginStatus::UPDATE_AVAILABLE) {
             self::execute(
                 'UPDATE system_plugins
@@ -130,7 +130,7 @@ class PluginRegistry extends Model
         try {
             $existing = self::findAny($pluginId);
             $current = self::normalizeStatus($existing['status'] ?? 'removed');
-            $status = in_array($current, ['installed', 'active', 'inactive', 'update_available'], true) ? 'failed' : 'removed';
+            $status = in_array($current, ['installed', 'active', 'inactive', 'update_available', 'installing', 'updating', 'installation_failed', 'update_failed', 'migration_failed', 'health_failed', 'repair_required'], true) ? 'failed' : 'removed';
             self::execute(
                 'UPDATE system_plugins SET status = ?, last_error = ?, updated_at = NOW() WHERE plugin_id = ?',
                 [$status, 'فایل‌های افزونه در پوشه runtime پیدا نشد.', trim((string) $pluginId)]
@@ -141,8 +141,9 @@ class PluginRegistry extends Model
         }
     }
 
-    public static function upsert(array $manifest, $root, $userId = null)
+    public static function upsert(array $manifest, $root, $userId = null, $status = PluginStatus::INSTALLED)
     {
+        $status = self::normalizeStatus($status);
         self::execute(
             'INSERT INTO system_plugins
              (plugin_id, name, description, version, path, status, installed_at, installed_by, manifest_json, updated_at)
@@ -154,7 +155,7 @@ class PluginRegistry extends Model
                 trim((string) ($manifest['description'] ?? '')),
                 $manifest['version'],
                 str_replace('\\', '/', $root),
-                'installed',
+                $status,
                 $userId ? (int) $userId : null,
                 json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]

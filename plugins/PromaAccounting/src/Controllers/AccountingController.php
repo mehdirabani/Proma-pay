@@ -91,6 +91,12 @@ class AccountingController extends \Controller
         \redirect('plugin/accounting/ledger/' . $userId);
     }
 
+    public function ledgerPostFallback()
+    {
+        \set_flash('error', 'ثبت سند حسابداری باید از فرم دفترکل و با ارسال امن انجام شود. لطفاً حساب کاربر را باز کرده و دوباره ثبت کنید.');
+        \redirect('plugin/accounting/accounts');
+    }
+
     public function reverseLedger($entryId)
     {
         $this->onlyPost();
@@ -153,31 +159,100 @@ class AccountingController extends \Controller
     public function saveRule()
     {
         $this->onlyPost();
-        $type = in_array($_POST['commission_type'] ?? '', ['fixed', 'percentage'], true) ? $_POST['commission_type'] : 'percentage';
-        $basis = CommissionCalculationService::basisType($_POST['calculation_basis'] ?? 'financed_amount');
-        $timing = $this->timing($_POST['calculation_timing'] ?? 'at_contract_creation');
-        $value = $this->commissionValue($type, $_POST['commission_value'] ?? '');
-        $minimum = trim((string) ($_POST['minimum_amount'] ?? '')) !== '' ? $this->money($_POST['minimum_amount'], 'حداقل کمیسیون') : null;
-        $maximum = trim((string) ($_POST['maximum_amount'] ?? '')) !== '' ? $this->money($_POST['maximum_amount'], 'حداکثر کمیسیون') : null;
-        if ($minimum !== null && $maximum !== null && $minimum > $maximum) {
-            throw new \InvalidArgumentException('حداقل کمیسیون نمی‌تواند از حداکثر کمیسیون بیشتر باشد.');
-        }
-        $name = trim((string) ($_POST['name'] ?? ''));
-        if ($name === '') {
-            throw new \InvalidArgumentException('نام قانون الزامی است.');
-        }
-        $userId = !empty($_POST['user_id']) ? (int) $_POST['user_id'] : null;
-        if ($userId && !\Model::fetch("SELECT id FROM users WHERE id = ? AND role IN ('admin','operator','lawyer') AND status = 'active' LIMIT 1", [$userId])) {
-            throw new \InvalidArgumentException('فروشنده انتخاب‌شده معتبر یا فعال نیست.');
+        $ruleId = (int) ($_POST['rule_id'] ?? 0);
+        $payload = $this->rulePayload($_POST);
+        if ($ruleId > 0) {
+            $existing = \Model::fetch('SELECT * FROM plugin_accounting_commission_rules WHERE id = ? LIMIT 1', [$ruleId]);
+            if (!$existing) {
+                throw new \InvalidArgumentException('قانون کمیسیون پیدا نشد.');
+            }
+            \Model::execute(
+                'UPDATE plugin_accounting_commission_rules
+                 SET user_id = ?, name = ?, commission_type = ?, commission_value = ?, calculation_basis = ?, minimum_amount = ?, maximum_amount = ?,
+                     calculation_timing = ?, requires_approval = ?, is_active = ?, priority = ?, updated_at = NOW()
+                 WHERE id = ?',
+                [
+                    $payload['user_id'],
+                    $payload['name'],
+                    $payload['commission_type'],
+                    $payload['commission_value'],
+                    $payload['calculation_basis'],
+                    $payload['minimum_amount'],
+                    $payload['maximum_amount'],
+                    $payload['calculation_timing'],
+                    $payload['requires_approval'],
+                    $payload['is_active'],
+                    $payload['priority'],
+                    $ruleId,
+                ]
+            );
+            \AuditLog::record('accounting', 'commission_rule_updated', 'plugin_accounting_commission_rule', $ruleId, ['actor_user_id' => \Auth::id(), 'old_values' => $existing, 'new_values' => $payload]);
+            \set_flash('success', 'قانون کمیسیون ویرایش شد. تغییرات فقط روی محاسبات آینده اثر دارد.');
+            \redirect('plugin/accounting/rules');
         }
         \Model::execute(
             'INSERT INTO plugin_accounting_commission_rules (user_id, name, commission_type, commission_value, calculation_basis, minimum_amount, maximum_amount, calculation_timing, requires_approval, is_active, priority, created_by, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, NOW())',
-            [$userId, $name, $type, $value, $basis, $minimum, $maximum, $timing, isset($_POST['requires_approval']) ? 1 : 0, (int) ($_POST['priority'] ?? 0), \Auth::id()]
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+            [$payload['user_id'], $payload['name'], $payload['commission_type'], $payload['commission_value'], $payload['calculation_basis'], $payload['minimum_amount'], $payload['maximum_amount'], $payload['calculation_timing'], $payload['requires_approval'], $payload['is_active'], $payload['priority'], \Auth::id()]
         );
-        \AuditLog::record('accounting', 'commission_rule_saved', 'plugin_accounting_commission_rule', (int) \Model::lastInsertId(), ['actor_user_id' => \Auth::id()]);
+        \AuditLog::record('accounting', 'commission_rule_saved', 'plugin_accounting_commission_rule', (int) \Model::lastInsertId(), ['actor_user_id' => \Auth::id(), 'new_values' => $payload]);
         \set_flash('success', 'قانون کمیسیون ذخیره شد و فقط روی محاسبات آینده اثر دارد.');
         \redirect('plugin/accounting/rules');
+    }
+
+    public function deleteRule($ruleId)
+    {
+        $this->onlyPost();
+        $ruleId = (int) $ruleId;
+        $rule = \Model::fetch('SELECT * FROM plugin_accounting_commission_rules WHERE id = ? LIMIT 1', [$ruleId]);
+        if (!$rule) {
+            throw new \InvalidArgumentException('قانون کمیسیون پیدا نشد.');
+        }
+        $used = (int) ((\Model::fetch('SELECT COUNT(*) AS total FROM plugin_accounting_commissions WHERE commission_rule_id = ?', [$ruleId])['total'] ?? 0));
+        if ($used > 0) {
+            \Model::execute('UPDATE plugin_accounting_commission_rules SET is_active = 0, updated_at = NOW() WHERE id = ?', [$ruleId]);
+            \AuditLog::record('accounting', 'commission_rule_deactivated', 'plugin_accounting_commission_rule', $ruleId, ['actor_user_id' => \Auth::id(), 'reason' => 'rule_used_by_commissions', 'used_count' => $used]);
+            \set_flash('success', 'این قانون در سوابق کمیسیون استفاده شده بود؛ برای حفظ تاریخچه مالی حذف فیزیکی نشد و غیرفعال شد.');
+            \redirect('plugin/accounting/rules');
+        }
+        \Model::execute('DELETE FROM plugin_accounting_commission_rules WHERE id = ?', [$ruleId]);
+        \AuditLog::record('accounting', 'commission_rule_deleted', 'plugin_accounting_commission_rule', $ruleId, ['actor_user_id' => \Auth::id(), 'old_values' => $rule]);
+        \set_flash('success', 'قانون کمیسیون حذف شد.');
+        \redirect('plugin/accounting/rules');
+    }
+
+    private function rulePayload(array $input)
+    {
+        $type = in_array($input['commission_type'] ?? '', ['fixed', 'percentage'], true) ? $input['commission_type'] : 'percentage';
+        $basis = CommissionCalculationService::basisType($input['calculation_basis'] ?? 'financed_amount');
+        $timing = $this->timing($input['calculation_timing'] ?? 'at_contract_creation');
+        $value = $this->commissionValue($type, $input['commission_value'] ?? '');
+        $minimum = trim((string) ($input['minimum_amount'] ?? '')) !== '' ? $this->money($input['minimum_amount'], 'حداقل کمیسیون') : null;
+        $maximum = trim((string) ($input['maximum_amount'] ?? '')) !== '' ? $this->money($input['maximum_amount'], 'حداکثر کمیسیون') : null;
+        if ($minimum !== null && $maximum !== null && $minimum > $maximum) {
+            throw new \InvalidArgumentException('حداقل کمیسیون نمی‌تواند از حداکثر کمیسیون بیشتر باشد.');
+        }
+        $name = trim((string) ($input['name'] ?? ''));
+        if ($name === '') {
+            throw new \InvalidArgumentException('نام قانون الزامی است.');
+        }
+        $userId = !empty($input['user_id']) ? (int) $input['user_id'] : null;
+        if ($userId && !\Model::fetch("SELECT id FROM users WHERE id = ? AND role IN ('admin','operator','lawyer') AND status = 'active' LIMIT 1", [$userId])) {
+            throw new \InvalidArgumentException('فروشنده انتخاب‌شده معتبر یا فعال نیست.');
+        }
+        return [
+            'user_id' => $userId,
+            'name' => $name,
+            'commission_type' => $type,
+            'commission_value' => $value,
+            'calculation_basis' => $basis,
+            'minimum_amount' => $minimum,
+            'maximum_amount' => $maximum,
+            'calculation_timing' => $timing,
+            'requires_approval' => isset($input['requires_approval']) ? 1 : 0,
+            'is_active' => isset($input['is_active']) ? 1 : 0,
+            'priority' => (int) ($input['priority'] ?? 0),
+        ];
     }
 
     public function settings()

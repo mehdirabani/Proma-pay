@@ -2,7 +2,7 @@
 
 $root = dirname(__DIR__);
 $manifest = json_decode((string) file_get_contents($root . '/plugin.json'), true);
-if (!is_array($manifest) || ($manifest['id'] ?? '') !== 'proma-zarinpal' || ($manifest['version'] ?? '') !== '1.0.0') {
+if (!is_array($manifest) || ($manifest['id'] ?? '') !== 'proma-zarinpal' || ($manifest['version'] ?? '') !== '1.0.1') {
     throw new RuntimeException('Plugin manifest mismatch.');
 }
 foreach ([
