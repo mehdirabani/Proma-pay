@@ -2293,7 +2293,7 @@
         } else {
           setQuillHtml(quill, initial.replace(/[&<>"']/g, function (char) {
             return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[char];
-          }).replace(/\r?\n/g, '<br>'));
+          }).replace(/\n?\n/g, '<br>'));
         }
       }
       quill.root.setAttribute('dir', 'rtl');
