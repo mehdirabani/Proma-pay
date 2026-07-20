@@ -32,7 +32,13 @@ class ContractsController extends Controller
         $this->requireRole('admin');
         $this->onlyPost();
         $reusedCustomer = null;
+        $requestUuid = ContractRequest::normalizeUuid($_POST['contract_request_uuid'] ?? '');
         try {
+            $requestState = ContractRequest::beginRequest($requestUuid, Auth::id(), ContractRequest::hash($_POST));
+            if (($requestState['status'] ?? '') === 'completed') {
+                set_flash('success', 'این قرارداد قبلاً ثبت شده بود و از ایجاد نسخه تکراری جلوگیری شد.');
+                redirect('contracts/show/' . (int) $requestState['contract_id']);
+            }
             $customerId = $this->resolveCustomer($reusedCustomer);
             $startDate = parse_jalali_date($_POST['start_date'] ?? '') ?: date('Y-m-d');
             $firstDue = parse_jalali_date($_POST['first_due_date'] ?? '') ?: FinanceHelper::addMonths($startDate, 1);
@@ -53,6 +59,7 @@ class ContractsController extends Controller
                 'seller_user_id' => $_POST['seller_user_id'] ?? null,
                 'notes' => $_POST['notes'] ?? '',
                 'created_by' => Auth::id(),
+                'request_uuid' => $requestUuid,
             ], $_POST['guarantors'] ?? [], $_POST['items'] ?? [], $_POST['guarantee'] ?? [], $_POST['guarantor_people'] ?? []);
             $message = 'قرارداد و اقساط آن با موفقیت ساخته شد.';
             if ($reusedCustomer) {
@@ -60,6 +67,7 @@ class ContractsController extends Controller
             }
             set_flash('success', $message);
         } catch (Throwable $e) {
+            ContractRequest::fail($requestUuid, $e);
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت قرارداد انجام نشد. شماره قرارداد یا داده‌های ورودی را بررسی کنید.');
         }
         redirect('contracts');

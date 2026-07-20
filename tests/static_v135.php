@@ -5,8 +5,8 @@ $version = require $root . '/config/version.php';
 if (version_compare((string) ($version['application'] ?? '0.0.0'), '1.3.5', '<')) {
     throw new RuntimeException('Core version must be 1.3.5 or newer.');
 }
-if (strpos((string) ($version['display'] ?? ''), 'V1.3.') !== 0) {
-    throw new RuntimeException('Display version must use the V1.3.x release format.');
+if (!preg_match('/^V\d+\.\d+\.\d+$/', (string) ($version['display'] ?? ''))) {
+    throw new RuntimeException('Display version must use semantic Vx.y.z format.');
 }
 
 $files = [
@@ -35,7 +35,7 @@ $installSql = file_get_contents($root . '/database/proma-pay-install.sql');
 
 $checks = [
     ['Payment uses outbox', strpos($payment, 'SystemOutbox::safeEnqueuePluginHook') !== false && strpos($payment, 'recordPaymentAudit') !== false],
-    ['Manual payment uses idempotency', strpos($installmentsController, 'payment_request_uuid') !== false && strpos($installmentsController, 'PaymentRequest::begin') !== false],
+    ['Manual payment uses idempotency', strpos($installmentsController, 'payment_request_uuid') !== false && strpos($installmentsController, 'PaymentRequest::beginRequest') !== false],
     ['Manual payment isolates side effects', strpos($installmentsController, 'PaymentRequest::complete') !== false && strpos($installmentsController, 'safeEnqueueNotification') !== false],
     ['Gateway path uses outbox', strpos($paymentsController, 'safeEnqueueNotification') !== false && strpos($paymentsController, 'SystemOutbox::processPending') !== false],
     ['Group payments use outbox', strpos($paymentGroup, 'safeEnqueuePluginHook') !== false && strpos($paymentGroup, 'SystemOutbox::processPending') !== false],

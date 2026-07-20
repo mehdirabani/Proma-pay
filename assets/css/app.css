@@ -4194,34 +4194,89 @@ label:has(> input[data-select-filter="customer-select"]) {
   min-width: 44px;
 }
 
-.proma-card-select {
-  position: static;
-  display: inline-flex !important;
-  grid-auto-flow: column;
-  align-items: center !important;
-  gap: 6px !important;
-  min-height: 44px;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 10px;
-  color: var(--proma-muted) !important;
-  background: #f6f5fb;
-  font-size: 12px !important;
-  cursor: pointer;
-}
-
-.proma-card-select input {
-  width: 18px !important;
-  min-height: 18px !important;
-  height: 18px !important;
-  margin: 0;
-}
-
 .proma-contract-card-main {
   min-width: 0;
   display: flex;
   align-items: center;
   gap: 14px;
+}
+
+.proma-profile-avatar-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--proma-border);
+  text-align: start;
+}
+
+.proma-profile-avatar-form .proma-avatar-options {
+  justify-content: center;
+}
+
+.proma-profile-avatar-form .btn {
+  justify-self: center;
+}
+
+.proma-profile-review-card {
+  margin-top: 16px;
+}
+
+.proma-profile-change-list,
+.proma-profile-review-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.proma-profile-change-list > div {
+  display: grid;
+  grid-template-columns: minmax(90px, auto) minmax(90px, 1fr) 18px minmax(90px, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f7f7fb;
+}
+
+.proma-profile-change-list strong,
+.proma-profile-change-list b {
+  font-size: 12px;
+}
+
+.proma-profile-change-list span {
+  color: var(--proma-muted);
+  text-decoration: line-through;
+}
+
+.proma-profile-change-list svg {
+  width: 16px;
+  height: 16px;
+  color: var(--proma-primary);
+}
+
+.proma-profile-review-actions form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.proma-profile-review-actions input {
+  min-width: 150px;
+}
+
+@media (max-width: 640px) {
+  .proma-profile-change-list > div {
+    grid-template-columns: 1fr;
+  }
+
+  .proma-profile-change-list svg {
+    transform: rotate(-90deg);
+  }
+
+  .proma-profile-review-actions form {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 .proma-contract-badge {
@@ -6934,7 +6989,6 @@ input[type="checkbox"]:not(.switch-options input):focus-visible {
     justify-content: space-between;
     width: 100%;
   }
-  .proma-card-select { flex: 1 1 auto; }
   .proma-card-top-actions { margin-inline-start: auto; }
   .proma-contract-card-actions {
     display: grid;

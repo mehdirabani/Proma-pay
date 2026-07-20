@@ -473,11 +473,12 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
     <div class="modal" id="pay-installment-<?= (int) $installment['id'] ?>">
       <div class="modal-content">
         <div class="modal-header"><h3>ثبت پرداخت قسط <?= to_persian_digits($installment['installment_number']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-        <form method="post" action="<?= e(url('installments/payment/' . $installment['id'])) ?>">
+        <form method="post" action="<?= e(url('installments/payment/' . $installment['id'])) ?>" data-payment-preview data-preview-url="<?= e(url('installments/previewPayment')) ?>" data-disable-on-submit>
           <div class="modal-body form-grid">
             <?= csrf_field() ?>
             <input type="hidden" name="redirect_to" value="contract">
             <input type="hidden" name="contract_id" value="<?= (int) $contract['id'] ?>">
+            <input type="hidden" name="installment_id" value="<?= (int) $installment['id'] ?>">
             <input type="hidden" name="payment_request_uuid" value="<?= e(bin2hex(random_bytes(16))) ?>">
             <label>مبلغ پرداختی<input name="amount" data-money required value="<?= e(number_format((float) ($installment['payable'] ?? $installment['remaining_amount'] ?? $installment['base_amount']), 0)) ?>"></label>
             <label>تاریخ پرداخت<input name="payment_date" value="<?= e(jdate(date('Y-m-d'))) ?>" required></label>

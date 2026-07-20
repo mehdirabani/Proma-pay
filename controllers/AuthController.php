@@ -9,13 +9,24 @@ class AuthController extends Controller
         }
         if (is_post()) {
             Csrf::verify();
-            if (Auth::unifiedLogin($_POST['identifier'] ?? '', $_POST['password'] ?? '')) {
+            $identifier = $_POST['identifier'] ?? '';
+            $ipAddress = $_SERVER['REMOTE_ADDR'] ?? '';
+            $throttle = LoginThrottle::inspect($identifier, $ipAddress);
+            if (!empty($throttle['blocked'])) {
+                LoginThrottle::progressiveDelay($throttle['failures'] ?? 0);
+                set_flash('error', 'اطلاعات ورود صحیح نیست یا امکان ورود موقتاً محدود شده است.');
+                redirect('auth/login');
+            }
+            if (Auth::unifiedLogin($identifier, $_POST['password'] ?? '')) {
+                LoginThrottle::clearSuccessful($identifier, $ipAddress);
                 if (Auth::role() === 'operator') {
                     redirect('overdue');
                 }
                 redirect('dashboard');
             }
-            set_flash('error', 'اطلاعات ورود درست نیست یا حساب کاربری فعال نیست.');
+            $throttle = LoginThrottle::recordFailure($identifier, $ipAddress);
+            LoginThrottle::progressiveDelay($throttle['failures'] ?? 1);
+            set_flash('error', 'اطلاعات ورود صحیح نیست یا امکان ورود موقتاً محدود شده است.');
             redirect('auth/login');
         }
         $this->render('auth/login', ['title' => 'ورود به سامانه'], 'auth');

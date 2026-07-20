@@ -26,7 +26,6 @@ for ($i = 0; $i < 6; $i++) {
       <div class="actions">
         <a class="btn small <?= $viewMode === 'cards' ? '' : 'secondary' ?>" href="<?= e(url($contractsRoute, array_filter(['q' => $_GET['q'] ?? null, 'view' => 'cards', 'page' => $_GET['page'] ?? null]))) ?>">کارت‌ها</a>
         <a class="btn small <?= $viewMode === 'list' ? '' : 'secondary' ?>" href="<?= e(url($contractsRoute, array_filter(['q' => $_GET['q'] ?? null, 'view' => 'list', 'page' => $_GET['page'] ?? null]))) ?>">لیست</a>
-        <?php if (!$readOnly): ?><button class="btn small secondary" type="button" data-open-modal="bulk-contracts-modal">ویرایش دسته‌جمعی</button><?php endif; ?>
         <?php if (!$readOnly): ?><button class="btn" type="button" data-open-modal="create-contract">افزودن قرارداد</button><?php endif; ?>
       </div>
     </div>
@@ -46,13 +45,6 @@ for ($i = 0; $i < 6; $i++) {
   <span class="badge info">کل قراردادها: <?= to_persian_digits($pagination['total'] ?? count($contracts ?? [])) ?></span>
   <span class="badge muted">صفحه <?= to_persian_digits($pagination['page'] ?? 1) ?> از <?= to_persian_digits($pagination['pages'] ?? 1) ?></span>
 </div>
-<?php if (!$readOnly): ?>
-<form method="post" action="<?= e(url('contracts/bulkUpdate')) ?>" id="contracts-bulk-form">
-  <?= csrf_field() ?>
-  <input type="hidden" name="return_q" value="<?= e($_GET['q'] ?? '') ?>">
-  <input type="hidden" name="return_view" value="<?= e($viewMode) ?>">
-  <input type="hidden" name="return_page" value="<?= e($_GET['page'] ?? '') ?>">
-<?php endif; ?>
 <section class="card">
   <?php if ($contracts && $viewMode === 'cards'): ?>
     <div class="card-body pt-0">
@@ -78,12 +70,8 @@ for ($i = 0; $i < 6; $i++) {
                     <p><?= money_toman($financedAmount) ?></p>
                   </div>
                 </div>
-                <div class="proma-contract-card__controls" aria-label="انتخاب و عملیات سریع قرارداد">
+                <div class="proma-contract-card__controls" aria-label="عملیات سریع قرارداد">
                   <?php if (!$readOnly): ?>
-                    <label class="proma-card-select" title="انتخاب برای ویرایش دسته‌جمعی">
-                      <input type="checkbox" name="contract_ids[]" value="<?= (int) $cardContract['id'] ?>" aria-label="انتخاب قرارداد <?= e($cardContract['contract_number']) ?>">
-                      <span>انتخاب</span>
-                    </label>
                     <div class="proma-card-top-actions" aria-label="عملیات سریع قرارداد">
                       <button class="proma-icon-button" type="button" data-open-modal="edit-contract-<?= (int) $cardContract['id'] ?>" title="ویرایش قرارداد" aria-label="ویرایش قرارداد"><?= proma_icon('edit') ?></button>
                       <button class="proma-icon-button danger" type="button" data-open-modal="delete-contract-<?= (int) $cardContract['id'] ?>" title="حذف دائمی قرارداد" aria-label="حذف دائمی قرارداد"><?= proma_icon('trash') ?></button>
@@ -121,12 +109,11 @@ for ($i = 0; $i < 6; $i++) {
   <?php if ($viewMode === 'list'): ?>
   <div class="table-wrap">
     <table>
-      <thead><tr><?php if (!$readOnly): ?><th>انتخاب</th><?php endif; ?><th>شماره</th><th>مشتری</th><th>مبالغ قرارداد</th><th>سود</th><th>اقساط</th><th>ضامنان</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+      <thead><tr><th>شماره</th><th>مشتری</th><th>مبالغ قرارداد</th><th>سود</th><th>اقساط</th><th>ضامنان</th><th>وضعیت</th><th>عملیات</th></tr></thead>
       <tbody>
       <?php foreach ($contracts as $contract): ?>
         <?php $guarantors = Contract::guarantors($contract['id']); ?>
         <tr data-contract-card data-card-href="<?= e(url('contracts/show/' . $contract['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده جزئیات قرارداد <?= e($contract['contract_number']) ?>">
-          <?php if (!$readOnly): ?><td><input type="checkbox" name="contract_ids[]" value="<?= (int) $contract['id'] ?>" aria-label="انتخاب قرارداد <?= e($contract['contract_number']) ?>"></td><?php endif; ?>
           <td><a href="<?= e(url('contracts/show/' . $contract['id'])) ?>"><?= e($contract['contract_number']) ?></a></td>
           <td><?= e($contract['customer_name']) ?><br><span class="badge muted"><?= to_persian_digits($contract['mobile']) ?></span></td>
           <?php $financedAmount = max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0)); ?>
@@ -151,56 +138,12 @@ for ($i = 0; $i < 6; $i++) {
           </td>
         </tr>
       <?php endforeach; ?>
-      <?php if (!$contracts): ?><tr><td colspan="<?= $readOnly ? 8 : 9 ?>" class="empty">قراردادی ثبت نشده است.</td></tr><?php endif; ?>
+      <?php if (!$contracts): ?><tr><td colspan="8" class="empty">قراردادی ثبت نشده است.</td></tr><?php endif; ?>
       </tbody>
     </table>
   </div>
   <?php endif; ?>
 </section>
-
-<?php if (!$readOnly): ?>
-  <div class="modal" id="bulk-contracts-modal">
-    <div class="modal-content proma-modal-lg">
-      <div class="modal-header"><h3>ویرایش دسته‌جمعی قراردادها</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <div class="modal-body form-grid two">
-        <div class="notice info full">قراردادهای انتخاب‌شده در کارت‌ها یا جدول ویرایش می‌شوند. برای جایگزینی، فقط قراردادهایی تغییر می‌کنند که اپراتور فعلی آن‌ها همان اپراتور قبلی انتخاب‌شده باشد.</div>
-        <label>نوع عملیات
-          <select name="bulk_mode">
-            <option value="assign_operator">تخصیص اپراتور به قراردادهای انتخاب‌شده</option>
-            <option value="replace_operator">جایگزینی اپراتور قبلی با اپراتور جدید</option>
-          </select>
-        </label>
-        <label>وضعیت قرارداد
-          <select name="status">
-            <option value="">بدون تغییر وضعیت</option>
-            <option value="active">فعال</option>
-            <option value="referred">ارجاع شده</option>
-                <option value="completed">تسویه‌شده</option>
-          </select>
-        </label>
-        <label>اپراتور قبلی برای جایگزینی
-          <span class="proma-live-search" data-user-live-search data-search-url="<?= e(url('users/search', ['roles' => 'operator'])) ?>">
-            <input data-user-search-input autocomplete="off" placeholder="نام، موبایل یا واحد اپراتور قبلی">
-            <input type="hidden" name="from_operator_id" data-user-id-input>
-            <span class="proma-live-results" data-user-search-results hidden></span>
-            <span class="proma-chip-row" data-user-chip></span>
-          </span>
-        </label>
-        <label>اپراتور مقصد
-          <span class="proma-live-search" data-user-live-search data-search-url="<?= e(url('users/search', ['roles' => 'operator'])) ?>">
-            <input data-user-search-input autocomplete="off" placeholder="نام، موبایل یا واحد اپراتور مقصد">
-            <input type="hidden" name="assigned_operator_id" data-user-id-input>
-            <span class="proma-live-results" data-user-search-results hidden></span>
-            <span class="proma-chip-row" data-user-chip></span>
-          </span>
-        </label>
-        <label class="full">علت تغییر<input name="change_reason" placeholder="مثلاً توزیع مجدد پرونده‌ها بین اپراتورها"></label>
-      </div>
-      <div class="modal-footer"><button class="btn success" type="submit">اعمال روی انتخاب‌شده‌ها</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
-    </div>
-  </div>
-</form>
-<?php endif; ?>
 
 <?= render_pagination($pagination, $pageUrl) ?>
 
@@ -248,9 +191,10 @@ for ($i = 0; $i < 6; $i++) {
 <div class="modal" id="create-contract">
   <div class="modal-content proma-modal-xl">
     <div class="modal-header"><h3>افزودن قرارداد</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-    <form method="post" action="<?= e(url('contracts/store')) ?>" id="create-contract-form" data-contract-form data-preview-url="<?= e(url('contracts/preview')) ?>" data-identity-check-url="<?= e(url('contracts/checkIdentity')) ?>" novalidate>
+    <form method="post" action="<?= e(url('contracts/store')) ?>" id="create-contract-form" data-contract-form data-disable-on-submit data-preview-url="<?= e(url('contracts/preview')) ?>" data-identity-check-url="<?= e(url('contracts/checkIdentity')) ?>" novalidate>
       <div class="modal-body proma-contract-form">
         <?= csrf_field() ?>
+        <input type="hidden" name="contract_request_uuid" value="<?= e(bin2hex(random_bytes(24))) ?>">
         <section class="proma-form-section">
           <div class="proma-section-title"><h4>اطلاعات قرارداد</h4><span>شماره قرارداد به صورت خودکار ساخته می‌شود.</span></div>
           <div class="form-grid three">

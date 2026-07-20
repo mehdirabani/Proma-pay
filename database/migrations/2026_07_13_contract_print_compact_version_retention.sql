@@ -1,3 +1,37 @@
+-- This migration sorts before the template-engine migration on a clean install.
+-- Create the two required tables first so the following conditional ALTERs are safe.
+CREATE TABLE IF NOT EXISTS contract_template_versions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    template_id BIGINT UNSIGNED NOT NULL,
+    version_number INT UNSIGNED NOT NULL,
+    body_source LONGTEXT NOT NULL,
+    body_format VARCHAR(30) NOT NULL DEFAULT 'plain_text_v1',
+    content_hash CHAR(64) NOT NULL,
+    change_reason TEXT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'draft',
+    created_by BIGINT UNSIGNED NULL,
+    created_at DATETIME NOT NULL,
+    published_by BIGINT UNSIGNED NULL,
+    published_at DATETIME NULL,
+    superseded_at DATETIME NULL,
+    UNIQUE KEY uq_contract_template_version (template_id, version_number),
+    KEY idx_contract_template_versions_status (template_id, status, version_number)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS contract_template_audit_logs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    action VARCHAR(80) NOT NULL,
+    actor_id BIGINT UNSIGNED NULL,
+    template_id BIGINT UNSIGNED NULL,
+    version_id BIGINT UNSIGNED NULL,
+    old_values_json LONGTEXT NULL,
+    new_values_json LONGTEXT NULL,
+    reason TEXT NULL,
+    created_at DATETIME NOT NULL,
+    KEY idx_contract_template_audit_created (created_at),
+    KEY idx_contract_template_audit_template (template_id, version_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET @archived_at_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'contract_template_versions' AND COLUMN_NAME = 'archived_at');
 SET @archived_at_sql := IF(@archived_at_exists = 0, 'ALTER TABLE contract_template_versions ADD COLUMN archived_at DATETIME NULL AFTER superseded_at', 'SELECT 1');
 PREPARE archived_at_stmt FROM @archived_at_sql;

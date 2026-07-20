@@ -123,7 +123,7 @@ class InstallmentsController extends Controller
                 'description' => trim((string) ($_POST['description'] ?? 'پرداخت دستی')),
                 'actor_user_id' => Auth::id(),
             ]);
-            $requestState = PaymentRequest::begin($requestUuid, Auth::id(), (int) $id, $requestHash);
+            $requestState = PaymentRequest::beginRequest($requestUuid, Auth::id(), (int) $id, $requestHash);
             if ($requestState['status'] === 'completed') {
                 set_flash('success', 'این پرداخت قبلاً ثبت شده بود و از ثبت تکراری جلوگیری شد.');
                 redirect($redirectTo);

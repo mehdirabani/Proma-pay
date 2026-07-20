@@ -65,3 +65,12 @@ php tests/integration_v138_file_registry.php
 ```text
 php tests/static_v135.php
 ```
+
+تست‌های رگرسیون ورود، آواتار، تأیید مشخصات، ایجاد یکتای قرارداد و پرداخت دستی نسخه `V1.4.0`:
+
+```text
+php tests/static_v140.php
+php tests/integration_v140_core_workflows.php
+```
+
+تست integration به دیتابیس ایزوله نیاز دارد و متغیرهای `PROMA_TEST_DB_DSN`، `PROMA_TEST_DB_USER` و `PROMA_TEST_DB_PASSWORD` را می‌خواند.

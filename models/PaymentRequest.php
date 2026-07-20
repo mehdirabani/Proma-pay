@@ -17,7 +17,7 @@ class PaymentRequest extends Model
         return $uuid;
     }
 
-    public static function begin($uuid, $userId, $installmentId, $requestHash)
+    public static function beginRequest($uuid, $userId, $installmentId, $requestHash)
     {
         $uuid = self::normalizeUuid($uuid);
         $requestHash = trim((string) $requestHash);

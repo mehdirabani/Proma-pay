@@ -26,23 +26,33 @@ class ProfileController extends Controller
             'secondary_phone' => to_english_digits($_POST['secondary_phone'] ?? ''),
             'email' => trim($_POST['email'] ?? ''),
             'address' => trim($_POST['address'] ?? ''),
-            'avatar_key' => normalize_avatar_key($_POST['avatar_key'] ?? 'avatar-1'),
-            'password' => $_POST['password'] ?? '',
         ];
         if ($payload['full_name'] === '' || $payload['mobile'] === '') {
             set_flash('error', 'نام و موبایل الزامی است.');
-            redirect('profile');
-        }
-        if ($payload['password'] !== '' && mb_strlen($payload['password'], 'UTF-8') < 8) {
-            set_flash('error', 'رمز عبور تازه باید حداقل هشت کاراکتر باشد.');
             redirect('profile');
         }
         if (Auth::role() === 'admin') {
             User::applyProfileData(Auth::id(), $payload);
             set_flash('success', 'پروفایل به‌روزرسانی شد.');
         } else {
-            ProfileRequest::createRequest(Auth::id(), $payload);
-            set_flash('success', 'درخواست ویرایش پروفایل برای تایید مدیریت ثبت شد.');
+            if (ProfileRequest::createRequest(Auth::id(), $payload)) {
+                set_flash('success', 'درخواست ویرایش مشخصات برای تایید مدیریت ثبت شد.');
+            } else {
+                set_flash('info', 'تغییری در مشخصات قابل بررسی ثبت نشد.');
+            }
+        }
+        redirect('profile');
+    }
+
+    public function updateAvatar()
+    {
+        Auth::requireLogin();
+        $this->onlyPost();
+        try {
+            User::updateAvatar(Auth::id(), $_POST['avatar_key'] ?? '');
+            set_flash('success', 'آواتار شما بدون نیاز به تایید مدیریت تغییر کرد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'تغییر آواتار انجام نشد.');
         }
         redirect('profile');
     }
@@ -106,8 +116,11 @@ class ProfileController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
-        ProfileRequest::approve((int) $id, Auth::id());
-        set_flash('success', 'درخواست پروفایل تایید شد.');
+        if (ProfileRequest::approve((int) $id, Auth::id())) {
+            set_flash('success', 'درخواست اصلاح مشخصات تایید و اعمال شد.');
+        } else {
+            set_flash('error', 'درخواست در انتظار بررسی پیدا نشد.');
+        }
         redirect('users');
     }
 
@@ -115,8 +128,11 @@ class ProfileController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
-        ProfileRequest::reject((int) $id, Auth::id(), $_POST['review_notes'] ?? '');
-        set_flash('success', 'درخواست پروفایل رد شد.');
+        if (ProfileRequest::reject((int) $id, Auth::id(), $_POST['review_notes'] ?? '')) {
+            set_flash('success', 'درخواست اصلاح مشخصات رد شد.');
+        } else {
+            set_flash('error', 'درخواست در انتظار بررسی پیدا نشد.');
+        }
         redirect('users');
     }
 

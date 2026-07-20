@@ -866,6 +866,39 @@ class User extends Model
         ]);
     }
 
+    public static function updateAvatar($id, $avatarKey)
+    {
+        self::ensureProfileColumns();
+        $avatarKey = trim((string) $avatarKey);
+        if (!in_array($avatarKey, avatar_options(), true)) {
+            throw new InvalidArgumentException('آواتار انتخاب‌شده معتبر نیست.');
+        }
+        $user = self::find((int) $id);
+        if (!$user) {
+            throw new InvalidArgumentException('حساب کاربری پیدا نشد.');
+        }
+        self::execute(
+            "UPDATE users
+             SET avatar_key = ?, avatar_category = 'manual', avatar_source = 'self_service', avatar_locked = 1,
+                 avatar_suggestion_reason = ?, updated_at = NOW()
+             WHERE id = ?",
+            [$avatarKey, 'انتخاب مستقیم صاحب حساب.', (int) $id]
+        );
+        if (class_exists('AuditLog')) {
+            try {
+                AuditLog::record('profile', 'avatar_updated', 'user', (int) $id, [
+                    'actor_user_id' => (int) $id,
+                    'severity' => 'low',
+                    'old_values' => ['avatar_key' => $user['avatar_key'] ?? null],
+                    'new_values' => ['avatar_key' => $avatarKey],
+                    'description' => 'آواتار توسط صاحب حساب تغییر کرد.',
+                ]);
+            } catch (Throwable $ignored) {
+            }
+        }
+        return true;
+    }
+
     public static function applyProfileData($id, array $data)
     {
         self::ensureProfileColumns();

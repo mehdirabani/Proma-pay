@@ -302,6 +302,11 @@ class Contract extends Model
                     'seller_user_id' => !empty($data['seller_user_id']) ? (int) $data['seller_user_id'] : null,
                 ], 'contract', $contractId);
             }
+            if (!empty($data['request_uuid'])) {
+                if (ContractRequest::complete((string) $data['request_uuid'], $contractId) !== 1) {
+                    throw new RuntimeException('ثبت شناسه یکتای قرارداد کامل نشد. لطفاً دوباره تلاش کنید.');
+                }
+            }
             self::commit();
             if (class_exists('SystemOutbox')) {
                 SystemOutbox::processPending(25);

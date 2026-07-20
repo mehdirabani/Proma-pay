@@ -2438,8 +2438,12 @@
 
 document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('form[data-disable-on-submit]').forEach(function (form) {
-    form.addEventListener('submit', function () {
-      if (form.dataset.submitting === '1') return;
+    form.addEventListener('submit', function (event) {
+      if (form.dataset.submitting === '1') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
       form.dataset.submitting = '1';
       form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (control) {
         var label = control.getAttribute('data-submit-label');

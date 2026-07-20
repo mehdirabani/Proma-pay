@@ -17,6 +17,10 @@ $v139Migration = $root . '/database/migrations/2026_07_19_custom_installment_vis
 if (is_file($v139Migration) && version_compare($version, '1.3.9', '<')) {
     throw new RuntimeException('V1.3.9 release candidate is present. Update config/version.php only after the staging release gate passes; no archive may be labeled V' . $version . '.');
 }
+$v140Migration = $root . '/database/migrations/2026_07_20_profile_auth_contract_payment_v140.sql';
+if (is_file($v140Migration) && version_compare($version, '1.4.0', '<')) {
+    throw new RuntimeException('V1.4.0 release candidate is present. Update config/version.php only after the staging release gate passes; no archive may be labeled V' . $version . '.');
+}
 if (!class_exists('ZipArchive')) {
     fwrite(STDERR, "PHP ZipArchive extension is required.\n");
     exit(1);
@@ -169,9 +173,11 @@ $updateRelativeFiles = [
     'config/version.php',
     'controllers/PluginsController.php',
     'controllers/BackupController.php',
+    'controllers/AuthController.php',
     'controllers/SettingsController.php',
     'controllers/InstallmentsController.php',
     'controllers/ContractsController.php',
+    'controllers/ProfileController.php',
     'controllers/CalendarController.php',
     'controllers/FileManagerController.php',
     'controllers/MedalsController.php',
@@ -194,6 +200,7 @@ $updateRelativeFiles = [
     'manifest.json',
     'models/PluginRegistry.php',
     'models/Contract.php',
+    'models/ContractRequest.php',
     'models/ContractDocument.php',
     'models/ContractPrintProfile.php',
     'models/ContractTemplateRenderer.php',
@@ -207,8 +214,11 @@ $updateRelativeFiles = [
     'models/Medal.php',
     'models/Installment.php',
     'models/PaymentRequest.php',
+    'models/LoginThrottle.php',
+    'models/ProfileRequest.php',
     'models/SystemOutbox.php',
     'models/Settings.php',
+    'models/User.php',
     'package.json',
     'scripts/build_release.php',
     'service-worker.js',
@@ -217,6 +227,8 @@ $updateRelativeFiles = [
     'views/contracts/show.php',
     'views/contracts/index.php',
     'views/contracts/booklet.php',
+    'views/profile/index.php',
+    'views/users/index.php',
     'views/customers/index.php',
     'views/overdue/index.php',
     'views/file-manager/index.php',
@@ -235,6 +247,7 @@ $updateRelativeFiles = [
     'database/migrations/2026_07_18_contract_lifecycle_schema_repair_v137.sql',
     'database/migrations/2026_07_18_file_registry_v138.sql',
     'database/migrations/2026_07_19_custom_installment_visibility_and_footer.sql',
+    'database/migrations/2026_07_20_profile_auth_contract_payment_v140.sql',
     'controllers/PaymentsController.php',
     'core/PaymentGatewayProviderInterface.php',
     'core/PaymentGatewayRegistry.php',
@@ -303,6 +316,8 @@ $updateRelativeFiles = [
     'docs/releases/V1.3.7.md',
     'docs/releases/V1.3.8.md',
     'docs/releases/V1.3.9.md',
+    'docs/releases/V1.4.0.md',
+    'docs/security/CUSTOMER_LOGIN_POLICY.md',
     'docs/ui/FORM_CONTROL_STYLE_AUDIT.md',
     'docs/ui/BORDERLESS_FORM_DESIGN_SYSTEM.md',
     'docs/ui/FORM_CONTROL_COMPONENTS.md',
@@ -321,6 +336,8 @@ $updateRelativeFiles = [
     'docs/qa/FORM_CONTROL_BUG_REGISTER.md',
     'docs/qa/FORM_CONTROL_TEST_RESULTS.md',
     'docs/qa/V1_3_9_TEST_RESULTS.md',
+    'docs/qa/V1_4_0_TEST_RESULTS.md',
+    'docs/qa/BUG_REGISTER.md',
     'docs/qa/cards-print/TEST_RESULTS.md',
     'docs/qa/cards-print/RESPONSIVE_RESULTS.md',
     'docs/qa/cards-print/PRINT_RESULTS.md',
@@ -353,9 +370,11 @@ $updateRelativeFiles = [
     'tests/static_v137.php',
     'tests/static_v138.php',
     'tests/static_v139.php',
+    'tests/static_v140.php',
     'tests/financial_precision_v136.php',
     'tests/error_response_v136.php',
     'tools/release-gate.php',
+    'tools/verify-release.php',
     'static-errors/500.html',
     'static-errors/503.html',
     'static-errors/400.html',
@@ -368,6 +387,7 @@ $updateRelativeFiles = [
     'tests/integration_v138_file_registry.php',
     'tests/integration_v139_custom_installments.php',
     'tests/integration_v139_contract_print_schema.php',
+    'tests/integration_v140_core_workflows.php',
     'tests/static_accounting_update_2014.php',
 ];
 $updateFiles = [];
@@ -401,6 +421,7 @@ $updateManifest = [
         'database/migrations/2026_07_18_contract_lifecycle_schema_repair_v137.sql',
         'database/migrations/2026_07_18_file_registry_v138.sql',
         'database/migrations/2026_07_19_custom_installment_visibility_and_footer.sql',
+        'database/migrations/2026_07_20_profile_auth_contract_payment_v140.sql',
     ],
     'preserves' => ['config/database.php', 'plugins/', 'storage/', 'uploads/'],
 ];
@@ -473,10 +494,22 @@ foreach (array_merge([$corePath, $updatePath], array_values($pluginPaths)) as $a
     }
 }
 
+$checksumDirectory = $dist . '/checksums';
+if (!is_dir($checksumDirectory) && !mkdir($checksumDirectory, 0775, true) && !is_dir($checksumDirectory)) {
+    throw new RuntimeException('Cannot create checksum directory: ' . $checksumDirectory);
+}
+$checksumLines = [];
+foreach (array_merge([$corePath, $updatePath], array_values($pluginPaths)) as $archivePath) {
+    $checksumLines[] = hash_file('sha256', $archivePath) . '  ' . basename($archivePath);
+}
+$checksumPath = $checksumDirectory . '/SHA256SUMS.txt';
+file_put_contents($checksumPath, implode(PHP_EOL, $checksumLines) . PHP_EOL);
+
 echo json_encode([
     'version' => $version,
     'core' => $corePath,
     'update' => $updatePath,
     'update_manifest' => $updateDir . '/proma-update_v' . $versionSlug . '-manifest.json',
     'plugins' => $pluginPaths,
+    'checksums' => $checksumPath,
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;

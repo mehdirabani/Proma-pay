@@ -11,8 +11,7 @@ $assert = static function ($condition, string $message): void {
     }
 };
 
-$assert(($version['application'] ?? '') === '1.3.9', 'Core version must be 1.3.9.');
-$assert(($version['display'] ?? '') === 'V1.3.9', 'Display version must be V1.3.9.');
+$assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.3.9', '>='), 'Core version must be 1.3.9 or newer.');
 
 foreach ([
     'database/migrations/2026_07_19_custom_installment_visibility_and_footer.sql',
@@ -55,11 +54,10 @@ $assert(strpos($forms, 'border: 1px solid transparent') !== false, 'Fields need 
 $contracts = (string) file_get_contents($root . '/views/contracts/index.php');
 $contractCss = (string) file_get_contents($root . '/assets/css/app.css');
 $appJs = (string) file_get_contents($root . '/assets/js/app.js');
-foreach (['proma-contract-card__identity', 'proma-contract-card__controls', 'proma-contract-card__meta', 'proma-card-select', 'title="چاپ قرارداد"', 'title="چاپ دفترچه اقساط"', 'title="لغو قرارداد"'] as $needle) {
+foreach (['proma-contract-card__identity', 'proma-contract-card__controls', 'proma-contract-card__meta', 'title="چاپ قرارداد"', 'title="چاپ دفترچه اقساط"', 'title="لغو قرارداد"'] as $needle) {
     $assert(strpos($contracts, $needle) !== false, 'Contract card is missing ' . $needle . '.');
 }
-$selectorRule = substr($contractCss, (int) strpos($contractCss, '.proma-card-select'), 500);
-$assert(strpos($selectorRule, 'position: static') !== false, 'Contract selector must remain in normal layout flow.');
+$assert(strpos($contracts, 'proma-card-select') === false && strpos($contracts, 'contract_ids[]') === false, 'Removed contract selector returned to the contract list.');
 $assert(strpos($appJs, "const interactiveSelector = 'a,button,input,select,textarea,label") !== false, 'Card navigation must exclude inner controls.');
 
 $migration = (string) file_get_contents($root . '/database/migrations/2026_07_19_custom_installment_visibility_and_footer.sql');

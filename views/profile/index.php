@@ -9,6 +9,20 @@
         <?php if ($latestRequest): ?>
           <span class="badge badge-light-<?= e(badge_class($latestRequest['status'])) ?>"><?= e(status_label($latestRequest['status'])) ?></span>
         <?php endif; ?>
+        <form method="post" action="<?= e(url('profile/updateAvatar')) ?>" class="proma-profile-avatar-form" data-disable-on-submit>
+          <?= csrf_field() ?>
+          <span class="field-title">انتخاب آواتار</span>
+          <div class="proma-avatar-options">
+            <?php foreach ($avatars as $avatar): ?>
+              <label title="انتخاب <?= e($avatar) ?>">
+                <input type="radio" name="avatar_key" value="<?= e($avatar) ?>"<?= checked($profileAvatar, $avatar) ?>>
+                <span class="proma-avatar-choice <?= e($avatar) ?>" aria-label="<?= e($avatar) ?>"><img data-avatar-image src="<?= e(avatar_asset_url($avatar)) ?>" alt="<?= e($avatar) ?>"></span>
+              </label>
+            <?php endforeach; ?>
+          </div>
+          <p class="proma-form-help">تغییر آواتار فوری است و به تایید مدیریت نیاز ندارد.</p>
+          <button class="btn small secondary" type="submit">ذخیره آواتار</button>
+        </form>
       </div>
     </section>
   </div>
@@ -23,20 +37,8 @@
           <label>تلفن دوم<input name="secondary_phone" value="<?= e($user['secondary_phone']) ?>" inputmode="tel"></label>
           <label>ایمیل<input name="email" value="<?= e($user['email']) ?>" type="email" dir="ltr"></label>
           <label class="full">آدرس<textarea name="address"><?= e($user['address'] ?? '') ?></textarea></label>
-          <label>رمز عبور تازه<input name="password" type="password" placeholder="در صورت تغییر وارد کنید"></label>
-          <div class="full">
-            <span class="field-title">آواتار پیش‌فرض</span>
-            <div class="proma-avatar-options">
-              <?php foreach ($avatars as $avatar): ?>
-                <label>
-                  <input type="radio" name="avatar_key" value="<?= e($avatar) ?>"<?= checked($user['avatar_key'] ?? 'avatar-1', $avatar) ?>>
-                  <span class="proma-avatar-choice <?= e($avatar) ?>" aria-label="<?= e($avatar) ?>"><img data-avatar-image src="<?= e(avatar_asset_url($avatar)) ?>" alt="<?= e($avatar) ?>"></span>
-                </label>
-              <?php endforeach; ?>
-            </div>
-          </div>
-          <div class="full notice info">ویرایش کاربران غیرمدیر پس از تایید مدیریت روی حساب اعمال می‌شود.</div>
-          <div class="full"><button class="btn" type="submit">ثبت درخواست ویرایش</button></div>
+          <div class="full notice info"><?= Auth::role() === 'admin' ? 'تغییرات مشخصات مدیر بلافاصله ذخیره می‌شود.' : 'اصلاح مشخصات پس از بررسی و تایید مدیریت روی حساب اعمال می‌شود.' ?></div>
+          <div class="full"><button class="btn" type="submit"><?= Auth::role() === 'admin' ? 'ذخیره مشخصات' : 'ارسال برای تایید مدیریت' ?></button></div>
         </form>
       </div>
     </section>

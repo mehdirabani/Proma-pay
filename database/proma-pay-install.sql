@@ -876,7 +876,7 @@ DROP TABLE IF EXISTS `payment_groups`;
 DROP TABLE IF EXISTS `contract_document_versions`;
 DROP TABLE IF EXISTS `contract_deletion_archives`;
 CREATE TABLE `contract_deletion_archives` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `contract_id` bigint(20) unsigned NOT NULL, `contract_number` varchar(80) NOT NULL, `customer_id` bigint(20) unsigned NOT NULL, `deletion_reason` text NOT NULL, `gateway_warning` text DEFAULT NULL, `corrected_payment_count` int(10) unsigned NOT NULL DEFAULT 0, `snapshot_json` longtext NOT NULL, `deleted_by` bigint(20) unsigned DEFAULT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_contract_deletion_archive` (`contract_id`,`created_at`), KEY `idx_contract_deletion_archives_customer` (`customer_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE `contract_document_versions` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `contract_id` bigint(20) unsigned NOT NULL, `version_number` int(10) unsigned NOT NULL, `rendered_title` varchar(190) DEFAULT NULL, `rendered_header` text DEFAULT NULL, `rendered_body` longtext NOT NULL, `source` varchar(30) NOT NULL DEFAULT 'generated', `checksum` char(64) NOT NULL, `is_published` tinyint(1) NOT NULL DEFAULT 1, `is_finalized` tinyint(1) NOT NULL DEFAULT 0, `generated_by` bigint(20) unsigned DEFAULT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_contract_document_version` (`contract_id`,`version_number`), KEY `idx_contract_document_versions_published` (`contract_id`,`is_published`,`version_number`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `contract_document_versions` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `contract_id` bigint(20) unsigned NOT NULL, `template_version_id` bigint(20) unsigned DEFAULT NULL, `version_number` int(10) unsigned NOT NULL, `rendered_title` varchar(190) DEFAULT NULL, `rendered_header` text DEFAULT NULL, `rendered_body` longtext NOT NULL, `source` varchar(30) NOT NULL DEFAULT 'generated', `checksum` char(64) NOT NULL, `is_published` tinyint(1) NOT NULL DEFAULT 1, `is_finalized` tinyint(1) NOT NULL DEFAULT 0, `generated_by` bigint(20) unsigned DEFAULT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_contract_document_version` (`contract_id`,`version_number`), KEY `idx_contract_document_versions_published` (`contract_id`,`is_published`,`version_number`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `payment_groups` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `group_number` varchar(80) NOT NULL, `contract_id` bigint(20) unsigned NOT NULL, `customer_id` bigint(20) unsigned NOT NULL, `created_by` bigint(20) unsigned DEFAULT NULL, `requested_amount` decimal(18,2) NOT NULL, `allocated_amount` decimal(18,2) NOT NULL DEFAULT 0.00, `method` varchar(30) NOT NULL DEFAULT 'manual', `status` varchar(30) NOT NULL DEFAULT 'paid', `gateway_track_id` varchar(100) DEFAULT NULL, `idempotency_key` varchar(120) DEFAULT NULL, `description` text DEFAULT NULL, `selection_json` longtext DEFAULT NULL, `created_at` datetime NOT NULL, `completed_at` datetime DEFAULT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_payment_groups_number` (`group_number`), UNIQUE KEY `uq_payment_groups_idempotency` (`idempotency_key`), KEY `idx_payment_groups_contract` (`contract_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `payment_allocations` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `payment_group_id` bigint(20) unsigned NOT NULL, `payment_id` bigint(20) unsigned NOT NULL, `contract_id` bigint(20) unsigned NOT NULL, `installment_id` bigint(20) unsigned NOT NULL, `allocated_amount` decimal(18,2) NOT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_payment_allocation_installment` (`payment_group_id`,`installment_id`), KEY `idx_payment_allocations_payment` (`payment_id`), CONSTRAINT `fk_payment_allocation_group` FOREIGN KEY (`payment_group_id`) REFERENCES `payment_groups` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `installment_bulk_operations` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `operation_number` varchar(80) NOT NULL, `contract_id` bigint(20) unsigned NOT NULL, `operation_type` varchar(40) NOT NULL, `installment_ids_json` longtext NOT NULL, `old_snapshot_json` longtext DEFAULT NULL, `new_snapshot_json` longtext DEFAULT NULL, `reason` text NOT NULL, `performed_by` bigint(20) unsigned DEFAULT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_installment_bulk_operation_number` (`operation_number`), KEY `idx_installment_bulk_operations_contract` (`contract_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -945,6 +945,39 @@ CREATE TABLE `users` (
   KEY `idx_users_role_status` (`role`,`status`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `auth_login_attempts`;
+CREATE TABLE `auth_login_attempts` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `scope_type` varchar(20) NOT NULL,
+  `scope_hash` char(64) NOT NULL,
+  `failed_count` int(10) unsigned NOT NULL DEFAULT 0,
+  `first_failed_at` datetime DEFAULT NULL,
+  `last_failed_at` datetime DEFAULT NULL,
+  `locked_until` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_auth_login_attempt_scope` (`scope_type`,`scope_hash`),
+  KEY `idx_auth_login_attempt_lock` (`locked_until`),
+  KEY `idx_auth_login_attempt_last_failure` (`last_failed_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TABLE IF EXISTS `contract_requests`;
+CREATE TABLE `contract_requests` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `request_uuid` varchar(64) NOT NULL,
+  `user_id` bigint(20) unsigned DEFAULT NULL,
+  `request_hash` char(64) NOT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'processing',
+  `contract_id` bigint(20) unsigned DEFAULT NULL,
+  `error_message` text DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_contract_requests_uuid` (`request_uuid`),
+  KEY `idx_contract_requests_contract` (`contract_id`),
+  KEY `idx_contract_requests_status` (`status`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
