@@ -196,11 +196,13 @@ class Contract extends Model
              SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled,
              SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN 1 ELSE 0 END) AS active_remaining,
              SUM(CASE WHEN status NOT IN ('paid', 'cancelled') AND due_date < CURDATE() THEN 1 ELSE 0 END) AS overdue,
+             COALESCE(SUM(base_amount), 0) AS scheduled_amount,
+             COALESCE(SUM(LEAST(GREATEST(paid_amount, 0), base_amount)), 0) AS paid_amount,
              COALESCE(SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN GREATEST(base_amount - paid_amount, 0) ELSE 0 END),0) AS outstanding
              FROM installments
              WHERE contract_id = ?",
             [(int) $contractId]
-        ) ?: ['total' => 0, 'paid' => 0, 'cancelled' => 0, 'active_remaining' => 0, 'overdue' => 0, 'outstanding' => 0];
+        ) ?: ['total' => 0, 'paid' => 0, 'cancelled' => 0, 'active_remaining' => 0, 'overdue' => 0, 'scheduled_amount' => 0, 'paid_amount' => 0, 'outstanding' => 0];
     }
 
     public static function cancellationSummary($contractId)
