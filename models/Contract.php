@@ -498,7 +498,7 @@ class Contract extends Model
             "SELECT COUNT(*) AS total,
                     SUM(CASE WHEN status = 'paid' AND COALESCE(is_corrected, 0) = 0 THEN 1 ELSE 0 END) AS effective,
                     COALESCE(SUM(CASE WHEN status = 'paid' AND COALESCE(is_corrected, 0) = 0 THEN amount ELSE 0 END), 0) AS effective_amount,
-                    SUM(CASE WHEN method = 'zibal' AND status IN ('paid','pending') THEN 1 ELSE 0 END) AS gateway_count
+                    SUM(CASE WHEN method IN ('zibal', 'zarinpal') AND status IN ('paid','pending') THEN 1 ELSE 0 END) AS gateway_count
              FROM payments WHERE contract_id = ?",
             [$contractId]
         ) ?: [];
@@ -547,7 +547,30 @@ class Contract extends Model
             'legal_case_count' => $legal,
             'dependencies' => $dependencyCounts,
             'blocking_dependencies' => $blockingDependencies,
+            'blocking_dependency_labels' => array_values(array_map(static function ($key) {
+                $labels = self::deletionDependencyLabels();
+                return $labels[$key] ?? 'وابستگی عملیاتی';
+            }, $blockingDependencies)),
             'eligible_for_permanent_delete' => !$blockingDependencies,
+            'requires_history_purge' => !empty($blockingDependencies),
+        ];
+    }
+
+    public static function deletionDependencyLabels()
+    {
+        return [
+            'payment_count' => 'پرداخت‌های قرارداد',
+            'payment_correction_count' => 'اصلاحیه‌های مالی',
+            'payment_receipt_count' => 'رسیدهای پرداخت',
+            'payment_group_count' => 'گروه‌های پرداخت',
+            'payment_allocation_count' => 'تخصیص‌های پرداخت',
+            'legal_case_count' => 'سوابق حقوقی',
+            'generated_document_count' => 'نسخه چاپی قرارداد',
+            'document_version_count' => 'تاریخچه نسخه‌های قرارداد',
+            'operator_call_count' => 'گزارش تماس اپراتور',
+            'accounting_sale_count' => 'فروش ثبت‌شده حسابداری',
+            'accounting_commission_count' => 'کمیسیون حسابداری',
+            'accounting_ledger_count' => 'سند دفتر کل',
         ];
     }
 
@@ -561,17 +584,103 @@ class Contract extends Model
         if (!in_array($table, $allowedTables, true)) {
             throw new InvalidArgumentException('جدول وابستگی قرارداد معتبر نیست.');
         }
-        $exists = self::fetch(
-            'SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1',
-            [$table]
-        );
-        if (!$exists) {
+        if (!self::contractTableHasColumn($table, 'contract_id')) {
             return 0;
         }
         return (int) (self::fetch('SELECT COUNT(*) AS total FROM `' . $table . '` WHERE contract_id = ?', [(int) $contractId])['total'] ?? 0);
     }
 
-    public static function deleteContractSafely($id, $adminId, $reason, $typedContractNumber)
+    protected static function contractTableHasColumn($table, $column)
+    {
+        if (!preg_match('/^[a-z0-9_]+$/', (string) $table) || !preg_match('/^[a-z0-9_]+$/', (string) $column)) {
+            return false;
+        }
+        return (bool) self::fetch(
+            'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1',
+            [(string) $table, (string) $column]
+        );
+    }
+
+    protected static function contractPurgeTables()
+    {
+        return [
+            'payment_receipts',
+            'payment_corrections',
+            'payment_allocations',
+            'payment_groups',
+            'payments',
+            'installment_bulk_operations',
+            'installments',
+            'legal_case_logs',
+            'legal_cases',
+            'contract_document_versions',
+            'generated_contract_documents',
+            'operator_calls',
+            'plugin_accounting_commissions',
+            'accounting_ledger_entries',
+            'plugin_accounting_sales',
+            'contract_change_logs',
+            'contract_guarantor_people',
+            'contract_guarantees',
+            'contract_items',
+            'contract_guarantors',
+        ];
+    }
+
+    protected static function contractHistorySnapshot($contractId)
+    {
+        $snapshot = [];
+        foreach (self::contractPurgeTables() as $table) {
+            if (!self::contractTableHasColumn($table, 'contract_id')) {
+                continue;
+            }
+            $snapshot[$table] = self::fetchAll(
+                'SELECT * FROM `' . $table . '` WHERE contract_id = ? ORDER BY 1',
+                [(int) $contractId]
+            );
+        }
+        return $snapshot;
+    }
+
+    protected static function purgeContractHistory($contractId)
+    {
+        $pending = self::contractPurgeTables();
+        $deletedRows = [];
+        $lastErrors = [];
+
+        for ($pass = 0; $pass < 4 && $pending; $pass++) {
+            $deferred = [];
+            foreach ($pending as $table) {
+                if (!self::contractTableHasColumn($table, 'contract_id')) {
+                    continue;
+                }
+                try {
+                    $deletedRows[$table] = (int) self::execute(
+                        'DELETE FROM `' . $table . '` WHERE contract_id = ?',
+                        [(int) $contractId]
+                    );
+                    unset($lastErrors[$table]);
+                } catch (Throwable $e) {
+                    $deferred[] = $table;
+                    $lastErrors[$table] = $e;
+                }
+            }
+            if (count($deferred) === count($pending)) {
+                break;
+            }
+            $pending = $deferred;
+        }
+
+        if ($pending) {
+            foreach ($lastErrors as $table => $error) {
+                ErrorHandler::log('contract_history_purge.' . $table, $error, 500);
+            }
+            throw new RuntimeException('پاکسازی وابستگی‌های قرارداد کامل نشد. جزئیات فنی در لاگ امن سامانه ثبت شد.');
+        }
+        return $deletedRows;
+    }
+
+    public static function deleteContractSafely($id, $adminId, $reason, $typedContractNumber, $purgeHistory = false)
     {
         $contractId = (int) $id;
         $reason = trim((string) $reason);
@@ -587,31 +696,38 @@ class Contract extends Model
             if (!hash_equals((string) ($contract['contract_number'] ?? ''), trim((string) $typedContractNumber))) {
                 throw new InvalidArgumentException('شماره قرارداد را دقیقاً مطابق قرارداد وارد کنید.');
             }
+
             $summary = self::deletionPreview($contractId);
-            if (empty($summary['eligible_for_permanent_delete'])) {
-                throw new InvalidArgumentException('این قرارداد دارای سابقه مالی، حقوقی، سند یا وابستگی عملیاتی است و قابل حذف نیست. از گزینه لغو یا بایگانی استفاده کنید.');
+            if (empty($summary['eligible_for_permanent_delete']) && !$purgeHistory) {
+                throw new InvalidArgumentException('برای حذف این قرارداد باید گزینه پاکسازی کامل سوابق وابسته را آگاهانه فعال کنید.');
             }
             $snapshot = [
                 'contract' => $contract,
-                'installments' => self::fetchAll('SELECT * FROM installments WHERE contract_id = ?', [$contractId]),
-                'payments' => self::fetchAll('SELECT * FROM payments WHERE contract_id = ?', [$contractId]),
-                'documents' => self::fetchAll('SELECT * FROM generated_contract_documents WHERE contract_id = ?', [$contractId]),
-                'document_versions' => self::fetchAll('SELECT * FROM contract_document_versions WHERE contract_id = ?', [$contractId]),
-                'change_logs' => self::fetchAll('SELECT * FROM contract_change_logs WHERE contract_id = ?', [$contractId]),
+                'related_records' => self::contractHistorySnapshot($contractId),
                 'deletion_preview' => $summary,
+                'archived_at' => date(DATE_ATOM),
             ];
+            $snapshotJson = json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+            if (!is_string($snapshotJson)) {
+                throw new RuntimeException('ساخت آرشیو امن قرارداد انجام نشد.');
+            }
+            $gatewayWarning = !empty($summary['gateway_payment_count'])
+                ? 'حذف سابقه داخلی، بازگشت وجه بانکی یا لغو تراکنش درگاه را انجام نمی‌دهد.'
+                : null;
             self::execute(
                 'INSERT INTO contract_deletion_archives (contract_id, contract_number, customer_id, deletion_reason, gateway_warning, corrected_payment_count, snapshot_json, deleted_by, created_at)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())',
-                [$contractId, $contract['contract_number'], (int) $contract['customer_id'], $reason, null, 0, json_encode($snapshot, JSON_UNESCAPED_UNICODE), (int) $adminId]
+                [$contractId, $contract['contract_number'], (int) $contract['customer_id'], $reason, $gatewayWarning, (int) ($summary['effective_payment_count'] ?? 0), $snapshotJson, (int) $adminId]
             );
+
+            $deletedRows = $purgeHistory ? self::purgeContractHistory($contractId) : [];
             AuditLog::record('contract', 'deleted', 'contract', $contractId, [
                 'actor_user_id' => $adminId,
                 'customer_id' => (int) $contract['customer_id'],
                 'contract_id' => $contractId,
-                'description' => 'حذف دائمی قرارداد آزمایشی یا اشتباهی پس از آرشیو',
-                'old_values' => ['contract_number' => $contract['contract_number']],
-                'new_values' => ['reason' => $reason, 'eligibility' => $summary['blocking_dependencies']],
+                'description' => $purgeHistory ? 'حذف دائمی قرارداد و پاکسازی سوابق وابسته پس از آرشیو کامل' : 'حذف دائمی قرارداد بدون سابقه وابسته پس از آرشیو',
+                'old_values' => ['contract_number' => $contract['contract_number'], 'summary' => $summary],
+                'new_values' => ['reason' => $reason, 'history_purged' => (bool) $purgeHistory, 'deleted_rows' => $deletedRows],
             ]);
             if (class_exists('SystemOutbox')) {
                 SystemOutbox::safeEnqueuePluginHook('contract.deleted', [
@@ -619,12 +735,12 @@ class Contract extends Model
                     'customer_id' => (int) $contract['customer_id'],
                     'actor_user_id' => (int) $adminId,
                     'deleted' => true,
+                    'history_purged' => (bool) $purgeHistory,
                 ], 'contract', $contractId);
             }
-            if (self::contractDependencyCount('installment_bulk_operations', $contractId) > 0) {
-                self::execute('DELETE FROM installment_bulk_operations WHERE contract_id = ?', [$contractId]);
+            if (self::execute('DELETE FROM contracts WHERE id = ?', [$contractId]) !== 1) {
+                throw new RuntimeException('حذف نهایی قرارداد کامل نشد.');
             }
-            self::execute('DELETE FROM contracts WHERE id = ?', [$contractId]);
             self::commit();
             if (class_exists('SystemOutbox')) {
                 try {
@@ -633,7 +749,12 @@ class Contract extends Model
                     ErrorHandler::log('contract_delete_outbox', $outboxError, 500);
                 }
             }
-            return ['deleted' => true];
+            return [
+                'deleted' => true,
+                'history_purged' => (bool) $purgeHistory,
+                'deleted_rows' => $deletedRows,
+                'gateway_warning' => $gatewayWarning,
+            ];
         } catch (Throwable $e) {
             self::rollBack();
             throw $e;
