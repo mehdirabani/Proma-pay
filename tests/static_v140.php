@@ -47,6 +47,8 @@ $profileController = (string) file_get_contents($root . '/controllers/ProfileCon
 $profileRequest = (string) file_get_contents($root . '/models/ProfileRequest.php');
 $profileView = (string) file_get_contents($root . '/views/profile/index.php');
 $usersView = (string) file_get_contents($root . '/views/users/index.php');
+$profileReviewsView = (string) file_get_contents($root . '/views/profile-reviews/index.php');
+$appLayout = (string) file_get_contents($root . '/views/layouts/app.php');
 $authController = (string) file_get_contents($root . '/controllers/AuthController.php');
 $auth = (string) file_get_contents($root . '/core/Auth.php');
 $appJs = (string) file_get_contents($root . '/assets/js/app.js');
@@ -70,7 +72,9 @@ $assert(strpos($contractView, 'proma-card-select') === false && strpos($contract
 $assert(strpos($profileController, 'public function updateAvatar') !== false, 'Direct avatar update endpoint is missing.');
 $assert(strpos($profileView, "url('profile/updateAvatar')") !== false, 'Profile avatar form is not wired to the direct endpoint.');
 $assert(strpos($profileRequest, 'array_intersect_key($payload, self::fieldLabels())') !== false, 'Profile approval does not restrict allowed fields.');
-$assert(strpos($usersView, 'تایید اصلاح مشخصات') !== false && strpos($usersView, 'مقایسه تغییرات') !== false, 'Management profile-review section is missing.');
+$assert(strpos($profileReviewsView, 'تأیید اصلاح مشخصات') !== false && strpos($profileReviewsView, 'مقایسه تغییرات') !== false, 'Dedicated management profile-review section is missing.');
+$assert(strpos($appLayout, "['profile-reviews', 'تأیید اصلاح مشخصات'") !== false, 'Dedicated profile-review sidebar entry is missing.');
+$assert(strpos($usersView, 'proma-profile-review-card') === false, 'Legacy embedded profile-review section remains on users page.');
 $assert(strpos($profileController, "'password' =>") === false, 'Profile requests must not persist a plaintext password.');
 
 $assert(strpos($authController, 'LoginThrottle::inspect') !== false && strpos($authController, 'LoginThrottle::recordFailure') !== false, 'Login rate limiting is not enforced.');
