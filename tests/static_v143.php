@@ -51,7 +51,7 @@ $assert(strpos($medals, 'proma-medal-card__criterion') !== false, 'Medal criteri
 $assert(strpos($appCss, '.proma-medal-card__criterion') !== false && strpos($appCss, 'overflow-wrap: anywhere') !== false, 'Medal overflow protection is missing.');
 $assert(strpos($healthController, 'public function diagnostics') !== false && strpos($healthController, 'login_ip_locking') !== false, 'System health diagnostics are incomplete.');
 $assert(strpos($healthView, 'تشخیص اختلال IP و Timeout') !== false, 'Network diagnosis panel is missing.');
-$assert(strpos($throttle, "$scope['type'] !== 'ip'") !== false && strpos($throttle, 'PHP_INT_MAX') !== false, 'Shared IP login lockout is still active.');
+$assert(strpos($throttle, "scope['type'] !== 'ip'") !== false && strpos($throttle, 'PHP_INT_MAX') !== false, 'Shared IP login lockout is still active.');
 $assert(strpos($formCss, ':has(> input[required]') !== false, 'Required label marker alignment rule is missing.');
 $assert(substr_count($appCss, '{') === substr_count($appCss, '}'), 'app.css braces are unbalanced.');
 $assert(substr_count($formCss, '{') === substr_count($formCss, '}'), 'forms.css braces are unbalanced.');
