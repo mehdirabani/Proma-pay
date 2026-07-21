@@ -279,6 +279,31 @@ $assert((int) ($medalRestoreResult['restored'] ?? 0) === 1 && empty($restoredNoO
 $assert($noOverdueMedalCount === 1, 'Medal reconciliation created duplicate reversible medals.');
 $assert($medalHistoryActions === ['awarded', 'revoked', 'restored'], 'Medal history does not preserve the complete reversible lifecycle.');
 
+$deletionPayload = $duplicatePayload;
+$deletionPayload['principal_amount'] = 780000;
+$deletionPayload['notes'] = 'QA destructive deletion ' . $suffix;
+$deletionPayload['created_by'] = $adminId;
+$deletionContractId = Contract::createWithInstallments($deletionPayload);
+$deletionContract = Contract::find($deletionContractId);
+$deletionInstallment = Model::fetch('SELECT * FROM installments WHERE contract_id = ? ORDER BY installment_number LIMIT 1', [$deletionContractId]);
+Payment::record((int) $deletionInstallment['id'], $deletionContractId, $adminId, 2500, 'manual', 'paid', null, null, 'QA payment before purge', date('Y-m-d'));
+$deletionPreview = Contract::deletionPreview($deletionContractId);
+$assert(!empty($deletionPreview['requires_history_purge']) && (int) $deletionPreview['payment_count'] > 0, 'Deletion preview did not require history purge for a paid contract.');
+$deleteWithoutPurgeRejected = false;
+try {
+    Contract::deleteContractSafely($deletionContractId, $adminId, 'QA rejection without purge', $deletionContract['contract_number'], false);
+} catch (InvalidArgumentException $e) {
+    $deleteWithoutPurgeRejected = true;
+}
+$assert($deleteWithoutPurgeRejected, 'Paid contract deletion was accepted without explicit history purge.');
+$deleteResult = Contract::deleteContractSafely($deletionContractId, $adminId, 'QA audited history purge', $deletionContract['contract_number'], true);
+$assert(!empty($deleteResult['deleted']) && !empty($deleteResult['history_purged']), 'Audited contract deletion did not report history purge.');
+$assert(Contract::find($deletionContractId) === null, 'Contract still exists after audited deletion.');
+$assert((int) (Model::fetch('SELECT COUNT(*) AS total FROM payments WHERE contract_id = ?', [$deletionContractId])['total'] ?? 0) === 0, 'Payment history was not removed with the contract.');
+$assert((int) (Model::fetch('SELECT COUNT(*) AS total FROM installments WHERE contract_id = ?', [$deletionContractId])['total'] ?? 0) === 0, 'Installments were not removed with the contract.');
+$deletionArchive = Model::fetch('SELECT * FROM contract_deletion_archives WHERE contract_id = ? ORDER BY id DESC LIMIT 1', [$deletionContractId]);
+$assert($deletionArchive && strpos((string) $deletionArchive['snapshot_json'], 'QA payment before purge') !== false, 'Deletion archive does not preserve the pre-delete financial snapshot.');
+
 Chat::ensureSchema();
 $channel = Chat::channelBySlug('public-announcements');
 foreach ([$adminId, $operatorId, $lawyerId, $customerId] as $userId) {
