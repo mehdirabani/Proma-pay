@@ -28,7 +28,7 @@ $plugins = $plugins ?? [];
     </div>
   </div>
   <div class="table-responsive">
-    <table class="table align-middle">
+    <table class="table align-middle proma-plugin-table">
       <thead><tr><th><input type="checkbox" data-check-all="plugin_ids" aria-label="انتخاب همه پلاگین‌ها"></th><th>افزونه</th><th>نسخه</th><th>وضعیت</th><th>مسیر</th><th>عملیات</th></tr></thead>
       <tbody>
       <?php foreach ($plugins as $plugin): ?>
@@ -37,19 +37,19 @@ $plugins = $plugins ?? [];
         <?php $installedVersion = (string) ($plugin['installed_version'] ?? $plugin['version'] ?? '-'); ?>
         <?php $hasStagedUpdate = !empty($plugin['has_staged_update']) || $status === 'update_available'; ?>
         <?php $recoverable = in_array(PluginStatus::normalize($status), [PluginStatus::ERROR, PluginStatus::RECOVERY_REQUIRED], true); ?>
-        <tr>
-          <td><?php if ($hasFiles): ?><input type="checkbox" name="plugin_ids[]" value="<?= e($plugin['id'] ?? '') ?>" data-check-item="plugin_ids" form="plugins-delete-host-form" aria-label="انتخاب <?= e($plugin['name'] ?? $plugin['id'] ?? 'پلاگین') ?>"><?php endif; ?></td>
-          <td><strong><?= e($plugin['name'] ?? $plugin['id'] ?? '-') ?></strong><br><small class="text-muted" dir="ltr"><?= e($plugin['id'] ?? '-') ?></small><?php if (!empty($plugin['last_error'])): ?><div class="text-danger small mt-1">آخرین خطای افزونه در گزارش امن سامانه ثبت شده است.</div><?php endif; ?></td>
-          <td dir="ltr"><strong>v<?= e($installedVersion) ?></strong><?php if ($hasStagedUpdate && ($plugin['version'] ?? '') !== $installedVersion): ?><small class="d-block text-success">→ v<?= e($plugin['version']) ?></small><?php endif; ?></td>
-          <td><span class="badge <?= e(badge_class($status)) ?>"><?= e(PluginStatus::label($status)) ?></span></td>
-          <td>
+        <tr class="proma-plugin-row">
+          <td data-label="انتخاب"><?php if ($hasFiles): ?><input type="checkbox" name="plugin_ids[]" value="<?= e($plugin['id'] ?? '') ?>" data-check-item="plugin_ids" form="plugins-delete-host-form" aria-label="انتخاب <?= e($plugin['name'] ?? $plugin['id'] ?? 'پلاگین') ?>"><?php endif; ?></td>
+          <td data-label="افزونه"><strong><?= e($plugin['name'] ?? $plugin['id'] ?? '-') ?></strong><br><small class="text-muted" dir="ltr"><?= e($plugin['id'] ?? '-') ?></small><?php if (!empty($plugin['last_error'])): ?><div class="text-danger small mt-1">آخرین خطای افزونه در گزارش امن سامانه ثبت شده است.</div><?php endif; ?></td>
+          <td data-label="نسخه" dir="ltr"><strong>v<?= e($installedVersion) ?></strong><?php if ($hasStagedUpdate && ($plugin['version'] ?? '') !== $installedVersion): ?><small class="d-block text-success">→ v<?= e($plugin['version']) ?></small><?php endif; ?></td>
+          <td data-label="وضعیت"><span class="badge <?= e(badge_class($status)) ?>"><?= e(PluginStatus::label($status)) ?></span></td>
+          <td data-label="مسیر">
             <code dir="ltr"><?= e($plugin['path'] ?? '-') ?></code>
             <?php if (!empty($plugin['technical_path'])): ?>
               <details class="proma-plugin-technical"><summary>اطلاعات فنی</summary><code dir="ltr"><?= e($plugin['technical_path']) ?></code></details>
             <?php endif; ?>
           </td>
-          <td>
-            <div class="d-flex flex-wrap gap-1">
+          <td data-label="عملیات">
+            <div class="proma-plugin-actions">
               <?php if (PluginStatus::canInstall($status, $hasFiles)): ?><form method="post" action="<?= e(url('plugins/install/' . rawurlencode($plugin['id'] ?? ''))) ?>"><?= csrf_field() ?><button class="btn btn-sm btn-primary" type="submit"><i data-feather="download"></i> نصب پلاگین</button></form><?php endif; ?>
               <?php if (in_array($status, ['installed', 'inactive'], true)): ?><form method="post" action="<?= e(url('plugins/activate/' . rawurlencode($plugin['id'] ?? ''))) ?>"><?= csrf_field() ?><button class="btn btn-sm btn-success" type="submit">فعال‌سازی</button></form><?php endif; ?>
               <?php if ($status === 'active'): ?><form method="post" action="<?= e(url('plugins/deactivate/' . rawurlencode($plugin['id'] ?? ''))) ?>"><?= csrf_field() ?><button class="btn btn-sm btn-warning" type="submit">غیرفعال‌سازی</button></form><?php endif; ?>
@@ -64,7 +64,7 @@ $plugins = $plugins ?? [];
           </td>
         </tr>
       <?php endforeach; ?>
-      <?php if (!$plugins): ?><tr><td colspan="6" class="empty">افزونه‌ای در پوشه plugins پیدا نشد.</td></tr><?php endif; ?>
+      <?php if (!$plugins): ?><tr><td colspan="6" class="empty" data-label="">افزونه‌ای در پوشه plugins پیدا نشد.</td></tr><?php endif; ?>
       </tbody>
     </table>
   </div>
