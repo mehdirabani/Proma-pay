@@ -17,7 +17,7 @@ class LoginThrottle extends Model
                     continue;
                 }
                 $failures = max($failures, (int) ($row['failed_count'] ?? 0));
-                if (!empty($row['locked_until']) && strtotime((string) $row['locked_until']) > time()) {
+                if (!empty($row['is_locked'])) {
                     if ($lockedUntil === null || strtotime((string) $row['locked_until']) > strtotime($lockedUntil)) {
                         $lockedUntil = (string) $row['locked_until'];
                     }
@@ -111,7 +111,7 @@ class LoginThrottle extends Model
             $conditions[] = '(scope_type = ? AND scope_hash = ?)';
             array_push($params, $scope['type'], $scope['hash']);
         }
-        return self::fetchAll('SELECT * FROM auth_login_attempts WHERE ' . implode(' OR ', $conditions), $params);
+        return self::fetchAll('SELECT *, CASE WHEN locked_until IS NOT NULL AND locked_until > NOW() THEN 1 ELSE 0 END AS is_locked FROM auth_login_attempts WHERE ' . implode(' OR ', $conditions), $params);
     }
 
     protected static function threshold($scopeType)
