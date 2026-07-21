@@ -61,7 +61,7 @@ $update = $open($updatePath);
 $safeNames($update, 'Update RC');
 $updateManifest = json_decode((string) $update->getFromName('proma-update.json'), true, 512, JSON_THROW_ON_ERROR);
 $assert(($updateManifest['version'] ?? '') === $version, 'Update RC version mismatch.');
-$assert(($updateManifest['minimum_version'] ?? '') === '1.4.1', 'Update minimum version is incorrect.');
+$assert(($updateManifest['minimum_version'] ?? '') === '1.4.2', 'Update minimum version is incorrect.');
 $assert(($updateManifest['channel'] ?? '') === 'rc' && ($updateManifest['stable_gate'] ?? '') === 'BLOCKED', 'Update archive does not identify the blocked RC channel.');
 foreach (['core/RequestTelemetry.php', 'core/CronLock.php', 'controllers/SystemHealthController.php', 'views/system-health/index.php', 'config/version.php'] as $required) {
     $assert($update->locateName($required) !== false, 'Required RC update file is missing: ' . $required);
