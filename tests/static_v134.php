@@ -35,8 +35,10 @@ if (strpos($pluginSettings, "'sandbox_financial_effects' => '0'") === false
     || strpos($pluginManifest, 'plugin/zarinpal/sandbox/create') === false) {
     throw new RuntimeException('Sandbox safety controls are incomplete.');
 }
-if (strpos($build, "'PromaZarinpal'") === false || strpos($build, "\$pluginDir = \$dist . '/plugins'") === false) {
-    throw new RuntimeException('PromaZarinpal release packaging is missing.');
+if (strpos($build, "'plugins/'") === false
+    || strpos($build, "'optional_plugins_included' => false") === false
+    || strpos($build, "\$pluginArchiveName = 'PromaAccounting'") === false) {
+    throw new RuntimeException('Optional plugin isolation in release packaging is missing.');
 }
 
 echo "STATIC_V134_OK\n";

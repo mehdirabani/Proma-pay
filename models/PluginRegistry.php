@@ -75,7 +75,7 @@ class PluginRegistry extends Model
         }
 
         $current = self::normalizeStatus($existing['status'] ?? 'discovered');
-        $protected = ['installed', 'active', 'inactive', 'update_available', 'installing', 'updating', 'installation_failed', 'update_failed', 'migration_failed', 'health_failed', 'repair_required'];
+        $protected = [PluginStatus::INSTALLED, PluginStatus::ACTIVE, PluginStatus::INACTIVE, PluginStatus::UPDATING, PluginStatus::VALIDATING, PluginStatus::ACTIVATING, PluginStatus::DEACTIVATING, PluginStatus::UNINSTALLING, PluginStatus::ERROR, PluginStatus::RECOVERY_REQUIRED];
         if ($current === PluginStatus::UPDATE_AVAILABLE) {
             self::execute(
                 'UPDATE system_plugins
@@ -130,7 +130,7 @@ class PluginRegistry extends Model
         try {
             $existing = self::findAny($pluginId);
             $current = self::normalizeStatus($existing['status'] ?? 'removed');
-            $status = in_array($current, ['installed', 'active', 'inactive', 'update_available', 'installing', 'updating', 'installation_failed', 'update_failed', 'migration_failed', 'health_failed', 'repair_required'], true) ? 'failed' : 'removed';
+            $status = in_array($current, [PluginStatus::INSTALLED, PluginStatus::ACTIVE, PluginStatus::INACTIVE, PluginStatus::UPDATING, PluginStatus::VALIDATING, PluginStatus::ACTIVATING, PluginStatus::DEACTIVATING, PluginStatus::UNINSTALLING, PluginStatus::ERROR, PluginStatus::RECOVERY_REQUIRED], true) ? PluginStatus::RECOVERY_REQUIRED : PluginStatus::REMOVED;
             self::execute(
                 'UPDATE system_plugins SET status = ?, last_error = ?, updated_at = NOW() WHERE plugin_id = ?',
                 [$status, 'فایل‌های افزونه در پوشه runtime پیدا نشد.', trim((string) $pluginId)]

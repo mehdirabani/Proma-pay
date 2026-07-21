@@ -7,10 +7,17 @@ foreach ($events as $event) {
         $eventsByDay[$ed][] = $event;
     }
 }
+$calendarView = $calendarView ?? 'auto';
+$monthQuery = sprintf('%04d/%02d', $jYear, $jMonth);
 ?>
-<div class="row">
-  <div class="col-xxl-8 col-xl-7">
-    <section class="card">
+<nav class="proma-calendar-view-tabs" aria-label="نوع نمایش تقویم">
+  <a class="<?= $calendarView === 'agenda' ? 'active' : '' ?>" href="<?= e(url('calendar', ['j_month' => $monthQuery, 'view' => 'agenda'])) ?>"><i data-feather="list"></i> برنامه روزها</a>
+  <a class="<?= $calendarView === 'month' ? 'active' : '' ?>" href="<?= e(url('calendar', ['j_month' => $monthQuery, 'view' => 'month'])) ?>"><i data-feather="calendar"></i> نمای ماه</a>
+  <?php if ($canManageCalendar ?? false): ?><button class="btn small" type="button" data-open-calendar-create><i data-feather="plus"></i> رویداد جدید</button><?php endif; ?>
+</nav>
+<div class="row proma-calendar-page" data-calendar-view="<?= e($calendarView) ?>">
+  <div class="col-xxl-8 col-xl-7 proma-calendar-month-column">
+    <section class="card proma-calendar-month-panel">
       <div class="card-header card-no-border">
         <div class="header-top">
           <h5>تقویم <?= e($monthTitle) ?></h5>
@@ -47,10 +54,10 @@ foreach ($events as $event) {
     </section>
   </div>
 
-  <div class="col-xxl-4 col-xl-5">
+  <div class="col-xxl-4 col-xl-5 proma-calendar-agenda-column">
     <?php if ($canManageCalendar ?? false): ?>
-    <section class="card">
-      <div class="card-header card-no-border"><h5>ثبت رویداد</h5></div>
+    <section class="card proma-calendar-create-panel" id="calendar-create-panel" aria-labelledby="calendar-create-title">
+      <div class="card-header card-no-border"><h5 id="calendar-create-title">ثبت رویداد</h5><button class="icon-btn proma-calendar-create-close" type="button" data-close-calendar-create aria-label="بستن"><i data-feather="x"></i></button></div>
       <div class="card-body">
         <form method="post" action="<?= e(url('calendar/store')) ?>" class="form-grid">
           <?= csrf_field() ?>
@@ -62,6 +69,9 @@ foreach ($events as $event) {
             <select name="event_type">
               <?php foreach ($eventTypeOptions as $value => $label): ?><option value="<?= e($value) ?>"><?= e($label) ?></option><?php endforeach; ?>
             </select>
+          </label>
+          <label>اولویت
+            <select name="priority"><option value="normal">عادی</option><option value="high">مهم</option><option value="urgent">فوری</option><option value="low">کم</option></select>
           </label>
           <label>رنگ
             <select name="color">
@@ -98,7 +108,7 @@ foreach ($events as $event) {
     </section>
     <?php endif; ?>
 
-    <section class="card" style="margin-top:16px">
+    <section class="card proma-calendar-agenda-panel" style="margin-top:16px">
       <div class="card-header card-no-border"><h5>رویدادهای <?= e($monthTitle) ?></h5></div>
       <div class="card-body pt-0">
         <div class="proma-event-list">
@@ -118,6 +128,9 @@ foreach ($events as $event) {
                 <small><?= e($event['user_name'] ?: 'بدون کاربر؛ ارسال به مدیران') ?> · <?= e(Event::eventTypeLabel($event['event_type'] ?? 'general')) ?></small>
                 <div class="proma-event-badges">
                   <span class="badge badge-light-<?= e($status['class']) ?>"><?= e($status['label']) ?></span>
+                  <span class="badge <?= ($event['priority'] ?? 'normal') === 'urgent' ? 'danger' : (($event['priority'] ?? 'normal') === 'high' ? 'warning' : 'muted') ?>">اولویت <?= e(Event::priorityLabel($event['priority'] ?? 'normal')) ?></span>
+                  <span class="badge muted"><?= e(Event::countdownLabel($event)) ?></span>
+                  <span class="badge info"><?= ($event['status'] ?? 'scheduled') === 'completed' ? 'انجام‌شده' : ((($event['status'] ?? 'scheduled') === 'cancelled') ? 'لغوشده' : 'برنامه‌ریزی‌شده') ?></span>
                   <?php if ($isSystem): ?>
                     <a class="badge badge-light-info" href="<?= e(url('contracts/show/' . $event['contract_id'])) ?>">مشاهده قرارداد</a>
                   <?php else: ?>

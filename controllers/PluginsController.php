@@ -41,6 +41,34 @@ class PluginsController extends Controller
         redirect('plugins');
     }
 
+    public function repair($pluginId)
+    {
+        $this->requireRole('admin');
+        PluginManager::requirePermission('manage_plugins');
+        $this->onlyPost();
+        try {
+            PluginReconciliationService::repair($pluginId, Auth::id());
+            set_flash('success', 'رجیستری و فایل‌های افزونه همگام شدند. اکنون نصب افزونه را اجرا کنید.');
+        } catch (Throwable $e) {
+            $this->flashPluginError('plugin_repair', $e, 'تعمیر وضعیت افزونه انجام نشد.');
+        }
+        redirect('plugins');
+    }
+
+    public function clearStale($pluginId)
+    {
+        $this->requireRole('admin');
+        PluginManager::requirePermission('manage_plugins');
+        $this->onlyPost();
+        try {
+            PluginReconciliationService::clearStale($pluginId, Auth::id());
+            set_flash('success', 'رکورد قدیمی افزونه از فهرست عملیاتی پاک شد.');
+        } catch (Throwable $e) {
+            $this->flashPluginError('plugin_clear_stale', $e, 'پاک‌سازی رکورد افزونه انجام نشد.');
+        }
+        redirect('plugins');
+    }
+
     public function install($pluginId)
     {
         $this->requireRole('admin');
@@ -90,7 +118,7 @@ class PluginsController extends Controller
         $this->onlyPost();
         try {
             PluginManager::instance()->uninstall($pluginId, Auth::id());
-            set_flash('success', 'پلاگین غیرفعال و ثبت آن حذف شد؛ داده‌های افزونه حفظ شده‌اند.');
+            set_flash('success', 'پلاگین غیرفعال و فایل‌های آن از هاست حذف شدند؛ داده‌های افزونه حفظ شده‌اند و نصب مجدد ممکن است.');
         } catch (Throwable $e) {
             $this->flashPluginError('plugin_uninstall', $e, 'حذف پلاگین انجام نشد.');
         }

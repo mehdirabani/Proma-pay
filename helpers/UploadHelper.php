@@ -8,10 +8,52 @@ class UploadHelper
     public const DOCUMENT_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
     public const MAX_IMAGE_SIZE = 10485760;
     public const MAX_DOCUMENT_SIZE = 10485760;
+    public const MAX_AVATAR_SIZE = 5242880;
 
     public static function storeImage(array $upload, $subdir, array $extensions = self::IMAGE_EXTENSIONS, array $context = [])
     {
         return self::storeSecureFile($upload, $subdir, $extensions, self::MAX_IMAGE_SIZE, $context);
+    }
+
+    public static function storeAvatar(array $upload, $userId)
+    {
+        if (empty($upload['tmp_name']) || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+        self::validateAvatarImage($upload['tmp_name'], (int) ($upload['size'] ?? 0));
+        return self::storeSecureFile($upload, 'avatars/' . (int) $userId, self::IMAGE_EXTENSIONS, self::MAX_AVATAR_SIZE, [
+            'category' => 'avatar',
+            'visibility' => 'private',
+            'related_entity_type' => 'user',
+            'related_entity_id' => (int) $userId,
+            'relation_type' => 'avatar',
+            'description' => 'تصویر آواتار حساب کاربری',
+        ]);
+    }
+
+    public static function validateAvatarImage($path, $size = null)
+    {
+        if (!is_file($path)) {
+            throw new InvalidArgumentException('فایل آواتار معتبر نیست.');
+        }
+        $size = $size === null ? filesize($path) : (int) $size;
+        if ($size <= 0 || $size > self::MAX_AVATAR_SIZE) {
+            throw new InvalidArgumentException('حجم آواتار باید حداکثر ۵ مگابایت باشد.');
+        }
+        $image = @getimagesize($path);
+        if (!$image || empty($image[0]) || empty($image[1])) {
+            throw new InvalidArgumentException('محتوای فایل آواتار یک تصویر معتبر نیست.');
+        }
+        $width = (int) $image[0];
+        $height = (int) $image[1];
+        $mime = (string) ($image['mime'] ?? '');
+        if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+            throw new InvalidArgumentException('آواتار فقط با فرمت JPEG، PNG یا WebP مجاز است.');
+        }
+        if ($width < 64 || $height < 64 || $width > 4096 || $height > 4096 || ($width * $height) > 16777216) {
+            throw new InvalidArgumentException('ابعاد آواتار باید بین ۶۴ تا ۴۰۹۶ پیکسل باشد.');
+        }
+        return ['width' => $width, 'height' => $height, 'mime' => $mime];
     }
 
     public static function storeSecureFile(array $upload, $subdir, array $extensions = self::DOCUMENT_EXTENSIONS, $maxSize = self::MAX_DOCUMENT_SIZE, array $context = [])

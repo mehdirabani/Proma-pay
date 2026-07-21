@@ -145,7 +145,7 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
   <div class="card-header card-no-border">
     <div class="header-top">
       <h2><?= $customerMode ? 'اقساط قابل پرداخت' : 'فهرست اقساط' ?></h2>
-      <?php if (!$customerMode): ?><button class="btn" type="button" data-open-modal="create-installment">افزودن قسط سفارشی</button><?php endif; ?>
+      <?php if (!$customerMode): ?><a class="btn" href="<?= e(url('contracts')) ?>"><i data-feather="file-text"></i><span>افزودن قسط از جزئیات قرارداد</span></a><?php endif; ?>
     </div>
   </div>
   <div class="table-wrap">
@@ -179,13 +179,13 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
           <td><span class="badge <?= e(badge_class($item['status'])) ?>"><?= e(status_label($item['status'])) ?></span></td>
           <td class="actions">
             <?php if ($customerMode): ?>
-              <?php if ((float) ($item['payable'] ?? 0) > 0): ?>
+              <?php if (!empty($item['payment_allowed'])): ?>
                 <button class="btn small success" type="button" data-open-modal="pay-<?= (int) $item['id'] ?>">پرداخت</button>
               <?php endif; ?>
             <?php else: ?>
-              <button class="btn small secondary" type="button" data-open-modal="manual-<?= (int) $item['id'] ?>">پرداخت دستی</button>
+              <?php if (!empty($item['payment_allowed'])): ?><button class="btn small secondary" type="button" data-open-modal="manual-<?= (int) $item['id'] ?>">پرداخت دستی</button><?php endif; ?>
               <button class="btn small warning" type="button" data-open-modal="adjust-<?= (int) $item['id'] ?>">تنظیم</button>
-              <form method="post" action="<?= e(url('installments/markPaid/' . $item['id'])) ?>"><?= csrf_field() ?><button class="btn small success" type="submit">تسویه</button></form>
+              <?php if (!empty($item['payment_allowed'])): ?><form method="post" action="<?= e(url('installments/markPaid/' . $item['id'])) ?>"><?= csrf_field() ?><button class="btn small success" type="submit">تسویه</button></form><?php endif; ?>
             <?php endif; ?>
           </td>
         </tr>
@@ -198,7 +198,7 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
 
 <?php if ($customerMode): ?>
   <?php foreach ($installments as $item): ?>
-    <?php if ((float) ($item['payable'] ?? 0) <= 0): continue; endif; ?>
+    <?php if (empty($item['payment_allowed'])): continue; endif; ?>
     <div class="modal" id="pay-<?= (int) $item['id'] ?>">
       <div class="modal-content proma-modal-lg">
         <div class="modal-header">
@@ -288,6 +288,7 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
   <?php endforeach; ?>
 <?php else: ?>
   <?php foreach ($installments as $item): ?>
+    <?php if (!empty($item['payment_allowed'])): ?>
     <div class="modal" id="manual-<?= (int) $item['id'] ?>">
       <div class="modal-content">
         <div class="modal-header"><h3>ثبت پرداخت دستی</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
@@ -313,6 +314,7 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
         </form>
       </div>
     </div>
+    <?php endif; ?>
     <div class="modal" id="adjust-<?= (int) $item['id'] ?>">
       <div class="modal-content">
         <div class="modal-header"><h3>تنظیم جریمه و پاداش</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
@@ -337,31 +339,4 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
 </nav>
 <?php endif; ?>
 
-<?php if (!$customerMode): ?>
-<div class="modal" id="create-installment">
-  <div class="modal-content proma-modal-lg">
-    <div class="modal-header"><h3>افزودن قسط سفارشی</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-    <form method="post" action="<?= e(url('installments/store')) ?>">
-      <div class="modal-body form-grid three">
-        <?= csrf_field() ?>
-        <label>قرارداد
-          <span class="proma-live-search" data-contract-picker data-search-url="<?= e(url('contracts/search')) ?>">
-            <input data-contract-picker-input autocomplete="off" required placeholder="شماره قرارداد، نام مشتری، موبایل یا کد ملی">
-            <input type="hidden" name="contract_id" data-contract-picker-id>
-            <span class="proma-live-results" data-contract-picker-results hidden></span>
-          </span>
-        </label>
-        <label>سررسید<input name="due_date" value="<?= e($defaultDueDate ?? '') ?>" required placeholder="۱۴۰۳/۰۱/۰۱"></label>
-        <label>مبلغ پایه<input name="base_amount" data-money required></label>
-        <label>عنوان قسط<input name="custom_title" maxlength="100" placeholder="مثلاً هزینه خدمات اضافه"></label>
-        <label>شناسه ضمانت<input name="guarantee_serial" dir="ltr" placeholder="شماره چک یا سفته"></label>
-        <label class="full">توضیح قسط برای مشتری<textarea name="customer_description" required rows="3" placeholder="علت ایجاد این قسط را به زبان قابل نمایش برای مشتری بنویسید."></textarea><small class="proma-form-help">این توضیح در پنل مدیریت و پنل مشتری نمایش داده می‌شود.</small></label>
-        <label class="full">یادداشت داخلی<textarea name="internal_note" rows="2" placeholder="نکته داخلی برای مدیریت؛ این متن به مشتری نمایش داده نمی‌شود."></textarea><small class="proma-form-help">این یادداشت فقط برای کاربران مجاز مدیریت قابل مشاهده است.</small></label>
-        <label class="proma-confirm-check full"><input type="checkbox" name="customer_visible" value="1" checked> توضیح قسط در پنل مشتری نمایش داده شود.</label>
-      </div>
-      <div class="modal-footer"><button class="btn" type="submit">ثبت قسط</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
-    </form>
-  </div>
-</div>
-<?php endif; ?>
 </div>

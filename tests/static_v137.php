@@ -12,7 +12,7 @@ $assert = static function ($condition, string $message): void {
 };
 
 $assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.3.7', '>='), 'Core version must retain V1.3.7 lifecycle fixes.');
-$assert(preg_match('/^V\d+\.\d+\.\d+$/', (string) ($version['display'] ?? '')) === 1, 'Display version must remain semantic.');
+$assert(preg_match('/^V\d+\.\d+\.\d+(?:-rc\.\d+)?$/', (string) ($version['display'] ?? '')) === 1, 'Display version must remain semantic.');
 
 $requiredFiles = [
     'controllers/HealthController.php',
@@ -108,7 +108,8 @@ $assert(strpos($appJs, 'clipboard.dangerouslyPasteHTML(initial)') === false && s
 $assert(version_compare((string) ($settings['asset_version'] ?? '0.0.0'), '1.3.7', '>='), 'Asset version must invalidate pre-V1.3.7 editor cache.');
 
 $builder = (string) file_get_contents($root . '/scripts/build_release.php');
-$assert(strpos($builder, 'V1.3.7 release candidate is present') !== false, 'Release builder can mislabel the V1.3.7 candidate as an older archive.');
+$assert(strpos($builder, 'Stable release packaging requires a stable semantic Core version') !== false, 'Release builder can label a prerelease as a stable archive.');
+$assert(strpos($builder, "'/tools/release-gate.php'") !== false, 'Release builder does not enforce the strict gate before packaging.');
 $assert(strpos($builder, "'install.php'") !== false, 'Update package must include install.php when installer schema changes.');
 
 $errorView = (string) file_get_contents($root . '/views/errors/system.php');

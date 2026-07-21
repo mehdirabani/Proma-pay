@@ -16,7 +16,7 @@ $deletionPreview = Contract::deletionPreview((int) $contract['id']);
 $canPermanentlyDelete = !empty($deletionPreview['eligible_for_permanent_delete']);
 $isInternalViewer = Auth::role() !== 'customer';
 $isCancelledContract = ($contract['status'] ?? '') === 'cancelled';
-$canManageActiveContract = $canManageDocument && !$isCancelledContract;
+$canManageActiveContract = $canManageDocument && !in_array(($contract['status'] ?? ''), ['cancelled', 'completed', 'closed'], true);
 $renderedDocumentTitle = trim((string) ($document['rendered_title'] ?? '')) ?: ($documentTitle ?? '');
 $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?: ($documentHeader ?? '');
 ?>
@@ -264,7 +264,7 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
             <td><span class="badge <?= e(badge_class($installment['status'])) ?>"><?= e(status_label($installment['status'])) ?></span></td>
             <?php if ($canManageActiveContract): ?>
               <td class="actions">
-                <button class="btn small success" type="button" data-open-modal="pay-installment-<?= (int) $installment['id'] ?>">پرداخت</button>
+                <?php if (!empty($installment['payment_allowed'])): ?><button class="btn small success" type="button" data-open-modal="pay-installment-<?= (int) $installment['id'] ?>">پرداخت</button><?php endif; ?>
               </td>
             <?php endif; ?>
           </tr>
@@ -470,6 +470,7 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
   </div>
 
   <?php foreach ($installments as $installment): ?>
+    <?php if (empty($installment['payment_allowed'])): continue; endif; ?>
     <div class="modal" id="pay-installment-<?= (int) $installment['id'] ?>">
       <div class="modal-content">
         <div class="modal-header"><h3>ثبت پرداخت قسط <?= to_persian_digits($installment['installment_number']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div>

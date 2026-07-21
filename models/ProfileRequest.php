@@ -2,6 +2,16 @@
 
 class ProfileRequest extends Model
 {
+    public static function statusLabel($status)
+    {
+        return [
+            'pending' => 'در انتظار بررسی',
+            'approved' => 'تأیید کامل',
+            'partial' => 'تأیید جزئی',
+            'rejected' => 'رد شده',
+        ][$status] ?? 'نامشخص';
+    }
+
     public static function fieldLabels()
     {
         return [
@@ -16,20 +26,7 @@ class ProfileRequest extends Model
     public static function ensureSchema()
     {
         User::ensureProfileColumns();
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS profile_update_requests (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                user_id BIGINT UNSIGNED NOT NULL,
-                payload_json LONGTEXT NOT NULL,
-                status VARCHAR(30) NOT NULL DEFAULT 'pending',
-                reviewed_by BIGINT UNSIGNED NULL,
-                review_notes TEXT NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
-                KEY idx_profile_request_status (status),
-                KEY idx_profile_request_user (user_id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
+        self::fetch('SELECT id FROM profile_update_requests LIMIT 1');
     }
 
     public static function createRequest($userId, array $payload)
@@ -56,34 +53,82 @@ class ProfileRequest extends Model
             return false;
         }
         $encoded = json_encode($changes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $snapshot = [];
+        foreach (array_keys($changes) as $field) {
+            $snapshot[$field] = trim((string) ($user[$field] ?? ''));
+        }
+        $snapshotJson = json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $pending = self::fetch("SELECT id FROM profile_update_requests WHERE user_id = ? AND status = 'pending' ORDER BY id DESC LIMIT 1", [(int) $userId]);
         if ($pending) {
             self::execute(
-                'UPDATE profile_update_requests SET payload_json = ?, reviewed_by = NULL, review_notes = NULL, created_at = NOW(), updated_at = NOW() WHERE id = ?',
-                [$encoded, (int) $pending['id']]
+                'UPDATE profile_update_requests SET payload_json = ?, current_snapshot_json = ?, reviewed_by = NULL, review_notes = NULL, reviewed_fields_json = NULL, rejected_fields_json = NULL, customer_response = NULL, created_at = NOW(), updated_at = NOW() WHERE id = ?',
+                [$encoded, $snapshotJson, (int) $pending['id']]
             );
             return (int) $pending['id'];
         }
         self::execute(
-            'INSERT INTO profile_update_requests (user_id, payload_json, status, created_at) VALUES (?, ?, ?, NOW())',
-            [(int) $userId, $encoded, 'pending']
+            'INSERT INTO profile_update_requests (user_id, payload_json, current_snapshot_json, status, created_at) VALUES (?, ?, ?, ?, NOW())',
+            [(int) $userId, $encoded, $snapshotJson, 'pending']
         );
         return (int) self::lastInsertId();
     }
 
     public static function pending()
     {
+        return self::all(['status' => 'pending']);
+    }
+
+    public static function all(array $filters = [])
+    {
         self::ensureSchema();
-        return self::fetchAll(
-            "SELECT pr.*, u.full_name, u.role, u.mobile,
+        $status = trim((string) ($filters['status'] ?? 'pending'));
+        $params = [];
+        $where = [];
+        if (in_array($status, ['pending', 'approved', 'rejected', 'partial'], true)) {
+            $where[] = 'pr.status = ?';
+            $params[] = $status;
+        }
+        if (!empty($filters['role'])) {
+            $where[] = 'u.role = ?';
+            $params[] = trim((string) $filters['role']);
+        }
+        if (!empty($filters['q'])) {
+            $needle = '%' . trim((string) $filters['q']) . '%';
+            $where[] = '(u.full_name LIKE ? OR u.mobile LIKE ? OR u.national_id LIKE ?)';
+            array_push($params, $needle, $needle, $needle);
+        }
+        $rows = self::fetchAll(
+            "SELECT pr.*, u.full_name, u.role, u.mobile, u.national_id,
                     u.full_name AS current_full_name, u.mobile AS current_mobile,
                     u.secondary_phone AS current_secondary_phone, u.email AS current_email,
                     u.address AS current_address
              FROM profile_update_requests pr
-             JOIN users u ON u.id = pr.user_id
-             WHERE pr.status = 'pending'
-             ORDER BY pr.id DESC"
+             JOIN users u ON u.id = pr.user_id"
+            . ($where ? ' WHERE ' . implode(' AND ', $where) : '')
+            . ' ORDER BY pr.id DESC LIMIT 200',
+            $params
         );
+        foreach ($rows as &$row) {
+            $row['requested_fields'] = json_decode((string) ($row['payload_json'] ?? ''), true) ?: [];
+            $row['reviewed_fields'] = json_decode((string) ($row['reviewed_fields_json'] ?? ''), true) ?: [];
+            $row['rejected_fields'] = json_decode((string) ($row['rejected_fields_json'] ?? ''), true) ?: [];
+            $snapshot = json_decode((string) ($row['current_snapshot_json'] ?? ''), true) ?: [];
+            $row['conflict_fields'] = [];
+            foreach ($row['requested_fields'] as $field => $value) {
+                if (array_key_exists($field, $snapshot) && trim((string) ($row['current_' . $field] ?? '')) !== trim((string) $snapshot[$field])) {
+                    $row['conflict_fields'][] = $field;
+                }
+            }
+        }
+        unset($row);
+        return $rows;
+    }
+
+    public static function countByStatus($status = 'pending')
+    {
+        self::ensureSchema();
+        $row = self::fetch('SELECT COUNT(*) AS total FROM profile_update_requests WHERE status = ?', [(string) $status]);
+        return (int) ($row['total'] ?? 0);
     }
 
     public static function latestForUser($userId)
@@ -94,6 +139,11 @@ class ProfileRequest extends Model
 
     public static function approve($id, $reviewerId)
     {
+        return self::approveFields($id, $reviewerId, [], '');
+    }
+
+    public static function approveFields($id, $reviewerId, array $approvedFields = [], $notes = '')
+    {
         self::ensureSchema();
         $request = self::fetch("SELECT * FROM profile_update_requests WHERE id = ? AND status = 'pending'", [(int) $id]);
         if (!$request) {
@@ -101,34 +151,59 @@ class ProfileRequest extends Model
         }
         $payload = json_decode($request['payload_json'], true) ?: [];
         $payload = array_intersect_key($payload, self::fieldLabels());
+        if (!$approvedFields) {
+            $approvedFields = array_keys($payload);
+        }
+        $approvedFields = array_values(array_intersect(array_keys($payload), array_map('strval', $approvedFields)));
+        $user = User::find((int) $request['user_id']);
+        $snapshot = json_decode((string) ($request['current_snapshot_json'] ?? ''), true) ?: [];
+        $conflicts = [];
+        foreach ($approvedFields as $field) {
+            if (array_key_exists($field, $snapshot) && trim((string) ($user[$field] ?? '')) !== trim((string) $snapshot[$field])) {
+                $conflicts[] = $field;
+            }
+        }
+        $approvedFields = array_values(array_diff($approvedFields, $conflicts));
+        $approvedPayload = array_intersect_key($payload, array_flip($approvedFields));
+        $rejectedFields = array_values(array_diff(array_keys($payload), $approvedFields));
+        $status = !$approvedFields ? 'rejected' : ($rejectedFields ? 'partial' : 'approved');
         self::begin();
         try {
-            User::applyProfileData((int) $request['user_id'], $payload);
-            self::execute('UPDATE profile_update_requests SET status = ?, reviewed_by = ?, updated_at = NOW() WHERE id = ?', ['approved', (int) $reviewerId, (int) $id]);
+            if ($approvedPayload) {
+                User::applyProfileData((int) $request['user_id'], $approvedPayload);
+            }
+            self::execute(
+                'UPDATE profile_update_requests SET status = ?, reviewed_by = ?, review_notes = ?, reviewed_fields_json = ?, rejected_fields_json = ?, updated_at = NOW() WHERE id = ?',
+                [$status, (int) $reviewerId, trim((string) $notes) ?: null, json_encode($approvedFields, JSON_UNESCAPED_UNICODE), json_encode($rejectedFields, JSON_UNESCAPED_UNICODE), (int) $id]
+            );
             self::commit();
         } catch (Throwable $e) {
             self::rollBack();
             throw $e;
         }
         try {
-            Notification::create((int) $request['user_id'], 'اصلاح مشخصات تایید شد', 'درخواست اصلاح مشخصات شما تایید و روی حساب اعمال شد.', 'profile', url('profile'));
+            $message = $status === 'approved' ? 'درخواست اصلاح مشخصات شما تایید و روی حساب اعمال شد.' : ($status === 'partial' ? 'بخشی از اصلاحات مشخصات شما تایید و اعمال شد.' : 'به دلیل تعارض یا رد فیلدها، اصلاحی روی حساب اعمال نشد.');
+            Notification::create((int) $request['user_id'], 'نتیجه بررسی مشخصات', $message, 'profile', url('profile'), 'profile-review:' . (int) $id);
         } catch (Throwable $ignored) {
         }
-        return true;
+        return ['ok' => true, 'status' => $status, 'approved_fields' => $approvedFields, 'rejected_fields' => $rejectedFields, 'conflict_fields' => $conflicts];
     }
 
     public static function reject($id, $reviewerId, $notes = '')
     {
-        self::ensureSchema();
-        $request = self::fetch("SELECT * FROM profile_update_requests WHERE id = ? AND status = 'pending'", [(int) $id]);
-        if (!$request) {
-            return false;
+        $result = self::approveFields((int) $id, (int) $reviewerId, ['__none__'], $notes);
+        return !empty($result['ok']);
+    }
+
+    public static function respond($id, $userId, $response)
+    {
+        $response = trim((string) $response);
+        if ($response === '') {
+            throw new InvalidArgumentException('متن پاسخ را وارد کنید.');
         }
-        self::execute('UPDATE profile_update_requests SET status = ?, reviewed_by = ?, review_notes = ?, updated_at = NOW() WHERE id = ?', ['rejected', (int) $reviewerId, $notes, (int) $id]);
-        try {
-            Notification::create((int) $request['user_id'], 'اصلاح مشخصات رد شد', 'درخواست اصلاح مشخصات شما تایید نشد.', 'profile', url('profile'));
-        } catch (Throwable $ignored) {
-        }
-        return true;
+        return self::execute(
+            'UPDATE profile_update_requests SET customer_response = ?, updated_at = NOW() WHERE id = ? AND user_id = ? AND status IN (?, ?)',
+            [$response, (int) $id, (int) $userId, 'partial', 'rejected']
+        );
     }
 }

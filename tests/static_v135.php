@@ -5,7 +5,7 @@ $version = require $root . '/config/version.php';
 if (version_compare((string) ($version['application'] ?? '0.0.0'), '1.3.5', '<')) {
     throw new RuntimeException('Core version must be 1.3.5 or newer.');
 }
-if (!preg_match('/^V\d+\.\d+\.\d+$/', (string) ($version['display'] ?? ''))) {
+if (!preg_match('/^V\d+\.\d+\.\d+(?:-rc\.\d+)?$/', (string) ($version['display'] ?? ''))) {
     throw new RuntimeException('Display version must use semantic Vx.y.z format.');
 }
 
@@ -40,7 +40,7 @@ $checks = [
     ['Gateway path uses outbox', strpos($paymentsController, 'safeEnqueueNotification') !== false && strpos($paymentsController, 'SystemOutbox::processPending') !== false],
     ['Group payments use outbox', strpos($paymentGroup, 'safeEnqueuePluginHook') !== false && strpos($paymentGroup, 'SystemOutbox::processPending') !== false],
     ['Receipts use outbox', strpos($paymentReceipt, 'safeEnqueueNotification') !== false && strpos($paymentReceipt, 'SystemOutbox::processPending') !== false],
-    ['Build script includes v135 files', strpos($build, '2026_07_13_payment_reliability_v135.sql') !== false && strpos($build, 'PROMA_PAY_V1_3_5_PAYMENT_RELIABILITY_REPORT.md') !== false],
+    ['Build script inventories changed migrations', strpos($build, "diff --name-only --diff-filter=ACMRT") !== false && strpos($build, "database/migrations/") !== false],
     ['Forms include request UUID', strpos($installmentsView, 'payment_request_uuid') !== false && strpos($overdueView, 'payment_request_uuid') !== false && strpos($contractView, 'payment_request_uuid') !== false],
     ['Install SQL includes new tables', strpos($installSql, 'CREATE TABLE `payment_requests`') !== false && strpos($installSql, 'CREATE TABLE `system_outbox`') !== false],
 ];

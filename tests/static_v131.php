@@ -39,15 +39,15 @@ $blocked = ContractTemplateService::validateTemplate('<p style="line-height:9">Ù
 $assert($blocked['valid'] === false, 'Unsupported inline typography must block publishing.');
 
 $compact = ContractPrintProfile::fromPreset('official_compact');
-$assert((float) $compact['body_font_size'] === 7.0, 'Official body font must be 7px.');
-$assert((float) $compact['heading_font_size'] === 8.0, 'Official heading font must be 8px.');
-$assert((float) $compact['important_font_size'] === 8.0, 'Official important font must be 8px.');
+$assert((float) $compact['body_font_size'] === 8.0, 'Official body font must be 8px.');
+$assert((float) $compact['heading_font_size'] === 9.0, 'Official heading font must be 9px.');
+$assert((float) $compact['important_font_size'] === 9.0, 'Official important font must be 9px.');
 $assert((float) $compact['body_line_height'] === 1.18, 'Official body line-height must be 1.18.');
 $assert((float) $compact['margin_top'] === 4.0 && (float) $compact['margin_right'] === 7.0 && (float) $compact['margin_bottom'] === 7.0, 'Official A4 margins are wrong.');
 $locked = ContractPrintProfile::validate(['preset' => 'official_compact', 'body_font_size' => 12, 'heading_font_size' => 14, 'important_font_size' => 15]);
-$assert((float) $locked['body_font_size'] === 7.0 && (float) $locked['heading_font_size'] === 8.0 && (float) $locked['important_font_size'] === 8.0, 'Official maximum font lock failed.');
+$assert((float) $locked['body_font_size'] === 8.0 && (float) $locked['heading_font_size'] === 9.0 && (float) $locked['important_font_size'] === 9.0, 'Official maximum font lock failed.');
 $variables = ContractPrintProfile::styleVariables($compact);
-foreach (['--contract-body-font-size:7px', '--contract-heading-font-size:8px', '--contract-table-font-size:6.2px', '--contract-signature-box-height:15mm'] as $rule) {
+foreach (['--contract-body-font-size:8px', '--contract-heading-font-size:9px', '--contract-table-font-size:7.2px', '--contract-signature-box-height:15mm'] as $rule) {
     $assert(strpos($variables, $rule) !== false, 'Missing print profile variable: ' . $rule);
 }
 

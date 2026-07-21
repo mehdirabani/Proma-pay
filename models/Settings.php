@@ -9,10 +9,7 @@ class Settings extends Model
         if (self::$schemaReady) {
             return;
         }
-        try {
-            self::execute('ALTER TABLE settings MODIFY setting_value LONGTEXT NULL');
-        } catch (Throwable $e) {
-        }
+        SchemaGuard::requireColumns('settings', ['setting_key', 'setting_value', 'is_secret']);
         try {
             self::execute(
                 "UPDATE settings
@@ -56,9 +53,9 @@ class Settings extends Model
             'contract_print_margin_right' => '7',
             'contract_print_margin_bottom' => '7',
             'contract_print_margin_left' => '7',
-            'contract_print_body_font_size' => '7',
-            'contract_print_important_font_size' => '8',
-            'contract_print_heading_font_size' => '8',
+            'contract_print_body_font_size' => '8',
+            'contract_print_important_font_size' => '9',
+            'contract_print_heading_font_size' => '9',
             'contract_print_body_line_height' => '1.18',
             'contract_print_important_line_height' => '1.18',
             'contract_print_heading_line_height' => '1.16',
@@ -72,8 +69,8 @@ class Settings extends Model
             'contract_print_header_divider_spacing' => '1',
             'contract_print_logo_width' => '32',
             'contract_print_logo_height' => '12',
-            'contract_print_table_font_size' => '6.2',
-            'contract_print_table_heading_font_size' => '6.7',
+            'contract_print_table_font_size' => '7.2',
+            'contract_print_table_heading_font_size' => '7.7',
             'contract_print_table_line_height' => '1.12',
             'contract_print_table_cell_vertical_padding' => '.5',
             'contract_print_table_cell_horizontal_padding' => '2',

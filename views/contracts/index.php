@@ -24,6 +24,7 @@ for ($i = 0; $i < 6; $i++) {
     <div class="header-top">
       <h2><?= e($pageTitle) ?></h2>
       <div class="actions">
+        <?php if (!$readOnly): ?><a class="btn small secondary" href="<?= e(url('contracts/duplicates')) ?>"><?= proma_icon('copy') ?> بررسی تکراری‌ها</a><?php endif; ?>
         <a class="btn small <?= $viewMode === 'cards' ? '' : 'secondary' ?>" href="<?= e(url($contractsRoute, array_filter(['q' => $_GET['q'] ?? null, 'view' => 'cards', 'page' => $_GET['page'] ?? null]))) ?>">کارت‌ها</a>
         <a class="btn small <?= $viewMode === 'list' ? '' : 'secondary' ?>" href="<?= e(url($contractsRoute, array_filter(['q' => $_GET['q'] ?? null, 'view' => 'list', 'page' => $_GET['page'] ?? null]))) ?>">لیست</a>
         <?php if (!$readOnly): ?><button class="btn" type="button" data-open-modal="create-contract">افزودن قرارداد</button><?php endif; ?>
@@ -63,7 +64,7 @@ for ($i = 0; $i < 6; $i++) {
                 <div class="proma-contract-card-main proma-contract-card__identity">
                   <span class="proma-progress-avatar" style="--progress: <?= $progress ?>">
                     <?php $cardAvatar = avatar_key_for($cardContract['avatar_key'] ?? null, $cardContract['customer_id'] ?? $cardContract['id']); ?>
-                    <span class="proma-avatar-choice <?= e($cardAvatar) ?>" aria-label="<?= e($cardContract['customer_name']) ?>"><img data-avatar-image src="<?= e(avatar_asset_url($cardAvatar)) ?>" alt="آواتار <?= e($cardContract['customer_name']) ?>" loading="lazy"></span>
+                    <span class="proma-avatar-choice <?= e($cardAvatar) ?>" aria-label="<?= e($cardContract['customer_name']) ?>"><img data-avatar-image src="<?= e(user_avatar_asset_url(['id' => $cardContract['customer_id'], 'full_name' => $cardContract['customer_name'], 'avatar_key' => $cardContract['avatar_key'] ?? null, 'avatar_path' => $cardContract['avatar_path'] ?? null, 'avatar_version' => $cardContract['avatar_version'] ?? 0])) ?>" alt="آواتار <?= e($cardContract['customer_name']) ?>" loading="lazy"></span>
                   </span>
                   <div>
                     <h6><?= e($cardContract['customer_name']) ?></h6>

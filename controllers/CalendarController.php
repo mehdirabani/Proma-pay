@@ -38,6 +38,7 @@ class CalendarController extends Controller
             'eventTypeOptions' => Event::eventTypeOptions(),
             'settings' => Settings::allKeyed(),
             'canManageCalendar' => in_array(Auth::role(), ['admin', 'operator', 'lawyer'], true),
+            'calendarView' => in_array($_GET['view'] ?? '', ['month', 'agenda'], true) ? $_GET['view'] : 'auto',
         ]);
     }
 
@@ -53,10 +54,12 @@ class CalendarController extends Controller
         try {
             Event::createEvent([
                 'assigned_user_id' => $_POST['assigned_user_id'] ?? ($_POST['user_id'] ?? null),
+                'created_by' => Auth::id(),
                 'title' => $_POST['title'],
                 'event_date' => $date,
                 'event_time' => $_POST['event_time'] ?? null,
                 'event_type' => $_POST['event_type'] ?? 'general',
+                'priority' => $_POST['priority'] ?? 'normal',
                 'description' => $_POST['description'] ?? '',
                 'color' => $_POST['color'] ?? 'primary',
                 'reminder_type' => $_POST['reminder_type'] ?? '',

@@ -12,7 +12,7 @@ $assert = static function ($condition, string $message): void {
 };
 
 $assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.3.8', '>='), 'Core version must be at least 1.3.8.');
-$assert((bool) preg_match('/^V\d+\.\d+\.\d+$/', (string) ($version['display'] ?? '')), 'Display version must use semantic Vx.y.z format.');
+$assert((bool) preg_match('/^V\d+\.\d+\.\d+(?:-rc\.\d+)?$/', (string) ($version['display'] ?? '')), 'Display version must use semantic Vx.y.z format.');
 
 foreach ([
     'models/FileRecord.php',

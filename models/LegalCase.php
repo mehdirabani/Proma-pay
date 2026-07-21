@@ -9,20 +9,7 @@ class LegalCase extends Model
         if (self::$schemaReady) {
             return;
         }
-        try {
-            self::execute('ALTER TABLE legal_cases ADD COLUMN expense_reason TEXT NULL AFTER expense_amount');
-        } catch (Throwable $e) {
-        }
-        foreach ([
-            'notice_date' => 'DATE NULL AFTER complaint_number',
-            'court_date' => 'DATE NULL AFTER notice_date',
-            'hearing_date' => 'DATE NULL AFTER court_date',
-        ] as $column => $definition) {
-            try {
-                self::execute("ALTER TABLE legal_cases ADD COLUMN {$column} {$definition}");
-            } catch (Throwable $e) {
-            }
-        }
+        SchemaGuard::requireColumns('legal_cases', ['lawyer_id', 'customer_id', 'contract_id', 'status', 'stage', 'complaint_number', 'notice_date', 'court_date', 'hearing_date', 'expense_amount', 'expense_reason', 'notes', 'created_at', 'updated_at']);
         self::$schemaReady = true;
     }
 

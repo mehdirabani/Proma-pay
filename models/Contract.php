@@ -19,7 +19,7 @@ class Contract extends Model
         self::syncCompletionStatuses();
         $params = [];
         $where = self::listWhere($filters, $params);
-        $sql = "SELECT c.*, u.full_name AS customer_name, u.mobile, u.national_id, u.secondary_phone, u.avatar_key,
+        $sql = "SELECT c.*, u.full_name AS customer_name, u.mobile, u.national_id, u.secondary_phone, u.avatar_key, u.avatar_path, u.avatar_version,
                 op.full_name AS operator_name,
                 (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id AND lc.status != 'closed') AS legal_case_count
                 FROM contracts c
@@ -54,7 +54,7 @@ class Contract extends Model
         $page = min($page, $pages);
         $offset = ($page - 1) * $perPage;
         $rows = self::fetchAll(
-            "SELECT c.*, u.full_name AS customer_name, u.mobile, u.national_id, u.secondary_phone, u.avatar_key,
+            "SELECT c.*, u.full_name AS customer_name, u.mobile, u.national_id, u.secondary_phone, u.avatar_key, u.avatar_path, u.avatar_version,
              op.full_name AS operator_name,
              (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id AND lc.status != 'closed') AS legal_case_count
              FROM contracts c
@@ -649,14 +649,19 @@ class Contract extends Model
             throw new InvalidArgumentException('علت لغو قرارداد الزامی است.');
         }
 
-        self::begin();
+        $ownsTransaction = !self::db()->inTransaction();
+        if ($ownsTransaction) {
+            self::begin();
+        }
         try {
             $contract = self::fetch('SELECT * FROM contracts WHERE id = ? FOR UPDATE', [$contractId]);
             if (!$contract) {
                 throw new InvalidArgumentException('قرارداد پیدا نشد.');
             }
             if (($contract['status'] ?? '') === 'cancelled') {
-                self::commit();
+                if ($ownsTransaction) {
+                    self::commit();
+                }
                 return ['corrected_payments' => 0, 'already_cancelled' => true];
             }
             if (in_array(($contract['status'] ?? ''), ['completed', 'closed'], true)) {
@@ -747,13 +752,17 @@ class Contract extends Model
                     $contractId
                 );
             }
-            self::commit();
+            if ($ownsTransaction) {
+                self::commit();
+            }
         } catch (Throwable $e) {
-            self::rollBack();
+            if ($ownsTransaction) {
+                self::rollBack();
+            }
             throw $e;
         }
 
-        if (class_exists('SystemOutbox')) {
+        if ($ownsTransaction && class_exists('SystemOutbox')) {
             try {
                 SystemOutbox::processPending(20);
             } catch (Throwable $outboxError) {

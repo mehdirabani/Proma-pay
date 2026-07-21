@@ -10,69 +10,11 @@ class LegalCaseLog extends Model
             return;
         }
 
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS legal_case_logs (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                contract_id BIGINT UNSIGNED NOT NULL,
-                legal_case_id BIGINT UNSIGNED NULL,
-                action_stage VARCHAR(80) NOT NULL,
-                action_title VARCHAR(190) NOT NULL,
-                description TEXT NULL,
-                action_date DATE NOT NULL,
-                action_time TIME NULL,
-                registered_by BIGINT UNSIGNED NULL,
-                assigned_lawyer_id BIGINT UNSIGNED NULL,
-                next_status VARCHAR(80) NULL,
-                attachment_path VARCHAR(255) NULL,
-                cost_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
-                cost_type VARCHAR(80) NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
-                INDEX idx_legal_case_logs_contract (contract_id),
-                INDEX idx_legal_case_logs_case (legal_case_id),
-                INDEX idx_legal_case_logs_stage (action_stage),
-                INDEX idx_legal_case_logs_date (action_date),
-                CONSTRAINT fk_legal_case_logs_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
-                CONSTRAINT fk_legal_case_logs_case FOREIGN KEY (legal_case_id) REFERENCES legal_cases(id) ON DELETE SET NULL,
-                CONSTRAINT fk_legal_case_logs_registered_by FOREIGN KEY (registered_by) REFERENCES users(id) ON DELETE SET NULL,
-                CONSTRAINT fk_legal_case_logs_lawyer FOREIGN KEY (assigned_lawyer_id) REFERENCES users(id) ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-
-        foreach ([
-            'contract_id' => 'BIGINT UNSIGNED NOT NULL',
-            'legal_case_id' => 'BIGINT UNSIGNED NULL',
-            'action_stage' => 'VARCHAR(80) NOT NULL',
-            'action_title' => 'VARCHAR(190) NOT NULL',
-            'description' => 'TEXT NULL',
-            'action_date' => 'DATE NOT NULL',
-            'action_time' => 'TIME NULL',
-            'registered_by' => 'BIGINT UNSIGNED NULL',
-            'assigned_lawyer_id' => 'BIGINT UNSIGNED NULL',
-            'next_status' => 'VARCHAR(80) NULL',
-            'attachment_path' => 'VARCHAR(255) NULL',
-            'cost_amount' => 'DECIMAL(15,2) NOT NULL DEFAULT 0',
-            'cost_type' => 'VARCHAR(80) NULL',
-            'created_at' => 'DATETIME NOT NULL',
-            'updated_at' => 'DATETIME NULL',
-        ] as $column => $definition) {
-            try {
-                self::execute("ALTER TABLE legal_case_logs ADD COLUMN {$column} {$definition}");
-            } catch (Throwable $e) {
-            }
-        }
-
-        foreach ([
-            'idx_legal_case_logs_contract' => '(contract_id)',
-            'idx_legal_case_logs_case' => '(legal_case_id)',
-            'idx_legal_case_logs_stage' => '(action_stage)',
-            'idx_legal_case_logs_date' => '(action_date)',
-        ] as $index => $columns) {
-            try {
-                self::execute("ALTER TABLE legal_case_logs ADD INDEX {$index} {$columns}");
-            } catch (Throwable $e) {
-            }
-        }
+        SchemaGuard::requireColumns('legal_case_logs', [
+            'contract_id', 'legal_case_id', 'action_stage', 'action_title', 'description',
+            'action_date', 'action_time', 'registered_by', 'assigned_lawyer_id', 'next_status',
+            'attachment_path', 'cost_amount', 'cost_type', 'created_at', 'updated_at',
+        ]);
 
         self::$schemaReady = true;
     }

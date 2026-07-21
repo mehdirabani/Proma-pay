@@ -544,6 +544,73 @@ table td {
   vertical-align: middle;
 }
 
+.proma-profile-review-list,
+.proma-review-request,
+.proma-review-fields,
+.proma-profile-response {
+  display: grid;
+  gap: 14px;
+}
+
+.proma-review-request {
+  padding-block: 16px;
+  border-block-end: 1px solid #edf0f5;
+}
+
+.proma-review-request:last-child {
+  border-block-end: 0;
+}
+
+.proma-review-request > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.proma-review-request > header small {
+  display: block;
+  margin-block-start: 4px;
+  color: var(--proma-control-muted);
+}
+
+.proma-review-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.proma-review-field {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f7f8fb;
+}
+
+.proma-review-field > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.proma-review-field del,
+.proma-review-field strong,
+.proma-review-field em {
+  overflow-wrap: anywhere;
+}
+
+.proma-review-field del { color: #8b93a3; }
+.proma-review-field.has-conflict { border-inline-start: 3px solid #e5484d; }
+.proma-review-field em { color: #b42318; font-size: 11px; font-style: normal; }
+.proma-review-actions { display: flex; justify-content: flex-end; grid-column: 1 / -1; }
+.proma-profile-response { margin-block-start: 14px; text-align: start; }
+
+@media (max-width: 767.98px) {
+  .proma-review-fields { grid-template-columns: minmax(0, 1fr); }
+  .proma-review-actions { grid-column: auto; }
+}
+
 .proma-accounting-plugin :is(input, select):not([type="checkbox"]):not([type="radio"]),
 .proma-accounting-plugin .btn {
   min-height: var(--proma-control-height);
@@ -633,4 +700,130 @@ body.dark-only .form-grid :is(input, textarea)[readonly],
   color: #98a2b3;
   border-color: transparent;
   background: var(--proma-field-bg-disabled);
+}
+
+.proma-page-intro {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+  margin-block-end: 20px;
+}
+
+.proma-page-intro h2,
+.proma-operator-contract h3 {
+  margin: 0;
+}
+
+.proma-page-intro p,
+.proma-operator-contract p {
+  color: var(--proma-text-muted, #667085);
+  margin: 6px 0 0;
+}
+
+.proma-eyebrow {
+  color: var(--theme-default, #7366ff);
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-block-end: 5px;
+}
+
+.proma-operator-contracts {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+
+.proma-operator-contract {
+  background: #fff;
+  border: 1px solid #e7eaf1;
+  border-radius: 8px;
+  box-shadow: 0 5px 18px rgba(31, 37, 51, .05);
+  padding: 16px;
+}
+
+.proma-operator-contract__main,
+.proma-operator-contract__actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.proma-operator-contract__amount {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.proma-operator-contract__actions {
+  border-top: 1px solid #eef0f5;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  margin-block-start: 14px;
+  padding-block-start: 14px;
+}
+
+.proma-section-gap {
+  margin-block-start: 20px;
+}
+
+.required-mark {
+  color: #dc3545;
+  margin-inline-start: 3px;
+}
+
+@media (max-width: 575px) {
+  .proma-operator-contract__main {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .proma-operator-contract__amount {
+    align-items: flex-start;
+  }
+
+  .proma-operator-contract__actions .btn {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+  }
+}
+.proma-duplicate-group + .proma-duplicate-group { margin-top: 20px; }
+.proma-duplicate-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+.proma-duplicate-summary > span { display: grid; gap: 5px; padding: 12px; border: 1px solid var(--border, #e5e7eb); border-radius: 8px; background: #fafafa; }
+.proma-duplicate-summary small { color: var(--muted, #6b7280); }
+.proma-repair-confirm { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
+@media (max-width: 760px) {
+  .proma-duplicate-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .proma-repair-confirm { align-items: stretch; flex-direction: column; }
+}
+@media (max-width: 420px) { .proma-duplicate-summary { grid-template-columns: 1fr; } }
+.proma-profile-avatar-upload { display: grid; gap: 10px; width: 100%; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border, #e5e7eb); }
+.proma-calendar-view-tabs { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; overflow-x: auto; }
+.proma-calendar-view-tabs a { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 13px; border: 1px solid var(--border, #e5e7eb); border-radius: 8px; color: var(--proma-field-label); background: #fff; white-space: nowrap; }
+.proma-calendar-view-tabs a.active { border-color: var(--proma-field-focus); color: #fff; background: var(--proma-field-focus); }
+.proma-calendar-view-tabs .btn { margin-inline-start: auto; flex: 0 0 auto; }
+.proma-calendar-create-close { display: none; }
+.proma-calendar-page[data-calendar-view="agenda"] .proma-calendar-month-column { display: none; }
+.proma-calendar-page[data-calendar-view="agenda"] .proma-calendar-agenda-column { width: 100%; }
+@media (max-width: 991px) {
+  .proma-calendar-page[data-calendar-view="auto"] .proma-calendar-month-column,
+  .proma-calendar-page[data-calendar-view="agenda"] .proma-calendar-month-column { display: none; }
+  .proma-calendar-page[data-calendar-view="month"] .proma-calendar-agenda-panel { display: none; }
+  .proma-calendar-page[data-calendar-view="month"] .proma-calendar-month-column,
+  .proma-calendar-agenda-column { width: 100%; }
+  .proma-calendar-create-panel { position: fixed; z-index: 100010; inset: 0; display: none; width: 100%; height: 100dvh; margin: 0; border: 0; border-radius: 0; overflow-y: auto; padding-bottom: env(safe-area-inset-bottom); }
+  .proma-calendar-create-panel.open { display: block; }
+  .proma-calendar-create-close { display: inline-grid; }
+  .proma-calendar-view-tabs { position: sticky; z-index: 20; top: 0; padding: 8px 0; background: var(--proma-page-bg, #f5f6f8); }
+  .proma-event-item { grid-template-columns: 104px minmax(0, 1fr) auto; padding: 12px; border: 1px solid var(--border, #e5e7eb); border-radius: 8px; background: #fff; }
+}
+@media (max-width: 560px) {
+  .proma-calendar-view-tabs .btn { width: 44px; min-width: 44px; padding: 0; font-size: 0; }
+  .proma-calendar-grid { min-width: 700px; }
+  .proma-calendar-month-panel .card-body { overflow-x: auto; }
+  .proma-event-item { grid-template-columns: 1fr auto; }
+  .proma-event-item > .calendar-event { grid-column: 1 / -1; }
 }

@@ -9,14 +9,8 @@ class ImportBatch extends Model
         if (self::$schemaReady) {
             return;
         }
-        try {
-            self::execute('ALTER TABLE import_batches ADD COLUMN error_summary TEXT NULL');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::ensureRowIndexColumn();
-        } catch (Throwable $e) {
-        }
+        SchemaGuard::requireColumns('import_batches', ['user_id', 'filename', 'status', 'raw_path', 'parsed_json', 'error_summary', 'created_at']);
+        SchemaGuard::requireColumns('import_rows', ['batch_id', 'row_index', 'raw_json', 'parsed_json', 'status', 'errors', 'created_at']);
         self::$schemaReady = true;
     }
 
@@ -77,25 +71,4 @@ class ImportBatch extends Model
         self::execute('DELETE FROM import_batches WHERE id = ?', [$batchId]);
     }
 
-    protected static function ensureRowIndexColumn()
-    {
-        if (!self::columnExists('import_rows', 'row_index')) {
-            if (self::columnExists('import_rows', 'row_number')) {
-                self::execute('ALTER TABLE import_rows CHANGE COLUMN row_number row_index INT NOT NULL');
-            } else {
-                self::execute('ALTER TABLE import_rows ADD COLUMN row_index INT NOT NULL AFTER batch_id');
-            }
-        }
-    }
-
-    protected static function columnExists($table, $column)
-    {
-        $row = self::fetch(
-            'SELECT COUNT(*) AS total
-             FROM INFORMATION_SCHEMA.COLUMNS
-             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
-            [$table, $column]
-        );
-        return (int) ($row['total'] ?? 0) > 0;
-    }
 }

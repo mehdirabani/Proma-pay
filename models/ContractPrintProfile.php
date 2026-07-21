@@ -10,13 +10,13 @@ class ContractPrintProfile
             self::OFFICIAL_COMPACT => [
                 'label' => 'قرارداد فشرده یک‌صفحه‌ای',
                 'margin_top' => 4, 'margin_right' => 7, 'margin_bottom' => 7, 'margin_left' => 7,
-                'body_font_size' => 7, 'important_font_size' => 8, 'heading_font_size' => 8,
+                'body_font_size' => 8, 'important_font_size' => 9, 'heading_font_size' => 9,
                 'body_line_height' => 1.18, 'important_line_height' => 1.18, 'heading_line_height' => 1.16,
                 'paragraph_spacing' => .5, 'section_top_spacing' => 1, 'section_bottom_spacing' => .5,
                 'list_spacing' => 1, 'list_indent' => 10,
                 'header_top_spacing' => 0, 'header_bottom_spacing' => 1, 'header_divider_spacing' => 1,
                 'logo_width' => 32, 'logo_height' => 12,
-                'table_font_size' => 6.2, 'table_heading_font_size' => 6.7, 'table_line_height' => 1.12,
+                'table_font_size' => 7.2, 'table_heading_font_size' => 7.7, 'table_line_height' => 1.12,
                 'table_cell_vertical_padding' => .5, 'table_cell_horizontal_padding' => 2, 'table_margin' => 1,
                 'signature_top_spacing' => 5, 'signature_box_height' => 15,
             ],
@@ -99,9 +99,9 @@ class ContractPrintProfile
             $values[$key] = max($range[0], min($range[1], $number));
         }
         if ($preset === self::OFFICIAL_COMPACT) {
-            $values['body_font_size'] = min(7, $values['body_font_size']);
-            $values['important_font_size'] = min(8, $values['important_font_size']);
-            $values['heading_font_size'] = min(8, $values['heading_font_size']);
+            $values['body_font_size'] = min(8, $values['body_font_size']);
+            $values['important_font_size'] = min(9, $values['important_font_size']);
+            $values['heading_font_size'] = min(9, $values['heading_font_size']);
             $values['body_line_height'] = max(1.15, min(1.3, $values['body_line_height']));
             $values['important_line_height'] = max(1.15, min(1.3, $values['important_line_height']));
         }

@@ -16,7 +16,7 @@ $assert = static function ($condition, string $message): void {
 
 $version = require $root . '/config/version.php';
 $assert(version_compare((string) ($version['application'] ?? ''), '1.2.6', '>='), 'Application version must be at least V1.2.6 after the release gate.');
-$assert((bool) preg_match('/^\d+\.\d+\.\d+$/', (string) ($version['application'] ?? '')), 'Central version is not semantic.');
+$assert((bool) preg_match('/^\d+\.\d+\.\d+(?:-rc\.\d+)?$/', (string) ($version['application'] ?? '')), 'Central version is not semantic.');
 
 $manifest = PluginManifest::read($root . '/plugins/PromaAccounting');
 $assert(($manifest['id'] ?? '') === 'proma-accounting', 'Accounting manifest id mismatch.');

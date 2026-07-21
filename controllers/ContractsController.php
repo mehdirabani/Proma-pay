@@ -27,6 +27,37 @@ class ContractsController extends Controller
         ], is_ajax_request() ? null : 'app');
     }
 
+    public function duplicates()
+    {
+        $this->requireRole('admin');
+        $groups = ContractDuplicateRepairService::scan();
+        $this->render('contracts/duplicates', [
+            'title' => 'بررسی قراردادهای تکراری',
+            'groups' => $groups,
+        ]);
+    }
+
+    public function repairDuplicates()
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        if (empty($_POST['confirm_repair'])) {
+            set_flash('error', 'برای آرشیو قراردادهای تکراری باید تأیید نهایی را فعال کنید.');
+            redirect('contracts/duplicates');
+        }
+        try {
+            $count = ContractDuplicateRepairService::archiveDuplicates(
+                (int) ($_POST['canonical_id'] ?? 0),
+                $_POST['duplicate_ids'] ?? [],
+                Auth::id()
+            );
+            set_flash('success', to_persian_digits($count) . ' قرارداد تکراری بدون حذف سوابق آرشیو شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ترمیم قراردادهای تکراری انجام نشد.');
+        }
+        redirect('contracts/duplicates');
+    }
+
     public function store()
     {
         $this->requireRole('admin');

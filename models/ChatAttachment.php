@@ -10,22 +10,7 @@ class ChatAttachment extends Model
         if (self::$schemaReady) {
             return;
         }
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS chat_attachments (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                message_id BIGINT UNSIGNED NOT NULL,
-                file_path VARCHAR(255) NOT NULL,
-                file_type VARCHAR(40) NOT NULL,
-                status VARCHAR(30) NOT NULL DEFAULT 'pending',
-                reviewed_by BIGINT UNSIGNED NULL,
-                review_note TEXT NULL,
-                reviewed_at DATETIME NULL,
-                deleted_at DATETIME NULL,
-                created_at DATETIME NOT NULL,
-                INDEX idx_chat_attachments_message (message_id),
-                INDEX idx_chat_attachments_status (status)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
+        self::fetch('SELECT id FROM chat_attachments LIMIT 1');
         self::$schemaReady = true;
         self::cleanupExpired();
     }

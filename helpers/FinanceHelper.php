@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/InstallmentSettlementService.php';
+
 class FinanceHelper
 {
     public static function installmentAmount($principal, $months, $monthlyRate, $interestType)
@@ -42,6 +44,9 @@ class FinanceHelper
         if (($installment['status'] ?? '') === 'cancelled') {
             return self::cancelledPreview($installment);
         }
+        if (InstallmentSettlementService::isSettled($installment)) {
+            return self::settledPreview($installment);
+        }
         $state = self::stateOnDate($installment, $payments, $settings, $date);
         $reward = ($state['paid_amount'] > 0 && $state['remaining_amount'] > 0)
             ? 0
@@ -64,6 +69,7 @@ class FinanceHelper
             'overdue_days' => $state['overdue_days'],
             'reward' => $reward,
             'payable' => $payable,
+            'payment_allowed' => $payable > 0,
             'status' => self::status($state['base_amount'], $state['paid_amount'], $installment['due_date'], $date),
         ];
     }
@@ -81,6 +87,19 @@ class FinanceHelper
             $preview['is_full_payment'] = false;
             $preview['final_status'] = 'cancelled';
             $preview['message'] = 'قسط لغو شده قابل پرداخت نیست.';
+            return $preview;
+        }
+        if (InstallmentSettlementService::isSettled($installment)) {
+            $preview = self::settledPreview($installment);
+            $preview['remaining_before_payment'] = 0;
+            $preview['remaining_after_payment'] = 0;
+            $preview['paid_amount_after_payment'] = $preview['paid_amount'];
+            $preview['payable_on_payment_date'] = 0;
+            $preview['calculated_penalty'] = 0;
+            $preview['calculated_reward'] = 0;
+            $preview['is_full_payment'] = true;
+            $preview['final_status'] = 'paid';
+            $preview['message'] = InstallmentSettlementService::SETTLED_MESSAGE;
             return $preview;
         }
         $paymentDate = $paymentDate ?: date('Y-m-d');
@@ -295,7 +314,7 @@ class FinanceHelper
 
     protected static function potentialReward(array $installment, $remainingAmount, array $settings, $date)
     {
-        if ($remainingAmount <= 0 || $date > $installment['due_date']) {
+        if ($remainingAmount <= 0 || $date >= $installment['due_date']) {
             return 0;
         }
         $monthlyRewardRate = MoneyMath::rateUnits($settings['monthly_reward_rate'] ?? 0);
@@ -336,7 +355,32 @@ class FinanceHelper
             'overdue_days' => 0,
             'reward' => 0,
             'payable' => 0,
+            'payment_allowed' => false,
             'status' => 'cancelled',
+        ];
+    }
+
+    protected static function settledPreview(array $installment)
+    {
+        $baseAmount = normalize_money($installment['base_amount'] ?? 0);
+        return [
+            'base_amount' => $baseAmount,
+            'paid_amount' => $baseAmount,
+            'remaining_amount' => 0,
+            'penalty' => 0,
+            'normal_penalty' => 0,
+            'legal_penalty' => 0,
+            'penalty_mode' => 'normal',
+            'penalty_rate' => 0,
+            'normal_penalty_rate' => 0,
+            'legal_penalty_rate' => 0,
+            'grace_days' => 0,
+            'penalty_start_date' => null,
+            'overdue_days' => 0,
+            'reward' => 0,
+            'payable' => 0,
+            'payment_allowed' => false,
+            'status' => 'paid',
         ];
     }
 }

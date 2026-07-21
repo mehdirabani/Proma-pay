@@ -56,7 +56,7 @@ class PaymentGroupService
             }
             $totalOutstanding = 0;
             foreach ($selected as $row) {
-                $totalOutstanding += max(0, self::moneyInteger($row['base_amount']) - self::moneyInteger($row['paid_amount']));
+                $totalOutstanding += self::payableToday($row);
             }
             if ($amount > $totalOutstanding) {
                 throw new InvalidArgumentException('مبلغ پرداخت از مجموع بدهی قابل تخصیص این قرارداد بیشتر است.');
@@ -74,7 +74,7 @@ class PaymentGroupService
                 if ($remaining <= 0) {
                     break;
                 }
-                $outstanding = max(0, self::moneyInteger($row['base_amount']) - self::moneyInteger($row['paid_amount']));
+                $outstanding = self::payableToday($row);
                 $chunk = min($remaining, $outstanding);
                 if ($chunk <= 0) {
                     continue;
@@ -156,6 +156,17 @@ class PaymentGroupService
             if (count($selected) !== count($installmentIds)) {
                 throw new InvalidArgumentException('یکی از اقساط انتخاب‌شده دیگر قابل پرداخت نیست.');
             }
+            $allPayable = Model::fetchAll(
+                "SELECT * FROM installments WHERE contract_id = ? AND status NOT IN ('paid','cancelled') ORDER BY installment_number ASC FOR UPDATE",
+                [$contractId]
+            );
+            $maximumPayable = 0;
+            foreach ($allPayable as $row) {
+                $maximumPayable += self::payableToday($row);
+            }
+            if ($amount > $maximumPayable) {
+                throw new InvalidArgumentException('مبلغ پرداخت از مجموع بدهی قابل تخصیص این قرارداد بیشتر است.');
+            }
             $groupNumber = 'PG-' . strtoupper(substr($gatewayId, 0, 3)) . '-' . date('YmdHis') . '-' . strtoupper(bin2hex(random_bytes(3)));
             Model::execute(
                 'INSERT INTO payment_groups (group_number, contract_id, customer_id, created_by, requested_amount, method, status, gateway_track_id, idempotency_key, description, selection_json, created_at)
@@ -236,7 +247,7 @@ class PaymentGroupService
                 if ($remaining <= 0) {
                     break;
                 }
-                $outstanding = max(0, self::moneyInteger($row['base_amount']) - self::moneyInteger($row['paid_amount']));
+                $outstanding = self::payableToday($row);
                 $chunk = min($remaining, $outstanding);
                 if ($chunk <= 0) {
                     continue;
@@ -287,6 +298,13 @@ class PaymentGroupService
         }
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         return Model::fetchAll("SELECT * FROM installments WHERE contract_id = ? AND id IN ({$placeholders}) AND status NOT IN ('paid','cancelled') ORDER BY installment_number ASC FOR UPDATE", array_merge([(int) $contractId], $ids));
+    }
+
+    protected static function payableToday(array $installment)
+    {
+        $payments = Payment::forInstallment((int) ($installment['id'] ?? 0));
+        $preview = FinanceHelper::preview($installment, $payments, Settings::allKeyed(), date('Y-m-d'));
+        return max(0, self::moneyInteger($preview['payable'] ?? 0));
     }
 
     protected static function moneyInteger($value)

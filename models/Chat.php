@@ -5,50 +5,16 @@ class Chat extends Model
     public const BOT_USERNAME = 'proma_notice_bot';
     public const BOT_NAME = 'اطلاع رسان رسمی پروما';
     public const CHANNEL_NAME = 'کانال رسمی پروما';
+    protected static $schemaReady = false;
 
     public static function ensureSchema()
     {
+        if (self::$schemaReady) {
+            return;
+        }
         ChatAttachment::ensureSchema();
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS chat_channels (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                title VARCHAR(190) NOT NULL,
-                slug VARCHAR(100) NOT NULL,
-                type VARCHAR(40) NOT NULL DEFAULT 'public',
-                is_pinned TINYINT(1) NOT NULL DEFAULT 0,
-                is_system TINYINT(1) NOT NULL DEFAULT 0,
-                created_at DATETIME NOT NULL,
-                UNIQUE KEY uq_chat_channels_slug (slug)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-        foreach ([
-            'channel_id' => 'BIGINT UNSIGNED NULL',
-            'target_unit' => 'VARCHAR(80) NULL',
-            'is_system' => 'TINYINT(1) NOT NULL DEFAULT 0',
-        ] as $column => $definition) {
-            try {
-                self::execute("ALTER TABLE messages ADD COLUMN {$column} {$definition}");
-            } catch (Throwable $e) {
-            }
-        }
-        try {
-            self::execute('ALTER TABLE messages MODIFY receiver_id BIGINT UNSIGNED NULL');
-        } catch (Throwable $e) {
-            try {
-                self::execute('ALTER TABLE messages DROP FOREIGN KEY fk_message_receiver');
-                self::execute('ALTER TABLE messages MODIFY receiver_id BIGINT UNSIGNED NULL');
-                self::execute('ALTER TABLE messages ADD CONSTRAINT fk_message_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE');
-            } catch (Throwable $ignored) {
-            }
-        }
-        try {
-            self::execute('ALTER TABLE messages ADD INDEX idx_message_channel (channel_id, id)');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('ALTER TABLE messages ADD CONSTRAINT fk_message_channel FOREIGN KEY (channel_id) REFERENCES chat_channels(id) ON DELETE CASCADE');
-        } catch (Throwable $e) {
-        }
+        self::fetch('SELECT id FROM chat_channels LIMIT 1');
+        self::fetch('SELECT id FROM chat_channel_reads LIMIT 1');
 
         self::ensureNotificationBot();
 
@@ -59,6 +25,7 @@ class Chat extends Model
         );
         self::execute("UPDATE chat_channels SET title = ? WHERE slug = 'public-announcements'", [self::channelName()]);
         self::seedSystemWelcome();
+        self::$schemaReady = true;
     }
 
     public static function contactsFor($userId)
@@ -102,11 +69,21 @@ class Chat extends Model
                 'role' => 'channel',
                 'department' => 'announcements',
                 'target_unit' => self::channelName(),
-                'unread_count' => 0,
+                'unread_count' => (int) ($channel['unread_count'] ?? 0),
                 'is_pinned' => (int) $channel['is_pinned'],
                 'is_verified' => 1,
             ];
-        }, self::fetchAll("SELECT * FROM chat_channels WHERE type = 'public' ORDER BY is_pinned DESC, id ASC"));
+        }, self::fetchAll(
+            "SELECT ch.*,
+                    (SELECT COUNT(*) FROM messages m
+                     WHERE m.channel_id = ch.id
+                       AND (m.sender_id IS NULL OR m.sender_id != ?)
+                       AND m.id > COALESCE((SELECT cr.last_read_message_id FROM chat_channel_reads cr WHERE cr.channel_id = ch.id AND cr.user_id = ? LIMIT 1), 0)) AS unread_count
+             FROM chat_channels ch
+             WHERE ch.type = 'public'
+             ORDER BY ch.is_pinned DESC, ch.id ASC",
+            [(int) ($user['id'] ?? 0), (int) ($user['id'] ?? 0)]
+        ));
     }
 
     public static function channelBySlug($slug)
@@ -341,9 +318,29 @@ class Chat extends Model
         );
     }
 
+    public static function markChannelRead($userId, $channelId)
+    {
+        $latest = self::fetch('SELECT COALESCE(MAX(id), 0) AS latest_id FROM messages WHERE channel_id = ?', [(int) $channelId]);
+        self::execute(
+            'INSERT INTO chat_channel_reads (channel_id, user_id, last_read_message_id, read_at, created_at, updated_at)
+             VALUES (?, ?, ?, NOW(), NOW(), NOW())
+             ON DUPLICATE KEY UPDATE last_read_message_id = GREATEST(last_read_message_id, VALUES(last_read_message_id)), read_at = NOW(), updated_at = NOW()',
+            [(int) $channelId, (int) $userId, (int) ($latest['latest_id'] ?? 0)]
+        );
+    }
+
     public static function unreadCount($userId)
     {
-        return (int) self::fetch('SELECT COUNT(*) AS total FROM messages WHERE receiver_id = ? AND is_read = 0', [(int) $userId])['total'];
+        $direct = (int) (self::fetch('SELECT COUNT(*) AS total FROM messages WHERE receiver_id = ? AND is_read = 0', [(int) $userId])['total'] ?? 0);
+        $channels = (int) (self::fetch(
+            "SELECT COUNT(*) AS total
+             FROM messages m
+             JOIN chat_channels ch ON ch.id = m.channel_id AND ch.type = 'public'
+             WHERE (m.sender_id IS NULL OR m.sender_id != ?)
+               AND m.id > COALESCE((SELECT cr.last_read_message_id FROM chat_channel_reads cr WHERE cr.channel_id = m.channel_id AND cr.user_id = ? LIMIT 1), 0)",
+            [(int) $userId, (int) $userId]
+        )['total'] ?? 0);
+        return $direct + $channels;
     }
 
     protected static function targetUnitFor($receiverId)

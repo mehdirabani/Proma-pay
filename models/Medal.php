@@ -19,6 +19,10 @@ class Medal extends Model
             $where .= ' AND md.is_active = 1';
         } elseif ($filter === 'inactive') {
             $where .= ' AND md.is_active = 0';
+        } elseif ($filter === 'reversible') {
+            $where .= " AND md.behavior_type = 'reversible'";
+        } elseif ($filter === 'permanent') {
+            $where .= " AND md.behavior_type = 'permanent'";
         }
         return self::fetchAll(
             'SELECT md.*,
@@ -40,7 +44,9 @@ class Medal extends Model
             "SELECT COUNT(*) AS total,
                     SUM(is_active = 1) AS active,
                     SUM(award_type = 'automatic') AS automatic,
-                    SUM(award_type = 'manual') AS manual
+                    SUM(award_type = 'manual') AS manual,
+                    SUM(behavior_type = 'reversible') AS reversible,
+                    SUM(is_active = 1 AND award_type = 'automatic' AND last_evaluated_at IS NULL) AS pending_reconciliation
              FROM medal_definitions WHERE archived_at IS NULL"
         ) ?: [];
         $awards = self::fetch(
@@ -51,6 +57,8 @@ class Medal extends Model
             'active' => 0,
             'automatic' => 0,
             'manual' => 0,
+            'reversible' => 0,
+            'pending_reconciliation' => 0,
             'awarded' => 0,
             'revoked' => 0,
         ], $definitions, $awards);
@@ -157,18 +165,25 @@ class Medal extends Model
         if (!$definition) {
             throw new InvalidArgumentException('تعریف مدال پیدا نشد یا غیرفعال است.');
         }
-        if (!(int) $definition['is_repeatable'] && self::fetch('SELECT id FROM user_medals WHERE user_id = ? AND medal_definition_id = ? AND revoked_at IS NULL LIMIT 1', [(int) $userId, (int) $definition['id']])) {
-            return false;
-        }
         $started = false;
         if (!self::db()->inTransaction()) {
             self::begin();
             $started = true;
         }
         try {
+            $definition = self::fetch('SELECT * FROM medal_definitions WHERE id = ? AND is_active = 1 AND archived_at IS NULL FOR UPDATE', [(int) $definition['id']]);
+            if (!$definition) {
+                throw new InvalidArgumentException('تعریف مدال پیدا نشد یا غیرفعال است.');
+            }
+            if (!(int) $definition['is_repeatable'] && self::fetch('SELECT id FROM user_medals WHERE user_id = ? AND medal_definition_id = ? AND revoked_at IS NULL LIMIT 1', [(int) $userId, (int) $definition['id']])) {
+                if ($started) {
+                    self::commit();
+                }
+                return false;
+            }
             self::execute('INSERT INTO user_medals (user_id, medal_definition_id, source, note, related_contract_id, related_payment_id, awarded_by, awarded_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())', [(int) $userId, (int) $definition['id'], trim((string) $source) ?: 'manual', trim((string) $note) ?: null, $contractId ? (int) $contractId : null, $paymentId ? (int) $paymentId : null, $actorId ? (int) $actorId : null]);
             $medalId = (int) self::lastInsertId();
-            self::execute('INSERT INTO user_medal_history (user_medal_id, action, reason, performed_by, snapshot_json, created_at) VALUES (?, ?, ?, ?, ?, NOW())', [$medalId, 'awarded', trim((string) $note) ?: null, $actorId ? (int) $actorId : null, json_encode($definition, JSON_UNESCAPED_UNICODE)]);
+            MedalHistoryService::record($medalId, 'awarded', $note, $actorId, $definition);
             if (class_exists('AuditLog')) {
                 AuditLog::record('medal', 'awarded', 'user_medal', $medalId, ['actor_user_id' => $actorId, 'customer_id' => (int) $userId, 'new_values' => ['slug' => $slug, 'source' => $source]]);
             }
@@ -200,8 +215,8 @@ class Medal extends Model
             if (!$medal) {
                 throw new InvalidArgumentException('مدال فعال پیدا نشد.');
             }
-            self::execute('UPDATE user_medals SET revoked_at = NOW(), revoked_by = ?, revoke_reason = ? WHERE id = ?', [(int) $actorId, $reason, (int) $id]);
-            self::execute('INSERT INTO user_medal_history (user_medal_id, action, reason, performed_by, snapshot_json, created_at) VALUES (?, ?, ?, ?, ?, NOW())', [(int) $id, 'revoked', $reason, (int) $actorId, json_encode($medal, JSON_UNESCAPED_UNICODE)]);
+            self::execute('UPDATE user_medals SET revoked_at = NOW(), revoked_by = ?, revoke_reason = ? WHERE id = ?', [$actorId ? (int) $actorId : null, $reason, (int) $id]);
+            MedalHistoryService::record((int) $id, 'revoked', $reason, $actorId, $medal);
             if (class_exists('AuditLog')) {
                 AuditLog::record('medal', 'revoked', 'user_medal', (int) $id, ['actor_user_id' => $actorId, 'customer_id' => (int) $medal['user_id'], 'new_values' => ['reason' => $reason]]);
             }
@@ -228,8 +243,12 @@ class Medal extends Model
             if (!$medal) {
                 throw new InvalidArgumentException('مدال لغوشده پیدا نشد.');
             }
+            $active = self::fetch('SELECT id FROM user_medals WHERE user_id = ? AND medal_definition_id = ? AND revoked_at IS NULL LIMIT 1', [(int) $medal['user_id'], (int) $medal['medal_definition_id']]);
+            if ($active) {
+                throw new InvalidArgumentException('یک نمونه فعال از این مدال برای کاربر وجود دارد.');
+            }
             self::execute('UPDATE user_medals SET revoked_at = NULL, revoked_by = NULL, revoke_reason = NULL WHERE id = ?', [(int) $id]);
-            self::execute('INSERT INTO user_medal_history (user_medal_id, action, reason, performed_by, snapshot_json, created_at) VALUES (?, ?, ?, ?, ?, NOW())', [(int) $id, 'restored', trim((string) $reason), (int) $actorId, json_encode($medal, JSON_UNESCAPED_UNICODE)]);
+            MedalHistoryService::record((int) $id, 'restored', $reason, $actorId, $medal);
             if (class_exists('AuditLog')) {
                 AuditLog::record('medal', 'restored', 'user_medal', (int) $id, ['actor_user_id' => $actorId, 'customer_id' => (int) $medal['user_id']]);
             }
@@ -251,24 +270,7 @@ class Medal extends Model
             return;
         }
         try {
-            $contractCount = (int) (self::fetch("SELECT COUNT(*) AS total FROM contracts WHERE customer_id = ? AND status != 'cancelled'", [$userId])['total'] ?? 0);
-            $paymentCount = (int) (self::fetch("SELECT COUNT(*) AS total FROM payments p JOIN contracts c ON c.id = p.contract_id WHERE c.customer_id = ? AND p.status = 'paid' AND COALESCE(p.is_corrected, 0) = 0", [$userId])['total'] ?? 0);
-            $onTimeCount = (int) (self::fetch("SELECT COUNT(DISTINCT i.id) AS total FROM installments i JOIN contracts c ON c.id = i.contract_id JOIN payments p ON p.installment_id = i.id WHERE c.customer_id = ? AND p.status = 'paid' AND COALESCE(p.is_corrected, 0) = 0 AND DATE(COALESCE(p.paid_at, p.created_at)) <= i.due_date", [$userId])['total'] ?? 0);
-            $earlyPaymentCount = (int) (self::fetch("SELECT COUNT(DISTINCT i.id) AS total FROM installments i JOIN contracts c ON c.id = i.contract_id JOIN payments p ON p.installment_id = i.id WHERE c.customer_id = ? AND p.status = 'paid' AND COALESCE(p.is_corrected, 0) = 0 AND DATE(COALESCE(p.paid_at, p.created_at)) < i.due_date", [$userId])['total'] ?? 0);
-            $completedCount = (int) (self::fetch("SELECT COUNT(*) AS total FROM contracts WHERE customer_id = ? AND status = 'completed'", [$userId])['total'] ?? 0);
-            $overdueCount = (int) (self::fetch("SELECT COUNT(*) AS total FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE c.customer_id = ? AND i.status = 'overdue'", [$userId])['total'] ?? 0);
-            $earlySettlementCount = (int) (self::fetch("SELECT COUNT(*) AS total FROM contracts c WHERE c.customer_id = ? AND c.status = 'completed' AND c.updated_at IS NOT NULL AND DATE(c.updated_at) < (SELECT MAX(i.due_date) FROM installments i WHERE i.contract_id = c.id)", [$userId])['total'] ?? 0);
-            $metrics = ['contract_count' => $contractCount, 'payment_count' => $paymentCount, 'on_time_count' => $onTimeCount, 'early_payment_count' => $earlyPaymentCount, 'completed_contract_count' => $completedCount, 'overdue_count' => $overdueCount, 'early_settlement_count' => $earlySettlementCount];
-            foreach (self::definitions() as $definition) {
-                $criteria = json_decode((string) ($definition['criteria_json'] ?? ''), true) ?: [];
-                $metric = (string) ($definition['criteria_type'] ?? '');
-                $metricValue = $metrics[$metric] ?? null;
-                $minimumMet = $metricValue !== null && (!isset($criteria['minimum']) || $metricValue >= (int) $criteria['minimum']);
-                $maximumMet = $metricValue !== null && (!isset($criteria['maximum']) || $metricValue <= (int) $criteria['maximum']);
-                if ($metric !== '' && $metricValue !== null && $minimumMet && $maximumMet) {
-                    self::award($userId, $definition['slug'], 'automatic', $actorId);
-                }
-            }
+            return MedalReconciliationService::reconcileCustomer($userId, $actorId);
         } catch (Throwable $e) {
             if (!($e instanceof PDOException && (int) ($e->errorInfo[1] ?? 0) === 1146)) {
                 throw $e;

@@ -188,14 +188,14 @@ class Payment extends Model
         if (!$contract) {
             throw new InvalidArgumentException('قرارداد پرداخت پیدا نشد.');
         }
-        if (in_array(($contract['status'] ?? ''), ['cancelled', 'completed', 'closed'], true)) {
-            throw new InvalidArgumentException('برای قرارداد لغو یا تسویه‌شده پرداخت جدید قابل ثبت نیست.');
-        }
         if ($installmentId) {
-            $installmentStatus = self::fetch('SELECT status FROM installments WHERE id = ? AND contract_id = ? LIMIT 1', [(int) $installmentId, (int) $contractId]);
-            if (!$installmentStatus || ($installmentStatus['status'] ?? '') === 'cancelled') {
+            $installmentStatus = Installment::find((int) $installmentId);
+            if (!$installmentStatus || (int) ($installmentStatus['contract_id'] ?? 0) !== (int) $contractId) {
                 throw new InvalidArgumentException('قسط انتخاب‌شده قابل پرداخت نیست.');
             }
+            InstallmentSettlementService::assertPayable($installmentStatus, $amount, $paymentDate ?: date('Y-m-d'));
+        } elseif (in_array(($contract['status'] ?? ''), ['cancelled', 'completed', 'closed'], true)) {
+            throw new InvalidArgumentException('برای قرارداد لغو یا تسویه‌شده پرداخت جدید قابل ثبت نیست.');
         }
         $paymentType = $paymentType === 'down_payment' ? 'down_payment' : 'installment';
         $paymentDate = $paymentDate ?: date('Y-m-d');
@@ -214,7 +214,7 @@ class Payment extends Model
             if ($needsInstallmentTransaction) {
                 self::fetch('SELECT id FROM installments WHERE id = ? FOR UPDATE', [(int) $installmentId]);
                 $installment = Installment::find((int) $installmentId);
-                $preview = FinanceHelper::paymentPreview($installment, self::forInstallment($installmentId), Settings::allKeyed(), $amount, $paymentDate);
+                $preview = InstallmentSettlementService::assertPayable($installment, $amount, $paymentDate);
                 $before = self::installmentState($installmentId);
             }
             self::execute(
@@ -387,7 +387,7 @@ class Payment extends Model
             }
             $paymentDate = date('Y-m-d');
             $installment = Installment::find((int) $payment['installment_id']);
-            $preview = FinanceHelper::paymentPreview($installment, self::forInstallment((int) $payment['installment_id']), Settings::allKeyed(), $verifiedAmount, $paymentDate);
+            $preview = InstallmentSettlementService::assertPayable($installment, $verifiedAmount, $paymentDate);
             $before = self::installmentState((int) $payment['installment_id']);
             self::execute(
                 'UPDATE payments SET status = ?, gateway_ref_id = ?, amount = ?, payment_date = ?, calculated_penalty = ?, calculated_reward = ?, remaining_before_payment = ?, remaining_after_payment = ?, paid_at = NOW() WHERE id = ?',

@@ -9,14 +9,7 @@ class OperatorCall extends Model
         if (self::$schemaReady) {
             return;
         }
-        try {
-            self::execute('ALTER TABLE operator_calls ADD COLUMN installment_id BIGINT UNSIGNED NULL AFTER contract_id');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('ALTER TABLE operator_calls ADD COLUMN promise_payment_date DATE NULL AFTER next_followup_date');
-        } catch (Throwable $e) {
-        }
+        SchemaGuard::requireColumns('operator_calls', ['operator_id', 'customer_id', 'contract_id', 'installment_id', 'call_result', 'notes', 'next_followup_date', 'promise_payment_date', 'created_at']);
         self::$schemaReady = true;
     }
 

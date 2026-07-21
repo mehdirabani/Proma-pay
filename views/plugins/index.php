@@ -36,6 +36,7 @@ $plugins = $plugins ?? [];
         <?php $hasFiles = !empty($plugin['has_files']); ?>
         <?php $installedVersion = (string) ($plugin['installed_version'] ?? $plugin['version'] ?? '-'); ?>
         <?php $hasStagedUpdate = !empty($plugin['has_staged_update']) || $status === 'update_available'; ?>
+        <?php $recoverable = in_array(PluginStatus::normalize($status), [PluginStatus::ERROR, PluginStatus::RECOVERY_REQUIRED], true); ?>
         <tr>
           <td><?php if ($hasFiles): ?><input type="checkbox" name="plugin_ids[]" value="<?= e($plugin['id'] ?? '') ?>" data-check-item="plugin_ids" form="plugins-delete-host-form" aria-label="انتخاب <?= e($plugin['name'] ?? $plugin['id'] ?? 'پلاگین') ?>"><?php endif; ?></td>
           <td><strong><?= e($plugin['name'] ?? $plugin['id'] ?? '-') ?></strong><br><small class="text-muted" dir="ltr"><?= e($plugin['id'] ?? '-') ?></small><?php if (!empty($plugin['last_error'])): ?><div class="text-danger small mt-1">آخرین خطای افزونه در گزارش امن سامانه ثبت شده است.</div><?php endif; ?></td>
@@ -55,7 +56,9 @@ $plugins = $plugins ?? [];
               <?php if (in_array($status, ['installed', 'inactive', 'active', 'failed'], true)): ?><a class="btn btn-sm btn-light" href="<?= e(url('plugins/health/' . rawurlencode($plugin['id'] ?? ''))) ?>">بررسی سلامت</a><?php endif; ?>
               <?php if (in_array($status, ['installed', 'inactive', 'active'], true)): ?><button class="btn btn-sm btn-secondary" type="button" data-open-modal="stage-plugin-update-<?= e(md5($plugin['id'] ?? '')) ?>"><i data-feather="upload-cloud"></i> فایل بروزرسانی</button><?php endif; ?>
               <?php if ($hasStagedUpdate): ?><button class="btn btn-sm btn-primary" type="button" data-open-modal="apply-plugin-update-<?= e(md5($plugin['id'] ?? '')) ?>"><i data-feather="refresh-cw"></i> نصب بروزرسانی</button><?php endif; ?>
-              <?php if (in_array($status, ['installed', 'inactive'], true)): ?><form method="post" action="<?= e(url('plugins/uninstall/' . rawurlencode($plugin['id'] ?? ''))) ?>"><?= csrf_field() ?><button class="btn btn-sm btn-light" type="submit" title="ثبت افزونه حذف می‌شود ولی فایل‌ها روی هاست می‌مانند">لغو نصب</button></form><?php endif; ?>
+              <?php if ($recoverable && $hasFiles): ?><form method="post" action="<?= e(url('plugins/repair/' . rawurlencode($plugin['id'] ?? ''))) ?>"><?= csrf_field() ?><button class="btn btn-sm btn-warning" type="submit"><i data-feather="tool"></i> تعمیر وضعیت</button></form><?php endif; ?>
+              <?php if ($recoverable && !$hasFiles): ?><form method="post" action="<?= e(url('plugins/clearStale/' . rawurlencode($plugin['id'] ?? ''))) ?>" data-confirm="رکورد خطادار افزونه از فهرست پاک شود؟ داده‌های دیتابیس افزونه حذف نمی‌شوند."><?= csrf_field() ?><button class="btn btn-sm btn-light" type="submit"><i data-feather="x-circle"></i> پاک‌سازی رکورد</button></form><?php endif; ?>
+              <?php if (in_array($status, ['installed', 'inactive'], true)): ?><form method="post" action="<?= e(url('plugins/uninstall/' . rawurlencode($plugin['id'] ?? ''))) ?>" data-confirm="فایل‌های افزونه از هاست حذف می‌شوند، اما داده‌های آن حفظ خواهند شد. ادامه می‌دهید؟"><?= csrf_field() ?><button class="btn btn-sm btn-light" type="submit" title="حذف فایل‌های افزونه با حفظ اطلاعات"><i data-feather="trash-2"></i> لغو نصب</button></form><?php endif; ?>
               <?php if (!$hasFiles): ?><span class="text-muted small align-self-center">برای نصب، پوشه یا ZIP معتبر افزونه را بارگذاری کنید.</span><?php endif; ?>
             </div>
           </td>

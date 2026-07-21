@@ -9,68 +9,10 @@ class ContractTemplateService extends Model
         if (self::$schemaReady) {
             return;
         }
-        self::execute("CREATE TABLE IF NOT EXISTS contract_templates (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(190) NOT NULL,
-            description TEXT NULL,
-            status VARCHAR(30) NOT NULL DEFAULT 'active',
-            current_version_id BIGINT UNSIGNED NULL,
-            created_by BIGINT UNSIGNED NULL,
-            created_at DATETIME NOT NULL,
-            updated_at DATETIME NULL,
-            KEY idx_contract_templates_status (status)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-        self::execute("CREATE TABLE IF NOT EXISTS contract_template_versions (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            template_id BIGINT UNSIGNED NOT NULL,
-            version_number INT UNSIGNED NOT NULL,
-            body_source LONGTEXT NOT NULL,
-            body_format VARCHAR(30) NOT NULL DEFAULT 'plain_text_v1',
-            content_hash CHAR(64) NOT NULL,
-            change_reason TEXT NULL,
-            status VARCHAR(30) NOT NULL DEFAULT 'draft',
-            created_by BIGINT UNSIGNED NULL,
-            created_at DATETIME NOT NULL,
-            published_by BIGINT UNSIGNED NULL,
-            published_at DATETIME NULL,
-            superseded_at DATETIME NULL,
-            archived_at DATETIME NULL,
-            archived_by BIGINT UNSIGNED NULL,
-            UNIQUE KEY uq_contract_template_version (template_id, version_number),
-            KEY idx_contract_template_versions_status (template_id, status, version_number)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-        self::execute("CREATE TABLE IF NOT EXISTS contract_template_audit_logs (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            action VARCHAR(80) NOT NULL,
-            actor_id BIGINT UNSIGNED NULL,
-            template_id BIGINT UNSIGNED NULL,
-            version_id BIGINT UNSIGNED NULL,
-            old_values_json LONGTEXT NULL,
-            new_values_json LONGTEXT NULL,
-            reason TEXT NULL,
-            ip_address VARCHAR(45) NULL,
-            created_at DATETIME NOT NULL,
-            KEY idx_contract_template_audit_created (created_at),
-            KEY idx_contract_template_audit_template (template_id, version_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-        self::execute("CREATE TABLE IF NOT EXISTS contract_document_rebuild_jobs (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            target_template_version_id BIGINT UNSIGNED NOT NULL,
-            status VARCHAR(30) NOT NULL DEFAULT 'pending',
-            total_documents INT UNSIGNED NOT NULL DEFAULT 0,
-            processed_documents INT UNSIGNED NOT NULL DEFAULT 0,
-            failed_documents INT UNSIGNED NOT NULL DEFAULT 0,
-            last_contract_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
-            failure_report_json LONGTEXT NULL,
-            created_by BIGINT UNSIGNED NULL,
-            created_at DATETIME NOT NULL,
-            started_at DATETIME NULL,
-            completed_at DATETIME NULL,
-            updated_at DATETIME NULL,
-            KEY idx_contract_rebuild_status (status, id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-        self::execute("INSERT IGNORE INTO contract_templates (id, name, description, status, created_at) VALUES (1, 'قالب اصلی قرارداد', 'قالب پیش‌فرض اسناد قرارداد', 'active', NOW())");
-        self::migrateLegacyTemplate();
+        SchemaGuard::requireColumns('contract_templates', ['name', 'description', 'status', 'current_version_id', 'created_by', 'created_at', 'updated_at']);
+        SchemaGuard::requireColumns('contract_template_versions', ['template_id', 'version_number', 'body_source', 'body_format', 'content_hash', 'change_reason', 'status', 'created_by', 'created_at', 'published_by', 'published_at', 'superseded_at', 'archived_at', 'archived_by']);
+        SchemaGuard::requireColumns('contract_template_audit_logs', ['action', 'actor_id', 'template_id', 'version_id', 'old_values_json', 'new_values_json', 'reason', 'ip_address', 'created_at']);
+        SchemaGuard::requireColumns('contract_document_rebuild_jobs', ['target_template_version_id', 'status', 'total_documents', 'processed_documents', 'failed_documents', 'last_contract_id', 'failure_report_json', 'created_by', 'created_at', 'started_at', 'completed_at', 'updated_at']);
         self::$schemaReady = true;
     }
 

@@ -41,20 +41,19 @@ $assert(strpos($pluginsView, 'آخرین خطای افزونه در گزارش �
 $assert(strpos($formsCss, '.proma-plugin-warning__content') !== false, 'Plugin warning spacing component CSS is missing.');
 $assert(strpos($formsCss, 'overflow-wrap: anywhere') !== false, 'Plugin warning must safely wrap mixed RTL/LTR text.');
 
-$assert(strpos($pluginStatus, "const INSTALLING = 'installing'") !== false, 'Plugin lifecycle status INSTALLING is missing.');
-$assert(strpos($pluginStatus, "const UPDATING = 'updating'") !== false, 'Plugin lifecycle status UPDATING is missing.');
-$assert(strpos($pluginStatus, "const INSTALLATION_FAILED = 'installation_failed'") !== false, 'Plugin lifecycle status INSTALLATION_FAILED is missing.');
-$assert(strpos($pluginStatus, "const MIGRATION_FAILED = 'migration_failed'") !== false, 'Plugin lifecycle status MIGRATION_FAILED is missing.');
-$assert(strpos($pluginStatus, "const REPAIR_REQUIRED = 'repair_required'") !== false, 'Plugin lifecycle status REPAIR_REQUIRED is missing.');
+$assert(strpos($pluginStatus, "const VALIDATING = 'validating'") !== false, 'Unified plugin lifecycle status VALIDATING is missing.');
+$assert(strpos($pluginStatus, "const UPDATING = 'updating'") !== false, 'Unified plugin lifecycle status UPDATING is missing.');
+$assert(strpos($pluginStatus, "const ERROR = 'error'") !== false, 'Unified plugin lifecycle status ERROR is missing.');
+$assert(strpos($pluginStatus, "const RECOVERY_REQUIRED = 'recovery_required'") !== false, 'Unified plugin lifecycle status RECOVERY_REQUIRED is missing.');
+$assert(strpos($pluginStatus, 'public static function normalize(') !== false, 'Legacy lifecycle-state normalization is missing.');
 $assert(strpos($pluginRegistry, '$status = PluginStatus::INSTALLED') !== false, 'PluginRegistry::upsert must accept an explicit lifecycle status.');
 $assert(strpos($pluginRegistry, '$preferredStatus') !== false, 'Filesystem reconciliation must preserve lifecycle statuses.');
-$assert(strpos($pluginManager, 'PluginStatus::INSTALLING') !== false, 'Plugin install must enter INSTALLING before migrations/provider install.');
-$assert(strpos($pluginManager, 'PluginStatus::INSTALLATION_FAILED') !== false, 'Plugin install failure must not remain installed.');
+$assert(strpos($pluginManager, 'PluginStatus::VALIDATING') !== false, 'Plugin install must enter VALIDATING before migrations/provider install.');
+$assert(strpos($pluginManager, 'PluginStatus::ERROR') !== false, 'Plugin install failure must enter the unified ERROR state.');
 $assert(strpos($pluginManager, 'PluginStatus::UPDATING') !== false, 'Plugin update must enter UPDATING before migrations/provider update.');
-$assert(strpos($pluginManager, 'PluginStatus::MIGRATION_FAILED') !== false, 'Migration failures must be visible as MIGRATION_FAILED.');
 $assert(strpos($pluginManager, 'assertMigrationsCurrent($manifest)') !== false, 'Activation/update must verify migrations before successful status.');
 $assert(substr_count($pluginManager, 'assertProviderHealth($provider, $manifest)') >= 3, 'Install/activate/update must verify provider health before success.');
 $assert(strpos($pluginManager, 'restoreFailedUpdate(') !== false, 'Plugin update failure must attempt rollback before requiring repair.');
-$assert(strpos($pluginManager, 'PluginStatus::REPAIR_REQUIRED') !== false, 'Unrecoverable update failure must mark repair_required.');
+$assert(strpos($pluginManager, 'PluginStatus::RECOVERY_REQUIRED') !== false, 'Unrecoverable update failure must mark recovery_required.');
 
 echo "PROMA_ACCOUNTING_UPDATE_2014_STATIC_OK\n";

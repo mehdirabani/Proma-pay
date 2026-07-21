@@ -101,16 +101,13 @@ class InstallmentsController extends Controller
                 set_flash('error', 'قسط پیدا نشد.');
                 redirect('installments');
             }
-            if (($installment['status'] ?? '') === 'cancelled') {
-                throw new InvalidArgumentException('قسط لغو شده قابل پرداخت نیست.');
-            }
             $amount = normalize_money($_POST['amount'] ?? 0);
             if ($amount <= 0) {
                 throw new InvalidArgumentException('مبلغ پرداخت معتبر نیست.');
             }
             $paymentDate = parse_jalali_date($_POST['payment_date'] ?? '') ?: date('Y-m-d');
             $paymentTime = normalize_time($_POST['payment_time'] ?? null) ?: date('H:i');
-            $preview = FinanceHelper::paymentPreview($installment, Payment::forInstallment((int) $id), Settings::allKeyed(), $amount, $paymentDate);
+            $preview = InstallmentSettlementService::assertPayable($installment, $amount, $paymentDate);
             $maxPayable = normalize_money($preview['payable_on_payment_date'] ?? 0);
             if ($maxPayable > 0 && $amount > $maxPayable) {
                 throw new InvalidArgumentException('مبلغ پرداخت از مبلغ قابل پرداخت این قسط بیشتر است.');

@@ -52,7 +52,11 @@ $installmentIds = array_map('intval', $pdo->query("SELECT id FROM installments W
 
 $manager = PluginManager::instance();
 $registered = PluginRegistry::find('proma-zarinpal');
-if (!$registered || ($registered['status'] ?? '') === 'removed') {
+if (!$registered || !in_array(PluginStatus::normalize($registered['status'] ?? ''), [
+    PluginStatus::INSTALLED,
+    PluginStatus::ACTIVE,
+    PluginStatus::INACTIVE,
+], true)) {
     $manager->install('proma-zarinpal', $customerId);
 }
 if (!PluginManager::isActive('proma-zarinpal')) {
@@ -62,6 +66,9 @@ PluginManager::boot();
 if (!PluginManager::isActive('proma-zarinpal')) {
     throw new RuntimeException('Plugin activation failed.');
 }
+// The release gate is repeatable on the same isolated QA database. Resolve only
+// stale synthetic transactions left by an interrupted earlier test run.
+$pdo->exec("UPDATE proma_zarinpal_transactions SET status='cancelled_by_customer' WHERE status IN ('created','request_uncertain','pending','callback_received','verifying','manual_review')");
 
 $settings = new Proma\Plugins\Zarinpal\Services\ZarinpalSettingsService();
 $settings->save([
@@ -116,11 +123,16 @@ $transactionService = new Proma\Plugins\Zarinpal\Services\ZarinpalTransactionSer
 $verification = new Proma\Plugins\Zarinpal\Services\ZarinpalVerificationService($settings, $repository, $logs, $transactionService, $clientFactory);
 $callback = new Proma\Plugins\Zarinpal\Services\ZarinpalCallbackService($repository, $logs, $verification);
 
+$firstInstallment = Installment::find($installmentIds[0]);
+$singleAmount = (int) round((float) ($firstInstallment['payable'] ?? 0));
+if ($singleAmount <= 0) {
+    throw new RuntimeException('Single payable fixture is invalid.');
+}
 $single = $requestService->create([
     'type' => 'single', 'installment_id' => $installmentIds[0], 'installment_number' => 1,
     'contract_id' => $contractId, 'contract_number' => $contractNumber, 'customer_id' => $customerId,
     'customer_name' => $customerName, 'customer_mobile' => $mobile, 'customer_email' => $email,
-    'amount_toman' => 200000, 'idempotency_key' => $idempotencyPrefix . 'single',
+    'amount_toman' => $singleAmount, 'idempotency_key' => $idempotencyPrefix . 'single',
 ]);
 if (empty($single['ok']) || strpos($single['redirect_url'], 'https://sandbox.zarinpal.com/pg/StartPay/') !== 0) {
     throw new RuntimeException('Sandbox single request failed.');
@@ -129,7 +141,7 @@ $singleDuplicateRequest = $requestService->create([
     'type' => 'single', 'installment_id' => $installmentIds[0], 'installment_number' => 1,
     'contract_id' => $contractId, 'contract_number' => $contractNumber, 'customer_id' => $customerId,
     'customer_name' => $customerName, 'customer_mobile' => $mobile, 'customer_email' => $email,
-    'amount_toman' => 200000, 'idempotency_key' => $idempotencyPrefix . 'single',
+    'amount_toman' => $singleAmount, 'idempotency_key' => $idempotencyPrefix . 'single',
 ]);
 if (($singleDuplicateRequest['transaction_id'] ?? 0) !== ($single['transaction_id'] ?? -1) || $requestIndex !== 1) {
     throw new RuntimeException('Duplicate request idempotency failed.');
@@ -143,13 +155,19 @@ if (empty($first['ok']) || empty($duplicate['ok']) || empty($lateNok['ok']) || $
 }
 
 $verifyCode = 101;
+$secondInstallment = Installment::find($installmentIds[1]);
+$thirdInstallment = Installment::find($installmentIds[2]);
+$groupAmount = (int) round((float) ($secondInstallment['payable'] ?? 0) + (float) ($thirdInstallment['payable'] ?? 0));
+if ($groupAmount <= 0) {
+    throw new RuntimeException('Group payable fixture is invalid.');
+}
 $group = $requestService->create([
     // Only one installment is selected; the verified overpayment must be
     // allocated to the next eligible installment by the core service.
     'type' => 'group', 'installment_ids' => [$installmentIds[1]],
     'contract_id' => $contractId, 'contract_number' => $contractNumber, 'customer_id' => $customerId,
     'customer_name' => $customerName, 'customer_mobile' => $mobile, 'customer_email' => $email,
-    'amount_toman' => 400000, 'idempotency_key' => $idempotencyPrefix . 'group',
+    'amount_toman' => $groupAmount, 'idempotency_key' => $idempotencyPrefix . 'group',
 ]);
 $groupFirst = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => $groupAuthority, 'Status' => 'OK']);
 $groupDuplicate = $callback->handle(['route' => 'plugin/zarinpal/callback', 'Authority' => $groupAuthority, 'Status' => 'OK']);

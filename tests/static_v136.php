@@ -12,7 +12,7 @@ $assert = static function ($condition, string $message): void {
 };
 
 $assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.3.6', '>='), 'Core version must be 1.3.6 or newer.');
-$assert((bool) preg_match('/^V\d+\.\d+\.\d+$/', (string) ($version['display'] ?? '')), 'Display version must use the VMAJOR.MINOR.PATCH format.');
+$assert((bool) preg_match('/^V\d+\.\d+\.\d+(?:-rc\.\d+)?$/', (string) ($version['display'] ?? '')), 'Display version must use the VMAJOR.MINOR.PATCH format.');
 
 foreach ([
     'core/ErrorHandler.php',

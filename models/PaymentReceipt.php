@@ -21,6 +21,7 @@ class PaymentReceipt extends Model
             throw new InvalidArgumentException('قسط برای پرداخت پیدا نشد.');
         }
         $amount = normalize_money($amount);
+        InstallmentSettlementService::assertPayable($installment, $amount);
         $payable = normalize_money($installment['payable'] ?? $installment['remaining_amount'] ?? $installment['base_amount'] ?? 0);
         if ($amount <= 0 || ($payable > 0 && $amount > $payable)) {
             throw new InvalidArgumentException('مبلغ پرداخت معتبر نیست.');
@@ -146,17 +147,11 @@ class PaymentReceipt extends Model
                 if ($actualAmount <= 0) {
                     throw new InvalidArgumentException('مبلغ تأییدشده باید بیشتر از صفر باشد.');
                 }
+                $preview = InstallmentSettlementService::assertPayable($installment, $actualAmount, $paymentDate);
                 $payable = normalize_money($installment['payable'] ?? $installment['remaining_amount'] ?? $installment['base_amount'] ?? 0);
                 if ($payable > 0 && $actualAmount > $payable) {
                     throw new InvalidArgumentException('مبلغ تأییدشده نمی‌تواند بیشتر از بدهی قابل پرداخت قسط باشد.');
                 }
-                $preview = FinanceHelper::paymentPreview(
-                    $installment,
-                    Payment::forInstallment((int) $receipt['installment_id']),
-                    Settings::allKeyed(),
-                    $actualAmount,
-                    $paymentDate
-                );
                 self::execute(
                     "UPDATE payments
                      SET amount = ?, status = 'paid', payment_date = ?, calculated_penalty = ?, calculated_reward = ?,

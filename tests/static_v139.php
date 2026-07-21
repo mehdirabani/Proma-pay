@@ -78,7 +78,7 @@ $assert(strpos($installmentView, 'e($customInstallmentDescription)') !== false, 
 
 $printCss = (string) file_get_contents($root . '/assets/css/components/contract-print.css');
 $assert(strpos($printCss, 'transform: scale') === false && strpos($printCss, 'zoom:') === false, 'Contract print must not use transform or zoom scaling.');
-$assert(strpos($printCss, '--contract-body-font-size: 7px') !== false, 'Compact A4 profile body size is missing.');
+$assert(strpos($printCss, '--contract-body-font-size: 8px') !== false, 'Compact A4 profile body size is missing.');
 $assert(strpos($printCss, '.proma-contract-letterhead') !== false, 'Structured print letterhead is missing.');
 
 $settings = (string) file_get_contents($root . '/models/Settings.php');
@@ -97,8 +97,9 @@ foreach ([
 }
 
 $releaseBuilder = (string) file_get_contents($root . '/scripts/build_release.php');
-$assert(strpos($releaseBuilder, '2026_07_19_custom_installment_visibility_and_footer.sql') !== false, 'Release builder omits the V1.3.9 migration.');
-$assert(strpos($releaseBuilder, 'tests/static_v139.php') !== false, 'Release builder omits the V1.3.9 static test.');
+$assert(strpos($releaseBuilder, 'diff --name-only --diff-filter=ACMRT') !== false, 'Release builder does not derive update files from the release baseline.');
+$assert(strpos($releaseBuilder, 'PROMA_RELEASE_BASE_REF') !== false, 'Release builder has no explicit update baseline.');
+$assert(strpos($releaseBuilder, '2026_07_21_v1_4_1_interaction_state.sql') !== false, 'Release builder omits the current migration.');
 
 $errorHandler = (string) file_get_contents($root . '/core/ErrorHandler.php');
 $assert(strpos($errorHandler, "PHP_SAPI === 'cli'") !== false && strpos($errorHandler, 'exit(1);') !== false, 'CLI failures must return a non-zero status for the release gate.');

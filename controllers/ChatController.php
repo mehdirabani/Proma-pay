@@ -42,6 +42,9 @@ class ChatController extends Controller
         if ($contactId) {
             Chat::markRead(Auth::id(), $contactId);
         }
+        if ($selectedChannel) {
+            Chat::markChannelRead(Auth::id(), (int) $selectedChannel['id']);
+        }
         $selectedContact = null;
         if (!$selectedChannel && $contactId) {
             foreach ($contacts as $contact) {

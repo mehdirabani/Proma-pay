@@ -89,7 +89,7 @@ $pageUrl = function ($page) use ($viewMode) {
       <div class="card-body">
         <div class="proma-profile-head">
           <?php $userListAvatar = avatar_key_for($item['avatar_key'] ?? null, $item['id'] ?? $item['full_name']); ?>
-          <span class="proma-avatar-choice <?= e($userListAvatar) ?>" aria-label="<?= e($item['full_name']) ?>"><img data-avatar-image src="<?= e(avatar_asset_url($userListAvatar)) ?>" alt="آواتار <?= e($item['full_name']) ?>" loading="lazy"></span>
+          <span class="proma-avatar-choice <?= e($userListAvatar) ?>" aria-label="<?= e($item['full_name']) ?>"><img data-avatar-image src="<?= e(user_avatar_asset_url($item)) ?>" alt="آواتار <?= e($item['full_name']) ?>" loading="lazy"></span>
           <div>
             <h5><?= e($item['full_name']) ?> <?php if (!empty($item['identity_verified'])): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓</span><?php endif; ?></h5>
             <p><?= e(role_label($item['role'])) ?> · <?= e(department_label($item['department'] ?? '')) ?> · <?= to_persian_digits($item['mobile']) ?></p>

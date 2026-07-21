@@ -1412,6 +1412,29 @@ a {
   text-align: right;
 }
 
+.proma-profile-trigger {
+  appearance: none;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.proma-profile-trigger:focus-visible {
+  outline: 3px solid rgba(115, 102, 255, .22);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.onhover-dropdown > .onhover-show-div.active {
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  pointer-events: auto !important;
+}
+
 .page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-list a.active {
   background-color: var(--proma-primary-soft);
   color: var(--proma-primary);
@@ -1969,7 +1992,7 @@ label.required-field::after {
 
 .proma-medal-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -2092,7 +2115,7 @@ label.required-field::after {
 .proma-medal-card {
   display: flex;
   min-width: 0;
-  min-height: 250px;
+  min-height: 0;
   flex-direction: column;
   padding: 16px;
   border: 1px solid var(--proma-line);
@@ -2151,7 +2174,7 @@ label.required-field::after {
 }
 
 .proma-medal-card p {
-  min-height: 42px;
+  min-height: 0;
   margin: 14px 0;
   line-height: 1.8;
 }
@@ -2194,6 +2217,103 @@ label.required-field::after {
 
 .proma-medal-history {
   margin-bottom: 18px;
+}
+
+.proma-medal-modal {
+  width: min(920px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+}
+
+.proma-medal-modal form {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.proma-medal-form {
+  display: grid;
+  gap: 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+  background: #f7f8fc;
+}
+
+.proma-medal-form-section {
+  padding: 16px;
+  border: 1px solid var(--proma-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.proma-medal-form-section > header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.proma-medal-form-section > header > span {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--proma-primary);
+  background: var(--proma-primary-soft);
+}
+
+.proma-medal-form-section h4,
+.proma-medal-form-section p {
+  margin: 0;
+}
+
+.proma-medal-form-section h4 {
+  color: var(--proma-text);
+  font-size: 14px;
+}
+
+.proma-medal-form-section p {
+  margin-top: 3px;
+  color: var(--proma-muted);
+  font-size: 11px;
+}
+
+.proma-medal-color-field {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 42px 42px;
+  align-items: center;
+  gap: 8px;
+}
+
+.proma-medal-color-field input[type="color"] {
+  width: 52px;
+  min-height: 44px;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.proma-medal-color-field > i {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--medal-color, var(--proma-primary));
+  background: color-mix(in srgb, var(--medal-color, var(--proma-primary)) 14%, white);
+}
+
+.proma-medal-checks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.form-required {
+  color: #dc2626;
+  font: inherit;
 }
 
 .form-grid select[multiple] {
@@ -6577,6 +6697,33 @@ body.dark-only .proma-payment-card__qr-grid {
   .proma-medal-sync-form input,
   .proma-medal-sync-form .btn {
     width: 100%;
+  }
+
+  .proma-medal-modal {
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+
+  .proma-medal-form {
+    padding: 12px;
+  }
+
+  .proma-medal-form-section {
+    padding: 14px;
+  }
+
+  .proma-medal-checks {
+    grid-template-columns: 1fr;
+  }
+
+  .proma-medal-color-field {
+    grid-template-columns: 48px minmax(0, 1fr) 42px;
+  }
+
+  .proma-medal-color-field > i {
+    display: none;
   }
 
   .proma-page-hero {

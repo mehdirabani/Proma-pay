@@ -147,15 +147,17 @@ class PluginManager
 
     public function install($pluginId, $userId = null)
     {
+        $lockName = $this->acquireLifecycleLock($pluginId, 'install');
+        try {
         $manifest = $this->manifestById($pluginId);
-        $this->assertRequirements($manifest);
         $existing = PluginRegistry::find($manifest['id']);
-        if ($existing && in_array($existing['status'], ['installed', 'active', 'inactive', 'update_available', 'installing', 'updating'], true)) {
+        if ($existing && in_array(PluginRegistry::normalizeStatus($existing['status']), [PluginStatus::INSTALLED, PluginStatus::ACTIVE, PluginStatus::INACTIVE, PluginStatus::VALIDATING, PluginStatus::UPDATING, PluginStatus::ACTIVATING, PluginStatus::DEACTIVATING, PluginStatus::UNINSTALLING], true)) {
             throw new InvalidArgumentException('این افزونه قبلاً نصب شده است.');
         }
         $this->ensureRegistryTables();
-        PluginRegistry::upsert($manifest, $manifest['_root'], $userId, PluginStatus::INSTALLING);
+        PluginRegistry::upsert($manifest, $manifest['_root'], $userId, PluginStatus::VALIDATING);
         try {
+            $this->assertRequirements($manifest);
             $this->runMigrations($manifest);
             $provider = $this->providerFor($manifest);
             $provider->install($this, $manifest);
@@ -165,47 +167,74 @@ class PluginManager
             PluginRegistry::setStatus($manifest['id'], PluginStatus::INSTALLED);
             $this->audit('plugin', 'installed', $manifest['id'], $userId, ['version' => $manifest['version']]);
         } catch (Throwable $e) {
-            PluginRegistry::setStatus($manifest['id'], PluginStatus::INSTALLATION_FAILED, $e->getMessage());
+            PluginRegistry::setStatus($manifest['id'], PluginStatus::ERROR, $e->getMessage());
             throw $e;
+        }
+        } finally {
+            $this->releaseLifecycleLock($lockName);
         }
     }
 
     public function activate($pluginId, $userId = null)
     {
+        $lockName = $this->acquireLifecycleLock($pluginId, 'activate');
+        try {
         $registered = PluginRegistry::find($pluginId);
         if (!$registered || !in_array($registered['status'], ['installed', 'inactive'], true)) {
             throw new InvalidArgumentException('فعال‌سازی افزونه ممکن نیست. نصب یا بروزرسانی افزونه به‌طور کامل انجام نشده است. ابتدا عملیات تعمیر افزونه را اجرا کنید.');
         }
         $manifest = $this->manifestFromRegistered($registered);
         $this->assertRequirements($manifest);
-        $provider = $this->loadProvider($registered, false);
-        $this->assertMigrationsCurrent($manifest);
-        $this->assertProviderHealth($provider, $manifest);
-        if (method_exists($provider, 'activate')) {
-            $provider->activate($this, $manifest);
+        PluginRegistry::setStatus($manifest['id'], PluginStatus::ACTIVATING);
+        try {
+            $provider = $this->loadProvider($registered, false);
+            $this->assertMigrationsCurrent($manifest);
+            $this->assertProviderHealth($provider, $manifest);
+            if (method_exists($provider, 'activate')) {
+                $provider->activate($this, $manifest);
+            }
+            $this->assertProviderHealth($provider, $manifest);
+            PluginRegistry::setStatus($manifest['id'], PluginStatus::ACTIVE);
+        } catch (Throwable $e) {
+            PluginRegistry::setStatus($manifest['id'], PluginStatus::ERROR, $e->getMessage());
+            throw $e;
         }
-        $this->assertProviderHealth($provider, $manifest);
-        PluginRegistry::setStatus($manifest['id'], 'active');
         $this->audit('plugin', 'activated', $manifest['id'], $userId);
+        } finally {
+            $this->releaseLifecycleLock($lockName);
+        }
     }
 
     public function deactivate($pluginId, $userId = null)
     {
+        $lockName = $this->acquireLifecycleLock($pluginId, 'deactivate');
+        try {
         $registered = PluginRegistry::find($pluginId);
         if (!$registered || ($registered['status'] ?? '') !== 'active') {
             throw new InvalidArgumentException('افزونه فعال نیست.');
         }
         $manifest = $this->manifestFromRegistered($registered);
-        $provider = $this->loadProvider($registered, false);
-        if (method_exists($provider, 'deactivate')) {
-            $provider->deactivate($this, $manifest);
+        PluginRegistry::setStatus($manifest['id'], PluginStatus::DEACTIVATING);
+        try {
+            $provider = $this->loadProvider($registered, false);
+            if (method_exists($provider, 'deactivate')) {
+                $provider->deactivate($this, $manifest);
+            }
+            PluginRegistry::setStatus($manifest['id'], PluginStatus::INACTIVE);
+        } catch (Throwable $e) {
+            PluginRegistry::setStatus($manifest['id'], PluginStatus::ACTIVE, $e->getMessage());
+            throw $e;
         }
-        PluginRegistry::setStatus($manifest['id'], 'inactive');
         $this->audit('plugin', 'deactivated', $manifest['id'], $userId);
+        } finally {
+            $this->releaseLifecycleLock($lockName);
+        }
     }
 
     public function uninstall($pluginId, $userId = null, $purge = false, $confirmation = '')
     {
+        $lockName = $this->acquireLifecycleLock($pluginId, $purge ? 'purge' : 'uninstall');
+        try {
         $registered = PluginRegistry::find($pluginId);
         if (!$registered) {
             throw new InvalidArgumentException('افزونه نصب نشده است.');
@@ -217,19 +246,31 @@ class PluginManager
             throw new InvalidArgumentException('حذف کامل داده‌های افزونه فقط برای مدیر ارشد مجاز است.');
         }
         $manifest = $this->manifestFromRegistered($registered);
-        $provider = $this->loadProvider($registered, false);
-        if (method_exists($provider, 'uninstall')) {
-            $provider->uninstall($this, $manifest, $purge);
-        }
-        PluginRegistry::setStatus($manifest['id'], 'removed');
-        if ($purge) {
+        PluginRegistry::setStatus($manifest['id'], PluginStatus::UNINSTALLING);
+        try {
+            $provider = $this->loadProvider($registered, false);
+            if (($registered['status'] ?? '') === PluginStatus::ACTIVE && method_exists($provider, 'deactivate')) {
+                $provider->deactivate($this, $manifest);
+            }
+            if (method_exists($provider, 'uninstall')) {
+                $provider->uninstall($this, $manifest, $purge);
+            }
             $this->removePluginFiles($registered['path']);
+            PluginRegistry::setStatus($manifest['id'], PluginStatus::REMOVED);
+        } catch (Throwable $e) {
+            PluginRegistry::setStatus($manifest['id'], PluginStatus::RECOVERY_REQUIRED, $e->getMessage());
+            throw $e;
         }
         $this->audit('plugin', $purge ? 'purged' : 'uninstalled', $manifest['id'], $userId);
+        } finally {
+            $this->releaseLifecycleLock($lockName);
+        }
     }
 
     public function update($pluginId, $userId = null)
     {
+        $lockName = $this->acquireLifecycleLock($pluginId, 'update');
+        try {
         $registered = PluginRegistry::find($pluginId);
         if (!$registered) {
             throw new InvalidArgumentException('افزونه نصب نشده است.');
@@ -275,6 +316,9 @@ class PluginManager
             throw $e;
         }
         return ['from' => $current, 'to' => $manifest['version'], 'status' => $resumeStatus, 'cleanup_warning' => $cleanupWarning];
+        } finally {
+            $this->releaseLifecycleLock($lockName);
+        }
     }
 
     public function stageUpdate($pluginId, array $file, $userId = null)
@@ -542,11 +586,13 @@ class PluginManager
     public function registerRoute($pluginId, $path, $handler, array $options = [])
     {
         $path = trim((string) $path, '/');
+        $method = strtoupper(trim((string) ($options['method'] ?? 'GET')));
         if ($path === '' || strpos($path, '..') !== false || !is_string($handler) || strpos($handler, '@') === false) {
             throw new InvalidArgumentException('Route افزونه معتبر نیست.');
         }
         foreach ($this->routes as $route) {
-            if (($route['path'] ?? '') === $path) {
+            $registeredMethod = strtoupper(trim((string) ($route['options']['method'] ?? 'GET')));
+            if (($route['path'] ?? '') === $path && $registeredMethod === $method) {
                 throw new InvalidArgumentException('تعارض route افزونه شناسایی شد.');
             }
         }
@@ -554,7 +600,7 @@ class PluginManager
             'plugin_id' => (string) $pluginId,
             'path' => $path,
             'handler' => $handler,
-            'options' => $options,
+            'options' => array_merge($options, ['method' => $method]),
         ];
     }
 
@@ -841,21 +887,33 @@ class PluginManager
             $sql = (string) file_get_contents($file);
             $started = microtime(true);
             try {
-                Model::begin();
                 foreach ($this->splitSql($sql) as $statement) {
-                    Model::db()->exec($statement);
+                    $this->executeMigrationStatement($statement);
                 }
                 PluginRegistry::recordMigration($manifest['id'], $name, hash('sha256', $sql), 'success', (int) round((microtime(true) - $started) * 1000));
-                Model::commit();
             } catch (Throwable $e) {
-                Model::rollBack();
                 try {
                     PluginRegistry::recordMigration($manifest['id'], $name, hash('sha256', $sql), 'failed', (int) round((microtime(true) - $started) * 1000), $e->getMessage());
                 } catch (Throwable $ignored) {
                 }
-                PluginRegistry::setStatus($manifest['id'], PluginStatus::MIGRATION_FAILED, $e->getMessage());
+                PluginRegistry::setStatus($manifest['id'], PluginStatus::ERROR, $e->getMessage());
                 throw new RuntimeException('اجرای migration افزونه ' . $name . ' ناموفق بود: ' . $e->getMessage(), 0, $e);
             }
+        }
+    }
+
+    protected function executeMigrationStatement($sql)
+    {
+        $statement = Model::db()->prepare((string) $sql);
+        try {
+            $statement->execute();
+            do {
+                if ($statement->columnCount() > 0) {
+                    $statement->fetchAll(PDO::FETCH_ASSOC);
+                }
+            } while ($statement->nextRowset());
+        } finally {
+            $statement->closeCursor();
         }
     }
 
@@ -939,6 +997,33 @@ class PluginManager
                 'new_values' => $newValues + ['plugin_id' => $pluginId],
             ]);
         } catch (Throwable $e) {
+        }
+    }
+
+    protected function acquireLifecycleLock($pluginId, $operation)
+    {
+        $pluginId = preg_replace('/[^a-z0-9._-]/i', '', (string) $pluginId);
+        if ($pluginId === '') {
+            throw new InvalidArgumentException('شناسه افزونه معتبر نیست.');
+        }
+        $lockName = 'proma_plugin_' . substr(hash('sha256', $pluginId), 0, 32);
+        $row = Model::fetch('SELECT GET_LOCK(?, 10) AS acquired', [$lockName]);
+        if ((int) ($row['acquired'] ?? 0) !== 1) {
+            throw new RuntimeException('عملیات دیگری روی این افزونه در حال اجرا است. چند لحظه بعد دوباره تلاش کنید.');
+        }
+        $this->audit('plugin', 'lifecycle_lock_acquired', $pluginId, Auth::id(), ['operation' => (string) $operation]);
+        return $lockName;
+    }
+
+    protected function releaseLifecycleLock($lockName)
+    {
+        if (!$lockName) {
+            return;
+        }
+        try {
+            Model::fetch('SELECT RELEASE_LOCK(?) AS released', [(string) $lockName]);
+        } catch (Throwable $e) {
+            ErrorHandler::log('plugin_lifecycle_unlock', $e, 500);
         }
     }
 

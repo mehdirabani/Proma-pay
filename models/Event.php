@@ -9,54 +9,11 @@ class Event extends Model
         if (self::$schemaReady) {
             return;
         }
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS events (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                user_id BIGINT UNSIGNED NULL,
-                assigned_user_id BIGINT UNSIGNED NULL,
-                title VARCHAR(190) NOT NULL,
-                event_date DATE NOT NULL,
-                event_time TIME NULL,
-                event_type VARCHAR(40) NOT NULL DEFAULT 'general',
-                description TEXT NULL,
-                color VARCHAR(20) NOT NULL DEFAULT 'primary',
-                reminder_type VARCHAR(40) NULL,
-                reminder_at DATETIME NULL,
-                reminder_sent_at DATETIME NULL,
-                due_day_sent_at DATETIME NULL,
-                created_at DATETIME NOT NULL,
-                KEY idx_events_date (event_date),
-                KEY idx_events_assigned (assigned_user_id),
-                KEY idx_events_reminder (reminder_at, reminder_sent_at)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-        $columns = [
-            'assigned_user_id' => 'BIGINT UNSIGNED NULL AFTER user_id',
-            'event_time' => 'TIME NULL AFTER event_date',
-            'event_type' => "VARCHAR(40) NOT NULL DEFAULT 'general' AFTER event_time",
-            'reminder_type' => 'VARCHAR(40) NULL AFTER color',
-            'reminder_at' => 'DATETIME NULL AFTER reminder_type',
-            'reminder_sent_at' => 'DATETIME NULL AFTER reminder_at',
-            'due_day_sent_at' => 'DATETIME NULL AFTER reminder_sent_at',
-        ];
-        foreach ($columns as $column => $definition) {
-            try {
-                self::execute("ALTER TABLE events ADD COLUMN {$column} {$definition}");
-            } catch (Throwable $e) {
-            }
-        }
-        try {
-            self::execute('ALTER TABLE events ADD INDEX idx_events_assigned (assigned_user_id)');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('ALTER TABLE events ADD INDEX idx_events_reminder (reminder_at, reminder_sent_at)');
-        } catch (Throwable $e) {
-        }
-        try {
-            self::execute('UPDATE events SET assigned_user_id = user_id WHERE assigned_user_id IS NULL AND user_id IS NOT NULL');
-        } catch (Throwable $e) {
-        }
+        SchemaGuard::requireColumns('events', [
+            'user_id', 'assigned_user_id', 'created_by', 'title', 'event_date', 'event_time',
+            'event_type', 'priority', 'status', 'description', 'color', 'reminder_type',
+            'reminder_at', 'reminder_sent_at', 'due_day_sent_at', 'created_at',
+        ]);
         self::$schemaReady = true;
     }
 
@@ -114,8 +71,8 @@ class Event extends Model
         return self::fetchAll(
             $select . " WHERE e.event_date >= ? AND e.event_date < ?
              AND e.event_type != 'installment'
-             AND (e.assigned_user_id = ? OR e.user_id = ?)" . $order,
-            [$startDate, $endDate, $viewerId, $viewerId]
+             AND (e.assigned_user_id = ? OR e.user_id = ? OR e.created_by = ?)" . $order,
+            [$startDate, $endDate, $viewerId, $viewerId, $viewerId]
         );
     }
 
@@ -178,15 +135,18 @@ class Event extends Model
         );
         self::execute(
             'INSERT INTO events
-             (user_id, assigned_user_id, title, event_date, event_time, event_type, description, color, reminder_type, reminder_at, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+             (user_id, assigned_user_id, created_by, title, event_date, event_time, event_type, priority, status, description, color, reminder_type, reminder_at, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
             [
                 $assignedUserId,
                 $assignedUserId,
+                !empty($data['created_by']) ? (int) $data['created_by'] : null,
                 trim($data['title']),
                 $data['event_date'],
                 $eventTime,
                 self::normalizeEventType($data['event_type'] ?? 'general'),
+                in_array($data['priority'] ?? '', ['low', 'normal', 'high', 'urgent'], true) ? $data['priority'] : 'normal',
+                in_array($data['status'] ?? '', ['scheduled', 'completed', 'cancelled'], true) ? $data['status'] : 'scheduled',
                 trim($data['description'] ?? ''),
                 in_array($data['color'] ?? '', ['primary', 'success', 'warning', 'danger', 'info'], true) ? $data['color'] : 'primary',
                 $reminderType,
@@ -359,6 +319,27 @@ class Event extends Model
         return to_persian_digits(substr((string) $time, 0, 5));
     }
 
+    public static function priorityLabel($priority)
+    {
+        return ['low' => 'کم', 'normal' => 'عادی', 'high' => 'مهم', 'urgent' => 'فوری'][$priority] ?? 'عادی';
+    }
+
+    public static function countdownLabel(array $event)
+    {
+        $target = strtotime((string) ($event['event_date'] ?? '') . ' ' . ((string) ($event['event_time'] ?? '') ?: '23:59:59'));
+        if (!$target) {
+            return '-';
+        }
+        $seconds = $target - time();
+        if ($seconds < 0) {
+            return 'گذشته';
+        }
+        if ($seconds < 86400) {
+            return to_persian_digits(max(1, (int) ceil($seconds / 3600))) . ' ساعت مانده';
+        }
+        return to_persian_digits((int) ceil($seconds / 86400)) . ' روز مانده';
+    }
+
     protected static function sendCalendarNotification(array $event, $kind, array $settings)
     {
         $recipients = self::notificationRecipients($event, $settings);
@@ -373,17 +354,22 @@ class Event extends Model
             : 'موعد رویداد «' . $event['title'] . '» در تاریخ ' . $eventDate . ' ساعت ' . $eventTime . ' نزدیک است.';
         $url = self::eventUrl($event);
         foreach ($recipients as $recipientId) {
-            Notification::create((int) $recipientId, $title, $body, 'calendar', $url);
+            Notification::create((int) $recipientId, $title, $body, 'calendar', $url, 'calendar-' . $kind . '-' . (int) $event['id']);
         }
         return count($recipients);
     }
 
     protected static function notificationRecipients(array $event, array $settings)
     {
-        $assignedUserId = (int) ($event['assigned_user_id'] ?: ($event['user_id'] ?? 0));
-        if ($assignedUserId > 0) {
-            $user = self::fetch('SELECT id FROM users WHERE id = ? AND status = ? LIMIT 1', [$assignedUserId, 'active']);
-            return $user ? [(int) $user['id']] : [];
+        $recipientIds = array_values(array_unique(array_filter(array_map('intval', [
+            $event['assigned_user_id'] ?? 0,
+            $event['user_id'] ?? 0,
+            $event['created_by'] ?? 0,
+        ]))));
+        if ($recipientIds) {
+            $placeholders = implode(',', array_fill(0, count($recipientIds), '?'));
+            $users = self::fetchAll("SELECT id FROM users WHERE id IN ({$placeholders}) AND status = 'active'", $recipientIds);
+            return array_map('intval', array_column($users, 'id'));
         }
         if (($event['event_type'] ?? '') === 'legal') {
             return self::legalEventRecipients($event);

@@ -57,6 +57,63 @@ class ProfileController extends Controller
         redirect('profile');
     }
 
+    public function uploadAvatar()
+    {
+        Auth::requireLogin();
+        $this->onlyPost();
+        try {
+            $path = UploadHelper::storeAvatar($_FILES['avatar'] ?? [], Auth::id());
+            if (!$path) {
+                throw new InvalidArgumentException('یک تصویر برای آواتار انتخاب کنید.');
+            }
+            User::updateUploadedAvatar(Auth::id(), $path);
+            set_flash('success', 'تصویر پروفایل شما بلافاصله تغییر کرد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'بارگذاری آواتار انجام نشد.');
+        }
+        redirect('profile');
+    }
+
+    public function removeAvatar()
+    {
+        Auth::requireLogin();
+        $this->onlyPost();
+        try {
+            User::removeUploadedAvatar(Auth::id());
+            set_flash('success', 'تصویر بارگذاری‌شده حذف شد و آواتار پیش‌فرض نمایش داده می‌شود.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'حذف آواتار انجام نشد.');
+        }
+        redirect('profile');
+    }
+
+    public function avatarFile($id)
+    {
+        Auth::requireLogin();
+        $user = User::find((int) $id);
+        $path = $user ? UploadHelper::absolutePath($user['avatar_path'] ?? '') : null;
+        if (!$path) {
+            ErrorHandler::abort(404);
+        }
+        $mime = function_exists('mime_content_type') ? (mime_content_type($path) ?: 'application/octet-stream') : 'application/octet-stream';
+        if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+            ErrorHandler::abort(404);
+        }
+        $etag = '"' . hash_file('sha256', $path) . '"';
+        if (trim((string) ($_SERVER['HTTP_IF_NONE_MATCH'] ?? '')) === $etag) {
+            http_response_code(304);
+            exit;
+        }
+        header('Content-Type: ' . $mime);
+        header('Content-Length: ' . filesize($path));
+        header('Content-Disposition: inline; filename="avatar.' . pathinfo($path, PATHINFO_EXTENSION) . '"');
+        header('Cache-Control: private, max-age=86400');
+        header('ETag: ' . $etag);
+        header('X-Content-Type-Options: nosniff');
+        readfile($path);
+        exit;
+    }
+
     public function uploadIdentity()
     {
         Auth::requireLogin();
@@ -116,12 +173,13 @@ class ProfileController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
-        if (ProfileRequest::approve((int) $id, Auth::id())) {
-            set_flash('success', 'درخواست اصلاح مشخصات تایید و اعمال شد.');
+        $result = ProfileRequest::approveFields((int) $id, Auth::id(), (array) ($_POST['approved_fields'] ?? []), $_POST['review_notes'] ?? '');
+        if (!empty($result['ok'])) {
+            set_flash('success', ($result['status'] ?? '') === 'partial' ? 'فیلدهای انتخاب‌شده تایید و سایر فیلدها رد شدند.' : (($result['status'] ?? '') === 'approved' ? 'درخواست اصلاح مشخصات تایید و اعمال شد.' : 'درخواست اصلاح مشخصات رد شد.'));
         } else {
             set_flash('error', 'درخواست در انتظار بررسی پیدا نشد.');
         }
-        redirect('users');
+        redirect('review', ['tab' => 'profile']);
     }
 
     public function reject($id)
@@ -133,7 +191,22 @@ class ProfileController extends Controller
         } else {
             set_flash('error', 'درخواست در انتظار بررسی پیدا نشد.');
         }
-        redirect('users');
+        redirect('review', ['tab' => 'profile']);
+    }
+
+    public function respond($id)
+    {
+        Auth::requireLogin();
+        $this->onlyPost();
+        try {
+            if (!ProfileRequest::respond((int) $id, Auth::id(), $_POST['customer_response'] ?? '')) {
+                throw new InvalidArgumentException('درخواست قابل پاسخ‌گویی پیدا نشد.');
+            }
+            set_flash('success', 'پاسخ شما برای مدیریت ثبت شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت پاسخ انجام نشد.');
+        }
+        redirect('profile');
     }
 
     public function identityApprove($id)

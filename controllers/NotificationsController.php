@@ -32,4 +32,37 @@ class NotificationsController extends Controller
         set_flash('success', 'اعلان‌ها خوانده شد.');
         redirect('notifications');
     }
+
+    public function open($id)
+    {
+        Auth::requireLogin();
+        $item = Notification::findForUser((int) $id, Auth::id());
+        if (!$item) {
+            ErrorHandler::abort(404);
+        }
+        Notification::markRead((int) $id, Auth::id(), true);
+        $target = trim((string) ($item['url'] ?? ''));
+        if ($target !== '' && strpos($target, app_base_url() . '/index.php') === 0) {
+            redirect_raw($target);
+        }
+        redirect('notifications');
+    }
+
+    public function archive($id)
+    {
+        Auth::requireLogin();
+        $this->onlyPost();
+        Notification::archive((int) $id, Auth::id());
+        set_flash('success', 'اعلان بایگانی شد.');
+        redirect('notifications');
+    }
+
+    public function delete($id)
+    {
+        Auth::requireLogin();
+        $this->onlyPost();
+        Notification::deleteForUser((int) $id, Auth::id());
+        set_flash('success', 'اعلان از فهرست شما حذف شد.');
+        redirect('notifications');
+    }
 }

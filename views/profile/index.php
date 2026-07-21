@@ -3,11 +3,18 @@
     <section class="card proma-profile-card">
       <div class="card-body">
         <?php $profileAvatar = avatar_key_for($user['avatar_key'] ?? null, $user['id'] ?? $user['full_name']); ?>
-        <div class="proma-avatar-choice <?= e($profileAvatar) ?>" aria-label="<?= e($user['full_name']) ?>"><img data-avatar-image src="<?= e(avatar_asset_url($profileAvatar)) ?>" alt="آواتار <?= e($user['full_name']) ?>"></div>
+        <div class="proma-avatar-choice <?= e($profileAvatar) ?>" aria-label="<?= e($user['full_name']) ?>"><img data-avatar-image src="<?= e(user_avatar_asset_url($user)) ?>" alt="آواتار <?= e($user['full_name']) ?>"></div>
         <h4><?= e($user['full_name']) ?> <?php if (!empty($identityVerified)): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓ آبی</span><?php endif; ?></h4>
         <p><?= e(role_label($user['role'])) ?></p>
         <?php if ($latestRequest): ?>
-          <span class="badge badge-light-<?= e(badge_class($latestRequest['status'])) ?>"><?= e(status_label($latestRequest['status'])) ?></span>
+          <span class="badge badge-light-<?= e(badge_class($latestRequest['status'])) ?>"><?= e(ProfileRequest::statusLabel($latestRequest['status'])) ?></span>
+          <?php if (in_array($latestRequest['status'] ?? '', ['partial', 'rejected'], true)): ?>
+            <form method="post" action="<?= e(url('profile/respond/' . (int) $latestRequest['id'])) ?>" class="proma-profile-response">
+              <?= csrf_field() ?>
+              <label>پاسخ به نتیجه بررسی<textarea name="customer_response" rows="2" required><?= e($latestRequest['customer_response'] ?? '') ?></textarea></label>
+              <button class="btn small secondary" type="submit"><i data-feather="send"></i> ثبت پاسخ</button>
+            </form>
+          <?php endif; ?>
         <?php endif; ?>
         <form method="post" action="<?= e(url('profile/updateAvatar')) ?>" class="proma-profile-avatar-form" data-disable-on-submit>
           <?= csrf_field() ?>
@@ -23,6 +30,18 @@
           <p class="proma-form-help">تغییر آواتار فوری است و به تایید مدیریت نیاز ندارد.</p>
           <button class="btn small secondary" type="submit">ذخیره آواتار</button>
         </form>
+        <form method="post" action="<?= e(url('profile/uploadAvatar')) ?>" enctype="multipart/form-data" class="proma-profile-avatar-upload" data-disable-on-submit>
+          <?= csrf_field() ?>
+          <label>بارگذاری تصویر شخصی<input type="file" name="avatar" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required></label>
+          <p class="proma-form-help">JPEG، PNG یا WebP؛ حداکثر ۵ مگابایت و ابعاد ۶۴ تا ۴۰۹۶ پیکسل.</p>
+          <button class="btn small" type="submit"><i data-feather="upload"></i> بارگذاری تصویر</button>
+        </form>
+        <?php if (!empty($user['avatar_path'])): ?>
+          <form method="post" action="<?= e(url('profile/removeAvatar')) ?>" data-disable-on-submit>
+            <?= csrf_field() ?>
+            <button class="btn small danger" type="submit"><i data-feather="trash-2"></i> حذف تصویر شخصی</button>
+          </form>
+        <?php endif; ?>
       </div>
     </section>
   </div>

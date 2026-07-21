@@ -339,7 +339,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
                 </div>
               </li>
             <?php endif; ?>
-            <li class="onhover-dropdown" data-notification-center data-feed-url="<?= e(url('notifications/feed')) ?>" data-read-url="<?= e(url('notifications/read')) ?>" data-latest-id="<?= (int) $latestNotificationId ?>">
+            <li class="onhover-dropdown" data-notification-center data-feed-url="<?= e(url('notifications/feed')) ?>" data-read-url="<?= e(url('notifications/read')) ?>" data-open-url="<?= e(url('notifications/open/__ID__')) ?>" data-latest-id="<?= (int) $latestNotificationId ?>">
               <div class="notification-box">
                 <svg><use href="<?= e($sprite) ?>#notification"></use></svg>
                 <span class="badge rounded-pill badge-secondary" data-notification-badge<?= $unreadNotifications ? '' : ' hidden' ?>><?= to_persian_digits($unreadNotifications) ?></span>
@@ -351,7 +351,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
                     <li class="proma-notification-empty" data-notification-empty><p>اعلان تازه‌ای ندارید.</p></li>
                   <?php else: foreach ($notifications as $item): ?>
                     <li class="proma-dropdown-notification-item proma-dropdown-notification-item--<?= e($notificationTone($item['type'] ?? '')) ?>" data-notification-item="<?= (int) $item['id'] ?>">
-                      <a href="<?= e($item['url'] ?: url('dashboard')) ?>">
+                      <a href="<?= e(url('notifications/open/' . (int) $item['id'])) ?>">
                         <span class="proma-notification-time"><?= e($item['relative_time'] ?? jdatetime($item['created_at'] ?? '')) ?></span>
                         <strong><?= e($item['title']) ?></strong>
                         <small><?= e($item['body']) ?></small>
@@ -375,13 +375,13 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
               </a>
             </li>
             <li class="profile-nav onhover-dropdown pe-0 py-0">
-              <div class="media profile-media">
-                <span class="proma-avatar <?= e($userAvatarKey) ?>" aria-label="<?= e($user['full_name'] ?? $userInitial) ?>"><img data-avatar-image src="<?= e(avatar_asset_url($userAvatarKey)) ?>" alt="آواتار <?= e($user['full_name'] ?? $userInitial) ?>" loading="lazy"></span>
+              <button class="media profile-media proma-profile-trigger" type="button" aria-haspopup="true" aria-expanded="false" aria-label="باز کردن منوی حساب کاربری">
+                <span class="proma-avatar <?= e($userAvatarKey) ?>" aria-label="<?= e($user['full_name'] ?? $userInitial) ?>"><img data-avatar-image src="<?= e(user_avatar_asset_url($user ?? [])) ?>" alt="آواتار <?= e($user['full_name'] ?? $userInitial) ?>" loading="lazy"></span>
                 <div class="media-body">
                   <span><?= e($user['full_name'] ?? '') ?></span>
                   <p class="mb-0"><?= e(role_label($user['role'] ?? '')) ?> <i class="middle fa fa-angle-down"></i></p>
                 </div>
-              </div>
+              </button>
               <ul class="profile-dropdown onhover-show-div">
                 <li><a href="<?= e(url('profile')) ?>"><i data-feather="user"></i><span>پروفایل من</span></a></li>
                 <li><a href="<?= e(url('chat')) ?>"><i data-feather="message-square"></i><span>پیام‌ها</span></a></li>

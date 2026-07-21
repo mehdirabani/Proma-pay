@@ -11,7 +11,7 @@ $assert = static function ($condition, string $message): void {
 };
 
 $manifest = json_decode((string) file_get_contents($plugin . '/plugin.json'), true);
-$assert(($manifest['version'] ?? '') === '1.2.3', 'Plugin version must be 1.2.3.');
+$assert(version_compare((string) ($manifest['version'] ?? '0.0.0'), '1.2.3', '>='), 'Plugin version must retain V1.2.3 compatibility.');
 $assert(($manifest['requires_core'] ?? '') === '1.3.2', 'Plugin must require route-scoped asset support from core 1.3.2.');
 $routeOrder = array_map(static fn (array $route): string => (string) ($route['path'] ?? ''), $manifest['routes'] ?? []);
 $ledgerPostIndex = array_search('plugin/accounting/ledger/post', $routeOrder, true);
@@ -59,7 +59,7 @@ foreach (['dashboard', 'accounts', 'ledger', 'sales', 'commissions', 'rules', 's
 $migrations = glob($plugin . '/migrations/*.sql') ?: [];
 $assert(count($migrations) === 3, 'Request-integrity migration is missing.');
 $manifest = json_decode((string) file_get_contents($plugin . '/plugin.json'), true);
-$assert(($manifest['version'] ?? '') === '1.2.3', 'Accounting request-integrity changes require plugin version 1.2.3.');
+$assert(version_compare((string) ($manifest['version'] ?? '0.0.0'), '1.2.3', '>='), 'Accounting request-integrity changes require plugin version 1.2.3 or newer.');
 $integrityMigration = (string) file_get_contents($plugin . '/migrations/2026_07_18_accounting_request_integrity.sql');
 $assert(strpos($integrityMigration, 'accounting_requests') !== false, 'Accounting request idempotency table is missing.');
 $ledger = (string) file_get_contents($plugin . '/src/Services/LedgerService.php');

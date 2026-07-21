@@ -143,6 +143,16 @@ function avatar_asset_url($value)
     return asset_url(avatar_catalog()[$key]['file']);
 }
 
+function user_avatar_asset_url(array $user)
+{
+    if (!empty($user['id']) && !empty($user['avatar_path'])) {
+        return url('profile/avatarFile/' . (int) $user['id'], [
+            'v' => max(1, (int) ($user['avatar_version'] ?? 1)),
+        ]);
+    }
+    return avatar_asset_url(avatar_key_for($user['avatar_key'] ?? null, $user['id'] ?? ($user['full_name'] ?? '')));
+}
+
 function e($value)
 {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
@@ -472,6 +482,18 @@ function badge_class($status)
         'installed' => 'info',
         'uninstalled' => 'muted',
         'rejected' => 'danger',
+        'validating' => 'warning',
+        'activating' => 'warning',
+        'deactivating' => 'warning',
+        'installing' => 'warning',
+        'updating' => 'warning',
+        'uninstalling' => 'warning',
+        'error' => 'danger',
+        'recovery_required' => 'danger',
+        'installation_failed' => 'danger',
+        'migration_failed' => 'danger',
+        'health_failed' => 'danger',
+        'repair_required' => 'danger',
     ];
     return $map[$status] ?? 'muted';
 }

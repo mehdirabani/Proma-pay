@@ -12,38 +12,10 @@ $pageUrl = function ($page) {
 ?>
 <div data-ajax-results="legal">
 <div class="row">
-  <div class="col-xxl-4 col-xl-5">
-    <section class="card">
-      <div class="card-header card-no-border"><h5>ثبت پرونده شکایت</h5></div>
-      <div class="card-body">
-        <form method="post" action="<?= e(url('legal/create')) ?>" class="form-grid">
-          <?= csrf_field() ?>
-          <label class="full">قرارداد واجد شرایط
-            <span class="proma-live-search" data-contract-picker data-search-url="<?= e(url('contracts/search', ['eligible' => 'legal', 'without_open_case' => '1'])) ?>">
-              <input data-contract-picker-input autocomplete="off" required placeholder="شماره قرارداد، مشتری، موبایل یا کد ملی را جستجو کنید">
-              <input type="hidden" name="contract_id" data-contract-picker-id>
-              <span class="proma-live-results" data-contract-picker-results hidden></span>
-            </span>
-          </label>
-          <label class="full">وکیل مسئول
-            <span class="proma-live-search" data-user-live-search data-search-url="<?= e(url('users/search', ['roles' => 'lawyer'])) ?>">
-              <input data-user-search-input autocomplete="off" placeholder="نام، موبایل یا واحد وکیل">
-              <input type="hidden" name="lawyer_id" data-user-id-input>
-              <span class="proma-live-results" data-user-search-results hidden></span>
-              <span class="proma-chip-row" data-user-chip></span>
-            </span>
-          </label>
-          <label class="full">شرح اولیه<textarea name="notes"></textarea></label>
-          <div class="full"><button class="btn danger" type="submit">ثبت شکایت</button></div>
-        </form>
-      </div>
-    </section>
-  </div>
-
-  <div class="col-xxl-8 col-xl-7">
+  <div class="col-12">
     <section class="card">
       <div class="card-header card-no-border">
-        <div class="header-top"><h5>پرونده‌های حقوقی</h5><span class="badge badge-light-danger"><?= to_persian_digits($pagination['total'] ?? count($cases)) ?> پرونده</span></div>
+        <div class="header-top"><div><h5>پرونده‌های حقوقی</h5><small class="text-muted">پرونده جدید را از صفحه جزئیات همان قرارداد ارجاع دهید.</small></div><span class="badge badge-light-danger"><?= to_persian_digits($pagination['total'] ?? count($cases)) ?> پرونده</span></div>
       </div>
       <div class="card-body pt-0">
         <form method="get" action="<?= e(url('legal')) ?>" class="form-grid three" data-ajax-filter data-ajax-target="[data-ajax-results='legal']">

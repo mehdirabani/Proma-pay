@@ -10,19 +10,10 @@ class User extends Model
         if (self::$profileColumnsReady) {
             return;
         }
-        foreach ([
-            'address' => 'TEXT NULL',
-            'avatar_key' => "VARCHAR(40) NULL",
-            'father_name' => 'VARCHAR(190) NULL',
-            'issued_from' => 'VARCHAR(190) NULL',
-            'department' => 'VARCHAR(40) NULL',
-            'is_department_manager' => 'TINYINT(1) NOT NULL DEFAULT 0',
-        ] as $column => $definition) {
-            try {
-                self::execute("ALTER TABLE users ADD COLUMN {$column} {$definition}");
-            } catch (Throwable $e) {
-            }
-        }
+        SchemaGuard::requireColumns('users', [
+            'address', 'avatar_key', 'avatar_path', 'avatar_version', 'avatar_updated_at',
+            'father_name', 'issued_from', 'department', 'is_department_manager',
+        ]);
         self::$profileColumnsReady = true;
     }
 
@@ -453,17 +444,7 @@ class User extends Model
         if (self::$medalSchemaReady) {
             return;
         }
-        foreach ([
-            'icon_key' => "VARCHAR(40) NULL DEFAULT 'award'",
-            'source' => "VARCHAR(40) NOT NULL DEFAULT 'manual'",
-            'is_active' => 'TINYINT(1) NOT NULL DEFAULT 1',
-            'updated_at' => 'DATETIME NULL',
-        ] as $column => $definition) {
-            try {
-                self::execute("ALTER TABLE medals ADD COLUMN {$column} {$definition}");
-            } catch (Throwable $e) {
-            }
-        }
+        SchemaGuard::requireColumns('medals', ['user_id', 'title', 'description', 'points', 'code', 'icon_key', 'source', 'is_active', 'updated_at', 'created_at']);
         self::$medalSchemaReady = true;
     }
 
@@ -789,18 +770,7 @@ class User extends Model
 
     protected static function ensureMergeSchema()
     {
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS customer_merge_logs (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                keep_customer_id BIGINT UNSIGNED NOT NULL,
-                merged_customer_id BIGINT UNSIGNED NOT NULL,
-                merged_by BIGINT UNSIGNED NULL,
-                snapshot_json LONGTEXT NULL,
-                created_at DATETIME NOT NULL,
-                KEY idx_customer_merge_keep (keep_customer_id),
-                KEY idx_customer_merge_merged (merged_customer_id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
+        SchemaGuard::requireColumns('customer_merge_logs', ['keep_customer_id', 'merged_customer_id', 'merged_by', 'snapshot_json', 'created_at']);
     }
 
     protected static function mergedCustomerProfile(array $keep, array $merge)
@@ -880,10 +850,12 @@ class User extends Model
         self::execute(
             "UPDATE users
              SET avatar_key = ?, avatar_category = 'manual', avatar_source = 'self_service', avatar_locked = 1,
-                 avatar_suggestion_reason = ?, updated_at = NOW()
+                 avatar_suggestion_reason = ?, avatar_path = NULL, avatar_version = avatar_version + 1,
+                 avatar_updated_at = NOW(), updated_at = NOW()
              WHERE id = ?",
             [$avatarKey, 'انتخاب مستقیم صاحب حساب.', (int) $id]
         );
+        self::archivePreviousAvatar($user['avatar_path'] ?? null);
         if (class_exists('AuditLog')) {
             try {
                 AuditLog::record('profile', 'avatar_updated', 'user', (int) $id, [
@@ -897,6 +869,75 @@ class User extends Model
             }
         }
         return true;
+    }
+
+    public static function updateUploadedAvatar($id, $relativePath)
+    {
+        self::ensureProfileColumns();
+        $user = self::find((int) $id);
+        $relativePath = trim((string) $relativePath);
+        if (!$user) {
+            throw new InvalidArgumentException('حساب کاربری پیدا نشد.');
+        }
+        if (strpos($relativePath, 'storage/secure_uploads/avatars/' . (int) $id . '/') !== 0 || !UploadHelper::absolutePath($relativePath)) {
+            throw new InvalidArgumentException('مسیر آواتار معتبر نیست.');
+        }
+        self::execute(
+            "UPDATE users SET avatar_path = ?, avatar_source = 'upload', avatar_locked = 1,
+             avatar_suggestion_reason = ?, avatar_version = avatar_version + 1,
+             avatar_updated_at = NOW(), updated_at = NOW() WHERE id = ?",
+            [$relativePath, 'بارگذاری مستقیم توسط صاحب حساب.', (int) $id]
+        );
+        self::archivePreviousAvatar($user['avatar_path'] ?? null, $relativePath);
+        self::auditAvatarChange((int) $id, $user, ['avatar_path' => $relativePath, 'avatar_source' => 'upload'], 'avatar_uploaded');
+        return true;
+    }
+
+    public static function removeUploadedAvatar($id)
+    {
+        self::ensureProfileColumns();
+        $user = self::find((int) $id);
+        if (!$user) {
+            throw new InvalidArgumentException('حساب کاربری پیدا نشد.');
+        }
+        self::execute(
+            "UPDATE users SET avatar_path = NULL, avatar_source = 'self_service',
+             avatar_version = avatar_version + 1, avatar_updated_at = NOW(), updated_at = NOW() WHERE id = ?",
+            [(int) $id]
+        );
+        self::archivePreviousAvatar($user['avatar_path'] ?? null);
+        self::auditAvatarChange((int) $id, $user, ['avatar_path' => null, 'avatar_key' => $user['avatar_key'] ?? null], 'avatar_removed');
+        return true;
+    }
+
+    protected static function archivePreviousAvatar($oldPath, $newPath = null)
+    {
+        $oldPath = trim((string) $oldPath);
+        if ($oldPath === '' || $oldPath === (string) $newPath) {
+            return;
+        }
+        try {
+            UploadHelper::deleteRelative($oldPath);
+        } catch (Throwable $e) {
+            ErrorHandler::log('avatar_archive_previous', $e, 500);
+        }
+    }
+
+    protected static function auditAvatarChange($userId, array $oldUser, array $newValues, $action)
+    {
+        if (!class_exists('AuditLog')) {
+            return;
+        }
+        try {
+            AuditLog::record('profile', $action, 'user', (int) $userId, [
+                'actor_user_id' => (int) $userId,
+                'severity' => 'low',
+                'old_values' => ['avatar_key' => $oldUser['avatar_key'] ?? null, 'avatar_path' => $oldUser['avatar_path'] ?? null],
+                'new_values' => $newValues,
+                'description' => 'آواتار توسط صاحب حساب تغییر کرد.',
+            ]);
+        } catch (Throwable $ignored) {
+        }
     }
 
     public static function applyProfileData($id, array $data)

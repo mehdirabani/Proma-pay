@@ -6,19 +6,7 @@ class BackupService
 
     public static function ensureSchema()
     {
-        Model::execute(
-            "CREATE TABLE IF NOT EXISTS backup_logs (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                user_id BIGINT UNSIGNED NULL,
-                action VARCHAR(40) NOT NULL,
-                file_name VARCHAR(255) NULL,
-                status VARCHAR(40) NOT NULL,
-                message TEXT NULL,
-                created_at DATETIME NOT NULL,
-                INDEX idx_backup_logs_user (user_id),
-                INDEX idx_backup_logs_action (action)
-            )"
-        );
+        SchemaGuard::requireColumns('backup_logs', ['user_id', 'action', 'file_name', 'status', 'message', 'created_at']);
     }
 
     public static function baseDir()
