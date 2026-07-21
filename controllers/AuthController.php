@@ -14,8 +14,7 @@ class AuthController extends Controller
             $throttle = LoginThrottle::inspect($identifier, $ipAddress);
             if (!empty($throttle['blocked'])) {
                 LoginThrottle::progressiveDelay($throttle['failures'] ?? 0);
-                set_flash('error', 'اطلاعات ورود صحیح نیست یا امکان ورود موقتاً محدود شده است.');
-                redirect('auth/login');
+                ErrorHandler::respond(429, 'اطلاعات ورود صحیح نیست یا امکان ورود موقتاً محدود شده است.', [], ['Retry-After' => (string) (LoginThrottle::LOCK_MINUTES * 60)]);
             }
             if (Auth::unifiedLogin($identifier, $_POST['password'] ?? '')) {
                 LoginThrottle::clearSuccessful($identifier, $ipAddress);
@@ -26,6 +25,9 @@ class AuthController extends Controller
             }
             $throttle = LoginThrottle::recordFailure($identifier, $ipAddress);
             LoginThrottle::progressiveDelay($throttle['failures'] ?? 1);
+            if (!empty($throttle['blocked'])) {
+                ErrorHandler::respond(429, 'اطلاعات ورود صحیح نیست یا امکان ورود موقتاً محدود شده است.', [], ['Retry-After' => (string) (LoginThrottle::LOCK_MINUTES * 60)]);
+            }
             set_flash('error', 'اطلاعات ورود صحیح نیست یا امکان ورود موقتاً محدود شده است.');
             redirect('auth/login');
         }

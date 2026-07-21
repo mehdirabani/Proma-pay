@@ -4,11 +4,14 @@ class Router
 {
     public function dispatch()
     {
+        $requestStartedAt = microtime(true);
         $route = trim($_GET['route'] ?? '', '/');
         if ($route === '') {
             $route = Auth::check() ? 'dashboard' : (ecommerce_is_enabled() ? 'ecommerce/landing' : 'auth/login');
         }
+        RequestTelemetry::setRoute($route);
         if ($route === 'health/live' || $route === 'health/ready') {
+            RequestTelemetry::recordSpan('route.health', $requestStartedAt, ['route' => $route]);
             $health = new HealthController();
             $health->respond($route === 'health/live');
             return;
@@ -16,6 +19,7 @@ class Router
         if (class_exists('PluginManager')) {
             try {
                 if (PluginManager::boot()->dispatchRoute($route)) {
+                    RequestTelemetry::recordSpan('route.plugin', $requestStartedAt, ['route' => $route]);
                     return;
                 }
             } catch (Throwable $e) {
@@ -46,6 +50,7 @@ class Router
             return;
         }
         call_user_func_array([$controller, $actionName], $params);
+        RequestTelemetry::recordSpan('route.core', $requestStartedAt, ['controller' => $controllerName, 'action' => $actionName]);
     }
 
     protected function notFound()

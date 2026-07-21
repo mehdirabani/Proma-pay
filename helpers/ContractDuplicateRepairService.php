@@ -2,9 +2,15 @@
 
 final class ContractDuplicateRepairService
 {
-    public static function scan($limit = 5000)
+    public static function scan($limit = 5000, $customerId = null)
     {
         $limit = max(100, min(10000, (int) $limit));
+        $params = [];
+        $customerFilter = '';
+        if ((int) $customerId > 0) {
+            $customerFilter = ' AND c.customer_id = ?';
+            $params[] = (int) $customerId;
+        }
         $rows = Model::fetchAll(
             "SELECT c.*, u.full_name AS customer_name,
                     (SELECT COUNT(*) FROM payments p WHERE p.contract_id = c.id AND p.status = 'paid' AND COALESCE(p.is_corrected, 0) = 0) AS effective_payment_count,
@@ -14,8 +20,10 @@ final class ContractDuplicateRepairService
              JOIN users u ON u.id = c.customer_id
              WHERE c.status != 'cancelled'
                AND NOT EXISTS (SELECT 1 FROM contract_duplicate_repairs r WHERE r.duplicate_contract_id = c.id)
+               {$customerFilter}
              ORDER BY c.customer_id, c.created_at, c.id
-             LIMIT {$limit}"
+             LIMIT {$limit}",
+            $params
         );
         $buckets = [];
         foreach ($rows as $row) {

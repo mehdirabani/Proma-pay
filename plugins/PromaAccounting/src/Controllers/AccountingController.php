@@ -13,19 +13,57 @@ class AccountingController extends \Controller
 {
     public function dashboard()
     {
-        $settings = AccountingRepository::settings();
+        $widgetErrors = [];
+        $settings = $this->dashboardWidget('settings', [AccountingRepository::class, 'settings'], ['setup_status' => 'completed'], $widgetErrors);
         if (($settings['setup_status'] ?? 'pending') === 'pending') {
             \redirect('plugin/accounting/setup');
         }
+        \Auth::releaseSessionLock();
         $this->render('plugin:proma-accounting/dashboard', [
             'title' => 'داشبورد حسابداری',
-            'summary' => AccountingRepository::dashboard(),
-            'accounts' => AccountingRepository::accounts('', 1, 8)['items'],
-            'series' => AccountingRepository::dashboardSeries(),
-            'recentEntries' => AccountingRepository::recentLedger(8),
-            'topSellers' => AccountingRepository::topSellers(5),
+            'summary' => $this->dashboardWidget('summary', [AccountingRepository::class, 'dashboard'], $this->emptyDashboardSummary(), $widgetErrors),
+            'series' => $this->dashboardWidget('series', [AccountingRepository::class, 'dashboardSeries'], ['labels' => [], 'receipts' => [], 'payments' => []], $widgetErrors),
+            'recentEntries' => $this->dashboardWidget('recent_ledger', static function () {
+                return AccountingRepository::recentLedger(8);
+            }, [], $widgetErrors),
+            'topSellers' => $this->dashboardWidget('top_sellers', static function () {
+                return AccountingRepository::topSellers(5);
+            }, [], $widgetErrors),
             'settings' => $settings,
+            'widgetErrors' => $widgetErrors,
         ]);
+    }
+
+    private function dashboardWidget($name, callable $loader, $fallback, array &$errors)
+    {
+        $startedAt = microtime(true);
+        try {
+            return call_user_func($loader);
+        } catch (\Throwable $e) {
+            $errors[] = (string) $name;
+            \ErrorHandler::log('accounting_dashboard_' . $name, $e, 503);
+            return $fallback;
+        } finally {
+            if (class_exists('RequestTelemetry', false)) {
+                \RequestTelemetry::recordSpan('accounting.widget', $startedAt, ['widget' => $name]);
+            }
+        }
+    }
+
+    private function emptyDashboardSummary()
+    {
+        return [
+            'users' => 0,
+            'sales' => 0,
+            'commission' => '0',
+            'pending_commissions' => '0',
+            'payable_commissions' => '0',
+            'positive_balances' => '0',
+            'negative_balances' => '0',
+            'ledger' => '0',
+            'payments_this_month' => '0',
+            'receipts_this_month' => '0',
+        ];
     }
 
     public function accounts()

@@ -174,6 +174,9 @@ class ErrorHandler
 
     public static function log($kind, Throwable $exception, $status = 500)
     {
+        if (class_exists('RequestTelemetry', false)) {
+            RequestTelemetry::recordError($kind, $status);
+        }
         $line = sprintf(
             '[PromaPay][%s][%s][HTTP_%d] %s: %s at %s:%d',
             self::requestId(),
@@ -190,6 +193,9 @@ class ErrorHandler
     protected static function emit($status, $message = '', array $details = [], array $headers = [])
     {
         $status = max(400, min(599, (int) $status));
+        if (class_exists('RequestTelemetry', false)) {
+            RequestTelemetry::setStatus($status);
+        }
         [$title, $fallback] = self::statusMeta($status);
         $message = trim((string) $message) ?: $fallback;
 

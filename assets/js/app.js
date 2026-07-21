@@ -104,6 +104,58 @@
     }, 4200);
   };
 
+  const createAdaptivePoller = function (task, options) {
+    const config = Object.assign({ interval: 15000, maxInterval: 120000, hiddenInterval: 60000 }, options || {});
+    let timer = null;
+    let controller = null;
+    let inFlight = false;
+    let stopped = false;
+    let delay = config.interval;
+
+    const schedule = function (nextDelay) {
+      if (stopped) return;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(run, Math.max(0, Number(nextDelay) || 0));
+    };
+
+    const run = function () {
+      if (stopped || inFlight) return;
+      if (document.hidden) {
+        schedule(config.hiddenInterval);
+        return;
+      }
+      inFlight = true;
+      controller = window.AbortController ? new AbortController() : null;
+      Promise.resolve(task(controller ? controller.signal : null)).then(function () {
+        delay = config.interval;
+      }).catch(function (error) {
+        if (!error || error.name !== 'AbortError') {
+          delay = Math.min(config.maxInterval, Math.max(config.interval, delay * 2));
+        }
+      }).finally(function () {
+        inFlight = false;
+        controller = null;
+        schedule(delay);
+      });
+    };
+
+    const wake = function () {
+      if (!inFlight) schedule(0);
+    };
+    const stop = function () {
+      stopped = true;
+      window.clearTimeout(timer);
+      if (controller) controller.abort();
+    };
+    const onVisibilityChange = function () {
+      if (!document.hidden) wake();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pagehide', stop, { once: true });
+    schedule(config.interval);
+    return { wake: wake, stop: stop };
+  };
+
   const decodeHtmlEntities = function (value) {
     if (!value || value.indexOf('&') === -1) return value || '';
     const box = document.createElement('textarea');
@@ -1953,16 +2005,21 @@
       if (window.feather && window.feather.replace) window.feather.replace();
     };
 
-    const poll = function () {
-      if ((!receiver || !receiver.value) && (!channel || !channel.value)) return;
+    const poll = function (signal) {
+      if ((!receiver || !receiver.value) && (!channel || !channel.value)) return Promise.resolve();
       const last = history.querySelector('.message:last-child');
       const after = last ? last.getAttribute('data-id') : 0;
-      fetch(fetchUrl + '&after=' + encodeURIComponent(after)).then(function (response) {
+      return fetch(fetchUrl + '&after=' + encodeURIComponent(after), {
+        signal: signal || undefined,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      }).then(function (response) {
+        if (!response.ok) throw new Error('chat_poll_http_' + response.status);
         return response.json();
       }).then(function (json) {
         if (json.ok) json.messages.forEach(addMessage);
-      }).catch(function () {});
+      });
     };
+    const chatPoller = createAdaptivePoller(poll, { interval: 5000, maxInterval: 60000, hiddenInterval: 30000 });
 
     chatForm.addEventListener('submit', function (event) {
       event.preventDefault();
@@ -1979,14 +2036,13 @@
         if (json.ok) {
           input.value = '';
           if (attachmentInput) attachmentInput.value = '';
-          poll();
+          chatPoller.wake();
         } else if (json.message) {
           showToast(json.message, 'error');
         }
       }).catch(function () {});
     });
 
-    setInterval(poll, 5000);
     history.scrollTop = history.scrollHeight;
   };
 
@@ -2093,12 +2149,14 @@
       center.setAttribute('data-latest-id', String(latestId));
     };
 
-    const fetchFeed = function () {
-      if (!feedUrl) return;
-      fetch(feedUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(function (response) { return response.json(); })
+    const fetchFeed = function (signal) {
+      if (!feedUrl) return Promise.resolve();
+      return fetch(feedUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, signal: signal || undefined })
+        .then(function (response) {
+          if (!response.ok) throw new Error('notification_poll_http_' + response.status);
+          return response.json();
+        })
         .then(function (json) { if (json.ok) render(json.feed); })
-        .catch(function () {});
     };
 
     center.addEventListener('mouseenter', function () {
@@ -2127,7 +2185,7 @@
         });
       });
     }
-    setInterval(fetchFeed, 15000);
+    createAdaptivePoller(fetchFeed, { interval: 15000, maxInterval: 120000, hiddenInterval: 60000 });
   };
 
   const initCopyShortcodes = function () {

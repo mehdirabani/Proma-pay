@@ -95,6 +95,7 @@ if (Auth::role() === 'admin') {
         ['ai', 'تحلیل هوشمند', 'stroke-learning', 'fill-learning'],
         ['file-manager', 'مدیریت فایل', 'stroke-file', 'fill-file'],
         ['medals', 'مدیریت مدال‌ها', 'stroke-award', 'fill-award'],
+        ['system-health', 'سلامت سامانه', 'stroke-board', 'fill-board'],
         ['plugins', 'پلاگین‌ها', 'stroke-others', 'fill-others'],
         ['settings', 'تنظیمات', 'stroke-others', 'fill-others', [
             ['settings', 'تنظیمات عمومی'],

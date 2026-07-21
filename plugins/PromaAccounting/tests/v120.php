@@ -57,8 +57,15 @@ foreach (['dashboard', 'accounts', 'ledger', 'sales', 'commissions', 'rules', 's
 }
 
 $migrations = glob($plugin . '/migrations/*.sql') ?: [];
-$assert(count($migrations) === 3, 'Request-integrity migration is missing.');
 $manifest = json_decode((string) file_get_contents($plugin . '/plugin.json'), true);
+$declaredMigrations = array_values($manifest['migrations'] ?? []);
+$filesystemMigrations = array_map(static function (string $path): string {
+    return 'migrations/' . basename($path);
+}, $migrations);
+sort($declaredMigrations);
+sort($filesystemMigrations);
+$assert($declaredMigrations === $filesystemMigrations, 'Migration manifest and filesystem inventory differ.');
+$assert(in_array('migrations/2026_07_18_accounting_request_integrity.sql', $declaredMigrations, true), 'Request-integrity migration is missing.');
 $assert(version_compare((string) ($manifest['version'] ?? '0.0.0'), '1.2.3', '>='), 'Accounting request-integrity changes require plugin version 1.2.3 or newer.');
 $integrityMigration = (string) file_get_contents($plugin . '/migrations/2026_07_18_accounting_request_integrity.sql');
 $assert(strpos($integrityMigration, 'accounting_requests') !== false, 'Accounting request idempotency table is missing.');

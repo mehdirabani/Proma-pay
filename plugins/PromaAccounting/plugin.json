@@ -2,7 +2,7 @@
   "id": "proma-accounting",
   "name": "حسابداری کاربران",
   "description": "مدیریت فروش، کمیسیون، دفترکل کاربران، هزینه‌ها، پاداش‌ها و دریافت/پرداخت‌ها",
-  "version": "1.2.4",
+  "version": "1.2.5-rc.1",
   "author": "Proma Pay",
   "plugin_api_version": "1.0",
   "requires_core": "1.3.2",
@@ -63,7 +63,8 @@
   "migrations": [
     "migrations/2026_07_12_accounting_core.sql",
     "migrations/2026_07_13_accounting_v1_1.sql",
-    "migrations/2026_07_18_accounting_request_integrity.sql"
+    "migrations/2026_07_18_accounting_request_integrity.sql",
+    "migrations/2026_07_21_accounting_dashboard_performance.sql"
   ],
   "assets": [
     "assets/css/accounting.css",

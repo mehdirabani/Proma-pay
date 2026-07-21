@@ -2,6 +2,8 @@
 
 class Auth
 {
+    protected static $releasedFlash = [];
+
     public static function start()
     {
         $settings = app_config();
@@ -16,6 +18,28 @@ class Auth
             ]);
             session_start();
         }
+    }
+
+    public static function releaseSessionLock()
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return false;
+        }
+        Csrf::token();
+        self::$releasedFlash = is_array($_SESSION['_flash'] ?? null) ? $_SESSION['_flash'] : [];
+        unset($_SESSION['_flash']);
+        session_write_close();
+        return true;
+    }
+
+    public static function takeReleasedFlash($key)
+    {
+        if (!array_key_exists($key, self::$releasedFlash)) {
+            return null;
+        }
+        $value = self::$releasedFlash[$key];
+        unset(self::$releasedFlash[$key]);
+        return $value;
     }
 
     public static function user()

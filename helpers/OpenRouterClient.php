@@ -77,12 +77,21 @@ class OpenRouterClient
                 'X-Title: Proma Pay',
             ],
             CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-            CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_TIMEOUT => 45,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS,
         ]);
+        $startedAt = microtime(true);
         $response = curl_exec($ch);
         $error = curl_error($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        if (class_exists('RequestTelemetry', false)) {
+            RequestTelemetry::recordExternal('openrouter', (microtime(true) - $startedAt) * 1000, $status, $response !== false && $status >= 200 && $status < 300);
+        }
         curl_close($ch);
         if ($response === false) {
             return ['ok' => false, 'error' => 'خطا در ارتباط با OpenRouter', 'details' => $error, 'type' => 'connection_error'];

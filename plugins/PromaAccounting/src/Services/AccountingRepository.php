@@ -6,17 +6,49 @@ class AccountingRepository
 {
     public static function dashboard()
     {
+        $row = \Model::fetch(
+            "SELECT user_totals.users,
+                    sale_totals.sales,
+                    commission_totals.commission,
+                    commission_totals.pending_commissions,
+                    commission_totals.payable_commissions,
+                    account_totals.positive_balances,
+                    account_totals.negative_balances,
+                    account_totals.ledger,
+                    month_totals.payments_this_month,
+                    month_totals.receipts_this_month
+             FROM
+                (SELECT COUNT(*) AS users FROM users WHERE role IN ('admin','operator','lawyer') AND status = 'active') user_totals
+             CROSS JOIN
+                (SELECT COUNT(*) AS sales FROM plugin_accounting_sales WHERE status NOT IN ('cancelled','deleted')) sale_totals
+             CROSS JOIN
+                (SELECT COALESCE(SUM(CASE WHEN status IN ('pending','payable','approved','posted') THEN calculated_amount ELSE 0 END), 0) AS commission,
+                        COALESCE(SUM(CASE WHEN status = 'pending' THEN calculated_amount ELSE 0 END), 0) AS pending_commissions,
+                        COALESCE(SUM(CASE WHEN status IN ('payable','approved','posted') THEN calculated_amount ELSE 0 END), 0) AS payable_commissions
+                 FROM plugin_accounting_commissions) commission_totals
+             CROSS JOIN
+                (SELECT COALESCE(SUM(CASE WHEN current_balance > 0 THEN current_balance ELSE 0 END), 0) AS positive_balances,
+                        COALESCE(SUM(CASE WHEN current_balance < 0 THEN current_balance ELSE 0 END), 0) AS negative_balances,
+                        COALESCE(SUM(current_balance), 0) AS ledger
+                 FROM accounting_user_accounts) account_totals
+             CROSS JOIN
+                (SELECT COALESCE(SUM(CASE WHEN direction = 'decrease' AND entry_type IN ('payment','payment_to_user') THEN amount ELSE 0 END), 0) AS payments_this_month,
+                        COALESCE(SUM(CASE WHEN direction = 'increase' AND entry_type IN ('receipt','receipt_from_user') THEN amount ELSE 0 END), 0) AS receipts_this_month
+                 FROM accounting_ledger_entries
+                 WHERE created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')) month_totals"
+        ) ?: [];
+
         return [
-            'users' => (int) ((\Model::fetch("SELECT COUNT(*) AS total FROM users WHERE role IN ('admin','operator','lawyer') AND status = 'active'")['total'] ?? 0)),
-            'sales' => (int) ((\Model::fetch("SELECT COUNT(*) AS total FROM plugin_accounting_sales WHERE status NOT IN ('cancelled','deleted')")['total'] ?? 0)),
-            'commission' => (string) ((\Model::fetch("SELECT COALESCE(SUM(calculated_amount), 0) AS total FROM plugin_accounting_commissions WHERE status IN ('pending','payable','approved','posted')")['total'] ?? '0')),
-            'pending_commissions' => (string) ((\Model::fetch("SELECT COALESCE(SUM(calculated_amount), 0) AS total FROM plugin_accounting_commissions WHERE status = 'pending'")['total'] ?? '0')),
-            'payable_commissions' => (string) ((\Model::fetch("SELECT COALESCE(SUM(calculated_amount), 0) AS total FROM plugin_accounting_commissions WHERE status IN ('payable','approved','posted')")['total'] ?? '0')),
-            'positive_balances' => (string) ((\Model::fetch("SELECT COALESCE(SUM(CASE WHEN current_balance > 0 THEN current_balance ELSE 0 END), 0) AS total FROM accounting_user_accounts")['total'] ?? '0')),
-            'negative_balances' => (string) ((\Model::fetch("SELECT COALESCE(SUM(CASE WHEN current_balance < 0 THEN current_balance ELSE 0 END), 0) AS total FROM accounting_user_accounts")['total'] ?? '0')),
-            'ledger' => (string) ((\Model::fetch("SELECT COALESCE(SUM(CASE WHEN direction = 'increase' THEN amount ELSE -amount END), 0) AS total FROM accounting_ledger_entries")['total'] ?? '0')),
-            'payments_this_month' => (string) ((\Model::fetch("SELECT COALESCE(SUM(amount), 0) AS total FROM accounting_ledger_entries WHERE direction = 'decrease' AND entry_type IN ('payment','payment_to_user') AND created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')")['total'] ?? '0')),
-            'receipts_this_month' => (string) ((\Model::fetch("SELECT COALESCE(SUM(amount), 0) AS total FROM accounting_ledger_entries WHERE direction = 'increase' AND entry_type IN ('receipt','receipt_from_user') AND created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')")['total'] ?? '0')),
+            'users' => (int) ($row['users'] ?? 0),
+            'sales' => (int) ($row['sales'] ?? 0),
+            'commission' => (string) ($row['commission'] ?? '0'),
+            'pending_commissions' => (string) ($row['pending_commissions'] ?? '0'),
+            'payable_commissions' => (string) ($row['payable_commissions'] ?? '0'),
+            'positive_balances' => (string) ($row['positive_balances'] ?? '0'),
+            'negative_balances' => (string) ($row['negative_balances'] ?? '0'),
+            'ledger' => (string) ($row['ledger'] ?? '0'),
+            'payments_this_month' => (string) ($row['payments_this_month'] ?? '0'),
+            'receipts_this_month' => (string) ($row['receipts_this_month'] ?? '0'),
         ];
     }
 

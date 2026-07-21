@@ -30,7 +30,13 @@ $assert(strpos($build, "\$pluginArchiveName") !== false && strpos($build, "\$plu
 $assert(strpos($build, "'assets/'") !== false && strpos($build, 'diff --name-only --diff-filter=ACMRT') !== false, 'Differential update asset inventory is missing.');
 
 $migrations = glob($root . '/plugins/PromaAccounting/migrations/*.sql') ?: [];
-$assert(count($migrations) === 3, 'Accounting migration inventory is incomplete.');
+$declaredMigrations = array_values($plugin['migrations'] ?? []);
+$filesystemMigrations = array_map(static function (string $path): string {
+    return 'migrations/' . basename($path);
+}, $migrations);
+sort($declaredMigrations);
+sort($filesystemMigrations);
+$assert($declaredMigrations === $filesystemMigrations, 'Accounting migration manifest and filesystem inventory differ.');
 $assert(in_array('migrations/2026_07_18_accounting_request_integrity.sql', $plugin['migrations'] ?? [], true), 'Accounting request-integrity migration is not declared in the plugin manifest.');
 $assert(is_file($root . '/plugins/PromaAccounting/src/Services/AccountingIdempotencyService.php'), 'Accounting idempotency service is missing.');
 

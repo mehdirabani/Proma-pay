@@ -24,6 +24,7 @@ $pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_
 $property = new ReflectionProperty(Model::class, 'pdo');
 $property->setAccessible(true);
 $property->setValue(null, $pdo);
+$initialAccountingStatus = (string) ((PluginRegistry::find('proma-accounting')['status'] ?? ''));
 
 $assert = static function ($condition, string $message): void {
     if (!$condition) {
@@ -183,7 +184,7 @@ $duplicatePayload = [
 ];
 $canonicalDuplicateId = Contract::createWithInstallments($duplicatePayload);
 $archivableDuplicateId = Contract::createWithInstallments($duplicatePayload);
-$duplicateGroups = ContractDuplicateRepairService::scan();
+$duplicateGroups = ContractDuplicateRepairService::scan(100, $customerId);
 $duplicateGroup = null;
 foreach ($duplicateGroups as $candidate) {
     $candidateIds = array_map('intval', array_column($candidate['duplicates'] ?? [], 'id'));
@@ -303,5 +304,9 @@ $assert((PluginRegistry::find('proma-accounting')['status'] ?? '') === PluginSta
 $assert(!empty($manager->healthCheck('proma-accounting')['ok']), 'Accounting plugin health check failed.');
 $manager->deactivate('proma-accounting', $adminId);
 $assert((PluginRegistry::find('proma-accounting')['status'] ?? '') === PluginStatus::INACTIVE, 'Accounting plugin deactivation failed.');
+if ($initialAccountingStatus === PluginStatus::ACTIVE) {
+    $manager->activate('proma-accounting', $adminId);
+    $assert((PluginRegistry::find('proma-accounting')['status'] ?? '') === PluginStatus::ACTIVE, 'Accounting plugin status was not restored after the integration test.');
+}
 
 echo "INTEGRATION_V141_RELEASE_BLOCKERS_OK\n";

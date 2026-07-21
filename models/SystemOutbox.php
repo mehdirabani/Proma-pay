@@ -54,6 +54,12 @@ class SystemOutbox extends Model
 
     public static function processPending($limit = 25, $aggregateType = null, $aggregateId = null)
     {
+        // Outbox work must never run as part of a normal browser request. The
+        // contract/payment paths enqueue atomically and a token-protected cron
+        // or CLI worker drains bounded batches separately.
+        if (!self::workerContext()) {
+            return ['processed' => 0, 'failed' => 0, 'skipped' => 'not_worker_context'];
+        }
         try {
             $where = ["status IN ('pending','failed')", '(next_attempt_at IS NULL OR next_attempt_at <= NOW())', 'attempts < max_attempts'];
             $params = [];
@@ -86,6 +92,11 @@ class SystemOutbox extends Model
             }
         }
         return ['processed' => $processed, 'failed' => $failed];
+    }
+
+    protected static function workerContext()
+    {
+        return (PHP_SAPI === 'cli') || (defined('PROMA_OUTBOX_WORKER') && PROMA_OUTBOX_WORKER === true);
     }
 
     protected static function processRow(array $row)
@@ -140,6 +151,7 @@ class SystemOutbox extends Model
                 PluginRegistry::logRuntimeError($event, $e);
             }
         } catch (Throwable $ignored) {
+            error_log('[PromaPay][outbox_fallback] ' . substr($event, 0, 120) . ': ' . substr($ignored->getMessage(), 0, 300));
         }
     }
 }

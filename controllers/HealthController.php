@@ -7,7 +7,11 @@ class HealthController
         $ready = true;
 
         if (!$liveOnly) {
-            $ready = $this->databaseReady() && $this->storageReady() && $this->coreReady();
+            $ready = $this->databaseReady()
+                && $this->migrationReady()
+                && $this->queueReady()
+                && $this->storageReady()
+                && $this->coreReady();
         }
 
         if (!headers_sent()) {
@@ -40,6 +44,38 @@ class HealthController
     {
         $storage = dirname(__DIR__) . '/storage';
         return is_dir($storage) && is_readable($storage) && is_writable($storage);
+    }
+
+    protected function migrationReady()
+    {
+        try {
+            $row = Model::fetch(
+                "SELECT COUNT(*) AS failed
+                 FROM system_plugin_migrations
+                 WHERE status <> 'success'"
+            );
+            return (int) ($row['failed'] ?? 0) === 0;
+        } catch (Throwable $e) {
+            ErrorHandler::log('health_ready_migrations', $e, 503);
+            return false;
+        }
+    }
+
+    protected function queueReady()
+    {
+        try {
+            $row = Model::fetch(
+                "SELECT COUNT(*) AS unavailable
+                 FROM system_outbox
+                 WHERE status = 'processing'
+                   AND updated_at IS NOT NULL
+                   AND updated_at < DATE_SUB(NOW(), INTERVAL 30 MINUTE)"
+            );
+            return (int) ($row['unavailable'] ?? 0) === 0;
+        } catch (Throwable $e) {
+            ErrorHandler::log('health_ready_queue', $e, 503);
+            return false;
+        }
     }
 
     protected function coreReady()

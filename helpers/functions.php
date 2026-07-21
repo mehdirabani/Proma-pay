@@ -331,6 +331,12 @@ function is_ajax_request()
 
 function flash($key)
 {
+    if (class_exists('Auth', false)) {
+        $released = Auth::takeReleasedFlash($key);
+        if ($released !== null) {
+            return $released;
+        }
+    }
     if (!isset($_SESSION['_flash'][$key])) {
         return null;
     }

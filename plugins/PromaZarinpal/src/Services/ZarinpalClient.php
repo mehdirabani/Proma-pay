@@ -21,7 +21,7 @@ class ZarinpalClient
     private $responseTimeout;
     private $transport;
 
-    public function __construct($connectTimeout = 10, $responseTimeout = 30, callable $transport = null)
+    public function __construct($connectTimeout = 5, $responseTimeout = 20, callable $transport = null)
     {
         $this->connectTimeout = max(3, min(30, (int) $connectTimeout));
         $this->responseTimeout = max($this->connectTimeout, min(60, (int) $responseTimeout));
@@ -100,9 +100,13 @@ class ZarinpalClient
             CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
             CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS,
         ]);
+        $startedAt = microtime(true);
         $response = curl_exec($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $errorNumber = curl_errno($ch);
+        if (class_exists('RequestTelemetry', false)) {
+            \RequestTelemetry::recordExternal('zarinpal', (microtime(true) - $startedAt) * 1000, $status, $response !== false && $status >= 200 && $status < 300);
+        }
         curl_close($ch);
         if ($response === false) {
             return ['ok' => false, 'network_uncertain' => true, 'http_status' => $status, 'error_code' => 'network_' . $errorNumber, 'message' => 'پاسخ قطعی از زرین‌پال دریافت نشد. وضعیت تراکنش باید بررسی شود.'];

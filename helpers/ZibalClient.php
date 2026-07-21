@@ -79,11 +79,21 @@ class ZibalClient
             CURLOPT_POST => true,
             CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
             CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS,
         ]);
+        $startedAt = microtime(true);
         $response = curl_exec($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
+        if (class_exists('RequestTelemetry', false)) {
+            RequestTelemetry::recordExternal('zibal', (microtime(true) - $startedAt) * 1000, $status, $response !== false && $status >= 200 && $status < 300);
+        }
         curl_close($ch);
         if ($response === false || $status >= 400) {
             $message = 'ارتباط با درگاه پرداخت برقرار نشد.';

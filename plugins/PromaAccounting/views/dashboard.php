@@ -8,6 +8,13 @@ $headerActions = trim(ob_get_clean());
 <div class="proma-accounting proma-accounting-dashboard">
   <?php pa_page_header('نمای مالی یکپارچه', 'داشبورد حسابداری', 'خلاصه مانده‌ها، کمیسیون‌ها و گردش مالی کاربران در یک نمای قابل پیگیری.', 'pie-chart', $headerActions); ?>
 
+  <?php if (!empty($widgetErrors)): ?>
+    <div class="proma-accounting-alert-item is-warning" role="status">
+      <span><i data-feather="alert-triangle"></i></span>
+      <span><strong>بخشی از داده‌های داشبورد موقتاً در دسترس نیست</strong><small>سایر بخش‌ها قابل استفاده‌اند. شناسه پیگیری: <span dir="ltr"><?= e(ErrorHandler::requestId()) ?></span></small></span>
+    </div>
+  <?php endif; ?>
+
   <div class="proma-accounting-kpis">
     <article class="proma-accounting-kpi is-positive"><span class="proma-accounting-kpi-icon is-green"><i data-feather="trending-up"></i></span><div><span class="proma-accounting-kpi-label">مجموع مانده مثبت</span><strong><?= money_toman($summary['positive_balances'] ?? 0) ?></strong><small>مطالبات ثبت‌شده کاربران از مجموعه</small></div></article>
     <article class="proma-accounting-kpi is-negative"><span class="proma-accounting-kpi-icon is-red"><i data-feather="trending-down"></i></span><div><span class="proma-accounting-kpi-label">مجموع مانده منفی</span><strong><?= money_toman(abs((int) ($summary['negative_balances'] ?? 0))) ?></strong><small>بدهی ثبت‌شده کاربران به مجموعه</small></div></article>

@@ -27,9 +27,18 @@ class PluginManager
             if (($plugin['status'] ?? '') !== 'active') {
                 continue;
             }
+            $pluginStartedAt = microtime(true);
             try {
                 $manager->loadProvider($plugin);
+                if (class_exists('RequestTelemetry', false)) {
+                    RequestTelemetry::recordPlugin($plugin['plugin_id'] ?? 'unknown');
+                    RequestTelemetry::recordSpan('plugin.boot', $pluginStartedAt, ['plugin' => $plugin['plugin_id'] ?? 'unknown']);
+                }
             } catch (Throwable $e) {
+                if (class_exists('RequestTelemetry', false)) {
+                    RequestTelemetry::recordPlugin($plugin['plugin_id'] ?? 'unknown');
+                    RequestTelemetry::recordSpan('plugin.boot_failed', $pluginStartedAt, ['plugin' => $plugin['plugin_id'] ?? 'unknown']);
+                }
                 try {
                     PluginRegistry::setStatus($plugin['plugin_id'], 'failed', $e->getMessage());
                     PluginRegistry::logRuntimeError('plugin_boot:' . $plugin['plugin_id'], $e);
@@ -758,7 +767,11 @@ class PluginManager
             if (!method_exists($controller, $method)) {
                 throw new RuntimeException('متد route افزونه پیدا نشد.');
             }
+            $routeStartedAt = microtime(true);
             call_user_func_array([$controller, $method], $parameters);
+            if (class_exists('RequestTelemetry', false)) {
+                RequestTelemetry::recordSpan('plugin.route', $routeStartedAt, ['handler' => $class . '@' . $method]);
+            }
             return true;
         }
         $allowed = [];
