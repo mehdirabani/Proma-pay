@@ -80,6 +80,13 @@ class ProfileRequest extends Model
 
     public static function all(array $filters = [])
     {
+        $filters['page'] = 1;
+        $filters['per_page'] = min(200, max(1, (int) ($filters['per_page'] ?? 200)));
+        return self::paginated($filters)['items'];
+    }
+
+    public static function paginated(array $filters = [])
+    {
         self::ensureSchema();
         $status = trim((string) ($filters['status'] ?? 'pending'));
         $params = [];
@@ -92,30 +99,106 @@ class ProfileRequest extends Model
             $where[] = 'u.role = ?';
             $params[] = trim((string) $filters['role']);
         }
-        if (!empty($filters['q'])) {
-            $needle = '%' . trim((string) $filters['q']) . '%';
-            $where[] = '(u.full_name LIKE ? OR u.mobile LIKE ? OR u.national_id LIKE ?)';
-            array_push($params, $needle, $needle, $needle);
+        if (!empty($filters['user_id'])) {
+            $where[] = 'pr.user_id = ?';
+            $params[] = (int) $filters['user_id'];
         }
+        if (!empty($filters['q'])) {
+            $needle = '%' . trim(to_english_digits((string) $filters['q'])) . '%';
+            $where[] = '(u.full_name LIKE ? OR u.mobile LIKE ? OR u.national_id LIKE ? OR u.username LIKE ?)';
+            array_push($params, $needle, $needle, $needle, $needle);
+        }
+        $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+        $total = (int) (self::fetch(
+            "SELECT COUNT(*) AS total
+             FROM profile_update_requests pr
+             JOIN users u ON u.id = pr.user_id{$whereSql}",
+            $params
+        )['total'] ?? 0);
+        $perPage = max(12, min(60, (int) ($filters['per_page'] ?? 24)));
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min($pages, max(1, (int) ($filters['page'] ?? 1)));
+        $offset = ($page - 1) * $perPage;
         $rows = self::fetchAll(
-            "SELECT pr.*, u.full_name, u.role, u.mobile, u.national_id,
+            "SELECT pr.*, u.full_name, u.role, u.mobile, u.national_id, u.username,
+                    reviewer.full_name AS reviewer_name,
                     u.full_name AS current_full_name, u.mobile AS current_mobile,
                     u.secondary_phone AS current_secondary_phone, u.email AS current_email,
                     u.address AS current_address
              FROM profile_update_requests pr
-             JOIN users u ON u.id = pr.user_id"
-            . ($where ? ' WHERE ' . implode(' AND ', $where) : '')
-            . ' ORDER BY pr.id DESC LIMIT 200',
+             JOIN users u ON u.id = pr.user_id
+             LEFT JOIN users reviewer ON reviewer.id = pr.reviewed_by
+             {$whereSql}
+             ORDER BY CASE WHEN pr.status = 'pending' THEN 0 ELSE 1 END, pr.id DESC
+             LIMIT {$perPage} OFFSET {$offset}",
             $params
         );
+        return [
+            'items' => self::decorateRows($rows),
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'per_page' => $perPage,
+        ];
+    }
+
+    public static function summary()
+    {
+        self::ensureSchema();
+        $row = self::fetch(
+            "SELECT COUNT(*) AS total,
+                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
+                    SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved,
+                    SUM(CASE WHEN status = 'partial' THEN 1 ELSE 0 END) AS partial,
+                    SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) AS rejected
+             FROM profile_update_requests"
+        ) ?: [];
+        return [
+            'total' => (int) ($row['total'] ?? 0),
+            'pending' => (int) ($row['pending'] ?? 0),
+            'approved' => (int) ($row['approved'] ?? 0),
+            'partial' => (int) ($row['partial'] ?? 0),
+            'rejected' => (int) ($row['rejected'] ?? 0),
+        ];
+    }
+
+    public static function historiesForUsers(array $userIds)
+    {
+        self::ensureSchema();
+        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds))));
+        if (!$userIds) {
+            return [];
+        }
+        $userIds = array_slice($userIds, 0, 100);
+        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+        $rows = self::fetchAll(
+            "SELECT pr.*, reviewer.full_name AS reviewer_name
+             FROM profile_update_requests pr
+             LEFT JOIN users reviewer ON reviewer.id = pr.reviewed_by
+             WHERE pr.user_id IN ({$placeholders})
+             ORDER BY pr.user_id, pr.id DESC
+             LIMIT 1000",
+            $userIds
+        );
+        $grouped = [];
+        foreach (self::decorateRows($rows) as $row) {
+            $grouped[(int) $row['user_id']][] = $row;
+        }
+        return $grouped;
+    }
+
+    protected static function decorateRows(array $rows)
+    {
         foreach ($rows as &$row) {
             $row['requested_fields'] = json_decode((string) ($row['payload_json'] ?? ''), true) ?: [];
             $row['reviewed_fields'] = json_decode((string) ($row['reviewed_fields_json'] ?? ''), true) ?: [];
             $row['rejected_fields'] = json_decode((string) ($row['rejected_fields_json'] ?? ''), true) ?: [];
             $snapshot = json_decode((string) ($row['current_snapshot_json'] ?? ''), true) ?: [];
+            $row['snapshot_fields'] = $snapshot;
             $row['conflict_fields'] = [];
             foreach ($row['requested_fields'] as $field => $value) {
-                if (array_key_exists($field, $snapshot) && trim((string) ($row['current_' . $field] ?? '')) !== trim((string) $snapshot[$field])) {
+                if (array_key_exists($field, $snapshot) && array_key_exists('current_' . $field, $row)
+                    && trim((string) ($row['current_' . $field] ?? '')) !== trim((string) $snapshot[$field])) {
                     $row['conflict_fields'][] = $field;
                 }
             }
