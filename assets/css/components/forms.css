@@ -909,3 +909,129 @@ label:not(.check):not(.proma-checkbox-field):not(.proma-radio-field):not(.proma-
     padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
 }
+
+
+/* Proma Pay 1.4.3: plugin lifecycle becomes a readable card list on narrow screens. */
+.proma-plugin-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.proma-plugin-actions > form {
+  margin: 0;
+}
+
+@media (max-width: 767.98px) {
+  .proma-plugin-table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .proma-plugin-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .proma-plugin-table tbody,
+  .proma-plugin-table .proma-plugin-row,
+  .proma-plugin-table .proma-plugin-row > td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .proma-plugin-table tbody {
+    padding: 10px;
+  }
+
+  .proma-plugin-table .proma-plugin-row {
+    margin-block-end: 12px;
+    overflow: hidden;
+    border: 1px solid #e7e9ef;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(31, 37, 51, .04);
+  }
+
+  .proma-plugin-table .proma-plugin-row > td {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    padding: 11px 12px;
+    border: 0;
+    border-block-end: 1px solid #eef0f5;
+    text-align: start;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .proma-plugin-table .proma-plugin-row > td:last-child {
+    border-block-end: 0;
+  }
+
+  .proma-plugin-table .proma-plugin-row > td::before {
+    content: attr(data-label);
+    color: #667085;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.8;
+  }
+
+  .proma-plugin-table code,
+  .proma-plugin-technical {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+  }
+
+  .proma-plugin-actions {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .proma-plugin-actions > :is(form, a, button) {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .proma-plugin-actions > form > .btn,
+  .proma-plugin-actions > :is(a.btn, button.btn) {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    height: auto;
+    justify-content: center;
+    padding-inline: 8px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 419.98px) {
+  .proma-plugin-table .proma-plugin-row > td {
+    grid-template-columns: 64px minmax(0, 1fr);
+    padding-inline: 10px;
+  }
+
+  .proma-plugin-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
