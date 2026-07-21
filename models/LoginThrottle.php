@@ -48,10 +48,10 @@ class LoginThrottle extends Model
                     [$scope['type'], $scope['hash']]
                 );
                 $row = self::fetch(
-                    'SELECT id, failed_count, locked_until FROM auth_login_attempts WHERE scope_type = ? AND scope_hash = ? LIMIT 1',
+                    'SELECT id, failed_count, locked_until, CASE WHEN locked_until IS NOT NULL AND locked_until > NOW() THEN 1 ELSE 0 END AS is_locked FROM auth_login_attempts WHERE scope_type = ? AND scope_hash = ? LIMIT 1',
                     [$scope['type'], $scope['hash']]
                 );
-                if ($scope['type'] !== 'ip' && $row && (int) $row['failed_count'] >= self::threshold($scope['type']) && (empty($row['locked_until']) || strtotime((string) $row['locked_until']) <= time())) {
+                if ($scope['type'] !== 'ip' && $row && (int) $row['failed_count'] >= self::threshold($scope['type']) && empty($row['is_locked'])) {
                     self::execute(
                         'UPDATE auth_login_attempts SET locked_until = DATE_ADD(NOW(), INTERVAL ' . self::LOCK_MINUTES . ' MINUTE), updated_at = NOW() WHERE id = ?',
                         [(int) $row['id']]
