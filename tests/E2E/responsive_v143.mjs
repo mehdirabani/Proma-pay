@@ -53,6 +53,8 @@ try {
         page.locator('button[type="submit"]').first().click(),
       ]);
       if (page.url().includes('route=auth')) throw new Error(`${role} could not authenticate.`);
+      const tourSkip = page.locator('[data-tour-skip]');
+      if (await tourSkip.isVisible()) await tourSkip.click();
 
       for (const route of spec.routes) {
         pageErrors.length = 0;
