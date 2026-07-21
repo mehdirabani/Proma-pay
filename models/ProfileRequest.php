@@ -115,7 +115,7 @@ class ProfileRequest extends Model
              JOIN users u ON u.id = pr.user_id{$whereSql}",
             $params
         )['total'] ?? 0);
-        $perPage = max(12, min(60, (int) ($filters['per_page'] ?? 24)));
+        $perPage = max(12, min(200, (int) ($filters['per_page'] ?? 24)));
         $pages = max(1, (int) ceil($total / $perPage));
         $page = min($pages, max(1, (int) ($filters['page'] ?? 1)));
         $offset = ($page - 1) * $perPage;
