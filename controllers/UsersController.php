@@ -43,7 +43,6 @@ class UsersController extends Controller
             'roles' => $allowedRoles,
             'departments' => app_config('departments', []),
             'canManageUsers' => Auth::role() === 'admin',
-            'profileRequests' => Auth::role() === 'admin' ? ProfileRequest::pending() : [],
             'identityRequests' => [],
             'socialLinks' => configured_social_links(Settings::allKeyed()),
         ], is_ajax_request() ? null : 'app');
