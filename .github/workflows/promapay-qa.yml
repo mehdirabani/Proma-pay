@@ -1,0 +1,68 @@
+name: Proma Pay QA
+
+on:
+  push:
+    branches:
+      - "codex/**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php-static:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.1", "8.2", "8.3"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo_mysql, zip
+          coverage: none
+      - name: PHP syntax
+        run: |
+          find . -type f -name '*.php' \
+            -not -path './.git/*' \
+            -not -path './dist/*' \
+            -not -path './html/*' \
+            -not -path './storage/*' \
+            -print0 | xargs -0 -n1 php -l
+      - name: JavaScript syntax
+        run: node --check assets/js/app.js
+      - name: V1.4.3 stabilization assertions
+        run: php tests/static_v143.php
+      - name: Previous release assertions
+        run: php tests/static_v141.php
+
+  rc-package:
+    name: Build RC artifacts
+    needs: php-static
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mbstring, pdo_mysql, zip
+          coverage: none
+      - name: Build release candidate
+        run: php scripts/build_rc.php
+      - name: Verify release candidate
+        run: php tools/verify-rc.php
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PromaPay-v1.4.3-rc.1
+          path: |
+            dist/core/PromaPay-v1.4.3-rc.1.zip
+            dist/core/PromaPay-Update-v1.4.3-rc.1.zip
+            dist/core/PromaPay-Update-v1.4.3-rc.1-manifest.json
+            dist/core/SHA256SUMS-v1.4.3-rc.1.txt
+            dist/plugins/*.zip
+          if-no-files-found: error
+          retention-days: 14
