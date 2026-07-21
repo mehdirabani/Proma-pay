@@ -122,6 +122,10 @@ if ($accounting) {
     if (($accounting['status'] ?? '') !== PluginStatus::ACTIVE) {
         $pluginManager->activate('proma-accounting', $ids['admin']);
     }
+    Model::execute(
+        "INSERT INTO plugin_accounting_settings (setting_key, setting_value, updated_by, updated_at) VALUES ('setup_status', 'completed', ?, NOW()) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_by = VALUES(updated_by), updated_at = NOW()",
+        [$ids['admin']]
+    );
 }
 
 echo json_encode([
