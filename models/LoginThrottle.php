@@ -13,6 +13,9 @@ class LoginThrottle extends Model
             $lockedUntil = null;
             $failures = 0;
             foreach ($rows as $row) {
+                if (($row['scope_type'] ?? '') === 'ip') {
+                    continue;
+                }
                 $failures = max($failures, (int) ($row['failed_count'] ?? 0));
                 if (!empty($row['locked_until']) && strtotime((string) $row['locked_until']) > time()) {
                     if ($lockedUntil === null || strtotime((string) $row['locked_until']) > strtotime($lockedUntil)) {
@@ -48,7 +51,7 @@ class LoginThrottle extends Model
                     'SELECT id, failed_count, locked_until FROM auth_login_attempts WHERE scope_type = ? AND scope_hash = ? LIMIT 1',
                     [$scope['type'], $scope['hash']]
                 );
-                if ($row && (int) $row['failed_count'] >= self::threshold($scope['type']) && (empty($row['locked_until']) || strtotime((string) $row['locked_until']) <= time())) {
+                if ($scope['type'] !== 'ip' && $row && (int) $row['failed_count'] >= self::threshold($scope['type']) && (empty($row['locked_until']) || strtotime((string) $row['locked_until']) <= time())) {
                     self::execute(
                         'UPDATE auth_login_attempts SET locked_until = DATE_ADD(NOW(), INTERVAL ' . self::LOCK_MINUTES . ' MINUTE), updated_at = NOW() WHERE id = ?',
                         [(int) $row['id']]
@@ -67,6 +70,10 @@ class LoginThrottle extends Model
         try {
             foreach (self::scopes($identifier, $ipAddress) as $scope) {
                 if ($scope['type'] === 'ip') {
+                    self::execute(
+                        'UPDATE auth_login_attempts SET failed_count = GREATEST(failed_count - 2, 0), locked_until = NULL, updated_at = NOW() WHERE scope_type = ? AND scope_hash = ?',
+                        [$scope['type'], $scope['hash']]
+                    );
                     continue;
                 }
                 self::execute('DELETE FROM auth_login_attempts WHERE scope_type = ? AND scope_hash = ?', [$scope['type'], $scope['hash']]);
@@ -109,7 +116,10 @@ class LoginThrottle extends Model
 
     protected static function threshold($scopeType)
     {
-        return $scopeType === 'ip' ? 20 : 5;
+        if ($scopeType === 'combined') {
+            return 8;
+        }
+        return $scopeType === 'identifier' ? 5 : PHP_INT_MAX;
     }
 
     protected static function logFailure($action, Throwable $exception)
