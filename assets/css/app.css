@@ -7324,3 +7324,404 @@ tr[data-card-href]:hover td {
   color: #7c7f8d;
   font-size: 11px;
 }
+
+
+/* Proma Pay 1.4.3: contract safety, review center, medals and health workspace */
+.proma-progress-avatar {
+  position: relative;
+  isolation: isolate;
+  padding: 4px;
+  background: conic-gradient(var(--proma-success) calc(clamp(0, var(--progress), 100) * 1%), #e4e8f1 0);
+  box-shadow: 0 0 0 1px #dfe5ee, 0 6px 16px rgba(31, 41, 55, .1);
+}
+.proma-progress-avatar::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 4px;
+  border-radius: 50%;
+  background: #fff;
+}
+.proma-progress-avatar.is-complete {
+  background: conic-gradient(#16865c 100%, #16865c 0);
+  box-shadow: 0 0 0 2px rgba(22, 134, 92, .16), 0 6px 18px rgba(22, 134, 92, .2);
+}
+.proma-progress-avatar > small {
+  position: absolute;
+  z-index: 3;
+  inset-inline-end: -7px;
+  inset-block-end: -7px;
+  min-width: 30px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 5px;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  color: #fff;
+  background: #4b5565;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+.proma-progress-avatar.is-complete > small { background: #16865c; }
+
+.proma-destructive-modal {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+}
+.proma-destructive-modal .modal-body {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 18px;
+}
+.proma-dependency-list {
+  display: grid;
+  gap: 9px;
+  padding: 13px;
+  border: 1px solid #eadfab;
+  border-radius: 8px;
+  background: #fffdf5;
+}
+.proma-dependency-list > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.proma-dependency-list .badge {
+  position: static;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.proma-review-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-block: 16px;
+}
+.proma-review-summary__item {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 74px;
+  padding: 13px;
+  border: 1px solid var(--proma-line);
+  border-radius: 8px;
+  color: var(--proma-text);
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(31, 41, 55, .04);
+}
+.proma-review-summary__item > span {
+  width: 40px;
+  height: 40px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--proma-primary);
+  background: var(--proma-primary-soft);
+}
+.proma-review-summary__item small {
+  color: var(--proma-muted);
+  overflow-wrap: anywhere;
+}
+.proma-review-summary__item strong { font-size: 20px; }
+.proma-review-summary__item.is-active {
+  border-color: rgba(115, 102, 255, .45);
+  box-shadow: inset 0 -2px 0 var(--proma-primary), 0 8px 22px rgba(115, 102, 255, .09);
+}
+.proma-review-filter-card { margin-block-end: 16px; }
+.proma-review-filter .actions {
+  min-height: var(--proma-control-height, 44px);
+  align-self: end;
+}
+.proma-review-request-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.proma-review-account-card {
+  min-width: 0;
+  overflow: hidden;
+}
+.proma-review-account-card__header {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-block-end: 1px solid var(--proma-line);
+}
+.proma-review-account-card__header > div { min-width: 0; }
+.proma-review-account-card__header strong,
+.proma-review-account-card__header small { display: block; overflow-wrap: anywhere; }
+.proma-review-account-card__header small { margin-block-start: 4px; color: var(--proma-muted); }
+.proma-review-account-card__header > .badge { position: static; flex: 0 0 auto; }
+.proma-review-account-card .proma-review-fields { padding: 16px; }
+.proma-review-reject {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+.proma-review-reject > :is(input, button) { min-height: var(--proma-control-height, 44px); margin: 0; }
+.proma-review-history {
+  border-block-start: 1px solid var(--proma-line);
+}
+.proma-review-history summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-inline: 16px;
+  color: var(--proma-text);
+  cursor: pointer;
+  list-style: none;
+}
+.proma-review-history summary::-webkit-details-marker { display: none; }
+.proma-review-history summary b {
+  min-width: 24px;
+  margin-inline-start: auto;
+  text-align: center;
+}
+.proma-review-history__list {
+  max-height: 280px;
+  display: grid;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 0 16px 16px;
+}
+.proma-review-history__list > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 8px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f7f8fc;
+}
+.proma-review-history__list small,
+.proma-review-history__list p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--proma-muted);
+  overflow-wrap: anywhere;
+}
+
+.proma-medal-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 310px), 1fr));
+  align-items: stretch;
+}
+.proma-medal-card {
+  width: 100%;
+  overflow: hidden;
+}
+.proma-medal-card__header {
+  min-width: 0;
+  align-items: flex-start !important;
+  flex-wrap: wrap;
+}
+.proma-medal-card__header > .badge {
+  position: static;
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  white-space: nowrap;
+}
+.proma-medal-card p,
+.proma-medal-card dd {
+  overflow-wrap: anywhere;
+}
+.proma-medal-card__footer {
+  min-width: 0;
+  align-items: center !important;
+  flex-wrap: wrap;
+}
+.proma-medal-card__criterion {
+  position: static;
+  min-width: 0;
+  flex: 1 1 170px;
+  max-width: 100%;
+  padding-block: 6px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.proma-medal-card__footer .proma-table-actions {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+.proma-health-page {
+  display: grid;
+  gap: 16px;
+}
+.proma-health-page > * { margin: 0; }
+.proma-health-hero__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.proma-health-state {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding-inline: 11px;
+  border-radius: 8px;
+  color: #4b5565;
+  background: #f0f2f6;
+  font-size: 12px;
+  font-weight: 800;
+}
+.proma-health-state i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.proma-health-state.success { color: #16865c; background: rgba(22, 134, 92, .1); }
+.proma-health-state.warning { color: #9f6900; background: rgba(255, 170, 5, .12); }
+.proma-health-state.danger { color: #b42318; background: rgba(200, 59, 69, .1); }
+.proma-health-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.proma-health-metric {
+  min-width: 0;
+  min-height: 112px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid var(--proma-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 7px 20px rgba(31, 41, 55, .04);
+}
+.proma-health-metric > span {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--proma-primary);
+  background: var(--proma-primary-soft);
+}
+.proma-health-metric small,
+.proma-health-metric strong,
+.proma-health-metric em { display: block; overflow-wrap: anywhere; }
+.proma-health-metric small,
+.proma-health-metric em { color: var(--proma-muted); font-size: 11px; font-style: normal; }
+.proma-health-metric strong { margin-block: 3px; font-size: 17px; }
+.proma-health-metric.is-warning > span { color: #9f6900; background: rgba(255, 170, 5, .12); }
+.proma-health-metric.is-danger > span { color: #b42318; background: rgba(200, 59, 69, .1); }
+.proma-health-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.proma-health-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+.proma-health-panel .card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.proma-health-panel .card-header :is(h3, p) { margin: 0; }
+.proma-health-panel .card-header p { margin-block-start: 4px; color: var(--proma-muted); }
+.proma-health-checks {
+  display: grid;
+  gap: 9px;
+}
+.proma-health-checks > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid var(--proma-line);
+  border-radius: 8px;
+}
+.proma-health-checks > div > span {
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+}
+.proma-health-checks .is-ok > span { color: #16865c; background: rgba(22, 134, 92, .1); }
+.proma-health-checks .is-failed > span { color: #b42318; background: rgba(200, 59, 69, .1); }
+.proma-health-checks strong,
+.proma-health-checks small { display: block; overflow-wrap: anywhere; }
+.proma-health-checks small { margin-block-start: 3px; color: var(--proma-muted); }
+.proma-health-checks b { font-size: 11px; white-space: nowrap; }
+.proma-network-panel .card-body { display: grid; gap: 13px; }
+.proma-network-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.proma-network-facts span {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 11px;
+  border-radius: 8px;
+  background: #f7f8fc;
+}
+.proma-network-facts small { color: var(--proma-muted); }
+.proma-network-facts strong { overflow-wrap: anywhere; }
+.proma-health-footer {
+  padding: 12px 14px;
+  border: 1px solid var(--proma-line);
+  border-radius: 8px;
+  color: var(--proma-muted);
+  background: #fff;
+  font-size: 12px;
+}
+
+@media (max-width: 1199.98px) {
+  .proma-health-overview,
+  .proma-review-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .proma-review-request-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 767.98px) {
+  .proma-destructive-modal {
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+  .proma-destructive-modal .modal-body { grid-template-columns: minmax(0, 1fr); }
+  .proma-health-layout { grid-template-columns: minmax(0, 1fr); }
+  .proma-health-hero__actions,
+  .proma-health-hero__actions > :is(.btn, .proma-health-state) { width: 100%; }
+  .proma-health-hero__actions > .proma-icon-button { width: 44px; }
+  .proma-review-reject { grid-template-columns: minmax(0, 1fr); }
+  .proma-review-reject .btn { width: 100%; }
+  .proma-medal-card__footer { align-items: stretch !important; }
+  .proma-medal-card__criterion,
+  .proma-medal-card__footer .proma-table-actions { width: 100%; margin-inline-start: 0; }
+}
+@media (max-width: 479.98px) {
+  .proma-health-overview,
+  .proma-review-summary,
+  .proma-network-facts { grid-template-columns: minmax(0, 1fr); }
+  .proma-health-checks > div { grid-template-columns: 36px minmax(0, 1fr); }
+  .proma-health-checks > div > b { grid-column: 2; }
+  .proma-review-account-card__header { align-items: stretch; flex-direction: column; }
+  .proma-review-account-card__header > .badge { align-self: flex-start; }
+  .proma-medal-card dl { grid-template-columns: minmax(0, 1fr); }
+}

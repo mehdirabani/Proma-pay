@@ -685,7 +685,12 @@ class ContractsController extends Controller
         $this->requireRole('admin');
         $this->onlyPost();
         if (empty($_POST['confirm_delete_mistake'])) {
-            set_flash('error', 'برای حذف قرارداد آزمایشی یا اشتباهی باید پیامدهای حذف را تأیید کنید.');
+            set_flash('error', 'برای حذف قرارداد باید پیامدهای حذف را تأیید کنید.');
+            redirect('contracts');
+        }
+        $purgeHistory = !empty($_POST['purge_contract_history']);
+        if ($purgeHistory && empty($_POST['confirm_history_purge'])) {
+            set_flash('error', 'برای پاکسازی سابقه مالی و وابستگی‌ها، تأیید دوم الزامی است.');
             redirect('contracts');
         }
         try {
@@ -693,11 +698,21 @@ class ContractsController extends Controller
                 (int) $id,
                 Auth::id(),
                 $_POST['deletion_reason'] ?? '',
-                $_POST['confirm_contract_number'] ?? ''
+                $_POST['confirm_contract_number'] ?? '',
+                $purgeHistory
             );
-            set_flash('success', 'قرارداد آزمایشی یا اشتباهی پس از ثبت آرشیو حذف شد. هیچ سابقه مالی حذف یا اصلاح نشد.');
+            $message = !empty($result['history_purged'])
+                ? 'قرارداد و سوابق وابسته آن پس از ثبت آرشیو حسابرسی حذف شد.'
+                : 'قرارداد بدون سابقه وابسته پس از ثبت آرشیو حسابرسی حذف شد.';
+            if (!empty($result['gateway_warning'])) {
+                $message .= ' توجه: این عملیات هیچ بازگشت وجه بانکی انجام نداده است.';
+            }
+            set_flash('success', $message);
         } catch (Throwable $e) {
-            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'حذف قرارداد انجام نشد.');
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'حذف قرارداد انجام نشد. جزئیات فنی در لاگ امن ثبت شد.');
+            if (!($e instanceof InvalidArgumentException)) {
+                ErrorHandler::log('contract.delete', $e, 500);
+            }
         }
         redirect('contracts');
     }

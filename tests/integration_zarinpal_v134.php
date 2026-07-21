@@ -21,6 +21,7 @@ $pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_
 ]);
 $property = new ReflectionProperty(Model::class, 'pdo');
 $property->setAccessible(true);
+$pdo->exec("SET time_zone = '+03:30'");
 $property->setValue(null, $pdo);
 $_SESSION['user_id'] = 1;
 $_SESSION['role'] = 'admin';

@@ -1,0 +1,142 @@
+name: Proma Pay QA
+
+on:
+  push:
+    branches:
+      - "codex/**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php-static:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.1", "8.2", "8.3"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, pdo_mysql, zip, curl
+          coverage: none
+      - name: PHP syntax
+        run: |
+          find . -type f -name '*.php' \
+            -not -path './.git/*' \
+            -not -path './dist/*' \
+            -not -path './html/*' \
+            -not -path './storage/*' \
+            -print0 | xargs -0 -n1 php -l
+      - name: JavaScript syntax
+        run: |
+          node --check assets/js/app.js
+          node --check tests/E2E/responsive_v143.mjs
+      - name: V1.4.3 stabilization assertions
+        run: php tests/static_v143.php
+      - name: Previous release assertions
+        run: |
+          php tests/static_v140.php
+          php tests/static_v141.php
+
+  rc-package:
+    name: Database, HTTP, responsive and RC artifacts
+    needs: php-static
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: proma_pay
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    env:
+      PROMA_CI_FIXTURE: "1"
+      PROMA_TEST_DB_HOST: 127.0.0.1
+      PROMA_TEST_DB_NAME: proma_pay
+      PROMA_TEST_DB_DSN: mysql:host=127.0.0.1;port=3306;dbname=proma_pay;charset=utf8mb4
+      PROMA_TEST_DB_USER: root
+      PROMA_TEST_DB_PASSWORD: root
+      PROMA_QA_BASE_URL: http://127.0.0.1:8080
+      PROMA_QA_ADMIN_USER: qa-admin
+      PROMA_QA_ADMIN_PASSWORD: QaAdmin#143
+      PROMA_QA_OPERATOR_USER: qa-operator
+      PROMA_QA_OPERATOR_PASSWORD: QaOperator#143
+      PROMA_QA_LAWYER_USER: qa-lawyer
+      PROMA_QA_LAWYER_PASSWORD: QaLawyer#143
+      PROMA_QA_CUSTOMER_USER: "0010001432"
+      PROMA_QA_CUSTOMER_PASSWORD: "1432"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mbstring, pdo_mysql, zip, curl
+          coverage: none
+      - name: Install database client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mariadb-client
+      - name: Import clean installation schema
+        run: mysql --protocol=tcp -h127.0.0.1 -uroot -proot proma_pay < database/proma-pay-install.sql
+      - name: Prepare isolated role fixtures
+        run: php tests/fixtures/prepare_ci.php
+      - name: Start QA application
+        run: |
+          php -S 127.0.0.1:8080 >/tmp/promapay-php.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl --fail --silent "http://127.0.0.1:8080/index.php?route=health%2Flive" >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/promapay-php.log
+          exit 1
+      - name: Database and HTTP release gate
+        run: php tools/release-gate.php
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.52.0
+          npx playwright install --with-deps chromium
+      - name: Responsive and modal browser audit
+        run: node tests/E2E/responsive_v143.mjs
+      - name: Build release candidate
+        run: php scripts/build_rc.php
+      - name: Verify release candidate
+        run: php tools/verify-rc.php
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PromaPay-v1.4.3-rc.1-QA-evidence
+          path: |
+            artifacts/responsive/
+            /tmp/promapay-php.log
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PromaPay-v1.4.3-rc.1
+          path: |
+            dist/core/PromaPay-v1.4.3-rc.1.zip
+            dist/core/PromaPay-Update-v1.4.3-rc.1.zip
+            dist/core/PromaPay-Update-v1.4.3-rc.1-manifest.json
+            dist/core/SHA256SUMS-v1.4.3-rc.1.txt
+            dist/core/TIMEOUT_INCIDENT_REPORT-v1.4.3-rc.1.md
+            dist/core/RELEASE_NOTES-v1.4.3-rc.1.md
+            dist/plugins/*.zip
+          if-no-files-found: error
+          retention-days: 14

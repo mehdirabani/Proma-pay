@@ -11,16 +11,24 @@ class SystemHealthController extends Controller
         $storageRoot = dirname(__DIR__) . '/storage';
         $plugins = PluginRegistry::tableExists() ? PluginRegistry::all() : [];
         $telemetry = $this->recentTelemetry();
+        $queue = $this->queueStatus();
+        $storage = [
+            'ok' => is_dir($storageRoot) && is_readable($storageRoot) && is_writable($storageRoot),
+            'readable' => is_readable($storageRoot),
+            'writable' => is_writable($storageRoot),
+        ];
+        $pluginErrors = count(array_filter($plugins, static function ($plugin) {
+            return !empty($plugin['last_error']) || PluginRegistry::normalizeStatus($plugin['status'] ?? 'discovered') === 'failed';
+        }));
+        $healthState = !$database['ok'] || !$storage['ok'] || !$queue['available']
+            ? 'critical'
+            : (($queue['dead'] ?? 0) > 0 || $pluginErrors > 0 || !empty($telemetry['errors']) ? 'warning' : 'healthy');
 
         $this->render('system-health/index', [
             'title' => 'سلامت سامانه',
             'checkedAt' => date('Y-m-d H:i:s'),
             'database' => $database,
-            'storage' => [
-                'ok' => is_dir($storageRoot) && is_readable($storageRoot) && is_writable($storageRoot),
-                'readable' => is_readable($storageRoot),
-                'writable' => is_writable($storageRoot),
-            ],
+            'storage' => $storage,
             'plugins' => array_map(static function ($plugin) {
                 return [
                     'id' => (string) ($plugin['plugin_id'] ?? ''),
@@ -38,8 +46,46 @@ class SystemHealthController extends Controller
                 'memory_limit' => (string) ini_get('memory_limit'),
                 'max_execution_time' => (string) ini_get('max_execution_time'),
             ],
-            'queue' => $this->queueStatus(),
+            'queue' => $queue,
             'telemetry' => $telemetry,
+            'healthState' => $healthState,
+            'pluginErrorCount' => $pluginErrors,
+            'network' => $this->networkContext(),
+        ]);
+    }
+
+    public function diagnostics()
+    {
+        Auth::requireRole('admin');
+        Auth::releaseSessionLock();
+        $storageRoot = dirname(__DIR__) . '/storage';
+        $plugins = PluginRegistry::tableExists() ? PluginRegistry::all() : [];
+        header('Content-Disposition: attachment; filename="proma-diagnostics-' . date('Ymd-His') . '.json"');
+        $this->json([
+            'generated_at' => date(DATE_ATOM),
+            'request_id' => class_exists('ErrorHandler') ? ErrorHandler::requestId() : null,
+            'application' => [
+                'version' => app_version_display(),
+                'php' => PHP_VERSION,
+                'sapi' => PHP_SAPI,
+                'server' => $this->serverLabel(),
+            ],
+            'database' => $this->databaseStatus(),
+            'storage' => [
+                'readable' => is_readable($storageRoot),
+                'writable' => is_writable($storageRoot),
+            ],
+            'queue' => $this->queueStatus(),
+            'network' => $this->networkContext(),
+            'plugins' => array_map(static function ($plugin) {
+                return [
+                    'id' => (string) ($plugin['plugin_id'] ?? ''),
+                    'version' => (string) ($plugin['version'] ?? '-'),
+                    'status' => PluginRegistry::normalizeStatus($plugin['status'] ?? 'discovered'),
+                    'has_error' => !empty($plugin['last_error']),
+                ];
+            }, $plugins),
+            'telemetry' => $this->recentTelemetry(),
         ]);
     }
 
@@ -136,6 +182,34 @@ class SystemHealthController extends Controller
             'errors' => array_slice($errors, -10),
             'external_failures' => $externalFailures,
         ];
+    }
+
+    protected function networkContext()
+    {
+        $remote = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+        $forwarded = trim((string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '')));
+        return [
+            'php_reached' => true,
+            'remote_ip_masked' => $this->maskIp($remote),
+            'forwarded_ip_present' => $forwarded !== '',
+            'https' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (int) ($_SERVER['SERVER_PORT'] ?? 0) === 443,
+            'request_id' => class_exists('ErrorHandler') ? ErrorHandler::requestId() : null,
+            'login_ip_locking' => false,
+        ];
+    }
+
+    protected function maskIp($ip)
+    {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $parts = explode('.', $ip);
+            $parts[3] = '0';
+            return implode('.', $parts) . '/24';
+        }
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $parts = array_pad(explode(':', $ip), 8, '0');
+            return implode(':', array_slice($parts, 0, 4)) . '::/64';
+        }
+        return 'نامشخص';
     }
 
     protected function serverLabel()

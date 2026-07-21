@@ -179,7 +179,7 @@ class ProfileController extends Controller
         } else {
             set_flash('error', 'درخواست در انتظار بررسی پیدا نشد.');
         }
-        redirect('review', ['tab' => 'profile']);
+        redirect('profile-reviews');
     }
 
     public function reject($id)
@@ -191,7 +191,7 @@ class ProfileController extends Controller
         } else {
             set_flash('error', 'درخواست در انتظار بررسی پیدا نشد.');
         }
-        redirect('review', ['tab' => 'profile']);
+        redirect('profile-reviews');
     }
 
     public function respond($id)
