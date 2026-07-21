@@ -11,6 +11,6 @@
 - [x] Notifications, chat, calendar and medal lifecycle pass integration tests.
 - [x] Admin/operator/lawyer/customer routes pass browser and HTTP smoke tests.
 - [x] Stable metadata synchronized after the final candidate gate.
-- [ ] Release archives built, extracted, linted and verified.
-- [ ] Fresh install and V1.4.0 update simulations pass from archives.
-- [ ] Git commit and push complete.
+- [x] Release archives built, extracted, linted and verified.
+- [x] Fresh install and V1.4.0 update simulations pass from archives.
+- [x] Git commit and push complete.
