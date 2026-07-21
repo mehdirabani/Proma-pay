@@ -57,14 +57,19 @@ for ($i = 0; $i < 6; $i++) {
           $timeline = Payment::recentForContract((int) $cardContract['id'], 3);
           $remainingCount = (int) ($stats['active_remaining'] ?? max(0, (int) $stats['total'] - (int) $stats['paid'] - (int) ($stats['cancelled'] ?? 0)));
           $financedAmount = max(0, (float) $cardContract['principal_amount'] - (float) ($cardContract['down_payment_amount'] ?? 0));
-          $progress = (int) $stats['total'] > 0 ? (int) round(((int) $stats['paid'] / (int) $stats['total']) * 100) : 0;
+          $scheduledAmount = max(0, (float) ($stats['scheduled_amount'] ?? 0));
+          $paidAmount = max(0, (float) ($stats['paid_amount'] ?? 0));
+          $progress = $scheduledAmount > 0
+              ? (int) round(min(100, ($paidAmount / $scheduledAmount) * 100))
+              : ((int) ($stats['total'] ?? 0) > 0 && $remainingCount === 0 ? 100 : 0);
           ?>
             <article class="proma-contract-card" data-contract-card data-card-href="<?= e(url('contracts/show/' . $cardContract['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده جزئیات قرارداد <?= e($cardContract['contract_number']) ?>">
               <header class="proma-contract-card__header">
                 <div class="proma-contract-card-main proma-contract-card__identity">
-                  <span class="proma-progress-avatar" style="--progress: <?= $progress ?>">
+                  <span class="proma-progress-avatar<?= $progress >= 100 ? ' is-complete' : '' ?>" style="--progress: <?= $progress ?>" role="img" aria-label="<?= e('درصد تسویه قرارداد: ' . to_persian_digits($progress) . ' درصد') ?>" title="<?= e(to_persian_digits($progress) . ' درصد تسویه شده') ?>">
                     <?php $cardAvatar = avatar_key_for($cardContract['avatar_key'] ?? null, $cardContract['customer_id'] ?? $cardContract['id']); ?>
-                    <span class="proma-avatar-choice <?= e($cardAvatar) ?>" aria-label="<?= e($cardContract['customer_name']) ?>"><img data-avatar-image src="<?= e(user_avatar_asset_url(['id' => $cardContract['customer_id'], 'full_name' => $cardContract['customer_name'], 'avatar_key' => $cardContract['avatar_key'] ?? null, 'avatar_path' => $cardContract['avatar_path'] ?? null, 'avatar_version' => $cardContract['avatar_version'] ?? 0])) ?>" alt="آواتار <?= e($cardContract['customer_name']) ?>" loading="lazy"></span>
+                    <span class="proma-avatar-choice <?= e($cardAvatar) ?>" aria-hidden="true"><img data-avatar-image src="<?= e(user_avatar_asset_url(['id' => $cardContract['customer_id'], 'full_name' => $cardContract['customer_name'], 'avatar_key' => $cardContract['avatar_key'] ?? null, 'avatar_path' => $cardContract['avatar_path'] ?? null, 'avatar_version' => $cardContract['avatar_version'] ?? 0])) ?>" alt="" loading="lazy"></span>
+                    <small><?= to_persian_digits($progress) ?>٪</small>
                   </span>
                   <div>
                     <h6><?= e($cardContract['customer_name']) ?></h6>
@@ -618,21 +623,47 @@ for ($i = 0; $i < 6; $i++) {
       </form>
     </div>
   </div>
-  <?php $deletionPreview = Contract::deletionPreview((int) $contract['id']); $canPermanentlyDelete = !empty($deletionPreview['eligible_for_permanent_delete']); ?>
+  <?php
+    $deletionPreview = Contract::deletionPreview((int) $contract['id']);
+    $requiresHistoryPurge = !empty($deletionPreview['requires_history_purge']);
+    $blockingLabels = $deletionPreview['blocking_dependency_labels'] ?? [];
+  ?>
   <div class="modal" id="delete-contract-<?= (int) $contract['id'] ?>">
-    <div class="modal-content">
-      <div class="modal-header"><h3>حذف قرارداد آزمایشی یا اشتباهی</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن"><i data-feather="x"></i></button></div>
-      <form method="post" action="<?= e(url('contracts/delete/' . $contract['id'])) ?>">
+    <div class="modal-content proma-destructive-modal">
+      <div class="modal-header"><h3><?= proma_icon('trash') ?> حذف دائمی قرارداد</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن"><?= proma_icon('close') ?></button></div>
+      <form method="post" action="<?= e(url('contracts/delete/' . $contract['id'])) ?>" data-disable-on-submit>
         <div class="modal-body form-grid">
           <?= csrf_field() ?>
-          <div class="notice <?= $canPermanentlyDelete ? 'success' : 'error' ?> full"><?= $canPermanentlyDelete ? 'این قرارداد فقط به‌عنوان رکورد آزمایشی یا اشتباهی و بدون سابقه مالی، حقوقی، سند یا حسابداری قابل حذف است.' : 'این قرارداد دارای سابقه مالی یا حقوقی است و قابل حذف نیست. از گزینه لغو یا بایگانی استفاده کنید.' ?></div>
-          <div class="proma-cancellation-summary full"><span><small>کل پرداخت‌ها</small><strong><?= to_persian_digits($deletionPreview['payment_count'] ?? 0) ?></strong></span><span><small>رسیدها</small><strong><?= to_persian_digits($deletionPreview['dependencies']['payment_receipt_count'] ?? 0) ?></strong></span><span><small>پرونده حقوقی</small><strong><?= to_persian_digits($deletionPreview['legal_case_count'] ?? 0) ?></strong></span><span><small>اسناد قرارداد</small><strong><?= to_persian_digits(($deletionPreview['dependencies']['generated_document_count'] ?? 0) + ($deletionPreview['dependencies']['document_version_count'] ?? 0)) ?></strong></span></div>
-          <?php if (!$canPermanentlyDelete): ?><p class="full small text-muted">وابستگی‌های مانع: <?= e(implode('، ', $deletionPreview['blocking_dependencies'] ?? [])) ?></p><?php endif; ?>
-          <label class="full">علت حذف<textarea name="deletion_reason" required minlength="5" rows="3" placeholder="مثلاً قرارداد آزمایشی اشتباه ثبت شده است"<?= $canPermanentlyDelete ? '' : ' disabled' ?>></textarea></label>
-          <label class="full">برای تأیید، شماره قرارداد را وارد کنید<input name="confirm_contract_number" required autocomplete="off" placeholder="<?= e($contract['contract_number']) ?>"<?= $canPermanentlyDelete ? '' : ' disabled' ?>></label>
-          <label class="proma-confirm-check proma-danger-check"><input type="checkbox" name="confirm_delete_mistake" value="1" required<?= $canPermanentlyDelete ? '' : ' disabled' ?>> تأیید می‌کنم این قرارداد آزمایشی یا اشتباهی است و حذف آن سوابق مالی واقعی را تحت تأثیر قرار نمی‌دهد.</label>
+          <div class="notice <?= $requiresHistoryPurge ? 'warning' : 'success' ?> full">
+            <?= $requiresHistoryPurge
+              ? 'این قرارداد سابقه وابسته دارد. با فعال‌کردن پاکسازی کامل، ابتدا آرشیو حسابرسی ساخته می‌شود و سپس سوابق داخلی قرارداد حذف می‌شوند.'
+              : 'این قرارداد سابقه وابسته ندارد و پس از ثبت آرشیو حسابرسی قابل حذف است.' ?>
+          </div>
+          <div class="proma-cancellation-summary full">
+            <span><small>کل پرداخت‌ها</small><strong><?= to_persian_digits($deletionPreview['payment_count'] ?? 0) ?></strong></span>
+            <span><small>مبلغ مؤثر</small><strong><?= money_toman($deletionPreview['effective_payment_amount'] ?? 0) ?></strong></span>
+            <span><small>رسیدها</small><strong><?= to_persian_digits($deletionPreview['dependencies']['payment_receipt_count'] ?? 0) ?></strong></span>
+            <span><small>پرونده حقوقی</small><strong><?= to_persian_digits($deletionPreview['legal_case_count'] ?? 0) ?></strong></span>
+            <span><small>اسناد قرارداد</small><strong><?= to_persian_digits(($deletionPreview['dependencies']['generated_document_count'] ?? 0) + ($deletionPreview['dependencies']['document_version_count'] ?? 0)) ?></strong></span>
+          </div>
+          <?php if ($blockingLabels): ?>
+            <div class="proma-dependency-list full" aria-label="وابستگی‌های قرارداد">
+              <strong>مواردی که همراه قرارداد پاکسازی می‌شوند</strong>
+              <div><?php foreach ($blockingLabels as $label): ?><span class="badge warning"><?= e($label) ?></span><?php endforeach; ?></div>
+            </div>
+          <?php endif; ?>
+          <?php if (!empty($deletionPreview['gateway_payment_count'])): ?>
+            <div class="notice error full">این قرارداد تراکنش درگاه دارد. حذف سابقه داخلی هیچ بازگشت وجه بانکی یا لغو تراکنش درگاه انجام نمی‌دهد.</div>
+          <?php endif; ?>
+          <label class="full required-field">علت حذف<textarea name="deletion_reason" required minlength="5" rows="3" placeholder="علت دقیق و قابل پیگیری حذف قرارداد را بنویسید"></textarea></label>
+          <label class="full required-field">برای تأیید، شماره قرارداد را وارد کنید<input name="confirm_contract_number" required autocomplete="off" placeholder="<?= e($contract['contract_number']) ?>"></label>
+          <?php if ($requiresHistoryPurge): ?>
+            <label class="proma-confirm-check proma-danger-check full"><input type="checkbox" name="purge_contract_history" value="1" required> سوابق مالی، اقساط، اسناد، سوابق حقوقی و وابستگی‌های داخلی این قرارداد پس از آرشیو حذف شوند.</label>
+            <label class="proma-confirm-check proma-danger-check full"><input type="checkbox" name="confirm_history_purge" value="1" required> می‌دانم این عملیات بازگشت وجه بانکی انجام نمی‌دهد و بازگردانی فقط از آرشیو فنی ممکن است.</label>
+          <?php endif; ?>
+          <label class="proma-confirm-check proma-danger-check full"><input type="checkbox" name="confirm_delete_mistake" value="1" required> حذف دائمی این قرارداد و پیامدهای آن را تأیید می‌کنم.</label>
         </div>
-        <div class="modal-footer"><button class="btn danger" type="submit"<?= $canPermanentlyDelete ? '' : ' disabled' ?>>حذف قطعی قرارداد آزمایشی</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
+        <div class="modal-footer"><button class="btn danger" type="submit"><?= proma_icon('trash') ?><span>حذف دائمی قرارداد</span></button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
       </form>
     </div>
   </div>
