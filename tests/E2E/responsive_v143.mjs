@@ -100,10 +100,10 @@ try {
           [...new Set(elements.map(element => element.getAttribute('data-open-modal')).filter(Boolean))]
         );
         for (const target of modalTargets) {
-          const trigger = page.locator(`[data-open-modal="${CSS.escape(target)}"]`).first();
+          const trigger = page.locator(`[data-open-modal="${target}"]`).first();
           if (!(await trigger.isVisible())) continue;
           await trigger.click();
-          const modal = page.locator(`#${CSS.escape(target)}`);
+          const modal = page.locator(`#${target}`);
           await modal.waitFor({ state: 'visible' });
           const modalAudit = await modal.evaluate((element) => {
             const content = element.querySelector('.modal-content');
