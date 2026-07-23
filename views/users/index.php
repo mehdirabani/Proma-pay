@@ -147,52 +147,6 @@ $pageUrl = function ($page) use ($viewMode) {
 
 <?= render_pagination($pagination, $pageUrl) ?>
 
-<?php if ($canManageUsers): ?>
-<section class="card proma-profile-review-card">
-  <div class="card-header card-no-border">
-    <div class="header-top">
-      <div><h5>تایید اصلاح مشخصات</h5><p>تغییر آواتار مستقیم است؛ فقط اصلاح اطلاعات هویتی و تماس در این بخش بررسی می‌شود.</p></div>
-      <span class="badge info"><?= to_persian_digits(count($profileRequests ?? [])) ?> درخواست</span>
-    </div>
-  </div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>کاربر</th><th>نقش</th><th>مقایسه تغییرات</th><th>تاریخ</th><th>تصمیم مدیریت</th></tr></thead>
-      <tbody>
-      <?php foreach ($profileRequests as $request): ?>
-        <?php $payload = json_decode($request['payload_json'], true) ?: []; ?>
-        <tr>
-          <td><?= e($request['full_name']) ?><br><span class="badge muted"><?= to_persian_digits($request['mobile']) ?></span></td>
-          <td><?= e(role_label($request['role'])) ?></td>
-          <td>
-            <div class="proma-profile-change-list">
-              <?php foreach (ProfileRequest::fieldLabels() as $field => $label): ?>
-                <?php if (!array_key_exists($field, $payload)) continue; ?>
-                <div>
-                  <strong><?= e($label) ?></strong>
-                  <span><?= e($request['current_' . $field] ?? '') ?></span>
-                  <i data-feather="arrow-left"></i>
-                  <b><?= e($payload[$field]) ?></b>
-                </div>
-              <?php endforeach; ?>
-            </div>
-          </td>
-          <td><?= e(jdate($request['created_at'])) ?></td>
-          <td>
-            <div class="proma-profile-review-actions">
-              <form method="post" action="<?= e(url('profile/approve/' . $request['id'])) ?>" data-disable-on-submit><?= csrf_field() ?><button class="btn small success" type="submit"><i data-feather="check"></i> تأیید و اعمال</button></form>
-              <form method="post" action="<?= e(url('profile/reject/' . $request['id'])) ?>" data-disable-on-submit><?= csrf_field() ?><input name="review_notes" aria-label="علت رد درخواست" placeholder="علت رد"><button class="btn small danger" type="submit"><i data-feather="x"></i> رد</button></form>
-            </div>
-          </td>
-        </tr>
-      <?php endforeach; ?>
-      <?php if (empty($profileRequests)): ?><tr><td colspan="5" class="empty">درخواستی برای بررسی مشخصات وجود ندارد.</td></tr><?php endif; ?>
-      </tbody>
-    </table>
-  </div>
-</section>
-<?php endif; ?>
-
 <?php if ($canManageUsers && !empty($identityRequests)): ?>
 <section class="card" style="margin-top:16px">
   <div class="card-header card-no-border"><h5>مدارک هویتی در انتظار بررسی</h5></div>

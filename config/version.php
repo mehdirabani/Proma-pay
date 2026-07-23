@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'application' => '1.4.2-rc.1',
-    'display' => 'V1.4.2-rc.1',
-    'database' => '2026.07.21',
+    'application' => '1.4.3',
+    'display' => 'V1.4.3',
+    'database' => '2026.07.22',
     'plugin_api' => '1.0',
-    'release_channel' => 'rc',
+    'release_channel' => 'stable',
 ];

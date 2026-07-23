@@ -5,7 +5,8 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $versionInfo = require $root . '/config/version.php';
 $releaseChannel = strtolower(trim((string) ($versionInfo['release_channel'] ?? 'stable')));
-if ($releaseChannel === 'stable' && version_compare((string) ($versionInfo['application'] ?? '0.0.0'), '1.4.2', '>=')) {
+$localQaOnly = in_array('--local', $argv, true);
+if (!$localQaOnly && $releaseChannel === 'stable' && version_compare((string) ($versionInfo['application'] ?? '0.0.0'), '1.4.2', '>=')) {
     passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($root . '/tools/availability-gate.php') . ' --stable', $availabilityCode);
     if ($availabilityCode !== 0) {
         fwrite(STDERR, "RELEASE_GATE_FAILED\nProduction availability evidence is missing or incomplete.\n");
@@ -30,6 +31,7 @@ $staticTests = [
     'tests/static_v139.php',
     'tests/static_v140.php',
     'tests/static_v141.php',
+    'tests/static_v143.php',
     'tests/static_accounting_update_2014.php',
     'plugins/PromaAccounting/tests/static.php',
     'plugins/PromaAccounting/tests/v110.php',
@@ -57,7 +59,9 @@ $integrationTests = [
     'tests/integration_v139_custom_installments.php',
     'tests/integration_v140_core_workflows.php',
     'tests/integration_v141_release_blockers.php',
+    'tests/integration_v143_release.php',
     'tests/http_v141_role_smoke.php',
+    'tests/http_v143_modal_smoke.php',
     'tests/Performance/AccountingDashboardMariaDbTest.php',
     'tests/E2E/AccountingDashboardHttpTest.php',
     'tests/Plugins/AccountingFailureHttpTest.php',
@@ -120,4 +124,4 @@ if ($failed) {
     exit(1);
 }
 
-echo "RELEASE_GATE_LOCAL_QA_OK\n";
+echo $localQaOnly ? "RELEASE_GATE_LOCAL_QA_OK_NOT_PRODUCTION_CERTIFIED\n" : "RELEASE_GATE_PRODUCTION_OK\n";

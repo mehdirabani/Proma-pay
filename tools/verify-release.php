@@ -64,9 +64,9 @@ $updateManifestRaw = $update->getFromName('proma-update.json');
 $assert(is_string($updateManifestRaw), 'Update proma-update.json is missing.');
 $updateManifest = json_decode($updateManifestRaw, true, 512, JSON_THROW_ON_ERROR);
 $assert(($updateManifest['version'] ?? '') === $version, 'Update archive version is incorrect.');
-$assert(($updateManifest['minimum_version'] ?? '') === '1.4.0', 'Update minimum version must be V1.4.0.');
-$requiredMigration = 'database/migrations/2026_07_21_v1_4_1_interaction_state.sql';
-$assert(in_array($requiredMigration, $updateManifest['migrations'] ?? [], true), 'V1.4.1 migration is absent from the update manifest.');
+$assert(($updateManifest['minimum_version'] ?? '') === '1.4.2', 'Update minimum version must be V1.4.2.');
+$requiredMigration = 'database/migrations/2026_07_22_release_v143.sql';
+$assert(in_array($requiredMigration, $updateManifest['migrations'] ?? [], true), 'V1.4.3 migration is absent from the update manifest.');
 foreach (($updateManifest['files'] ?? []) as $file) {
     $source = (string) ($file['source'] ?? '');
     $assert($source !== '' && strpos($source, 'plugins/') !== 0 && $source !== 'config/database.php' && strpos($source, 'storage/') !== 0, 'Update manifest contains a forbidden target: ' . $source);
@@ -104,6 +104,14 @@ $assert($targets === [], 'One or more release archives are absent from SHA256SUM
 $assert(is_file($releaseNotesPath) && filesize($releaseNotesPath) > 300, 'Release notes are missing or incomplete.');
 $assert(is_file($testReportPath) && filesize($testReportPath) > 1000, 'Final test report is missing or incomplete.');
 
+$versionSlug = str_replace('.', '-', $version);
+$coreAliasPath = $root . '/dist/core/proma-pay_v' . $versionSlug . '.zip';
+$updateAliasPath = $root . '/dist/core/proma-update_v' . $versionSlug . '.zip';
+$updateManifestAliasPath = $root . '/dist/core/proma-update_v' . $versionSlug . '-manifest.json';
+$assert(is_file($coreAliasPath) && hash_equals(hash_file('sha256', $corePath), hash_file('sha256', $coreAliasPath)), 'Core marketplace alias is missing or differs.');
+$assert(is_file($updateAliasPath) && hash_equals(hash_file('sha256', $updatePath), hash_file('sha256', $updateAliasPath)), 'Update marketplace alias is missing or differs.');
+$assert(is_file($updateManifestAliasPath) && hash_equals(hash_file('sha256', $updateManifestPath), hash_file('sha256', $updateManifestAliasPath)), 'Update manifest alias is missing or differs.');
+
 $extractRoot = sys_get_temp_dir() . '/proma-release-verify-' . bin2hex(random_bytes(6));
 if (!mkdir($extractRoot, 0700, true) && !is_dir($extractRoot)) {
     throw new RuntimeException('Cannot create temporary extraction directory.');
@@ -139,4 +147,4 @@ try {
     $removeTree($extractRoot);
 }
 
-echo "RELEASE_ARCHIVES_V141_OK\n";
+echo "RELEASE_ARCHIVES_V143_OK\n";

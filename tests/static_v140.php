@@ -47,6 +47,9 @@ $profileController = (string) file_get_contents($root . '/controllers/ProfileCon
 $profileRequest = (string) file_get_contents($root . '/models/ProfileRequest.php');
 $profileView = (string) file_get_contents($root . '/views/profile/index.php');
 $usersView = (string) file_get_contents($root . '/views/users/index.php');
+$profileReviewsController = (string) file_get_contents($root . '/controllers/ProfileReviewsController.php');
+$profileReviewsView = (string) file_get_contents($root . '/views/profile-reviews/index.php');
+$appLayout = (string) file_get_contents($root . '/views/layouts/app.php');
 $authController = (string) file_get_contents($root . '/controllers/AuthController.php');
 $auth = (string) file_get_contents($root . '/core/Auth.php');
 $appJs = (string) file_get_contents($root . '/assets/js/app.js');
@@ -70,7 +73,10 @@ $assert(strpos($contractView, 'proma-card-select') === false && strpos($contract
 $assert(strpos($profileController, 'public function updateAvatar') !== false, 'Direct avatar update endpoint is missing.');
 $assert(strpos($profileView, "url('profile/updateAvatar')") !== false, 'Profile avatar form is not wired to the direct endpoint.');
 $assert(strpos($profileRequest, 'array_intersect_key($payload, self::fieldLabels())') !== false, 'Profile approval does not restrict allowed fields.');
-$assert(strpos($usersView, 'تایید اصلاح مشخصات') !== false && strpos($usersView, 'مقایسه تغییرات') !== false, 'Management profile-review section is missing.');
+$assert(strpos($usersView, 'proma-profile-review-card') === false, 'Profile review must not remain embedded in the users list.');
+$assert(strpos($profileReviewsController, 'ProfileRequest::paginated') !== false, 'Independent profile-review controller is missing pagination.');
+$assert(strpos($profileReviewsView, 'تأیید اصلاح مشخصات') !== false && strpos($profileReviewsView, 'تاریخچه این حساب') !== false, 'Independent management profile-review workspace is missing.');
+$assert(strpos($appLayout, "['profile-reviews', 'تأیید اصلاح مشخصات'") !== false, 'Profile-review workspace is not available from the admin sidebar.');
 $assert(strpos($profileController, "'password' =>") === false, 'Profile requests must not persist a plaintext password.');
 
 $assert(strpos($authController, 'LoginThrottle::inspect') !== false && strpos($authController, 'LoginThrottle::recordFailure') !== false, 'Login rate limiting is not enforced.');
@@ -86,7 +92,7 @@ $assert(!preg_match('/\b(drop\s+table|truncate\s+table)\b/i', $migration), 'V1.4
 $assert(strpos($installSql, 'CREATE TABLE `auth_login_attempts`') !== false && strpos($installSql, 'CREATE TABLE `contract_requests`') !== false, 'Clean-install SQL omits V1.4.0 tables.');
 $assert(strpos($installSql, '`template_version_id` bigint(20) unsigned DEFAULT NULL') !== false, 'Clean-install SQL omits the contract document template version column.');
 $assert(strpos($migration, 'document_template_version_sql') !== false, 'V1.4.0 migration does not repair the contract document template version column.');
-foreach (['diff --name-only --diff-filter=ACMRT', 'database/proma-pay-install.sql', '2026_07_21_v1_4_1_interaction_state.sql', 'tools/release-gate.php', 'PromaPay-Update-v', 'SHA256SUMS.txt'] as $needle) {
+foreach (['--diff-filter=ACMRT', 'database/proma-pay-install.sql', '2026_07_21_v1_4_1_interaction_state.sql', 'tools/release-gate.php', 'PromaPay-Update-v', 'SHA256SUMS.txt'] as $needle) {
     $assert(strpos($releaseBuilder, $needle) !== false, 'Release builder omits required differential release behavior: ' . $needle . '.');
 }
 

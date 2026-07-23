@@ -693,9 +693,16 @@ class ContractsController extends Controller
                 (int) $id,
                 Auth::id(),
                 $_POST['deletion_reason'] ?? '',
-                $_POST['confirm_contract_number'] ?? ''
+                $_POST['confirm_contract_number'] ?? '',
+                !empty($_POST['purge_contract_history']),
+                !empty($_POST['confirm_gateway_warning'])
             );
-            set_flash('success', 'قرارداد آزمایشی یا اشتباهی پس از ثبت آرشیو حذف شد. هیچ سابقه مالی حذف یا اصلاح نشد.');
+            set_flash(
+                'success',
+                !empty($result['history_purged'])
+                    ? 'قرارداد و سوابق وابسته انتخاب‌شده پس از ثبت آرشیو کامل حذف شدند. هیچ بازگشت وجه بانکی انجام نشد.'
+                    : 'قرارداد آزمایشی یا اشتباهی پس از ثبت آرشیو حذف شد.'
+            );
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'حذف قرارداد انجام نشد.');
         }

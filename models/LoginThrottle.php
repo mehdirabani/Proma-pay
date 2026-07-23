@@ -66,9 +66,6 @@ class LoginThrottle extends Model
     {
         try {
             foreach (self::scopes($identifier, $ipAddress) as $scope) {
-                if ($scope['type'] === 'ip') {
-                    continue;
-                }
                 self::execute('DELETE FROM auth_login_attempts WHERE scope_type = ? AND scope_hash = ?', [$scope['type'], $scope['hash']]);
             }
         } catch (Throwable $e) {
@@ -91,7 +88,6 @@ class LoginThrottle extends Model
         $ipAddress = trim((string) $ipAddress) ?: 'unknown';
         return [
             ['type' => 'identifier', 'hash' => hash('sha256', 'identifier|' . $identifier)],
-            ['type' => 'ip', 'hash' => hash('sha256', 'ip|' . $ipAddress)],
             ['type' => 'combined', 'hash' => hash('sha256', 'combined|' . $identifier . '|' . $ipAddress)],
         ];
     }
@@ -109,7 +105,7 @@ class LoginThrottle extends Model
 
     protected static function threshold($scopeType)
     {
-        return $scopeType === 'ip' ? 20 : 5;
+        return 5;
     }
 
     protected static function logFailure($action, Throwable $exception)

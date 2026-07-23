@@ -17,7 +17,7 @@ $roles = [
     'admin' => [
         'identifier' => getenv('PROMA_QA_ADMIN_USER') ?: '',
         'password' => getenv('PROMA_QA_ADMIN_PASSWORD') ?: '',
-        'routes' => ['dashboard', 'notifications', 'users', 'customers', 'contracts', 'installments', 'overdue', 'payments', 'review', 'legal', 'chat', 'calendar', 'file-manager', 'medals', 'plugins', 'settings', 'system-health'],
+        'routes' => ['dashboard', 'notifications', 'users', 'profile-reviews', 'customers', 'contracts', 'installments', 'overdue', 'payments', 'review', 'legal', 'chat', 'calendar', 'file-manager', 'medals', 'plugins', 'settings', 'system-health'],
         'forbidden' => null,
     ],
     'operator' => [

@@ -19,8 +19,15 @@ if (!preg_match('/^\d+\.\d+\.\d+$/', $accountingVersion)) {
     throw new RuntimeException('Stable release packaging requires a stable Proma Accounting version. Current: ' . $accountingVersion);
 }
 
-echo "[GATE] Running strict release gate before packaging.\n";
-passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($root . '/tools/release-gate.php'), $gateCode);
+$localQaBuild = in_array('--local-qa', $argv, true);
+echo $localQaBuild
+    ? "[GATE] Running local release QA. Production infrastructure is not certified by this build.\n"
+    : "[GATE] Running strict production release gate before packaging.\n";
+$gateCommand = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($root . '/tools/release-gate.php');
+if ($localQaBuild) {
+    $gateCommand .= ' --local';
+}
+passthru($gateCommand, $gateCode);
 if ($gateCode !== 0) {
     throw new RuntimeException('Release gate failed. No stable archive was produced.');
 }
@@ -84,7 +91,7 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
     if (in_array($path, ['.env', 'config/database.php', 'installed.lock', '1.xlsx'], true)) {
         return true;
     }
-    foreach (['.git/', '.github/', '.agents/', '.codex/', 'dist/', 'storage/', 'tmp/', 'plugins/', 'plugin-packages/', 'node_modules/', 'html/docs/', 'html/rtl/dist/', 'html/rtl/starter-kit/', 'html/rtl/template/'] as $prefix) {
+    foreach (['.git/', '.github/', '.agents/', '.codex/', 'dist/', 'storage/', 'tmp/', 'plugins/', 'plugin-packages/', 'node_modules/', 'docs/accounting-next/', 'docs/accounting-stability/', 'html/docs/', 'html/rtl/dist/', 'html/rtl/starter-kit/', 'html/rtl/template/'] as $prefix) {
         if (strpos($path, $prefix) === 0) {
             return true;
         }
@@ -109,24 +116,45 @@ $coreZip->addFromString('release-manifest.json', json_encode([
     'version' => $version,
     'plugin_api' => (string) ($versionInfo['plugin_api'] ?? '1.0'),
     'built_at' => gmdate('c'),
-    'source_base' => 'Proma Pay V1.4.0',
+        'source_base' => 'Proma Pay V1.4.2',
     'files' => $hashList($coreFiles),
     'excludes_operational_data' => true,
-    'optional_plugins_included' => false,
+        'optional_plugins_included' => false,
+        'production_availability_certified' => !$localQaBuild,
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 $coreZip->close();
 
-$baseRef = trim((string) (getenv('PROMA_RELEASE_BASE_REF') ?: '5814817'));
-$git = static function (string $arguments) use ($root): array {
-    $command = 'git -C ' . escapeshellarg($root) . ' ' . $arguments . ' 2>&1';
-    exec($command, $output, $code);
-    if ($code !== 0) {
-        throw new RuntimeException('Git release inventory failed: ' . implode(' ', $output));
+$baseRef = trim((string) (getenv('PROMA_RELEASE_BASE_REF') ?: 'c2a5165'));
+$gitExecutable = trim((string) (getenv('PROMA_GIT_BINARY') ?: 'git'));
+$git = static function (array $arguments) use ($root, $gitExecutable): array {
+    $command = array_merge([$gitExecutable, '--git-dir=' . $root . '/.git', '--work-tree=' . $root], $arguments);
+    $stdoutPath = tempnam(sys_get_temp_dir(), 'proma-git-out-');
+    $stderrPath = tempnam(sys_get_temp_dir(), 'proma-git-err-');
+    if ($stdoutPath === false || $stderrPath === false) {
+        throw new RuntimeException('Temporary Git inventory files could not be created.');
     }
-    return array_values(array_filter(array_map('trim', $output), static fn (string $line): bool => $line !== ''));
+    $process = proc_open($command, [1 => ['file', $stdoutPath, 'w'], 2 => ['file', $stderrPath, 'w']], $pipes, $root, null, ['bypass_shell' => true]);
+    if (!is_resource($process)) {
+        @unlink($stdoutPath);
+        @unlink($stderrPath);
+        throw new RuntimeException('Git release inventory process could not be started.');
+    }
+    $code = proc_close($process);
+    $output = (string) file_get_contents($stdoutPath);
+    $error = (string) file_get_contents($stderrPath);
+    @unlink($stdoutPath);
+    @unlink($stderrPath);
+    if ($code !== 0) {
+        throw new RuntimeException('Git release inventory failed: ' . trim($output . PHP_EOL . $error));
+    }
+    return array_values(array_filter(array_map('trim', preg_split('/\R/', $output) ?: []), static fn (string $line): bool => $line !== ''));
 };
-$changed = $git('diff --name-only --diff-filter=ACMRT ' . escapeshellarg($baseRef) . ' --');
-$untracked = $git('ls-files --others --exclude-standard');
+$changed = $git(['diff', '--name-only', '--diff-filter=ACMRT', $baseRef, '--']);
+$untracked = $git([
+    'ls-files', '--others', '--exclude-standard', '--',
+    'assets', 'config', 'controllers', 'core', 'database', 'helpers', 'models', 'views',
+    '.htaccess', 'bootstrap.php', 'index.php', 'install.php', 'installer.php', 'manifest.json', 'package.json', 'service-worker.js',
+]);
 $candidates = array_values(array_unique(array_merge($changed, $untracked, [
     'config/version.php',
     'manifest.json',
@@ -138,6 +166,7 @@ $candidates = array_values(array_unique(array_merge($changed, $untracked, [
     'database/migrations/2026_07_10_ecommerce_module.sql',
     'database/migrations/2026_07_13_contract_template_print_engine.sql',
     'database/migrations/2026_07_21_v1_4_1_interaction_state.sql',
+    'database/migrations/2026_07_22_release_v143.sql',
 ])));
 sort($candidates, SORT_STRING);
 
@@ -169,6 +198,7 @@ foreach ([
     'database/migrations/2026_07_10_ecommerce_module.sql',
     'database/migrations/2026_07_13_contract_template_print_engine.sql',
     'database/migrations/2026_07_21_v1_4_1_interaction_state.sql',
+    'database/migrations/2026_07_22_release_v143.sql',
 ] as $requiredUpdateFile) {
     if (!isset($updateFiles[$requiredUpdateFile])) {
         throw new RuntimeException('Required update file is absent from release inventory: ' . $requiredUpdateFile);
@@ -184,11 +214,12 @@ $updateManifest = [
     'app' => 'proma-pay',
     'name' => 'بروزرسانی پایدار Proma Pay V' . $version,
     'version' => $version,
-    'minimum_version' => '1.4.0',
+    'minimum_version' => '1.4.2',
     'plugin_api' => (string) ($versionInfo['plugin_api'] ?? '1.0'),
     'files' => $updateManifestFiles,
     'migrations' => $migrations,
     'preserves' => ['config/database.php', 'plugins/', 'storage/', 'uploads/'],
+    'production_availability_certified' => !$localQaBuild,
 ];
 $updateJson = json_encode($updateManifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $updatePath = $distCore . '/PromaPay-Update-v' . $version . '.zip';
@@ -220,8 +251,8 @@ $pluginZip->addFromString($pluginArchiveName . '/build-manifest.json', json_enco
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 $pluginZip->close();
 
-$releaseNotesSource = $root . '/docs/releases/V1.4.1.md';
-$testReportSource = $root . '/docs/qa/V1_4_1_TEST_RESULTS.md';
+$releaseNotesSource = $root . '/docs/releases/V' . $version . '.md';
+$testReportSource = $root . '/docs/qa/V' . str_replace('.', '_', $version) . '_TEST_RESULTS.md';
 if (!is_file($releaseNotesSource) || !is_file($testReportSource)) {
     throw new RuntimeException('Release notes and final QA report must exist before packaging.');
 }
@@ -243,6 +274,19 @@ foreach ($archives as $archivePath) {
 $checksumPath = $distCore . '/SHA256SUMS.txt';
 file_put_contents($checksumPath, implode(PHP_EOL, $checksumLines) . PHP_EOL);
 
+$versionSlug = str_replace('.', '-', $version);
+$coreAliasPath = $distCore . '/proma-pay_v' . $versionSlug . '.zip';
+$updateAliasPath = $distCore . '/proma-update_v' . $versionSlug . '.zip';
+$updateManifestAliasPath = $distCore . '/proma-update_v' . $versionSlug . '-manifest.json';
+foreach ([[$corePath, $coreAliasPath], [$updatePath, $updateAliasPath], [$updateManifestPath, $updateManifestAliasPath]] as [$source, $target]) {
+    if (is_file($target) && !unlink($target)) {
+        throw new RuntimeException('Cannot replace release alias: ' . $target);
+    }
+    if (!copy($source, $target)) {
+        throw new RuntimeException('Cannot create release alias: ' . $target);
+    }
+}
+
 echo json_encode([
     'version' => $version,
     'core' => $corePath,
@@ -252,5 +296,8 @@ echo json_encode([
     'checksums' => $checksumPath,
     'release_notes' => $releaseNotesPath,
     'test_report' => $testReportPath,
+    'core_alias' => $coreAliasPath,
+    'update_alias' => $updateAliasPath,
+    'update_manifest_alias' => $updateManifestAliasPath,
     'update_files' => count($updateFiles),
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;

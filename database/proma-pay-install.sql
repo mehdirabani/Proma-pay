@@ -802,6 +802,7 @@ CREATE TABLE `profile_update_requests` (
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_profile_request_status` (`status`),
+  KEY `idx_profile_request_status_created` (`status`,`created_at`,`id`),
   KEY `idx_profile_request_user` (`user_id`),
   KEY `fk_profile_request_reviewer` (`reviewed_by`),
   CONSTRAINT `fk_profile_request_reviewer` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,

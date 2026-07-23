@@ -11,8 +11,27 @@ class Model
         }
 
         $config = require __DIR__ . '/../config/database.php';
+        $environmentMap = [
+            'PROMA_DB_HOST' => 'host',
+            'PROMA_DB_NAME' => 'database',
+            'PROMA_DB_USER' => 'username',
+            'PROMA_DB_CHARSET' => 'charset',
+        ];
+        foreach ($environmentMap as $environmentKey => $configKey) {
+            $environmentValue = getenv($environmentKey);
+            if ($environmentValue !== false && trim((string) $environmentValue) !== '') {
+                $config[$configKey] = trim((string) $environmentValue);
+            }
+        }
+        $environmentPassword = getenv('PROMA_DB_PASSWORD');
+        if ($environmentPassword !== false) {
+            $config['password'] = (string) $environmentPassword;
+        }
         $charset = $config['charset'] ?: 'utf8mb4';
-        $dsn = 'mysql:host=' . $config['host'] . ';dbname=' . $config['database'] . ';charset=' . $charset;
+        $environmentDsn = trim((string) (getenv('PROMA_DB_DSN') ?: ''));
+        $dsn = $environmentDsn !== ''
+            ? $environmentDsn
+            : 'mysql:host=' . $config['host'] . ';dbname=' . $config['database'] . ';charset=' . $charset;
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

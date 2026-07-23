@@ -97,7 +97,7 @@ foreach ([
 }
 
 $releaseBuilder = (string) file_get_contents($root . '/scripts/build_release.php');
-$assert(strpos($releaseBuilder, 'diff --name-only --diff-filter=ACMRT') !== false, 'Release builder does not derive update files from the release baseline.');
+$assert(strpos($releaseBuilder, "'--diff-filter=ACMRT'") !== false && strpos($releaseBuilder, "'--name-only'") !== false, 'Release builder does not derive update files from the release baseline.');
 $assert(strpos($releaseBuilder, 'PROMA_RELEASE_BASE_REF') !== false, 'Release builder has no explicit update baseline.');
 $assert(strpos($releaseBuilder, '2026_07_21_v1_4_1_interaction_state.sql') !== false, 'Release builder omits the current migration.');
 

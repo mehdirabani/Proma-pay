@@ -1348,17 +1348,45 @@ a {
   --progress: 0;
   width: 58px;
   height: 58px;
+  position: relative;
   display: inline-grid;
   flex: 0 0 58px;
   place-items: center;
   border-radius: 50%;
-  background: conic-gradient(var(--proma-success) calc(var(--progress) * 1%), #edf1f8 0);
+  border: 1px solid rgba(22, 163, 74, .16);
+  background: conic-gradient(#16a34a calc(var(--progress) * 1%), #dfe5ef 0);
+  box-shadow: 0 0 0 3px #fff, 0 7px 18px rgba(15, 23, 42, .12);
+}
+
+.proma-progress-avatar.is-complete {
+  background: conic-gradient(#16a34a 100%, #16a34a 0);
 }
 
 .proma-progress-avatar .proma-avatar-choice {
   width: 46px;
   height: 46px;
+  position: relative;
+  z-index: 1;
   border: 3px solid #fff;
+}
+
+.proma-progress-avatar__value {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: -7px;
+  min-width: 34px;
+  padding: 1px 5px;
+  border: 1px solid rgba(22, 163, 74, .2);
+  border-radius: 7px;
+  color: #166534;
+  background: #f0fdf4;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.45;
+  text-align: center;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 
 [data-card-href] {
@@ -2116,6 +2144,7 @@ label.required-field::after {
   display: flex;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
   flex-direction: column;
   padding: 16px;
   border: 1px solid var(--proma-line);
@@ -2133,6 +2162,11 @@ label.required-field::after {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+}
+
+.proma-medal-card header > .badge {
+  flex: 0 0 auto;
 }
 
 .proma-medal-card header > div {
@@ -2187,6 +2221,7 @@ label.required-field::after {
 }
 
 .proma-medal-card dl > div {
+  min-width: 0;
   padding: 8px;
   border-radius: 8px;
   background: #f8f9fd;
@@ -2207,12 +2242,29 @@ label.required-field::after {
   color: var(--proma-text);
   font-size: 13px;
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .proma-medal-card footer {
+  align-items: flex-end;
+  flex-wrap: wrap;
   justify-content: space-between;
   margin-top: auto;
   padding-top: 14px;
+}
+
+.proma-medal-card footer > .badge {
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 160px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.proma-medal-card footer .proma-table-actions {
+  min-width: max-content;
+  flex: 0 0 auto;
 }
 
 .proma-medal-history {
@@ -7323,4 +7375,214 @@ tr[data-card-href]:hover td {
 .proma-gateway-card small {
   color: #7c7f8d;
   font-size: 11px;
+}
+
+.proma-health-status {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border: 1px solid #d8e8de;
+  border-radius: 8px;
+  background: #f6fcf8;
+}
+
+.proma-health-status.needs-attention {
+  border-color: #f1d7b1;
+  background: #fffaf2;
+}
+
+.proma-health-status__icon {
+  width: 46px;
+  height: 46px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #16865c;
+  background: #e4f7ed;
+}
+
+.proma-health-status.needs-attention .proma-health-status__icon {
+  color: #a26008;
+  background: #fff0d8;
+}
+
+.proma-health-status strong,
+.proma-health-status p {
+  display: block;
+  margin: 0;
+}
+
+.proma-health-status p {
+  margin-top: 4px;
+  color: var(--proma-muted);
+  line-height: 1.75;
+}
+
+.proma-health-status time {
+  color: var(--proma-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.proma-health-service-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.proma-health-service {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--proma-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 7px 22px rgba(31, 41, 55, .045);
+}
+
+.proma-health-service > span {
+  width: 40px;
+  height: 40px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--proma-primary);
+  background: var(--proma-primary-soft);
+}
+
+.proma-health-service small,
+.proma-health-service strong,
+.proma-health-service p {
+  display: block;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.proma-health-service small,
+.proma-health-service p {
+  color: var(--proma-muted);
+  font-size: 11px;
+}
+
+.proma-health-service strong {
+  margin: 3px 0;
+  color: var(--proma-text);
+  font-size: 14px;
+}
+
+.proma-health-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #94a3b8;
+  box-shadow: 0 0 0 4px #eef2f6;
+}
+
+.proma-health-dot.ok {
+  background: #16a34a;
+  box-shadow: 0 0 0 4px #dcfce7;
+}
+
+.proma-health-dot.error {
+  background: #dc2626;
+  box-shadow: 0 0 0 4px #fee2e2;
+}
+
+.proma-health-panel .card-header {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.proma-health-panel .card-header h2,
+.proma-health-panel .card-header p {
+  margin: 0;
+}
+
+.proma-health-panel .card-header p {
+  margin-top: 4px;
+  color: var(--proma-muted);
+  font-size: 12px;
+}
+
+.proma-health-counters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.proma-health-counters > div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f7f8fb;
+}
+
+.proma-health-counters span {
+  color: var(--proma-muted);
+  font-size: 11px;
+}
+
+.proma-health-counters strong {
+  font-size: 18px;
+}
+
+.proma-health-error-text {
+  display: block;
+  margin-top: 4px;
+  color: #b42318;
+  font-size: 11px;
+}
+
+.proma-health-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 13px 15px;
+  border-inline-start: 3px solid var(--proma-primary);
+  border-radius: 8px;
+  color: var(--proma-muted);
+  background: #f8f7ff;
+}
+
+.proma-health-note span {
+  flex: 0 0 auto;
+  color: var(--proma-primary);
+}
+
+.proma-health-note p {
+  margin: 0;
+  line-height: 1.8;
+}
+
+@media (max-width: 1199.98px) {
+  .proma-health-service-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767.98px) {
+  .proma-health-status {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .proma-health-status time {
+    grid-column: 1 / -1;
+    white-space: normal;
+  }
+
+  .proma-health-service-grid,
+  .proma-health-counters {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

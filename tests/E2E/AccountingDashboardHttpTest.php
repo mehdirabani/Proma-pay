@@ -30,11 +30,12 @@ $request = static function ($route, $cookie, array $post = null) use ($baseUrl) 
     $raw = curl_exec($ch);
     $durationMs = (microtime(true) - $startedAt) * 1000;
     $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $effectiveUrl = (string) curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
     $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
     $error = curl_error($ch);
     curl_close($ch);
     if ($raw === false) throw new RuntimeException($error);
-    return ['status' => $status, 'headers' => substr($raw, 0, $headerSize), 'body' => substr($raw, $headerSize), 'duration_ms' => $durationMs];
+    return ['status' => $status, 'headers' => substr($raw, 0, $headerSize), 'body' => substr($raw, $headerSize), 'duration_ms' => $durationMs, 'url' => $effectiveUrl];
 };
 
 try {
@@ -50,6 +51,9 @@ try {
         $response = $request('plugin/accounting/dashboard', $cookie);
         if ($response['status'] !== 200 || stripos($response['body'], 'SQLSTATE[') !== false || stripos($response['body'], 'Fatal error') !== false) {
             throw new RuntimeException('Accounting dashboard HTTP regression at iteration ' . $iteration . ', status ' . $response['status']);
+        }
+        if (strpos(urldecode($response['url']), 'route=plugin/accounting/dashboard') === false) {
+            throw new RuntimeException('Accounting dashboard redirected away from the tested route at iteration ' . $iteration . '.');
         }
         if (!preg_match('/X-Request-Id:\s*[a-f0-9]{20,}/i', $response['headers'])) {
             throw new RuntimeException('Accounting dashboard response has no request ID.');

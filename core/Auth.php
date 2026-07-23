@@ -8,6 +8,7 @@ class Auth
     {
         $settings = app_config();
         if (session_status() === PHP_SESSION_NONE) {
+            self::ensureWritableSessionPath();
             session_name($settings['session_name']);
             session_set_cookie_params([
                 'lifetime' => 0,
@@ -17,6 +18,29 @@ class Auth
                 'samesite' => 'Lax',
             ]);
             session_start();
+        }
+    }
+
+    protected static function ensureWritableSessionPath()
+    {
+        $configuredPath = trim((string) getenv('PROMA_SESSION_SAVE_PATH'));
+        if ($configuredPath !== '' && is_dir($configuredPath) && is_writable($configuredPath)) {
+            ini_set('session.save_path', $configuredPath);
+            return;
+        }
+
+        $currentPath = trim((string) ini_get('session.save_path'));
+        if (strpos($currentPath, ';') !== false) {
+            $parts = explode(';', $currentPath);
+            $currentPath = trim((string) end($parts));
+        }
+        if ($currentPath !== '' && is_dir($currentPath) && is_writable($currentPath)) {
+            return;
+        }
+
+        $fallbackPath = dirname(__DIR__) . '/storage/cache/sessions';
+        if ((is_dir($fallbackPath) || mkdir($fallbackPath, 0775, true)) && is_writable($fallbackPath)) {
+            ini_set('session.save_path', $fallbackPath);
         }
     }
 

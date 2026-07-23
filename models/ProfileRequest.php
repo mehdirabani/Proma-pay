@@ -81,33 +81,96 @@ class ProfileRequest extends Model
     public static function all(array $filters = [])
     {
         self::ensureSchema();
-        $status = trim((string) ($filters['status'] ?? 'pending'));
         $params = [];
-        $where = [];
-        if (in_array($status, ['pending', 'approved', 'rejected', 'partial'], true)) {
-            $where[] = 'pr.status = ?';
-            $params[] = $status;
-        }
-        if (!empty($filters['role'])) {
-            $where[] = 'u.role = ?';
-            $params[] = trim((string) $filters['role']);
-        }
-        if (!empty($filters['q'])) {
-            $needle = '%' . trim((string) $filters['q']) . '%';
-            $where[] = '(u.full_name LIKE ? OR u.mobile LIKE ? OR u.national_id LIKE ?)';
-            array_push($params, $needle, $needle, $needle);
-        }
+        $where = self::filterWhere($filters, $params);
         $rows = self::fetchAll(
-            "SELECT pr.*, u.full_name, u.role, u.mobile, u.national_id,
-                    u.full_name AS current_full_name, u.mobile AS current_mobile,
-                    u.secondary_phone AS current_secondary_phone, u.email AS current_email,
-                    u.address AS current_address
-             FROM profile_update_requests pr
-             JOIN users u ON u.id = pr.user_id"
+            self::selectSql()
             . ($where ? ' WHERE ' . implode(' AND ', $where) : '')
             . ' ORDER BY pr.id DESC LIMIT 200',
             $params
         );
+        return self::hydrateRows($rows);
+    }
+
+    public static function paginated(array $filters = [], $page = 1, $perPage = 18)
+    {
+        self::ensureSchema();
+        $params = [];
+        $where = self::filterWhere($filters, $params);
+        $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+        $total = (int) (self::fetch(
+            'SELECT COUNT(*) AS total FROM profile_update_requests pr JOIN users u ON u.id = pr.user_id' . $whereSql,
+            $params
+        )['total'] ?? 0);
+        $perPage = max(6, min(60, (int) $perPage));
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min(max(1, (int) $page), $pages);
+        $offset = ($page - 1) * $perPage;
+        $rows = self::fetchAll(
+            self::selectSql() . $whereSql . " ORDER BY pr.id DESC LIMIT {$perPage} OFFSET {$offset}",
+            $params
+        );
+        return [
+            'items' => self::hydrateRows($rows),
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'per_page' => $perPage,
+        ];
+    }
+
+    public static function statusSummary()
+    {
+        self::ensureSchema();
+        $summary = ['pending' => 0, 'approved' => 0, 'partial' => 0, 'rejected' => 0, 'total' => 0];
+        foreach (self::fetchAll('SELECT status, COUNT(*) AS total FROM profile_update_requests GROUP BY status') as $row) {
+            $status = (string) ($row['status'] ?? '');
+            if (array_key_exists($status, $summary)) {
+                $summary[$status] = (int) $row['total'];
+            }
+            $summary['total'] += (int) $row['total'];
+        }
+        return $summary;
+    }
+
+    protected static function filterWhere(array $filters, array &$params)
+    {
+        $where = [];
+        $status = trim((string) ($filters['status'] ?? 'pending'));
+        if (in_array($status, ['pending', 'approved', 'rejected', 'partial'], true)) {
+            $where[] = 'pr.status = ?';
+            $params[] = $status;
+        }
+        if (!empty($filters['role']) && in_array($filters['role'], ['admin', 'operator', 'lawyer', 'customer'], true)) {
+            $where[] = 'u.role = ?';
+            $params[] = trim((string) $filters['role']);
+        }
+        if (!empty($filters['user_id'])) {
+            $where[] = 'pr.user_id = ?';
+            $params[] = (int) $filters['user_id'];
+        }
+        if (!empty($filters['q'])) {
+            $needle = '%' . trim(to_english_digits((string) $filters['q'])) . '%';
+            $where[] = '(u.full_name LIKE ? OR u.mobile LIKE ? OR u.national_id LIKE ? OR u.username LIKE ? OR u.email LIKE ?)';
+            array_push($params, $needle, $needle, $needle, $needle, $needle);
+        }
+        return $where;
+    }
+
+    protected static function selectSql()
+    {
+        return "SELECT pr.*, u.full_name, u.role, u.mobile, u.national_id, u.username,
+                       u.avatar_key, u.avatar_path, u.avatar_version,
+                       u.full_name AS current_full_name, u.mobile AS current_mobile,
+                       u.secondary_phone AS current_secondary_phone, u.email AS current_email,
+                       u.address AS current_address, reviewer.full_name AS reviewer_name
+                FROM profile_update_requests pr
+                JOIN users u ON u.id = pr.user_id
+                LEFT JOIN users reviewer ON reviewer.id = pr.reviewed_by";
+    }
+
+    protected static function hydrateRows(array $rows)
+    {
         foreach ($rows as &$row) {
             $row['requested_fields'] = json_decode((string) ($row['payload_json'] ?? ''), true) ?: [];
             $row['reviewed_fields'] = json_decode((string) ($row['reviewed_fields_json'] ?? ''), true) ?: [];

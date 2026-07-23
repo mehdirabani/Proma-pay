@@ -7,11 +7,13 @@ $unreadNotifications = Notification::unreadCount(Auth::id());
 $unreadMessages = Chat::unreadCount(Auth::id());
 $pendingIdentityReviews = 0;
 $pendingReceiptReviews = 0;
+$pendingProfileReviews = 0;
 if (Auth::role() === 'admin') {
     $pendingIdentityReviews = IdentityDocument::pendingCount();
     $pendingReceiptReviews = PaymentReceipt::pendingCount();
+    $pendingProfileReviews = ProfileRequest::countByStatus('pending');
 }
-$pendingReviewCount = $pendingIdentityReviews + $pendingReceiptReviews;
+$pendingReviewCount = $pendingIdentityReviews + $pendingReceiptReviews + $pendingProfileReviews;
 $notifications = Notification::latest(Auth::id(), 6);
 $latestNotificationId = Notification::latestId(Auth::id());
 $notificationSoundEnabled = (int) ($settings['notifications_sound_enabled'] ?? 1);
@@ -77,6 +79,7 @@ if (Auth::role() === 'admin') {
         ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
         ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['users', 'کاربران', 'stroke-user', 'fill-user'],
+        ['profile-reviews', 'تأیید اصلاح مشخصات', 'stroke-task', 'fill-task'],
         ['customers', 'مشتریان', 'stroke-user', 'fill-user'],
         ['contracts', 'قراردادها', 'stroke-project', 'fill-project'],
         ['installments', 'اقساط', 'stroke-file', 'fill-file'],

@@ -98,14 +98,16 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
       <form method="post" action="<?= e(url('contracts/delete/' . (int) $contract['id'])) ?>">
         <div class="modal-body form-grid two">
           <?= csrf_field() ?>
-          <div class="notice <?= $canPermanentlyDelete ? 'success' : 'error' ?> full"><?= $canPermanentlyDelete ? 'این قرارداد فاقد سابقه مالی، حقوقی، سند و وابستگی حسابداری است و فقط به‌عنوان رکورد آزمایشی یا اشتباهی قابل حذف است.' : 'این قرارداد دارای سابقه مالی یا حقوقی است و قابل حذف نیست. از گزینه لغو یا بایگانی استفاده کنید.' ?></div>
+          <div class="notice <?= $canPermanentlyDelete ? 'success' : 'warning' ?> full"><?= $canPermanentlyDelete ? 'این قرارداد وابستگی فعالی ندارد و پس از ثبت آرشیو ایمن قابل حذف است.' : 'این قرارداد سابقه وابسته دارد. مدیریت می‌تواند با تأیید صریح، قرارداد و سوابق وابسته را پس از آرشیو کامل حذف کند.' ?></div>
           <div class="proma-cancellation-summary full"><span><small>کل پرداخت‌ها</small><strong><?= to_persian_digits($deletionPreview['payment_count'] ?? 0) ?></strong></span><span><small>رسیدها</small><strong><?= to_persian_digits($deletionPreview['dependencies']['payment_receipt_count'] ?? 0) ?></strong></span><span><small>پرونده حقوقی</small><strong><?= to_persian_digits($deletionPreview['legal_case_count'] ?? 0) ?></strong></span><span><small>اسناد قرارداد</small><strong><?= to_persian_digits(($deletionPreview['dependencies']['generated_document_count'] ?? 0) + ($deletionPreview['dependencies']['document_version_count'] ?? 0)) ?></strong></span></div>
-          <?php if (!$canPermanentlyDelete): ?><p class="full small text-muted">وابستگی‌های مانع: <?= e(implode('، ', $deletionPreview['blocking_dependencies'] ?? [])) ?></p><?php endif; ?>
-          <label class="full">علت حذف<textarea name="deletion_reason" required minlength="5" rows="4"<?= $canPermanentlyDelete ? '' : ' disabled' ?>></textarea></label>
-          <label class="full">برای تأیید، شماره قرارداد را وارد کنید<input name="confirm_contract_number" required autocomplete="off" value="" placeholder="<?= e($contract['contract_number']) ?>"<?= $canPermanentlyDelete ? '' : ' disabled' ?>></label>
-          <label class="full proma-confirm-check proma-danger-check"><input type="checkbox" name="confirm_delete_mistake" value="1" required<?= $canPermanentlyDelete ? '' : ' disabled' ?>> تأیید می‌کنم این قرارداد آزمایشی یا اشتباهی است و حذف آن سوابق مالی واقعی را تحت تأثیر قرار نمی‌دهد.</label>
+          <?php if (!$canPermanentlyDelete): ?><p class="full small text-muted">سوابق وابسته: <?= e(implode('، ', $deletionPreview['blocking_dependency_labels'] ?? [])) ?></p><?php endif; ?>
+          <label class="full required-field">علت حذف<textarea name="deletion_reason" required minlength="5" rows="4" placeholder="علت دقیق حذف قرارداد را ثبت کنید"></textarea></label>
+          <label class="full required-field">برای تأیید، شماره قرارداد را وارد کنید<input name="confirm_contract_number" required autocomplete="off" value="" placeholder="<?= e($contract['contract_number']) ?>"></label>
+          <?php if (!$canPermanentlyDelete): ?><label class="full proma-confirm-check proma-danger-check"><input type="checkbox" name="purge_contract_history" value="1" required> قرارداد و تمام سوابق مالی، اقساط، حقوقی، اسناد و عملیات وابسته حذف شوند؛ آرشیو کامل پیش از حذف ثبت می‌شود.</label><?php endif; ?>
+          <?php if ((int) ($deletionPreview['gateway_payment_count'] ?? 0) > 0): ?><label class="full proma-confirm-check proma-danger-check"><input type="checkbox" name="confirm_gateway_warning" value="1" required> می‌دانم این عملیات بازگشت وجه بانکی انجام نمی‌دهد و بازپرداخت واقعی باید جداگانه انجام شود.</label><?php endif; ?>
+          <label class="full proma-confirm-check proma-danger-check"><input type="checkbox" name="confirm_delete_mistake" value="1" required> حذف دائمی این قرارداد و پیامدهای آن را بررسی و تأیید می‌کنم.</label>
         </div>
-        <div class="modal-footer"><button class="btn danger" type="submit"<?= $canPermanentlyDelete ? '' : ' disabled' ?>>حذف قطعی قرارداد آزمایشی</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
+        <div class="modal-footer"><button class="btn danger" type="submit"><?= proma_icon('trash') ?><span>حذف قطعی قرارداد</span></button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
       </form>
     </div>
   </div>
@@ -450,21 +452,21 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
   <div class="modal" id="add-contract-installment">
     <div class="modal-content">
       <div class="modal-header"><h3>افزودن قسط جدید</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('installments/store')) ?>">
+      <form method="post" action="<?= e(url('installments/store')) ?>" data-disable-on-submit>
         <div class="modal-body form-grid">
           <?= csrf_field() ?>
           <input type="hidden" name="contract_id" value="<?= (int) $contract['id'] ?>">
           <input type="hidden" name="redirect_to" value="contract">
-          <label>قرارداد<input value="<?= e($contract['contract_number']) ?> - <?= e($contract['customer_name']) ?>" disabled></label>
-          <label>سررسید<input name="due_date" value="<?= e(jdate(FinanceHelper::addMonths(date('Y-m-d'), 1))) ?>" required placeholder="۱۴۰۵/۰۱/۰۱"></label>
-          <label>مبلغ پایه<input name="base_amount" data-money required></label>
-          <label>عنوان قسط<input name="custom_title" maxlength="100" placeholder="مثلاً هزینه خدمات اضافه"></label>
-          <label>شناسه ضمانت<input name="guarantee_serial" dir="ltr" placeholder="شماره چک یا سفته"></label>
-          <label class="full">توضیح قسط برای مشتری<textarea name="customer_description" required rows="3" placeholder="علت ایجاد این قسط را به زبان قابل نمایش برای مشتری بنویسید."></textarea><small class="proma-form-help">این توضیح در پنل مدیریت و پنل مشتری نمایش داده می‌شود.</small></label>
-          <label class="full">یادداشت داخلی<textarea name="internal_note" rows="2" placeholder="نکته داخلی برای مدیریت؛ این متن به مشتری نمایش داده نمی‌شود."></textarea><small class="proma-form-help">این یادداشت فقط برای کاربران مجاز مدیریت قابل مشاهده است.</small></label>
+          <label><span class="proma-form-label">قرارداد</span><input value="<?= e($contract['contract_number']) ?> - <?= e($contract['customer_name']) ?>" disabled></label>
+          <label><span class="proma-form-label">سررسید</span><input name="due_date" value="<?= e(jdate(FinanceHelper::addMonths(date('Y-m-d'), 1))) ?>" required placeholder="۱۴۰۵/۰۱/۰۱"></label>
+          <label><span class="proma-form-label">مبلغ پایه</span><input name="base_amount" data-money required></label>
+          <label><span class="proma-form-label">عنوان قسط</span><input name="custom_title" maxlength="100" placeholder="مثلاً هزینه خدمات اضافه"></label>
+          <label><span class="proma-form-label">شناسه ضمانت</span><input name="guarantee_serial" dir="ltr" placeholder="شماره چک یا سفته"></label>
+          <label class="full"><span class="proma-form-label">توضیح قسط برای مشتری</span><textarea name="customer_description" required rows="3" placeholder="علت ایجاد این قسط را به زبان قابل نمایش برای مشتری بنویسید."></textarea><small class="proma-form-help">این توضیح در پنل مدیریت و پنل مشتری نمایش داده می‌شود.</small></label>
+          <label class="full"><span class="proma-form-label">یادداشت داخلی</span><textarea name="internal_note" rows="2" placeholder="نکته داخلی برای مدیریت؛ این متن به مشتری نمایش داده نمی‌شود."></textarea><small class="proma-form-help">این یادداشت فقط برای کاربران مجاز مدیریت قابل مشاهده است.</small></label>
           <label class="proma-confirm-check full"><input type="checkbox" name="customer_visible" value="1" checked> توضیح قسط در پنل مشتری نمایش داده شود.</label>
         </div>
-        <div class="modal-footer"><button class="btn" type="submit">ثبت قسط</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
+        <div class="modal-footer"><button class="btn" type="submit" data-submit-label="در حال ثبت...">ثبت قسط</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
       </form>
     </div>
   </div>

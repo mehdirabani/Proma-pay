@@ -173,13 +173,17 @@ class ProfileController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
-        $result = ProfileRequest::approveFields((int) $id, Auth::id(), (array) ($_POST['approved_fields'] ?? []), $_POST['review_notes'] ?? '');
+        $approvedFields = (array) ($_POST['approved_fields'] ?? []);
+        if (!empty($_POST['selection_submitted']) && !$approvedFields) {
+            $approvedFields = ['__none__'];
+        }
+        $result = ProfileRequest::approveFields((int) $id, Auth::id(), $approvedFields, $_POST['review_notes'] ?? '');
         if (!empty($result['ok'])) {
             set_flash('success', ($result['status'] ?? '') === 'partial' ? 'فیلدهای انتخاب‌شده تایید و سایر فیلدها رد شدند.' : (($result['status'] ?? '') === 'approved' ? 'درخواست اصلاح مشخصات تایید و اعمال شد.' : 'درخواست اصلاح مشخصات رد شد.'));
         } else {
             set_flash('error', 'درخواست در انتظار بررسی پیدا نشد.');
         }
-        redirect('review', ['tab' => 'profile']);
+        redirect('profile-reviews', ['status' => 'pending']);
     }
 
     public function reject($id)
@@ -191,7 +195,7 @@ class ProfileController extends Controller
         } else {
             set_flash('error', 'درخواست در انتظار بررسی پیدا نشد.');
         }
-        redirect('review', ['tab' => 'profile']);
+        redirect('profile-reviews', ['status' => 'pending']);
     }
 
     public function respond($id)
