@@ -1,5 +1,6 @@
 -- Proma Pay V1.4.3: shared-IP login isolation and profile-review query support.
-DELETE FROM auth_login_attempts WHERE scope_type = 'ip';
+-- Legacy IP-scoped attempts are intentionally retained. The runtime no longer
+-- reads them, and update migrations must not remove production audit history.
 
 SET @profile_review_index_exists := (
     SELECT COUNT(*) FROM information_schema.STATISTICS

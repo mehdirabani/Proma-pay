@@ -624,7 +624,7 @@ for ($i = 0; $i < 6; $i++) {
   <div class="modal" id="delete-contract-<?= (int) $contract['id'] ?>">
     <div class="modal-content">
       <div class="modal-header"><h3>حذف قرارداد آزمایشی یا اشتباهی</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن"><i data-feather="x"></i></button></div>
-      <form method="post" action="<?= e(url('contracts/delete/' . $contract['id'])) ?>">
+      <form method="post" action="<?= e(url('contracts/retire/' . $contract['id'])) ?>">
         <div class="modal-body form-grid">
           <?= csrf_field() ?>
           <div class="notice <?= $canPermanentlyDelete ? 'success' : 'warning' ?> full"><?= $canPermanentlyDelete ? 'این قرارداد وابستگی فعالی ندارد و پس از ثبت آرشیو ایمن قابل حذف است.' : 'این قرارداد سابقه وابسته دارد. مدیریت می‌تواند پس از آرشیو کامل و تأییدهای زیر، قرارداد و سوابق وابسته آن را حذف کند.' ?></div>
@@ -633,12 +633,12 @@ for ($i = 0; $i < 6; $i++) {
           <label class="full required-field">علت حذف<textarea name="deletion_reason" required minlength="5" rows="3" placeholder="علت دقیق حذف قرارداد را ثبت کنید"></textarea></label>
           <label class="full required-field">برای تأیید، شماره قرارداد را وارد کنید<input name="confirm_contract_number" required autocomplete="off" placeholder="<?= e($contract['contract_number']) ?>"></label>
           <?php if (!$canPermanentlyDelete): ?>
-            <label class="proma-confirm-check proma-danger-check full"><input type="checkbox" name="purge_contract_history" value="1" required> قرارداد، پرداخت‌ها، اقساط، پرونده‌های حقوقی، اسناد و سوابق عملیاتی وابسته حذف شوند. پیش از حذف، آرشیو کامل و غیرقابل‌ویرایش ثبت می‌شود.</label>
+            <label class="proma-confirm-check proma-danger-check full"><input type="checkbox" name="include_related_history" value="1" required> قرارداد، پرداخت‌ها، اقساط، پرونده‌های حقوقی، اسناد و سوابق عملیاتی وابسته حذف شوند. پیش از حذف، آرشیو کامل و غیرقابل‌ویرایش ثبت می‌شود.</label>
           <?php endif; ?>
           <?php if ((int) ($deletionPreview['gateway_payment_count'] ?? 0) > 0): ?>
-            <label class="proma-confirm-check proma-danger-check full"><input type="checkbox" name="confirm_gateway_warning" value="1" required> می‌دانم حذف سابقه درگاه، بازگشت وجه بانکی انجام نمی‌دهد و مسئولیت بازپرداخت واقعی جداگانه است.</label>
+            <label class="proma-confirm-check proma-danger-check full"><input type="checkbox" name="accept_gateway_notice" value="1" required> می‌دانم حذف سابقه درگاه، بازگشت وجه بانکی انجام نمی‌دهد و مسئولیت بازپرداخت واقعی جداگانه است.</label>
           <?php endif; ?>
-          <label class="proma-confirm-check proma-danger-check full"><input type="checkbox" name="confirm_delete_mistake" value="1" required> حذف دائمی این قرارداد و پیامدهای آن را بررسی و تأیید می‌کنم.</label>
+          <label class="proma-confirm-check proma-danger-check full"><input type="checkbox" name="confirm_mistake" value="1" required> حذف دائمی این قرارداد و پیامدهای آن را بررسی و تأیید می‌کنم.</label>
         </div>
         <div class="modal-footer"><button class="btn danger" type="submit"><?= proma_icon('trash') ?><span>حذف قطعی قرارداد</span></button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
       </form>

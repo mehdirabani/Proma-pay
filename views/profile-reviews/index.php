@@ -16,7 +16,7 @@ $pageUrl = static function ($page) use ($filters) {
 };
 ?>
 
-<section class="page-header proma-page-header proma-profile-review-hero">
+<section class="proma-section-header proma-page-header proma-profile-review-hero">
   <div>
     <span class="proma-page-eyebrow">کنترل تغییرات حساب</span>
     <h1>تأیید اصلاح مشخصات</h1>

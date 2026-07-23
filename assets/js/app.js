@@ -104,13 +104,67 @@
     }, 4200);
   };
 
+  const fetchWithDeadline = function (url, options, timeoutMs) {
+    const requestOptions = Object.assign({}, options || {});
+    if (!window.AbortController) return fetch(url, requestOptions);
+
+    const controller = new AbortController();
+    const upstreamSignal = requestOptions.signal;
+    const abortFromUpstream = function () { controller.abort(); };
+    if (upstreamSignal) {
+      if (upstreamSignal.aborted) {
+        controller.abort();
+      } else {
+        upstreamSignal.addEventListener('abort', abortFromUpstream, { once: true });
+      }
+    }
+    requestOptions.signal = controller.signal;
+    const timeout = window.setTimeout(function () {
+      controller.abort();
+    }, Math.max(1000, Number(timeoutMs) || 10000));
+
+    return fetch(url, requestOptions).finally(function () {
+      window.clearTimeout(timeout);
+      if (upstreamSignal) upstreamSignal.removeEventListener('abort', abortFromUpstream);
+    });
+  };
+
   const createAdaptivePoller = function (task, options) {
-    const config = Object.assign({ interval: 15000, maxInterval: 120000, hiddenInterval: 60000 }, options || {});
+    const config = Object.assign({ interval: 15000, maxInterval: 120000, hiddenInterval: 60000, timeout: 10000, leaseKey: '' }, options || {});
     let timer = null;
+    let requestTimer = null;
     let controller = null;
     let inFlight = false;
     let stopped = false;
+    let timedOut = false;
     let delay = config.interval;
+    const leaseStorageKey = config.leaseKey ? 'proma-poller-lease:' + config.leaseKey : '';
+    const leaseOwner = Date.now().toString(36) + Math.random().toString(36).slice(2);
+    const leaseDuration = Math.max(Number(config.leaseMs) || 0, config.interval * 2, config.timeout + 5000);
+
+    const acquireLease = function () {
+      if (!leaseStorageKey || !window.localStorage) return true;
+      try {
+        const now = Date.now();
+        const current = JSON.parse(localStorage.getItem(leaseStorageKey) || 'null');
+        if (current && current.owner !== leaseOwner && Number(current.expiresAt || 0) > now) {
+          return false;
+        }
+        localStorage.setItem(leaseStorageKey, JSON.stringify({ owner: leaseOwner, expiresAt: now + leaseDuration }));
+        const saved = JSON.parse(localStorage.getItem(leaseStorageKey) || 'null');
+        return !!saved && saved.owner === leaseOwner;
+      } catch (error) {
+        return true;
+      }
+    };
+
+    const releaseLease = function () {
+      if (!leaseStorageKey || !window.localStorage) return;
+      try {
+        const current = JSON.parse(localStorage.getItem(leaseStorageKey) || 'null');
+        if (current && current.owner === leaseOwner) localStorage.removeItem(leaseStorageKey);
+      } catch (error) {}
+    };
 
     const schedule = function (nextDelay) {
       if (stopped) return;
@@ -120,19 +174,31 @@
 
     const run = function () {
       if (stopped || inFlight) return;
-      if (document.hidden) {
+      if (document.hidden || navigator.onLine === false) {
         schedule(config.hiddenInterval);
         return;
       }
+      if (!acquireLease()) {
+        schedule(config.interval + Math.round(Math.random() * 2000));
+        return;
+      }
       inFlight = true;
+      timedOut = false;
       controller = window.AbortController ? new AbortController() : null;
+      if (controller) {
+        requestTimer = window.setTimeout(function () {
+          timedOut = true;
+          controller.abort();
+        }, Math.max(1000, Number(config.timeout) || 10000));
+      }
       Promise.resolve(task(controller ? controller.signal : null)).then(function () {
         delay = config.interval;
       }).catch(function (error) {
-        if (!error || error.name !== 'AbortError') {
+        if (timedOut || !error || error.name !== 'AbortError') {
           delay = Math.min(config.maxInterval, Math.max(config.interval, delay * 2));
         }
       }).finally(function () {
+        window.clearTimeout(requestTimer);
         inFlight = false;
         controller = null;
         schedule(delay);
@@ -145,12 +211,18 @@
     const stop = function () {
       stopped = true;
       window.clearTimeout(timer);
+      window.clearTimeout(requestTimer);
       if (controller) controller.abort();
+      releaseLease();
     };
     const onVisibilityChange = function () {
       if (!document.hidden) wake();
     };
+    const onStorage = function (event) {
+      if (event.key === leaseStorageKey && !event.newValue && !document.hidden) wake();
+    };
     document.addEventListener('visibilitychange', onVisibilityChange);
+    if (leaseStorageKey) window.addEventListener('storage', onStorage);
     window.addEventListener('pagehide', stop, { once: true });
     schedule(config.interval);
     return { wake: wake, stop: stop };
@@ -158,7 +230,7 @@
 
   const jsonGetCache = new Map();
   const fetchJsonCached = function (url, options, ttl) {
-    const requestOptions = options || {};
+    const requestOptions = Object.assign({}, options || {});
     const cacheTtl = Math.max(0, Number(ttl) || 0);
     const cacheKey = String(url);
     const now = Date.now();
@@ -168,7 +240,7 @@
     }
     if (cached && cached.promise && !requestOptions.signal) return cached.promise;
 
-    const request = fetch(cacheKey, requestOptions).then(function (response) {
+    const request = fetchWithDeadline(cacheKey, requestOptions, 10000).then(function (response) {
       if (!response.ok) throw new Error('http_' + response.status);
       return response.json();
     }).then(function (json) {
@@ -295,6 +367,12 @@
         if (!heading.id) heading.id = 'modal-title-' + Math.random().toString(36).slice(2, 10);
         modal.setAttribute('aria-labelledby', heading.id);
       }
+      modal.addEventListener('focusin', function (event) {
+        if (window.innerWidth > 767 || !event.target.matches('input, select, textarea')) return;
+        window.setTimeout(function () {
+          event.target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+        }, 180);
+      });
     });
 
     document.querySelectorAll('[data-open-modal]').forEach(function (button) {
@@ -368,6 +446,20 @@
       }
     }
     syncPageState();
+  };
+
+  const initViewportMetrics = function () {
+    const sync = function () {
+      const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty('--proma-visual-height', Math.max(320, Math.round(height)) + 'px');
+    };
+    sync();
+    window.addEventListener('resize', sync, { passive: true });
+    window.addEventListener('orientationchange', sync, { passive: true });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', sync, { passive: true });
+      window.visualViewport.addEventListener('scroll', sync, { passive: true });
+    }
   };
 
   const initProfileMenu = function () {
@@ -536,11 +628,11 @@
         const requestUrl = buildUrl();
         setStatus('در حال جستجو...', 'loading');
         target.classList.add('proma-ajax-loading');
-        fetch(requestUrl.toString(), {
+        fetchWithDeadline(requestUrl.toString(), {
           headers: { 'X-Requested-With': 'XMLHttpRequest' },
           signal: controller.signal,
           credentials: 'same-origin'
-        }).then(function (response) {
+        }, 10000).then(function (response) {
           if (!response.ok) throw new Error('درخواست جستجو ناموفق بود.');
           return response.text();
         }).then(function (html) {
@@ -2149,10 +2241,10 @@
       if ((!receiver || !receiver.value) && (!channel || !channel.value)) return Promise.resolve();
       const last = history.querySelector('.message:last-child');
       const after = last ? last.getAttribute('data-id') : 0;
-      return fetch(fetchUrl + '&after=' + encodeURIComponent(after), {
+      return fetchWithDeadline(fetchUrl + '&after=' + encodeURIComponent(after), {
         signal: signal || undefined,
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      }).then(function (response) {
+      }, 10000).then(function (response) {
         if (!response.ok) throw new Error('chat_poll_http_' + response.status);
         return response.json();
       }).then(function (json) {
@@ -2167,10 +2259,10 @@
       const hasAttachment = attachmentInput && attachmentInput.files && attachmentInput.files.length > 0;
       if (!body && !hasAttachment) return;
       const formData = new FormData(chatForm);
-      fetch(endpoint, {
+      fetchWithDeadline(endpoint, {
         method: 'POST',
         body: formData
-      }).then(function (response) {
+      }, 15000).then(function (response) {
         return response.json();
       }).then(function (json) {
         if (json.ok) {
@@ -2291,7 +2383,7 @@
 
     const fetchFeed = function (signal) {
       if (!feedUrl) return Promise.resolve();
-      return fetch(feedUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, signal: signal || undefined })
+      return fetchWithDeadline(feedUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, signal: signal || undefined }, 8000)
         .then(function (response) {
           if (!response.ok) throw new Error('notification_poll_http_' + response.status);
           return response.json();
@@ -2309,14 +2401,14 @@
       form.addEventListener('submit', function (event) {
         event.preventDefault();
         const token = form.querySelector('[name="_csrf"]');
-        fetch(readUrl, {
+        fetchWithDeadline(readUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-Requested-With': 'XMLHttpRequest'
           },
           body: new URLSearchParams({ _csrf: token ? token.value : '' })
-        }).then(function (response) {
+        }, 10000).then(function (response) {
           return response.json();
         }).then(function (json) {
           if (json.ok) render(json.feed);
@@ -2325,7 +2417,14 @@
         });
       });
     }
-    createAdaptivePoller(fetchFeed, { interval: 15000, maxInterval: 120000, hiddenInterval: 60000 });
+    createAdaptivePoller(fetchFeed, {
+      interval: 20000,
+      maxInterval: 180000,
+      hiddenInterval: 90000,
+      timeout: 8000,
+      leaseKey: 'notifications:' + userId,
+      leaseMs: 30000
+    });
   };
 
   const initCopyShortcodes = function () {
@@ -2563,6 +2662,7 @@
   };
 
 document.addEventListener('DOMContentLoaded', function () {
+  initViewportMetrics();
   document.querySelectorAll('[data-medal-color-field]').forEach(function (field) {
     var picker = field.querySelector('[data-medal-color-picker]');
     var textInput = field.querySelector('[data-medal-color-text]');

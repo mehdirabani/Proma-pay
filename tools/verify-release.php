@@ -55,6 +55,9 @@ for ($i = 0; $i < $core->numFiles; $i++) {
     $name = str_replace('\\', '/', (string) $core->getNameIndex($i));
     $assert(strpos($name, 'plugins/PromaAccounting/') !== 0 && strpos($name, 'plugins/PromaZarinpal/') !== 0, 'Core archive contains optional plugin source: ' . $name);
     $assert(strpos($name, 'storage/secure_uploads/') !== 0, 'Core archive contains secure user uploads.');
+    foreach (['docs/', 'electron/', 'html/', 'scripts/', 'tests/', 'tools/'] as $developmentPrefix) {
+        $assert(strpos($name, $developmentPrefix) !== 0, 'Core archive contains development-only content: ' . $name);
+    }
 }
 $core->close();
 
@@ -65,8 +68,15 @@ $assert(is_string($updateManifestRaw), 'Update proma-update.json is missing.');
 $updateManifest = json_decode($updateManifestRaw, true, 512, JSON_THROW_ON_ERROR);
 $assert(($updateManifest['version'] ?? '') === $version, 'Update archive version is incorrect.');
 $assert(($updateManifest['minimum_version'] ?? '') === '1.4.2', 'Update minimum version must be V1.4.2.');
-$requiredMigration = 'database/migrations/2026_07_22_release_v143.sql';
-$assert(in_array($requiredMigration, $updateManifest['migrations'] ?? [], true), 'V1.4.3 migration is absent from the update manifest.');
+foreach ([
+    'database/migrations/2026_07_22_release_v143.sql',
+    'database/migrations/2026_07_23_release_v144.sql',
+] as $requiredMigration) {
+    $assert(in_array($requiredMigration, $updateManifest['migrations'] ?? [], true), $requiredMigration . ' is absent from the update manifest.');
+}
+$v143Migration = $update->getFromName('database/migrations/2026_07_22_release_v143.sql');
+$assert(is_string($v143Migration), 'Corrected V1.4.3 migration is absent from the update archive.');
+$assert(!preg_match('/\bDELETE\s+FROM\b/i', $v143Migration), 'Update archive contains the rejected destructive V1.4.3 migration.');
 foreach (($updateManifest['files'] ?? []) as $file) {
     $source = (string) ($file['source'] ?? '');
     $assert($source !== '' && strpos($source, 'plugins/') !== 0 && $source !== 'config/database.php' && strpos($source, 'storage/') !== 0, 'Update manifest contains a forbidden target: ' . $source);
@@ -147,4 +157,4 @@ try {
     $removeTree($extractRoot);
 }
 
-echo "RELEASE_ARCHIVES_V143_OK\n";
+echo "RELEASE_ARCHIVES_V144_OK\n";

@@ -504,16 +504,23 @@ if (!isset($tabs[$activeTab])) {
                 <td><?= to_persian_digits($package['files_count'] ?? 0) ?></td>
                 <td><?= to_persian_digits($package['migrations_count'] ?? 0) ?></td>
                 <td>
-                  <?php if (!empty($package['is_valid'])): ?>
-                    <span class="badge success">معتبر</span>
-                  <?php else: ?>
+                  <?php if (empty($package['is_valid'])): ?>
                     <span class="badge danger">نامعتبر</span>
                     <small class="d-block"><?= e($package['error'] ?? '') ?></small>
+                  <?php elseif (!empty($package['is_installable'])): ?>
+                    <span class="badge success">آماده نصب</span>
+                    <small class="d-block"><?= e($package['version_message'] ?? '') ?></small>
+                  <?php elseif (($package['version_state'] ?? '') === 'current'): ?>
+                    <span class="badge info">نصب‌شده</span>
+                    <small class="d-block"><?= e($package['version_message'] ?? '') ?></small>
+                  <?php else: ?>
+                    <span class="badge warning">ناسازگار</span>
+                    <small class="d-block"><?= e($package['version_message'] ?? '') ?></small>
                   <?php endif; ?>
                 </td>
                 <td>
                   <div class="actions">
-                    <?php if (!empty($package['is_valid'])): ?>
+                    <?php if (!empty($package['is_installable'])): ?>
                       <button class="btn small success" type="button" data-open-modal="install-update-<?= e(md5($package['name'])) ?>">نصب</button>
                     <?php endif; ?>
                     <button class="btn small danger icon-only" type="button" data-open-modal="delete-update-<?= e(md5($package['name'])) ?>" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button>
@@ -654,6 +661,7 @@ if (!isset($tabs[$activeTab])) {
 <?php endforeach; ?>
 
 <?php foreach (($updatePackages ?? []) as $package): ?>
+  <?php if (empty($package['is_installable'])): continue; endif; ?>
   <div class="modal" id="install-update-<?= e(md5($package['name'])) ?>">
     <div class="modal-content">
       <div class="modal-header"><h3>نصب بروزرسانی</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>

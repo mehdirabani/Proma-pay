@@ -16,6 +16,9 @@ class Router
             $health->respond($route === 'health/live');
             return;
         }
+        if (strpos($route, 'auth/') !== 0) {
+            Auth::releaseSessionLock();
+        }
         if (class_exists('PluginManager')) {
             try {
                 if (PluginManager::boot()->dispatchRoute($route)) {

@@ -682,9 +682,14 @@ class ContractsController extends Controller
 
     public function delete($id)
     {
+        return $this->retire($id);
+    }
+
+    public function retire($id)
+    {
         $this->requireRole('admin');
         $this->onlyPost();
-        if (empty($_POST['confirm_delete_mistake'])) {
+        if (empty($_POST['confirm_mistake']) && empty($_POST['confirm_delete_mistake'])) {
             set_flash('error', 'برای حذف قرارداد آزمایشی یا اشتباهی باید پیامدهای حذف را تأیید کنید.');
             redirect('contracts');
         }
@@ -694,8 +699,8 @@ class ContractsController extends Controller
                 Auth::id(),
                 $_POST['deletion_reason'] ?? '',
                 $_POST['confirm_contract_number'] ?? '',
-                !empty($_POST['purge_contract_history']),
-                !empty($_POST['confirm_gateway_warning'])
+                !empty($_POST['include_related_history']) || !empty($_POST['purge_contract_history']),
+                !empty($_POST['accept_gateway_notice']) || !empty($_POST['confirm_gateway_warning'])
             );
             set_flash(
                 'success',

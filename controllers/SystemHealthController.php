@@ -7,13 +7,40 @@ class SystemHealthController extends Controller
         Auth::requireRole('admin');
         Auth::releaseSessionLock();
 
+        $this->render('system-health/index', array_merge(
+            ['title' => 'سلامت سامانه'],
+            $this->collectReport()
+        ));
+    }
+
+    public function report()
+    {
+        Auth::requireRole('admin');
+        Auth::releaseSessionLock();
+
+        $report = $this->collectReport();
+        unset($report['plugins']);
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+            header('Content-Disposition: attachment; filename="proma-health-' . date('Ymd-His') . '.json"');
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            header('X-Request-Id: ' . ErrorHandler::requestId());
+        }
+        echo json_encode([
+            'product' => 'Proma Pay',
+            'request_id' => ErrorHandler::requestId(),
+            'report' => $report,
+            'host_note' => 'A TCP timeout without an HTTP status occurs before PHP. Check firewall, WAF, ModSecurity, CSF/LFD and web-server limits for this timestamp.',
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        exit;
+    }
+
+    protected function collectReport()
+    {
         $database = $this->databaseStatus();
         $storageRoot = dirname(__DIR__) . '/storage';
         $plugins = PluginRegistry::tableExists() ? PluginRegistry::all() : [];
-        $telemetry = $this->recentTelemetry();
-
-        $this->render('system-health/index', [
-            'title' => 'سلامت سامانه',
+        return [
             'checkedAt' => date('Y-m-d H:i:s'),
             'database' => $database,
             'storage' => [
@@ -37,10 +64,19 @@ class SystemHealthController extends Controller
                 'server' => $this->serverLabel(),
                 'memory_limit' => (string) ini_get('memory_limit'),
                 'max_execution_time' => (string) ini_get('max_execution_time'),
+                'session_handler' => (string) ini_get('session.save_handler'),
+                'opcache_enabled' => filter_var((string) ini_get('opcache.enable'), FILTER_VALIDATE_BOOLEAN),
+            ],
+            'network' => [
+                'request_id' => ErrorHandler::requestId(),
+                'client_ip' => $this->maskedClientIp(),
+                'live_endpoint' => url('health/live'),
+                'ready_endpoint' => url('health/ready'),
+                'https' => is_https_request(),
             ],
             'queue' => $this->queueStatus(),
-            'telemetry' => $telemetry,
-        ]);
+            'telemetry' => $this->recentTelemetry(),
+        ];
     }
 
     protected function databaseStatus()
@@ -143,5 +179,19 @@ class SystemHealthController extends Controller
         $raw = trim((string) ($_SERVER['SERVER_SOFTWARE'] ?? 'unknown'));
         $first = explode(' ', $raw)[0] ?? 'unknown';
         return substr(preg_replace('/[^a-zA-Z0-9.\-\/]/', '', $first), 0, 80);
+    }
+
+    protected function maskedClientIp()
+    {
+        $ip = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $parts = explode('.', $ip);
+            return $parts[0] . '.' . $parts[1] . '.' . $parts[2] . '.x';
+        }
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $parts = explode(':', $ip);
+            return implode(':', array_slice($parts, 0, 4)) . '::';
+        }
+        return 'unknown';
     }
 }

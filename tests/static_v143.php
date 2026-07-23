@@ -36,9 +36,9 @@ foreach (['purgeContractHistory', 'contractDeletionSnapshot', 'gateway_warning_a
 $assert(strpos($controller, "\$_POST['purge_contract_history']") !== false, 'Contract purge option is not passed by the controller.');
 $assert(strpos($controller, "\$_POST['confirm_gateway_warning']") !== false, 'Gateway warning confirmation is not passed by the controller.');
 foreach ([$contractIndex, $contractShow] as $deleteView) {
-    $assert(strpos($deleteView, 'name="purge_contract_history"') !== false, 'Contract delete modal lacks the explicit history purge option.');
-    $assert(strpos($deleteView, 'name="confirm_gateway_warning"') !== false, 'Contract delete modal lacks the gateway no-refund warning.');
-    $assert(!preg_match('/name="(?:reason|typed_contract_number|purge_contract_history|confirm_gateway_warning)"[^>]*\bdisabled\b/i', $deleteView), 'Contract delete confirmation controls must not be disabled.');
+    $assert(strpos($deleteView, 'name="include_related_history"') !== false || strpos($deleteView, 'name="purge_contract_history"') !== false, 'Contract delete modal lacks the explicit history purge option.');
+    $assert(strpos($deleteView, 'name="accept_gateway_notice"') !== false || strpos($deleteView, 'name="confirm_gateway_warning"') !== false, 'Contract delete modal lacks the gateway no-refund warning.');
+    $assert(!preg_match('/name="(?:reason|typed_contract_number|include_related_history|accept_gateway_notice|purge_contract_history|confirm_gateway_warning)"[^>]*\bdisabled\b/i', $deleteView), 'Contract delete confirmation controls must not be disabled.');
 }
 
 $loginThrottle = (string) file_get_contents($root . '/models/LoginThrottle.php');
@@ -80,7 +80,7 @@ foreach (['PROMA_DB_DSN', 'PROMA_DB_HOST', 'PROMA_DB_NAME', 'PROMA_DB_USER', 'PR
 }
 
 $migration = (string) file_get_contents($root . '/database/migrations/2026_07_22_release_v143.sql');
-$assert(strpos($migration, "scope_type = 'ip'") !== false, 'V1.4.3 migration does not remove legacy pure-IP locks.');
+$assert(!preg_match('/\bDELETE\s+FROM\s+auth_login_attempts\b/i', $migration), 'V1.4.3 migration must retain legacy authentication audit history.');
 $assert(strpos($migration, 'idx_profile_request_status_created') !== false, 'V1.4.3 migration lacks profile-review index repair.');
 $assert(!preg_match('/\b(?:DROP\s+TABLE|TRUNCATE\s+TABLE)\b/i', $migration), 'V1.4.3 migration contains a destructive table operation.');
 

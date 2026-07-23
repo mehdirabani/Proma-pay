@@ -108,10 +108,18 @@ class Notification extends Model
 
     public static function feed($userId, $limit = 8)
     {
-        self::execute('UPDATE notifications SET seen_at = COALESCE(seen_at, NOW()) WHERE user_id = ? AND archived_at IS NULL AND deleted_at IS NULL', [(int) $userId]);
+        if (!$userId) {
+            return ['unread_count' => 0, 'latest_id' => 0, 'items' => []];
+        }
+        $summary = self::fetch(
+            'SELECT COUNT(CASE WHEN is_read = 0 THEN 1 END) AS unread_count, COALESCE(MAX(id), 0) AS latest_id
+             FROM notifications
+             WHERE user_id = ? AND archived_at IS NULL AND deleted_at IS NULL',
+            [(int) $userId]
+        ) ?: [];
         return [
-            'unread_count' => self::unreadCount($userId),
-            'latest_id' => self::latestId($userId),
+            'unread_count' => (int) ($summary['unread_count'] ?? 0),
+            'latest_id' => (int) ($summary['latest_id'] ?? 0),
             'items' => self::latest($userId, $limit),
         ];
     }

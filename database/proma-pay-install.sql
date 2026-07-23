@@ -555,6 +555,7 @@ CREATE TABLE `messages` (
   `created_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_message_pair` (`sender_id`,`receiver_id`,`id`),
+  KEY `idx_message_reverse_pair` (`receiver_id`,`sender_id`,`id`),
   KEY `idx_message_unread` (`receiver_id`,`is_read`),
   KEY `idx_message_channel` (`channel_id`,`id`),
   CONSTRAINT `fk_message_channel` FOREIGN KEY (`channel_id`) REFERENCES `chat_channels` (`id`) ON DELETE CASCADE,
@@ -584,6 +585,7 @@ CREATE TABLE `notifications` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_notification_recipient_dedupe` (`user_id`,`dedupe_key`),
   KEY `idx_notification_user` (`user_id`,`is_read`),
+  KEY `idx_notification_active_user` (`user_id`,`deleted_at`,`archived_at`,`id`),
   CONSTRAINT `fk_notification_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

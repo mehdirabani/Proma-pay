@@ -12,7 +12,9 @@ class SandboxController extends \Controller
     {
         $settings = (new ZarinpalSettingsService())->all(false);
         $confirmationCode = (string) random_int(100000, 999999);
+        \Auth::ensureSessionWritable();
         $_SESSION['zarinpal_sandbox_confirmation'] = $confirmationCode;
+        \Auth::commitSessionWrite();
         $this->render('plugin:proma-zarinpal/sandbox/index', [
             'title' => 'محیط آزمایشی زرین‌پال',
             'settings' => $settings,
@@ -30,7 +32,9 @@ class SandboxController extends \Controller
         $this->onlyPost();
         \PluginManager::requirePermission('plugin.proma-zarinpal.use_zarinpal_sandbox');
         $expected = (string) ($_SESSION['zarinpal_sandbox_confirmation'] ?? '');
+        \Auth::ensureSessionWritable();
         unset($_SESSION['zarinpal_sandbox_confirmation']);
+        \Auth::commitSessionWrite();
         if ($expected === '' || !hash_equals($expected, trim(\to_english_digits((string) ($_POST['confirmation'] ?? ''))))) {
             \set_flash('error', 'کد تأیید تراکنش آزمایشی صحیح نیست.');
             \redirect('plugin/zarinpal/sandbox');

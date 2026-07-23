@@ -91,7 +91,11 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
     if (in_array($path, ['.env', 'config/database.php', 'installed.lock', '1.xlsx'], true)) {
         return true;
     }
-    foreach (['.git/', '.github/', '.agents/', '.codex/', 'dist/', 'storage/', 'tmp/', 'plugins/', 'plugin-packages/', 'node_modules/', 'docs/accounting-next/', 'docs/accounting-stability/', 'html/docs/', 'html/rtl/dist/', 'html/rtl/starter-kit/', 'html/rtl/template/'] as $prefix) {
+    foreach ([
+        '.git/', '.github/', '.agents/', '.codex/',
+        'dist/', 'storage/', 'tmp/', 'plugins/', 'plugin-packages/', 'node_modules/',
+        'docs/', 'electron/', 'html/', 'scripts/', 'tests/', 'tools/',
+    ] as $prefix) {
         if (strpos($path, $prefix) === 0) {
             return true;
         }
@@ -167,6 +171,7 @@ $candidates = array_values(array_unique(array_merge($changed, $untracked, [
     'database/migrations/2026_07_13_contract_template_print_engine.sql',
     'database/migrations/2026_07_21_v1_4_1_interaction_state.sql',
     'database/migrations/2026_07_22_release_v143.sql',
+    'database/migrations/2026_07_23_release_v144.sql',
 ])));
 sort($candidates, SORT_STRING);
 
@@ -199,6 +204,7 @@ foreach ([
     'database/migrations/2026_07_13_contract_template_print_engine.sql',
     'database/migrations/2026_07_21_v1_4_1_interaction_state.sql',
     'database/migrations/2026_07_22_release_v143.sql',
+    'database/migrations/2026_07_23_release_v144.sql',
 ] as $requiredUpdateFile) {
     if (!isset($updateFiles[$requiredUpdateFile])) {
         throw new RuntimeException('Required update file is absent from release inventory: ' . $requiredUpdateFile);

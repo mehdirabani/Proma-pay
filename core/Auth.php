@@ -3,6 +3,7 @@
 class Auth
 {
     protected static $releasedFlash = [];
+    protected static $sessionReleased = false;
 
     public static function start()
     {
@@ -18,6 +19,7 @@ class Auth
                 'samesite' => 'Lax',
             ]);
             session_start();
+            self::$sessionReleased = false;
         }
     }
 
@@ -50,10 +52,46 @@ class Auth
             return false;
         }
         Csrf::token();
-        self::$releasedFlash = is_array($_SESSION['_flash'] ?? null) ? $_SESSION['_flash'] : [];
+        self::$releasedFlash = array_merge(
+            self::$releasedFlash,
+            is_array($_SESSION['_flash'] ?? null) ? $_SESSION['_flash'] : []
+        );
         unset($_SESSION['_flash']);
         session_write_close();
+        self::$sessionReleased = true;
         return true;
+    }
+
+    public static function ensureSessionWritable()
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            return true;
+        }
+        if (session_status() === PHP_SESSION_DISABLED) {
+            return false;
+        }
+
+        self::ensureWritableSessionPath();
+        if (!@session_start()) {
+            return false;
+        }
+        self::$sessionReleased = false;
+        return true;
+    }
+
+    public static function commitSessionWrite()
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return false;
+        }
+        session_write_close();
+        self::$sessionReleased = true;
+        return true;
+    }
+
+    public static function sessionWasReleased()
+    {
+        return self::$sessionReleased;
     }
 
     public static function takeReleasedFlash($key)
@@ -172,6 +210,9 @@ class Auth
 
     protected static function setSession(array $user)
     {
+        if (!self::ensureSessionWritable()) {
+            throw new RuntimeException('نشست کاربری قابل نوشتن نیست.');
+        }
         session_regenerate_id(true);
         $_SESSION['user_id'] = (int) $user['id'];
         $_SESSION['role'] = $user['role'];
@@ -180,6 +221,7 @@ class Auth
 
     public static function logout()
     {
+        self::ensureSessionWritable();
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {
             $params = session_get_cookie_params();

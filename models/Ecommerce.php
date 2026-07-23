@@ -379,7 +379,7 @@ class Ecommerce extends Model
         $cart = self::cart();
         $current = (int) ($cart[(int) $product['id']] ?? 0);
         $cart[(int) $product['id']] = min(99, $current + $quantity);
-        $_SESSION['proma_ecommerce_cart'] = $cart;
+        self::persistCart($cart);
     }
 
     public static function updateCart(array $quantities)
@@ -392,7 +392,7 @@ class Ecommerce extends Model
                 $cart[$productId] = $quantity;
             }
         }
-        $_SESSION['proma_ecommerce_cart'] = $cart;
+        self::persistCart($cart);
     }
 
     public static function adjustCart($productId, $delta)
@@ -409,19 +409,35 @@ class Ecommerce extends Model
         } else {
             $cart[$productId] = $next;
         }
-        $_SESSION['proma_ecommerce_cart'] = $cart;
+        self::persistCart($cart);
     }
 
     public static function removeFromCart($productId)
     {
         $cart = self::cart();
         unset($cart[(int) $productId]);
-        $_SESSION['proma_ecommerce_cart'] = $cart;
+        self::persistCart($cart);
     }
 
     public static function clearCart()
     {
-        unset($_SESSION['proma_ecommerce_cart']);
+        self::persistCart([]);
+    }
+
+    protected static function persistCart(array $cart)
+    {
+        $releaseAfterWrite = class_exists('Auth', false) && Auth::sessionWasReleased();
+        if ($releaseAfterWrite && !Auth::ensureSessionWritable()) {
+            throw new RuntimeException('سبد خرید در نشست کاربری قابل ذخیره نیست.');
+        }
+        if ($cart) {
+            $_SESSION['proma_ecommerce_cart'] = $cart;
+        } else {
+            unset($_SESSION['proma_ecommerce_cart']);
+        }
+        if ($releaseAfterWrite) {
+            Auth::commitSessionWrite();
+        }
     }
 
     public static function cartSummary()

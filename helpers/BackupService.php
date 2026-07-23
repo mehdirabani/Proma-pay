@@ -107,9 +107,19 @@ class BackupService
             'version' => app_config('version', '1.0.0'),
         ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         self::addDirectory($zip, dirname(__DIR__) . DIRECTORY_SEPARATOR . 'uploads', 'uploads');
-        self::addDirectory($zip, dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage', 'storage', [realpath(self::baseDir())]);
+        $storageRoot = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage';
+        $volatileStoragePaths = [];
+        foreach (['backups', 'cache', 'logs', 'releases', 'sessions', 'updates'] as $volatileDirectory) {
+            $realPath = realpath($storageRoot . DIRECTORY_SEPARATOR . $volatileDirectory);
+            if ($realPath) {
+                $volatileStoragePaths[] = $realPath;
+            }
+        }
+        self::addDirectory($zip, $storageRoot, 'storage', $volatileStoragePaths);
         self::addDirectory($zip, dirname(__DIR__) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'contracts', 'storage/contract-templates');
-        $zip->close();
+        if (!$zip->close()) {
+            throw new RuntimeException('تکمیل فایل بکاپ انجام نشد. فایل موقت یا ناپایداری هنگام ساخت بکاپ تغییر کرده است.');
+        }
         self::log('backup', $fileName, 'success', 'backup created');
         return ['name' => $fileName, 'path' => $path, 'type' => 'zip'];
     }

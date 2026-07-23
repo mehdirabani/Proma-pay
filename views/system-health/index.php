@@ -7,9 +7,12 @@ $hasRequestProblem = !empty($telemetry['errors']) || !empty($telemetry['external
 $systemHealthy = !empty($database['ok']) && !empty($storage['ok']) && !$hasQueueProblem;
 ?>
 
-<section class="page-header proma-page-header proma-health-hero">
+<section class="proma-section-header proma-page-header proma-health-hero">
   <div><span class="proma-page-eyebrow">پایش و نگهداری</span><h1>سلامت سامانه</h1><p>وضعیت هسته، دیتابیس، فضای ذخیره‌سازی، صف داخلی و افزونه‌ها بدون نمایش اطلاعات محرمانه سرور.</p></div>
-  <a class="btn secondary" href="<?= e(url('system-health')) ?>"><?= proma_icon('history') ?><span>بررسی دوباره</span></a>
+  <div class="proma-section-header__actions">
+    <a class="btn secondary" href="<?= e(url('system-health/report')) ?>"><?= proma_icon('file') ?><span>گزارش امن</span></a>
+    <a class="btn" href="<?= e(url('system-health')) ?>"><?= proma_icon('history') ?><span>بررسی دوباره</span></a>
+  </div>
 </section>
 
 <section class="proma-health-status <?= $systemHealthy ? 'is-healthy' : 'needs-attention' ?>">
@@ -48,4 +51,22 @@ $systemHealthy = !empty($database['ok']) && !empty($storage['ok']) && !$hasQueue
   </section>
 </div>
 
-<section class="proma-health-note"><span><?= proma_icon('archive') ?></span><p>این صفحه وضعیت داخل PHP را نشان می‌دهد. اگر هیچ پاسخ HTTP دریافت نمی‌شود، لاگ وب‌سرور، محدودیت منابع هاست، WAF و فایروال را با شناسه زمان رخداد بررسی کنید.</p></section>
+<section class="card proma-health-connectivity">
+  <div class="card-header card-no-border">
+    <div><h2>تشخیص قطع ارتباط هاست</h2><p>مرز میان خطای برنامه و مسدودی پیش از PHP</p></div>
+    <span class="badge info" dir="ltr"><?= e($network['request_id']) ?></span>
+  </div>
+  <div class="card-body">
+    <div class="proma-health-connectivity__facts">
+      <span><small>IP مشاهده‌شده</small><strong dir="ltr"><?= e($network['client_ip']) ?></strong></span>
+      <span><small>نشست PHP</small><strong><?= e($runtime['session_handler']) ?></strong></span>
+      <span><small>OPcache</small><strong><?= $runtime['opcache_enabled'] ? 'فعال' : 'غیرفعال' ?></strong></span>
+      <span><small>HTTPS</small><strong><?= $network['https'] ? 'فعال' : 'غیرفعال' ?></strong></span>
+    </div>
+    <div class="proma-health-note"><span><?= proma_icon('archive') ?></span><p>اگر مرورگر خطای <bdi dir="ltr">ERR_CONNECTION_TIMED_OUT</bdi> نشان دهد و هیچ کد HTTP دریافت نشود، درخواست به PHP نرسیده است. گزارش امن را همراه ساعت رخداد برای بررسی ModSecurity، CSF/LFD، فایروال و محدودیت workerها به هاست بدهید.</p></div>
+    <div class="actions">
+      <a class="btn small secondary" href="<?= e($network['live_endpoint']) ?>" target="_blank" rel="noopener">آزمون زنده</a>
+      <a class="btn small secondary" href="<?= e($network['ready_endpoint']) ?>" target="_blank" rel="noopener">آزمون آمادگی</a>
+    </div>
+  </div>
+</section>

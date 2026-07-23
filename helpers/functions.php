@@ -347,7 +347,14 @@ function flash($key)
 
 function set_flash($key, $value)
 {
+    $releaseAfterWrite = class_exists('Auth', false) && Auth::sessionWasReleased();
+    if ($releaseAfterWrite && !Auth::ensureSessionWritable()) {
+        return;
+    }
     $_SESSION['_flash'][$key] = $value;
+    if ($releaseAfterWrite) {
+        Auth::commitSessionWrite();
+    }
 }
 
 function to_english_digits($value)

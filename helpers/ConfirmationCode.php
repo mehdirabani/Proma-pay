@@ -8,7 +8,16 @@ class ConfirmationCode
     {
         $key = self::normalizeKey($key);
         if (empty($_SESSION[self::SESSION_KEY][$key])) {
+            $releaseAfterWrite = class_exists('Auth', false) && Auth::sessionWasReleased();
+            if ($releaseAfterWrite && !Auth::ensureSessionWritable()) {
+                throw new RuntimeException('کد تأیید در نشست کاربری قابل ذخیره نیست.');
+            }
             $_SESSION[self::SESSION_KEY][$key] = (string) random_int(10000, 99999);
+            $code = $_SESSION[self::SESSION_KEY][$key];
+            if ($releaseAfterWrite) {
+                Auth::commitSessionWrite();
+            }
+            return $code;
         }
         return $_SESSION[self::SESSION_KEY][$key];
     }
@@ -19,7 +28,14 @@ class ConfirmationCode
         $expected = $_SESSION[self::SESSION_KEY][$key] ?? null;
         $actual = trim(to_english_digits((string) $value));
         if ($expected && hash_equals((string) $expected, $actual)) {
+            $releaseAfterWrite = class_exists('Auth', false) && Auth::sessionWasReleased();
+            if ($releaseAfterWrite && !Auth::ensureSessionWritable()) {
+                return false;
+            }
             unset($_SESSION[self::SESSION_KEY][$key]);
+            if ($releaseAfterWrite) {
+                Auth::commitSessionWrite();
+            }
             return true;
         }
         return false;

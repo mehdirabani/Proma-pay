@@ -31,15 +31,22 @@ class ScriptUpdateService
                 'version' => '',
                 'files_count' => 0,
                 'migrations_count' => 0,
+                'is_installable' => false,
+                'version_state' => 'invalid',
+                'version_message' => '',
                 'error' => '',
             ];
             try {
                 $manifest = self::readManifest($path, false);
+                $compatibility = self::packageCompatibility($manifest);
                 $info['is_valid'] = true;
                 $info['title'] = (string) ($manifest['name'] ?? $manifest['title'] ?? 'بسته بروزرسانی');
                 $info['version'] = (string) ($manifest['version'] ?? '');
                 $info['files_count'] = count(self::manifestFiles($manifest));
                 $info['migrations_count'] = count(self::manifestMigrations($manifest));
+                $info['is_installable'] = $compatibility['is_installable'];
+                $info['version_state'] = $compatibility['state'];
+                $info['version_message'] = $compatibility['message'];
             } catch (Throwable $e) {
                 $info['error'] = $e->getMessage();
             }
@@ -105,6 +112,10 @@ class ScriptUpdateService
             throw new RuntimeException('بسته بروزرسانی پیدا نشد.');
         }
         $manifest = self::readManifest($path, true);
+        $compatibility = self::packageCompatibility($manifest);
+        if (!$compatibility['is_installable']) {
+            throw new RuntimeException($compatibility['message']);
+        }
         $files = self::manifestFiles($manifest);
         $migrations = self::manifestMigrations($manifest);
         if (!$files && !$migrations) {
@@ -334,6 +345,57 @@ class ScriptUpdateService
             return str_replace('-', '.', $matches[1]);
         }
         return '';
+    }
+
+    protected static function packageCompatibility(array $manifest)
+    {
+        $current = self::normalizeVersion(app_version());
+        $target = self::normalizeVersion($manifest['version'] ?? '');
+        $minimum = self::normalizeVersion($manifest['minimum_version'] ?? '');
+
+        if ($target === '') {
+            return [
+                'is_installable' => false,
+                'state' => 'unknown',
+                'message' => 'نسخه بسته بروزرسانی در manifest مشخص نشده است.',
+            ];
+        }
+        if ($minimum !== '' && version_compare($current, $minimum, '<')) {
+            return [
+                'is_installable' => false,
+                'state' => 'incompatible',
+                'message' => 'این بسته حداقل به نسخه ' . $minimum . ' نیاز دارد. نسخه نصب‌شده ' . $current . ' است.',
+            ];
+        }
+
+        $comparison = version_compare($target, $current);
+        if ($comparison === 0) {
+            return [
+                'is_installable' => false,
+                'state' => 'current',
+                'message' => 'نسخه ' . $target . ' هم‌اکنون روی سامانه نصب است و نصب مجدد آن مجاز نیست.',
+            ];
+        }
+        if ($comparison < 0) {
+            return [
+                'is_installable' => false,
+                'state' => 'older',
+                'message' => 'نسخه بسته (' . $target . ') از نسخه نصب‌شده (' . $current . ') قدیمی‌تر است.',
+            ];
+        }
+
+        return [
+            'is_installable' => true,
+            'state' => 'upgrade',
+            'message' => 'آماده ارتقا از نسخه ' . $current . ' به ' . $target . ' است.',
+        ];
+    }
+
+    protected static function normalizeVersion($version)
+    {
+        $version = trim((string) $version);
+        $version = ltrim($version, "vV \t\n\r\0\x0B");
+        return preg_match('/^\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/', $version) ? $version : '';
     }
 
     protected static function manifestFiles(array $manifest)

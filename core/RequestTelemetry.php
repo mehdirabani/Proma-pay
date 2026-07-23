@@ -104,6 +104,9 @@ class RequestTelemetry
         $slowMs = self::envFloat('PROMA_REQUEST_SLOW_MS', 5000);
         $criticalMs = self::envFloat('PROMA_REQUEST_CRITICAL_MS', 10000);
         $severity = $durationMs >= $criticalMs ? 'critical' : ($durationMs >= $slowMs ? 'slow' : ($durationMs >= $warningMs ? 'warning' : 'normal'));
+        if ($severity === 'normal' && $status < 400 && !self::sampleNormalRequest()) {
+            return;
+        }
 
         $record = [
             'timestamp' => date(DATE_ATOM),
@@ -147,7 +150,7 @@ class RequestTelemetry
         }
 
         $path = $root . '/request-' . date('Y-m-d') . '.jsonl';
-        $maxBytes = max(1048576, (int) self::envFloat('PROMA_REQUEST_LOG_MAX_BYTES', 26214400));
+        $maxBytes = max(1048576, (int) self::envFloat('PROMA_REQUEST_LOG_MAX_BYTES', 8388608));
         if (is_file($path)) {
             $currentBytes = (int) filesize($path);
             if ((!$important && $currentBytes >= $maxBytes) || $currentBytes >= ($maxBytes * 2)) {
@@ -165,11 +168,27 @@ class RequestTelemetry
             error_log('[PromaPay][telemetry] request log could not be opened.');
             return;
         }
-        if (flock($handle, LOCK_EX)) {
+        if (flock($handle, LOCK_EX | LOCK_NB)) {
             fwrite($handle, $json . PHP_EOL);
             flock($handle, LOCK_UN);
         }
         fclose($handle);
+    }
+
+    protected static function sampleNormalRequest()
+    {
+        $rate = max(0.0, min(1.0, self::envFloat('PROMA_REQUEST_SAMPLE_RATE', 0.05)));
+        if ($rate <= 0) {
+            return false;
+        }
+        if ($rate >= 1) {
+            return true;
+        }
+        try {
+            return random_int(1, 10000) <= (int) round($rate * 10000);
+        } catch (Throwable $e) {
+            return mt_rand(1, 10000) <= (int) round($rate * 10000);
+        }
     }
 
     protected static function queryFingerprint($sql)

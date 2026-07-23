@@ -255,6 +255,85 @@
   margin: 0;
 }
 
+.proma-section-header {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--proma-space-5);
+  padding: 2px 0 var(--proma-space-4);
+  border-bottom: 1px solid var(--proma-line, #e7e9ef);
+  background: transparent;
+}
+
+.proma-section-header > div:first-child {
+  min-width: 0;
+}
+
+.proma-section-header :is(h1, h2, p) {
+  margin: 0;
+}
+
+.proma-section-header h1 {
+  color: var(--proma-text, #22242c);
+  font-size: clamp(22px, 2vw, 28px);
+  line-height: 1.45;
+}
+
+.proma-section-header p {
+  max-width: 780px;
+  margin-top: 4px;
+  color: var(--proma-muted, #737987);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.proma-page-eyebrow {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--proma-primary, #6a1b9a);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.proma-section-header__actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.proma-health-connectivity__facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.proma-health-connectivity__facts > span {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--proma-section-radius, 8px);
+  background: var(--proma-control-bg, #f7f8fb);
+}
+
+.proma-health-connectivity__facts :is(small, strong) {
+  display: block;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.proma-health-connectivity__facts small {
+  color: var(--proma-muted, #737987);
+  font-size: 11px;
+}
+
+.proma-health-connectivity .proma-health-note {
+  margin-block: 14px;
+}
+
 .proma-auth-content > :first-child,
 .proma-public-content > :first-child,
 .proma-page-content > :first-child {
@@ -340,6 +419,24 @@
   .proma-page-content .table > :not(caption) > * > * {
     padding-block: 10px;
   }
+
+  .proma-section-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--proma-space-3);
+  }
+
+  .proma-section-header__actions {
+    width: 100%;
+  }
+
+  .proma-section-header__actions > .btn {
+    flex: 1 1 140px;
+  }
+
+  .proma-health-connectivity__facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 575.98px) {
@@ -357,6 +454,10 @@
   .proma-admin-task-list a,
   .proma-admin-health {
     align-items: flex-start;
+  }
+
+  .proma-health-connectivity__facts {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
