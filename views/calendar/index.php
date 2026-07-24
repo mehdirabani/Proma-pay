@@ -156,7 +156,7 @@ $monthQuery = sprintf('%04d/%02d', $jYear, $jMonth);
     <div class="modal" id="delete-event-<?= (int) $event['id'] ?>">
       <div class="modal-content">
         <div class="modal-header"><h3>تأیید حذف رویداد</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-        <form method="post" action="<?= e(url('calendar/delete/' . $event['id'])) ?>">
+        <form method="post" action="<?= e(url('calendar/retire/' . $event['id'])) ?>">
           <div class="modal-body">
             <?= csrf_field() ?>
             <input type="hidden" name="j_month" value="<?= e(sprintf('%04d/%02d', $jYear, $jMonth)) ?>">

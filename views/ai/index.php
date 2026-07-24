@@ -115,7 +115,7 @@ $actionTypeLabels = [
   <div class="modal" id="delete-ai-log-<?= (int) $log['id'] ?>">
     <div class="modal-content">
       <div class="modal-header"><h3>حذف تحلیل</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('ai/delete/' . (int) $log['id'])) ?>">
+      <form method="post" action="<?= e(url('ai/retireLog/' . (int) $log['id'])) ?>">
         <div class="modal-body grid">
           <?= csrf_field() ?>
           <?php $deleteCode = ConfirmationCode::hint('ai_log_delete_' . (int) $log['id']); ?>

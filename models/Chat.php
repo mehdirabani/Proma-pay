@@ -205,7 +205,8 @@ class Chat extends Model
     public static function messages($userId, $contactId, $afterId = 0)
     {
         self::ensureSchema();
-        return self::fetchAll(
+        $afterId = max(0, (int) $afterId);
+        $messages = self::fetchAll(
             'SELECT m.*, CASE WHEN m.is_system = 1 THEN ? ELSE s.full_name END AS sender_name,
              a.id AS attachment_id, a.file_path AS attachment_path, a.file_type AS attachment_type,
              a.status AS attachment_status, a.deleted_at AS attachment_deleted_at
@@ -214,22 +215,25 @@ class Chat extends Model
              LEFT JOIN chat_attachments a ON a.message_id = m.id
              WHERE ((m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = ?))
              AND m.id > ?
-             ORDER BY m.id ASC',
+             ORDER BY m.id ' . ($afterId > 0 ? 'ASC' : 'DESC') . '
+             LIMIT 100',
             [
                 self::botName(),
                 (int) $userId,
                 (int) $contactId,
                 (int) $contactId,
                 (int) $userId,
-                (int) $afterId,
+                $afterId,
             ]
         );
+        return $afterId > 0 ? $messages : array_reverse($messages);
     }
 
     public static function channelMessages($channelId, $afterId = 0)
     {
         self::ensureSchema();
-        return self::fetchAll(
+        $afterId = max(0, (int) $afterId);
+        $messages = self::fetchAll(
             'SELECT m.*, CASE WHEN m.is_system = 1 THEN ? ELSE COALESCE(s.full_name, ?) END AS sender_name,
              a.id AS attachment_id, a.file_path AS attachment_path, a.file_type AS attachment_type,
              a.status AS attachment_status, a.deleted_at AS attachment_deleted_at
@@ -237,9 +241,11 @@ class Chat extends Model
              LEFT JOIN users s ON s.id = m.sender_id
              LEFT JOIN chat_attachments a ON a.message_id = m.id
              WHERE m.channel_id = ? AND m.id > ?
-             ORDER BY m.id ASC',
-            [self::botName(), self::botName(), (int) $channelId, (int) $afterId]
+             ORDER BY m.id ' . ($afterId > 0 ? 'ASC' : 'DESC') . '
+             LIMIT 100',
+            [self::botName(), self::botName(), (int) $channelId, $afterId]
         );
+        return $afterId > 0 ? $messages : array_reverse($messages);
     }
 
     public static function send($senderId, $receiverId, $body, $attachmentPath = null)
@@ -318,14 +324,16 @@ class Chat extends Model
         );
     }
 
-    public static function markChannelRead($userId, $channelId)
+    public static function markChannelRead($userId, $channelId, $messageId = null)
     {
-        $latest = self::fetch('SELECT COALESCE(MAX(id), 0) AS latest_id FROM messages WHERE channel_id = ?', [(int) $channelId]);
+        $latestId = $messageId === null
+            ? (int) (self::fetch('SELECT COALESCE(MAX(id), 0) AS latest_id FROM messages WHERE channel_id = ?', [(int) $channelId])['latest_id'] ?? 0)
+            : max(0, (int) $messageId);
         self::execute(
             'INSERT INTO chat_channel_reads (channel_id, user_id, last_read_message_id, read_at, created_at, updated_at)
              VALUES (?, ?, ?, NOW(), NOW(), NOW())
              ON DUPLICATE KEY UPDATE last_read_message_id = GREATEST(last_read_message_id, VALUES(last_read_message_id)), read_at = NOW(), updated_at = NOW()',
-            [(int) $channelId, (int) $userId, (int) ($latest['latest_id'] ?? 0)]
+            [(int) $channelId, (int) $userId, $latestId]
         );
     }
 

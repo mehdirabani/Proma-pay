@@ -116,22 +116,27 @@ class ChatController extends Controller
             if (!$channel) {
                 $this->json(['ok' => false, 'message' => 'کانال پیدا نشد.'], 404);
             }
+            $messages = Chat::channelMessages((int) $channel['id'], $after);
+            if ($messages) {
+                $lastMessage = end($messages);
+                Chat::markChannelRead(Auth::id(), (int) $channel['id'], (int) ($lastMessage['id'] ?? 0));
+            }
             $this->json([
                 'ok' => true,
-                'messages' => Chat::channelMessages((int) $channel['id'], $after),
-                'unread' => Chat::unreadCount(Auth::id()),
+                'messages' => $messages,
             ]);
         }
         if ($contactId && !Chat::allowed(Auth::id(), $contactId)) {
             $this->json(['ok' => false, 'message' => 'دسترسی به این گفت‌وگو مجاز نیست.'], 403);
         }
-        if ($contactId) {
+        if (!$contactId) {
+            $this->json(['ok' => true, 'messages' => []]);
+        }
+        $messages = Chat::messages(Auth::id(), $contactId, $after);
+        if ($messages) {
             Chat::markRead(Auth::id(), $contactId);
         }
-        if (!$contactId) {
-            $this->json(['ok' => true, 'messages' => [], 'unread' => Chat::unreadCount(Auth::id())]);
-        }
-        $this->json(['ok' => true, 'messages' => Chat::messages(Auth::id(), $contactId, $after), 'unread' => Chat::unreadCount(Auth::id())]);
+        $this->json(['ok' => true, 'messages' => $messages]);
     }
 
     public function attachment($id)

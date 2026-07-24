@@ -73,7 +73,7 @@ $plugins = $plugins ?? [];
 <div class="modal" id="delete-plugins-from-host">
   <div class="modal-content">
     <div class="modal-header"><h3>حذف کامل افزونه‌ها از هاست</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن"><i data-feather="x"></i></button></div>
-    <form id="plugins-delete-host-form" method="post" action="<?= e(url('plugins/deleteFromHost')) ?>" data-loading-form data-loading-text="در حال حذف افزونه‌ها...">
+    <form id="plugins-delete-host-form" method="post" action="<?= e(url('plugins/retireFromHost')) ?>" data-loading-form data-loading-text="در حال حذف افزونه‌ها...">
       <div class="modal-body grid">
         <?= csrf_field() ?>
         <?php $deletePluginsCode = ConfirmationCode::hint('plugins_delete_from_host'); ?>

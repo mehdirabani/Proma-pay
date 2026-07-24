@@ -65,7 +65,7 @@ ob_start(); ?><a class="btn btn-light" href="<?= e(url('plugin/accounting/help',
                 <button class="btn btn-primary btn-sm" type="submit"><i data-feather="save"></i><span>ذخیره ویرایش</span></button>
               </div>
             </form>
-            <form method="post" action="<?= e(url('plugin/accounting/rules/delete/' . $ruleId)) ?>" class="proma-accounting-row-actions" data-accounting-confirm data-confirm-title="حذف قانون کمیسیون" data-confirm-description="اگر این قانون در سوابق مالی استفاده شده باشد، برای حفظ تاریخچه فقط غیرفعال می‌شود." data-confirm-person="<?= e($rule['user_name'] ?: 'همه فروشندگان') ?>" data-confirm-operation="حذف/غیرفعال‌سازی قانون <?= e($rule['name']) ?>" data-confirm-amount="—" data-confirm-effect="عدم استفاده در محاسبات آینده">
+            <form method="post" action="<?= e(url('plugin/accounting/rules/retire/' . $ruleId)) ?>" class="proma-accounting-row-actions" data-accounting-confirm data-confirm-title="حذف قانون کمیسیون" data-confirm-description="اگر این قانون در سوابق مالی استفاده شده باشد، برای حفظ تاریخچه فقط غیرفعال می‌شود." data-confirm-person="<?= e($rule['user_name'] ?: 'همه فروشندگان') ?>" data-confirm-operation="حذف/غیرفعال‌سازی قانون <?= e($rule['name']) ?>" data-confirm-amount="—" data-confirm-effect="عدم استفاده در محاسبات آینده">
               <?= csrf_field() ?>
               <button class="proma-accounting-icon-button is-danger" type="submit" aria-label="حذف قانون" title="حذف قانون"><i data-feather="trash-2"></i></button>
             </form>

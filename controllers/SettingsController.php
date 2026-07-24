@@ -267,7 +267,7 @@ class SettingsController extends Controller
         ContractPermission::requirePermission('contract_templates.delete_unused');
         $this->onlyPost();
         try {
-            if (empty($_POST['confirm_delete'])) {
+            if (empty($_POST['confirm_retirement']) && empty($_POST['confirm_delete'])) {
                 throw new InvalidArgumentException('برای حذف نسخه، تایید نهایی را انتخاب کنید.');
             }
             $deleted = ContractTemplateService::deleteVersion((int) $id, $_POST['change_reason'] ?? '', Auth::id());

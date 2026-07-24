@@ -15,16 +15,19 @@ $assert = static function ($condition, string $message): void {
 $method = new ReflectionMethod(ScriptUpdateService::class, 'packageCompatibility');
 $method->setAccessible(true);
 
-$same = $method->invoke(null, ['version' => 'V1.4.4', 'minimum_version' => '1.4.2']);
+$versionInfo = require $root . '/config/version.php';
+$currentVersion = (string) ($versionInfo['application'] ?? '1.4.4');
+
+$same = $method->invoke(null, ['version' => 'V' . $currentVersion, 'minimum_version' => '1.4.2']);
 $assert(empty($same['is_installable']) && $same['state'] === 'current', 'Same-version package must be rejected before installation.');
 
 $older = $method->invoke(null, ['version' => '1.4.3', 'minimum_version' => '1.4.2']);
 $assert(empty($older['is_installable']) && $older['state'] === 'older', 'Older package must be rejected.');
 
-$upgrade = $method->invoke(null, ['version' => '1.4.5', 'minimum_version' => '1.4.2']);
+$upgrade = $method->invoke(null, ['version' => '1.4.6', 'minimum_version' => '1.4.2']);
 $assert(!empty($upgrade['is_installable']) && $upgrade['state'] === 'upgrade', 'Newer compatible package must remain installable.');
 
-$incompatible = $method->invoke(null, ['version' => '1.5.0', 'minimum_version' => '1.4.5']);
+$incompatible = $method->invoke(null, ['version' => '1.5.0', 'minimum_version' => '1.4.6']);
 $assert(empty($incompatible['is_installable']) && $incompatible['state'] === 'incompatible', 'Minimum-version guard is not enforced.');
 
 echo "UPDATE_V144_OK\n";

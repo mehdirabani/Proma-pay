@@ -133,7 +133,7 @@ $pageUrl = function ($page) {
   <div class="modal" id="delete-legal-case-<?= (int) $case['id'] ?>">
     <div class="modal-content">
       <div class="modal-header"><h3>حذف پرونده حقوقی</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('legal/delete/' . (int) $case['id'])) ?>">
+      <form method="post" action="<?= e(url('legal/retireCase/' . (int) $case['id'])) ?>">
         <div class="modal-body grid">
           <?= csrf_field() ?>
           <?php $deleteCaseCode = ConfirmationCode::hint('legal_case_delete_' . (int) $case['id']); ?>

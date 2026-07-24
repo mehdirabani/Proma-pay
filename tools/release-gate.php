@@ -33,6 +33,7 @@ $staticTests = [
     'tests/static_v141.php',
     'tests/static_v143.php',
     'tests/static_v144.php',
+    'tests/static_v145.php',
     'tests/session_v144.php',
     'tests/update_v144.php',
     'tests/static_accounting_update_2014.php',

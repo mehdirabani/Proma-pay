@@ -51,7 +51,7 @@
   <div class="modal" id="delete-import-batch-<?= (int) $batch['id'] ?>">
     <div class="modal-content">
       <div class="modal-header"><h3>حذف بسته ورود دیتا</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('imports/delete/' . (int) $batch['id'])) ?>">
+      <form method="post" action="<?= e(url('imports/retire/' . (int) $batch['id'])) ?>">
         <div class="modal-body grid">
           <?= csrf_field() ?>
           <?php $deleteCode = ConfirmationCode::hint('import_batch_delete_' . (int) $batch['id']); ?>

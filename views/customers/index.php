@@ -240,7 +240,7 @@ $pageUrl = function ($page) use ($viewMode) {
                   <button class="btn small secondary icon-only" type="submit" title="ویرایش" aria-label="ویرایش"><i data-feather="edit-2"></i></button>
                 </div>
               </form>
-              <form method="post" action="<?= e(url('customers/medalDelete/' . $medal['id'])) ?>" onsubmit="return confirm('حذف مدال تایید شود؟')">
+              <form method="post" action="<?= e(url('customers/retireMedal/' . $medal['id'])) ?>" onsubmit="return confirm('حذف مدال تایید شود؟')">
                 <?= csrf_field() ?>
                 <button class="btn small danger icon-only" type="submit" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button>
               </form>
@@ -282,7 +282,7 @@ $pageUrl = function ($page) use ($viewMode) {
   <div class="modal" id="delete-customer-<?= (int) $item['id'] ?>">
     <div class="modal-content">
       <div class="modal-header"><h3>تأیید حذف مشتری</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('customers/delete/' . $item['id'])) ?>">
+      <form method="post" action="<?= e(url('customers/retire/' . $item['id'])) ?>">
         <div class="modal-body">
           <?= csrf_field() ?>
           <?php $deleteCode = ConfirmationCode::hint('customer_delete_' . (int) $item['id']); ?>

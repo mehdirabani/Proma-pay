@@ -697,7 +697,7 @@ class ContractsController extends Controller
             $result = Contract::deleteContractSafely(
                 (int) $id,
                 Auth::id(),
-                $_POST['deletion_reason'] ?? '',
+                $_POST['retirement_reason'] ?? ($_POST['deletion_reason'] ?? ''),
                 $_POST['confirm_contract_number'] ?? '',
                 !empty($_POST['include_related_history']) || !empty($_POST['purge_contract_history']),
                 !empty($_POST['accept_gateway_notice']) || !empty($_POST['confirm_gateway_warning'])

@@ -70,8 +70,9 @@ class SystemHealthController extends Controller
             'network' => [
                 'request_id' => ErrorHandler::requestId(),
                 'client_ip' => $this->maskedClientIp(),
-                'live_endpoint' => url('health/live'),
-                'ready_endpoint' => url('health/ready'),
+                'static_endpoint' => rtrim(app_base_url(), '/') . '/health-static.txt',
+                'live_endpoint' => rtrim(app_base_url(), '/') . '/health/live',
+                'ready_endpoint' => rtrim(app_base_url(), '/') . '/health/ready',
                 'https' => is_https_request(),
             ],
             'queue' => $this->queueStatus(),

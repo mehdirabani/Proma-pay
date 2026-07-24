@@ -147,7 +147,7 @@ $pageUrl = function ($page) use ($filters) {
     </div>
     <div class="modal" id="file-delete-<?= $fileId ?>">
       <div class="modal-content"><div class="modal-header"><h3><?= proma_icon('trash') ?> حذف نرم فایل</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن"><?= proma_icon('close') ?></button></div>
-        <form method="post" action="<?= e(url('file-manager/delete/' . $uuid)) ?>"><div class="modal-body form-grid"><?= csrf_field() ?><div class="notice error">فایل از فهرست فعال حذف می‌شود؛ محتوای فیزیکی و سابقه ممیزی آن برای بازبینی حفظ می‌شود.</div><label>علت حذف<textarea name="deletion_reason" required minlength="3" rows="3"></textarea></label></div><div class="modal-footer"><button class="btn danger" type="submit">حذف نرم فایل</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div></form>
+        <form method="post" action="<?= e(url('file-manager/retire/' . $uuid)) ?>"><div class="modal-body form-grid"><?= csrf_field() ?><div class="notice error">فایل از فهرست فعال حذف می‌شود؛ محتوای فیزیکی و سابقه ممیزی آن برای بازبینی حفظ می‌شود.</div><label>علت حذف<textarea name="retirement_reason" required minlength="3" rows="3"></textarea></label></div><div class="modal-footer"><button class="btn danger" type="submit">حذف نرم فایل</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div></form>
       </div>
     </div>
   <?php endforeach; ?>

@@ -313,6 +313,17 @@
   const initModals = function () {
     let lastOpener = null;
     const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    Array.from(document.querySelectorAll('.modal')).forEach(function (modal) {
+      if (modal.parentElement === document.body) return;
+      if (modal.id) {
+        Array.from(document.body.children).forEach(function (mounted) {
+          if (mounted !== modal && mounted.classList && mounted.classList.contains('modal') && mounted.id === modal.id) {
+            mounted.remove();
+          }
+        });
+      }
+      document.body.appendChild(modal);
+    });
     const openModals = function () {
       return Array.from(document.querySelectorAll('.modal.open'));
     };
@@ -450,8 +461,11 @@
 
   const initViewportMetrics = function () {
     const sync = function () {
-      const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const viewport = window.visualViewport;
+      const height = viewport ? viewport.height : window.innerHeight;
+      const offsetTop = viewport ? viewport.offsetTop : 0;
       document.documentElement.style.setProperty('--proma-visual-height', Math.max(320, Math.round(height)) + 'px');
+      document.documentElement.style.setProperty('--proma-visual-offset-top', Math.max(0, Math.round(offsetTop)) + 'px');
     };
     sync();
     window.addEventListener('resize', sync, { passive: true });
@@ -592,7 +606,7 @@
       form.dataset.ajaxFilterBound = '1';
       const targetSelector = form.getAttribute('data-ajax-target');
       const status = form.querySelector('[data-ajax-status]');
-      const delay = parseInt(form.getAttribute('data-ajax-delay') || '450', 10);
+      const delay = parseInt(form.getAttribute('data-ajax-delay') || '650', 10);
       let timer = null;
       let controller = null;
 
@@ -803,7 +817,7 @@
             if (error && error.name === 'AbortError') return;
             close();
           });
-        }, 300);
+        }, 500);
       });
 
       input.addEventListener('keydown', function (event) {
@@ -951,7 +965,7 @@
             if (error && error.name === 'AbortError') return;
             renderState('خطا در جستجو. دوباره تلاش کنید.', 'proma-live-empty');
           });
-        }, 300);
+        }, 500);
       });
 
       document.addEventListener('click', function (event) {
@@ -1052,7 +1066,7 @@
             if (error && error.name === 'AbortError') return;
             render([]);
           });
-        }, 220);
+        }, 500);
       });
 
       document.addEventListener('click', function (event) {
@@ -1312,7 +1326,7 @@
           }).catch(function (requestError) {
             if (!requestError || requestError.name !== 'AbortError') previewKey = '';
           });
-        }, 220);
+        }, 500);
       };
 
       customerModeTabs.forEach(function (tab) {
@@ -1394,7 +1408,7 @@
       identityFields.forEach(function (field) {
         field.addEventListener('input', function () {
           window.clearTimeout(identityTimer);
-          identityTimer = window.setTimeout(checkIdentity, 300);
+          identityTimer = window.setTimeout(checkIdentity, 650);
         });
       });
       setCustomerMode(form.querySelector('[data-customer-select]') && form.querySelector('[data-customer-select]').value ? 'existing' : 'existing', false);
@@ -1544,7 +1558,7 @@
           }).catch(function (requestError) {
             if (!requestError || requestError.name !== 'AbortError') requestKey = '';
           });
-        }, 220);
+        }, 600);
       };
       amount.addEventListener('input', update);
       amount.addEventListener('change', update);
@@ -2251,7 +2265,17 @@
         if (json.ok) json.messages.forEach(addMessage);
       });
     };
-    const chatPoller = createAdaptivePoller(poll, { interval: 5000, maxInterval: 60000, hiddenInterval: 30000 });
+    const chatLeaseTarget = receiver && receiver.value
+      ? 'receiver-' + receiver.value
+      : 'channel-' + (channel && channel.value ? channel.value : 'none');
+    const chatPoller = createAdaptivePoller(poll, {
+      interval: 15000,
+      maxInterval: 180000,
+      hiddenInterval: 90000,
+      timeout: 8000,
+      leaseKey: 'chat:' + (document.body.getAttribute('data-user-id') || 'guest') + ':' + chatLeaseTarget,
+      leaseMs: 30000
+    });
 
     chatForm.addEventListener('submit', function (event) {
       event.preventDefault();
@@ -2418,12 +2442,12 @@
       });
     }
     createAdaptivePoller(fetchFeed, {
-      interval: 20000,
-      maxInterval: 180000,
-      hiddenInterval: 90000,
+      interval: 45000,
+      maxInterval: 300000,
+      hiddenInterval: 180000,
       timeout: 8000,
       leaseKey: 'notifications:' + userId,
-      leaseMs: 30000
+      leaseMs: 60000
     });
   };
 

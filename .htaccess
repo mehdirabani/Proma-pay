@@ -52,3 +52,10 @@ ErrorDocument 504 /static-errors/504.html
         Header set Expires "0"
     </IfModule>
 </FilesMatch>
+
+<Files "health-static.txt">
+    <IfModule mod_headers.c>
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header set X-Proma-Probe "static"
+    </IfModule>
+</Files>

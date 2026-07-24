@@ -591,7 +591,7 @@ if (!isset($tabs[$activeTab])) {
 <div class="modal" id="delete-backup-logs-modal">
   <div class="modal-content">
     <div class="modal-header"><h3>حذف لاگ‌های بکاپ</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن"><i data-feather="x"></i></button></div>
-    <form id="backup-log-delete-form" method="post" action="<?= e(url('backup/deleteLogs')) ?>" data-loading-form data-loading-text="در حال حذف لاگ‌ها...">
+    <form id="backup-log-delete-form" method="post" action="<?= e(url('backup/clearLogs')) ?>" data-loading-form data-loading-text="در حال حذف لاگ‌ها...">
       <div class="modal-body grid">
         <?= csrf_field() ?>
         <?php $deleteBackupLogsCode = ConfirmationCode::hint('backup_logs_delete'); ?>
@@ -644,7 +644,7 @@ if (!isset($tabs[$activeTab])) {
   <div class="modal" id="delete-backup-<?= e(md5($file['name'])) ?>">
     <div class="modal-content">
       <div class="modal-header"><h3>حذف بکاپ</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('backup/delete/' . rawurlencode($file['name']))) ?>">
+      <form method="post" action="<?= e(url('backup/retireArchive/' . rawurlencode($file['name']))) ?>">
         <div class="modal-body grid">
           <?= csrf_field() ?>
           <?php $deleteBackupCode = ConfirmationCode::hint('backup_delete_' . sha1($file['name'])); ?>
@@ -661,7 +661,7 @@ if (!isset($tabs[$activeTab])) {
 <?php endforeach; ?>
 
 <?php foreach (($updatePackages ?? []) as $package): ?>
-  <?php if (empty($package['is_installable'])): continue; endif; ?>
+  <?php if (!empty($package['is_installable'])): ?>
   <div class="modal" id="install-update-<?= e(md5($package['name'])) ?>">
     <div class="modal-content">
       <div class="modal-header"><h3>نصب بروزرسانی</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
@@ -679,10 +679,11 @@ if (!isset($tabs[$activeTab])) {
       </form>
     </div>
   </div>
+  <?php endif; ?>
   <div class="modal" id="delete-update-<?= e(md5($package['name'])) ?>">
     <div class="modal-content">
       <div class="modal-header"><h3>حذف بسته بروزرسانی</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('updates/delete/' . rawurlencode($package['name']))) ?>">
+      <form method="post" action="<?= e(url('updates/retirePackage/' . rawurlencode($package['name']))) ?>">
         <div class="modal-body grid">
           <?= csrf_field() ?>
           <?php $deleteUpdateCode = ConfirmationCode::hint('update_delete_' . sha1($package['name'])); ?>
@@ -702,7 +703,7 @@ if (!isset($tabs[$activeTab])) {
   <div class="modal" id="delete-easy-install-<?= e(md5($package['name'])) ?>">
     <div class="modal-content">
       <div class="modal-header"><h3>حذف بسته نصبی آسان</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('install-package/delete/' . rawurlencode($package['name']))) ?>">
+      <form method="post" action="<?= e(url('install-package/retirePackage/' . rawurlencode($package['name']))) ?>">
         <div class="modal-body grid">
           <?= csrf_field() ?>
           <?php $deleteEasyInstallCode = ConfirmationCode::hint('easy_install_delete_' . sha1($package['name'])); ?>
@@ -722,7 +723,7 @@ if (!isset($tabs[$activeTab])) {
   <div class="modal" id="delete-import-batch-<?= (int) $batch['id'] ?>">
     <div class="modal-content">
       <div class="modal-header"><h3>حذف بسته ورود دیتا</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('imports/delete/' . (int) $batch['id'])) ?>">
+      <form method="post" action="<?= e(url('imports/retire/' . (int) $batch['id'])) ?>">
         <div class="modal-body grid">
           <?= csrf_field() ?>
           <?php $deleteImportCode = ConfirmationCode::hint('import_batch_delete_' . (int) $batch['id']); ?>

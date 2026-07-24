@@ -101,7 +101,7 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
           <div class="notice <?= $canPermanentlyDelete ? 'success' : 'warning' ?> full"><?= $canPermanentlyDelete ? 'این قرارداد وابستگی فعالی ندارد و پس از ثبت آرشیو ایمن قابل حذف است.' : 'این قرارداد سابقه وابسته دارد. مدیریت می‌تواند با تأیید صریح، قرارداد و سوابق وابسته را پس از آرشیو کامل حذف کند.' ?></div>
           <div class="proma-cancellation-summary full"><span><small>کل پرداخت‌ها</small><strong><?= to_persian_digits($deletionPreview['payment_count'] ?? 0) ?></strong></span><span><small>رسیدها</small><strong><?= to_persian_digits($deletionPreview['dependencies']['payment_receipt_count'] ?? 0) ?></strong></span><span><small>پرونده حقوقی</small><strong><?= to_persian_digits($deletionPreview['legal_case_count'] ?? 0) ?></strong></span><span><small>اسناد قرارداد</small><strong><?= to_persian_digits(($deletionPreview['dependencies']['generated_document_count'] ?? 0) + ($deletionPreview['dependencies']['document_version_count'] ?? 0)) ?></strong></span></div>
           <?php if (!$canPermanentlyDelete): ?><p class="full small text-muted">سوابق وابسته: <?= e(implode('، ', $deletionPreview['blocking_dependency_labels'] ?? [])) ?></p><?php endif; ?>
-          <label class="full required-field">علت حذف<textarea name="deletion_reason" required minlength="5" rows="4" placeholder="علت دقیق حذف قرارداد را ثبت کنید"></textarea></label>
+          <label class="full required-field">علت حذف<textarea name="retirement_reason" required minlength="5" rows="4" placeholder="علت دقیق حذف قرارداد را ثبت کنید"></textarea></label>
           <label class="full required-field">برای تأیید، شماره قرارداد را وارد کنید<input name="confirm_contract_number" required autocomplete="off" value="" placeholder="<?= e($contract['contract_number']) ?>"></label>
           <?php if (!$canPermanentlyDelete): ?><label class="full proma-confirm-check proma-danger-check"><input type="checkbox" name="include_related_history" value="1" required> قرارداد و تمام سوابق مالی، اقساط، حقوقی، اسناد و عملیات وابسته حذف شوند؛ آرشیو کامل پیش از حذف ثبت می‌شود.</label><?php endif; ?>
           <?php if ((int) ($deletionPreview['gateway_payment_count'] ?? 0) > 0): ?><label class="full proma-confirm-check proma-danger-check"><input type="checkbox" name="accept_gateway_notice" value="1" required> می‌دانم این عملیات بازگشت وجه بانکی انجام نمی‌دهد و بازپرداخت واقعی باید جداگانه انجام شود.</label><?php endif; ?>
@@ -678,7 +678,7 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
       <div class="modal" id="delete-legal-log-<?= (int) $log['id'] ?>">
         <div class="modal-content">
           <div class="modal-header"><h3>حذف لاگ حقوقی</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-          <form method="post" action="<?= e(url('contracts/deleteLegalLog/' . (int) $log['id'])) ?>">
+          <form method="post" action="<?= e(url('contracts/retireLegalLog/' . (int) $log['id'])) ?>">
             <div class="modal-body grid">
               <?= csrf_field() ?>
               <?php $deleteCode = ConfirmationCode::hint('legal_log_delete_' . (int) $log['id']); ?>

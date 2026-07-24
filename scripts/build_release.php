@@ -157,10 +157,11 @@ $changed = $git(['diff', '--name-only', '--diff-filter=ACMRT', $baseRef, '--']);
 $untracked = $git([
     'ls-files', '--others', '--exclude-standard', '--',
     'assets', 'config', 'controllers', 'core', 'database', 'helpers', 'models', 'views',
-    '.htaccess', 'bootstrap.php', 'index.php', 'install.php', 'installer.php', 'manifest.json', 'package.json', 'service-worker.js',
+    '.htaccess', 'bootstrap.php', 'health-static.txt', 'index.php', 'install.php', 'installer.php', 'manifest.json', 'package.json', 'service-worker.js',
 ]);
 $candidates = array_values(array_unique(array_merge($changed, $untracked, [
     'config/version.php',
+    'health-static.txt',
     'manifest.json',
     'package.json',
     'service-worker.js',
@@ -176,7 +177,7 @@ $candidates = array_values(array_unique(array_merge($changed, $untracked, [
 sort($candidates, SORT_STRING);
 
 $runtimeRoots = ['assets/', 'config/', 'controllers/', 'core/', 'database/', 'helpers/', 'models/', 'views/'];
-$runtimeRootFiles = ['.htaccess', 'bootstrap.php', 'index.php', 'install.php', 'installer.php', 'manifest.json', 'package.json', 'service-worker.js'];
+$runtimeRootFiles = ['.htaccess', 'bootstrap.php', 'health-static.txt', 'index.php', 'install.php', 'installer.php', 'manifest.json', 'package.json', 'service-worker.js'];
 $updateFiles = [];
 foreach ($candidates as $candidate) {
     $candidate = $normalize($candidate);
@@ -197,6 +198,7 @@ foreach ($candidates as $candidate) {
 }
 foreach ([
     'config/version.php',
+    'health-static.txt',
     'install.php',
     'database/proma-pay-install.sql',
     'database/migrations/2026_07_01_backup_logs.sql',

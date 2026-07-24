@@ -26,7 +26,7 @@
             <?php if (empty($item['is_read'])): ?><span class="badge info">جدید</span><?php endif; ?>
             <?php if (!empty($item['url'])): ?><a class="btn small secondary" href="<?= e(url('notifications/open/' . (int) $item['id'])) ?>"><i data-feather="external-link"></i> مشاهده</a><?php endif; ?>
             <form method="post" action="<?= e(url('notifications/archive/' . (int) $item['id'])) ?>"><?= csrf_field() ?><button class="btn small secondary icon-only" type="submit" title="بایگانی" aria-label="بایگانی"><i data-feather="archive"></i></button></form>
-            <form method="post" action="<?= e(url('notifications/delete/' . (int) $item['id'])) ?>"><?= csrf_field() ?><button class="btn small danger icon-only" type="submit" title="حذف از فهرست من" aria-label="حذف از فهرست من"><i data-feather="trash-2"></i></button></form>
+            <form method="post" action="<?= e(url('notifications/retire/' . (int) $item['id'])) ?>"><?= csrf_field() ?><button class="btn small danger icon-only" type="submit" title="حذف از فهرست من" aria-label="حذف از فهرست من"><i data-feather="trash-2"></i></button></form>
           </div>
         </article>
       <?php endforeach; ?>

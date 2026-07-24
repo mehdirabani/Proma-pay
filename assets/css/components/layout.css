@@ -334,6 +334,35 @@
   margin-block: 14px;
 }
 
+.proma-health-diagnostic-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-block: 14px;
+}
+
+.proma-health-diagnostic-grid > span {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--proma-line, #e7e9ef);
+  border-radius: var(--proma-section-radius, 8px);
+  background: #fff;
+}
+
+.proma-health-diagnostic-grid :is(strong, small) {
+  display: block;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.proma-health-diagnostic-grid small {
+  color: var(--proma-muted, #737987);
+  font-size: 11px;
+  line-height: 1.75;
+}
+
 .proma-auth-content > :first-child,
 .proma-public-content > :first-child,
 .proma-page-content > :first-child {
@@ -436,6 +465,10 @@
 
   .proma-health-connectivity__facts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .proma-health-diagnostic-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

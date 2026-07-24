@@ -159,7 +159,7 @@ class FileManagerController extends Controller
         $this->requireRole('admin');
         $this->onlyPost();
         try {
-            FileRecord::softDelete((string) $uuid, Auth::id(), $_POST['deletion_reason'] ?? '');
+            FileRecord::softDelete((string) $uuid, Auth::id(), $_POST['retirement_reason'] ?? ($_POST['deletion_reason'] ?? ''));
             set_flash('success', 'فایل به‌صورت نرم حذف شد؛ سابقه و امکان ممیزی حفظ می‌شود.');
         } catch (Throwable $e) {
             ErrorHandler::log('file_manager_delete', $e, 500);

@@ -48,6 +48,7 @@ $assert(is_string($coreManifestRaw), 'Core release-manifest.json is missing.');
 $coreManifest = json_decode($coreManifestRaw, true, 512, JSON_THROW_ON_ERROR);
 $assert(($coreManifest['version'] ?? '') === $version, 'Core archive version is incorrect.');
 $assert($core->locateName('install.php') !== false, 'Core archive does not contain install.php.');
+$assert(trim((string) $core->getFromName('health-static.txt')) === 'proma-static-ok', 'Core archive does not contain the static health probe.');
 foreach (['config/database.php', 'installed.lock', '.env', '1.xlsx'] as $forbidden) {
     $assert($core->locateName($forbidden) === false, 'Core archive contains a forbidden operational file: ' . $forbidden);
 }
@@ -68,6 +69,7 @@ $assert(is_string($updateManifestRaw), 'Update proma-update.json is missing.');
 $updateManifest = json_decode($updateManifestRaw, true, 512, JSON_THROW_ON_ERROR);
 $assert(($updateManifest['version'] ?? '') === $version, 'Update archive version is incorrect.');
 $assert(($updateManifest['minimum_version'] ?? '') === '1.4.2', 'Update minimum version must be V1.4.2.');
+$assert(trim((string) $update->getFromName('health-static.txt')) === 'proma-static-ok', 'Update archive does not contain the static health probe.');
 foreach ([
     'database/migrations/2026_07_22_release_v143.sql',
     'database/migrations/2026_07_23_release_v144.sql',
@@ -157,4 +159,4 @@ try {
     $removeTree($extractRoot);
 }
 
-echo "RELEASE_ARCHIVES_V144_OK\n";
+echo 'RELEASE_ARCHIVES_V' . str_replace('.', '', $version) . "_OK\n";

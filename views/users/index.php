@@ -218,7 +218,7 @@ $pageUrl = function ($page) use ($viewMode) {
   <div class="modal" id="delete-user-<?= (int) $item['id'] ?>">
     <div class="modal-content">
       <div class="modal-header"><h3>تأیید حذف کاربر</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('users/delete/' . $item['id'])) ?>">
+      <form method="post" action="<?= e(url('users/retire/' . $item['id'])) ?>">
         <div class="modal-body">
           <?= csrf_field() ?>
           <?php $deleteCode = ConfirmationCode::hint('user_delete_' . (int) $item['id']); ?>

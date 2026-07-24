@@ -64,7 +64,13 @@ $systemHealthy = !empty($database['ok']) && !empty($storage['ok']) && !$hasQueue
       <span><small>HTTPS</small><strong><?= $network['https'] ? 'فعال' : 'غیرفعال' ?></strong></span>
     </div>
     <div class="proma-health-note"><span><?= proma_icon('archive') ?></span><p>اگر مرورگر خطای <bdi dir="ltr">ERR_CONNECTION_TIMED_OUT</bdi> نشان دهد و هیچ کد HTTP دریافت نشود، درخواست به PHP نرسیده است. گزارش امن را همراه ساعت رخداد برای بررسی ModSecurity، CSF/LFD، فایروال و محدودیت workerها به هاست بدهید.</p></div>
+    <div class="proma-health-diagnostic-grid" aria-label="راهنمای تشخیص لایه قطعی">
+      <span><strong>۱. آزمون استاتیک</strong><small>اگر باز نشود: فایروال، WAF یا شبکه هاست</small></span>
+      <span><strong>۲. آزمون زنده PHP</strong><small>استاتیک باز و این ناموفق: worker یا PHP-FPM</small></span>
+      <span><strong>۳. آزمون آمادگی</strong><small>زنده باز و این ناموفق: دیتابیس یا سرویس داخلی</small></span>
+    </div>
     <div class="actions">
+      <a class="btn small secondary" href="<?= e($network['static_endpoint']) ?>" target="_blank" rel="noopener">آزمون استاتیک</a>
       <a class="btn small secondary" href="<?= e($network['live_endpoint']) ?>" target="_blank" rel="noopener">آزمون زنده</a>
       <a class="btn small secondary" href="<?= e($network['ready_endpoint']) ?>" target="_blank" rel="noopener">آزمون آمادگی</a>
     </div>
