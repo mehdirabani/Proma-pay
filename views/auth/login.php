@@ -26,12 +26,12 @@ $logoIconPath = trim((string) ($settings['logo_icon_path'] ?? ''));
 
               <div class="form-group">
                 <label class="col-form-label">شناسه ورود</label>
-                <input class="form-control" name="identifier" required placeholder="نام کاربری، کد ملی، موبایل یا ایمیل">
+                <input class="form-control" name="identifier" required autocomplete="username" placeholder="نام کاربری، کد ملی، موبایل یا ایمیل">
               </div>
               <div class="form-group">
                 <label class="col-form-label">رمز عبور</label>
                 <div class="form-input position-relative">
-                  <input class="form-control" name="password" type="password" required placeholder="رمز عبور">
+                  <input class="form-control" name="password" type="password" required autocomplete="current-password" placeholder="رمز عبور">
                   <div class="show-hide"><span class="show"></span></div>
                 </div>
               </div>

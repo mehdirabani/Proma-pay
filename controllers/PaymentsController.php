@@ -34,12 +34,12 @@ class PaymentsController extends Controller
             set_flash('error', 'قسط برای پرداخت پیدا نشد.');
             redirect('installments/panel');
         }
-        $amount = normalize_money($_POST['amount'] ?? $installment['payable']);
-        if ($amount <= 0 || $amount > $installment['payable']) {
-            set_flash('error', 'مبلغ پرداخت معتبر نیست.');
-            redirect('installments/panel');
-        }
         try {
+            $amount = normalize_money($_POST['amount'] ?? $installment['payable']);
+            $quote = SettlementQuoteService::create((int) $installment['contract_id'], [(int) $installment['id']], Auth::id(), 'selected');
+            if ($amount <= 0 || $amount > normalize_money($quote['full_settlement_total'] ?? 0)) {
+                throw new InvalidArgumentException('مبلغ پرداخت معتبر نیست.', 422);
+            }
             $registry = PaymentGatewayRegistry::boot();
             $gateway = ($_POST['_legacy_gateway'] ?? '') === 'zibal'
                 ? $registry->get('zibal')
@@ -59,6 +59,7 @@ class PaymentsController extends Controller
                 'customer_mobile' => (string) ($user['mobile'] ?? ''),
                 'customer_email' => (string) ($user['email'] ?? ''),
                 'amount_toman' => (int) $amount,
+                'quote_uuid' => (string) ($quote['quote_uuid'] ?? ''),
                 'description' => 'پرداخت قسط قرارداد ' . $installment['contract_number'],
                 'idempotency_key' => $this->paymentIdempotencyKey($_POST['idempotency_key'] ?? '', 'single', (int) $installment['id']),
             ]);
@@ -85,28 +86,21 @@ class PaymentsController extends Controller
         $this->onlyPost();
         $contractId = (int) ($_POST['contract_id'] ?? 0);
         $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['installment_ids'] ?? [])))));
-        $installments = [];
-        foreach ($ids as $id) {
-            $installment = Installment::find($id);
-            if (!$installment || (int) ($installment['customer_id'] ?? 0) !== (int) Auth::id() || (int) ($installment['contract_id'] ?? 0) !== $contractId || (float) ($installment['payable'] ?? 0) <= 0) {
-                set_flash('error', 'یکی از اقساط انتخاب‌شده متعلق به شما نیست یا قابل پرداخت نیست.');
-                redirect('installments/panel');
-            }
-            $installments[] = $installment;
-        }
         $amount = normalize_money($_POST['amount'] ?? 0);
         if (!$ids || $amount <= 0) {
             set_flash('error', 'حداقل یک قسط و مبلغ معتبر انتخاب کنید.');
             redirect('installments/panel');
         }
         try {
-            $outstanding = Model::fetch(
-                "SELECT COALESCE(SUM(GREATEST(base_amount - paid_amount, 0)), 0) AS total FROM installments WHERE contract_id = ? AND status NOT IN ('paid', 'cancelled')",
-                [$contractId]
-            );
-            if ($amount > (int) round((float) ($outstanding['total'] ?? 0))) {
-                throw new InvalidArgumentException('مبلغ پرداخت از کل بدهی قابل تخصیص این قرارداد بیشتر است.');
+            $contract = Contract::find($contractId);
+            if (!$contract || (int) ($contract['customer_id'] ?? 0) !== (int) Auth::id()) throw new InvalidArgumentException('قرارداد برای پرداخت پیدا نشد.', 403);
+            $installments = SettlementQuoteService::loadInstallments($contractId, $ids);
+            foreach ($installments as $installment) {
+                $state = InstallmentFinancialStateService::state($installment);
+                if (empty($state['payment_allowed'])) throw new InvalidArgumentException(InstallmentSettlementService::SETTLED_MESSAGE, 409);
             }
+            $quote = SettlementQuoteService::create($contractId, $ids, Auth::id(), 'selected');
+            if ($amount > normalize_money($quote['full_settlement_total'] ?? 0)) throw new InvalidArgumentException('مبلغ پرداخت از مبلغ تسویهٔ اقساط انتخاب‌شده بیشتر است.', 422);
             $registry = PaymentGatewayRegistry::boot();
             $gateway = ($_POST['_legacy_gateway'] ?? '') === 'zibal'
                 ? $registry->get('zibal')
@@ -125,6 +119,7 @@ class PaymentsController extends Controller
                 'customer_mobile' => (string) ($user['mobile'] ?? ''),
                 'customer_email' => (string) ($user['email'] ?? ''),
                 'amount_toman' => (int) $amount,
+                'quote_uuid' => (string) ($quote['quote_uuid'] ?? ''),
                 'description' => 'پرداخت چندقسطی قرارداد ' . ($installments[0]['contract_number'] ?? $contractId),
                 'idempotency_key' => $this->paymentIdempotencyKey($_POST['idempotency_key'] ?? '', 'group', $contractId),
             ]);

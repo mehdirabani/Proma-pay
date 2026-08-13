@@ -8,7 +8,7 @@ class LawyerController extends Controller
         $filters = [
             'lawyer_id' => Auth::id(),
             'search' => $_GET['q'] ?? null,
-            'status' => in_array($_GET['status'] ?? '', ['open', 'referred', 'closed'], true) ? $_GET['status'] : null,
+            'status' => in_array($_GET['status'] ?? '', ['open', 'referred', 'under_legal_review', 'warning_prepared', 'draft_prepared', 'external_submission_confirmed', 'closed'], true) ? $_GET['status'] : null,
             'sort' => $_GET['sort'] ?? 'created',
             'dir' => $_GET['dir'] ?? 'desc',
             'limit' => 50,
@@ -26,7 +26,7 @@ class LawyerController extends Controller
             'referredCases' => array_values(array_filter($cases, function ($case) {
                 return ($case['status'] ?? '') === 'referred';
             })),
-            'eligible' => [],
+            'eligible' => LegalEligibilityService::queue($_GET['eligible_q'] ?? null, 60),
         ], is_ajax_request() ? null : 'app');
     }
 
@@ -64,7 +64,13 @@ class LawyerController extends Controller
     {
         $this->requireRole('lawyer');
         $this->onlyPost();
-        set_flash('error', 'ثبت پرونده حقوقی فقط پس از ارجاع مدیریت و در محدوده پرونده‌های اختصاص‌یافته مجاز است.');
+        try {
+            $caseId = LegalCase::createSelfInitiated(Auth::id(), (int) ($_POST['contract_id'] ?? 0), $_POST['notes'] ?? '', $_POST['legal_case_request_uuid'] ?? '');
+            set_flash('success', 'پرونده داخلی حقوقی ایجاد شد. این ثبت، ثبت رسمی قضایی یا ابلاغ رسمی نیست.');
+            redirect('legal/show/' . $caseId);
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ایجاد پرونده داخلی انجام نشد.');
+        }
         redirect('lawyer');
     }
 

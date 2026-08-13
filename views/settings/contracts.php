@@ -71,13 +71,13 @@ $tabs = [
 
 <?php if ($section === 'template'): ?>
   <section class="card"><div class="card-header card-no-border"><h3>عنوان و سربرگ قرارداد</h3></div><form method="post" action="<?= e(url('settings/saveContractHeader')) ?>"><?= csrf_field() ?><div class="card-body form-grid"><label class="full required-field">عنوان چاپی<input name="contract_document_title" value="<?= e($settings['contract_document_title'] ?? '') ?>" required></label><label class="full">متن زیر عنوان<textarea name="contract_document_header" rows="3"><?= e($settings['contract_document_header'] ?? '') ?></textarea></label><label class="full">دلیل تغییر<input name="change_reason" value="ویرایش عنوان و سربرگ قرارداد"></label></div><div class="card-footer"><button class="btn" type="submit"><i data-feather="save"></i> ذخیره سربرگ</button></div></form></section>
-  <section class="card proma-template-editor-card" data-contract-template-workspace>
+  <section class="card proma-template-editor-card" data-contract-template-workspace data-quill-src="<?= e(template_asset_url('js/editors/quill.js')) ?>" data-request-id="<?= e(ErrorHandler::requestId()) ?>" data-template-editor-lifecycle="booting">
     <div class="card-header card-no-border">
       <div class="header-top">
         <div><h3>ویرایشگر قالب قرارداد</h3><p>نسخه فعال: <?= $effectiveVersion ? 'V' . to_persian_digits($effectiveVersion) : 'قالب سیستمی' ?><?php if ($draftVersion): ?>، پیش‌نویس: V<?= to_persian_digits($draftVersion) ?><?php endif; ?></p></div>
-        <div class="proma-editor-mode-switch" role="tablist">
-          <button class="active" type="button" data-template-mode="simple">ویرایش ساده</button>
-          <button type="button" data-template-mode="source">کد قالب</button>
+        <div class="proma-editor-mode-switch" role="tablist" aria-label="حالت ویرایش قالب">
+          <button type="button" data-template-mode="simple" role="tab" aria-selected="false" aria-controls="editor-template-visual" disabled aria-disabled="true" title="در حال آماده‌سازی ویرایشگر ساده">ویرایش ساده</button>
+          <button class="active" type="button" data-template-mode="source" role="tab" aria-selected="true" aria-controls="editor-template-source">کد قالب</button>
           <a href="<?= e(url('settings/contracts/preview')) ?>">پیش‌نمایش</a>
         </div>
       </div>
@@ -89,10 +89,17 @@ $tabs = [
           <button class="btn secondary small" type="button" data-contract-copy-source="editor-template-source"><i data-feather="copy"></i> کپی متن</button>
           <button class="btn secondary small" type="button" data-load-contract-source="effective-template-source"><i data-feather="download"></i> بارگذاری قالب فعلی</button>
           <button class="btn secondary small" type="button" data-load-contract-source="default-template-source"><i data-feather="file-plus"></i> بارگذاری پیش‌فرض</button>
-          <button class="btn secondary small" type="button" data-template-find><i data-feather="search"></i> یافتن و جایگزینی</button>
+          <button class="btn secondary small" type="button" data-open-modal="template-find-replace"><i data-feather="search"></i> یافتن و جایگزینی</button>
           <button class="btn secondary small" type="button" data-insert-important-clause><i data-feather="alert-circle"></i> درج بند مهم</button>
           <select data-contract-variable-select aria-label="درج متغیر"><option value="">درج متغیر...</option><?php foreach ($variableCatalog as $group => $variables): ?><optgroup label="<?= e($group) ?>"><?php foreach ($variables as $variable): ?><option value="<?= e($variable['code']) ?>"><?= e($variable['title']) ?></option><?php endforeach; ?></optgroup><?php endforeach; ?></select>
           <span data-template-count>۰ واژه، ۰ نویسه</span>
+        </div>
+        <div class="notice info proma-template-editor-status" data-template-editor-status role="status" aria-live="polite">حالت امن «کد قالب» فعال است. ویرایش ساده پس از بارگذاری کامل ابزار ویرایش در دسترس قرار می‌گیرد.</div>
+        <div class="actions mt-2"><button class="btn secondary small" type="button" data-template-retry-assets hidden>تلاش دوباره برای ویرایش ساده</button></div>
+        <div class="notice warning proma-template-editor-recovery" data-template-editor-recovery hidden>
+          <span>یک نسخه ذخیره‌نشده از این مرورگر پیدا شد.</span>
+          <button class="btn secondary small" type="button" data-template-restore-recovery>بازیابی</button>
+          <button class="btn secondary small" type="button" data-template-dismiss-recovery>نادیده‌گرفتن</button>
         </div>
         <div class="notice info mt-3">
           <strong>راهنمای برجسته‌کردن بند مهم</strong><br>
@@ -100,8 +107,9 @@ $tabs = [
           <code>**این بند در نسخه چاپی با فونت ۷ پیکسل و به‌صورت بولد نمایش داده می‌شود.**</code>
         </div>
         <label class="proma-template-source-field">متن قالب
-          <textarea id="editor-template-source" name="body_source" rows="24" data-rich-editor data-rich-editor-height="620" data-contract-template-editor required><?= e($editorSource) ?></textarea>
+          <textarea id="editor-template-source" name="body_source" rows="24" data-rich-editor-height="620" data-contract-template-editor aria-describedby="template-editor-help" required><?= e($editorSource) ?></textarea>
         </label>
+        <p id="template-editor-help" class="proma-form-help">در حالت «کد قالب»، متن بدون تبدیل پنهان نمایش داده می‌شود. ورود آگاهانه به «ویرایش ساده» قالب را به HTML ساختاریافته تبدیل می‌کند.</p>
         <div class="form-grid two mt-3">
           <label>فرمت محتوا
             <select name="body_format">
@@ -111,6 +119,8 @@ $tabs = [
           </label>
           <label class="required-field">دلیل تغییر<input name="change_reason" required minlength="3" placeholder="خلاصه تغییرات این پیش‌نویس"></label>
         </div>
+        <input type="hidden" name="editor_original_format" value="<?= e($editorFormat) ?>">
+        <input type="hidden" name="editor_conversion_source" value="">
       </div>
       <div class="card-footer proma-template-editor-footer">
         <span data-unsaved-indicator hidden>تغییرات ذخیره‌نشده دارید.</span>
@@ -118,6 +128,36 @@ $tabs = [
       </div>
     </form>
   </section>
+  <div class="modal" id="template-find-replace" aria-describedby="template-find-replace-help">
+    <div class="modal-content">
+      <div class="modal-header"><h3>یافتن و جایگزینی</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن">×</button></div>
+      <form data-template-find-form>
+        <div class="modal-body form-grid">
+          <p id="template-find-replace-help" class="proma-form-help full">این عملیات فقط متن بازشده در ویرایشگر را تغییر می‌دهد؛ برای ثبت نهایی، پیش‌نویس را ذخیره کنید.</p>
+          <label class="full required-field">عبارت مورد نظر<input name="find" required autocomplete="off"></label>
+          <label class="full">عبارت جایگزین<input name="replace" autocomplete="off"></label>
+        </div>
+        <div class="modal-footer"><button class="btn" type="submit">جایگزینی همه موارد</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
+      </form>
+    </div>
+  </div>
+  <div class="modal" id="template-replace-source" aria-describedby="template-replace-source-help">
+    <div class="modal-content">
+      <div class="modal-header"><h3>جایگزینی متن قالب</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن">×</button></div>
+      <div class="modal-body"><p id="template-replace-source-help">تغییرات ذخیره‌نشده دارید. با ادامه، متن فعلی ویرایشگر جایگزین می‌شود.</p></div>
+      <div class="modal-footer"><button class="btn danger" type="button" data-template-apply-pending-source>جایگزینی متن</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
+    </div>
+  </div>
+  <div class="modal" id="template-convert-visual" aria-describedby="template-convert-visual-help">
+    <div class="modal-content">
+      <div class="modal-header"><h3>تبدیل آگاهانه به ویرایش ساده</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن">×</button></div>
+      <div class="modal-body">
+        <p id="template-convert-visual-help">متن ساده پس از تأیید شما به HTML ساختاریافته امن تبدیل می‌شود. متن، متغیرها و نسخه قبلی حذف نمی‌شوند؛ بااین‌حال برای ثبت تبدیل باید پیش‌نویس را ذخیره کنید.</p>
+        <div class="notice info">منبع تبدیل، زمان، کاربر و هش محتوای نسخه ذخیره‌شده در سوابق حسابرسی ثبت خواهد شد.</div>
+      </div>
+      <div class="modal-footer"><button class="btn" type="button" data-template-confirm-visual-conversion>تأیید و ورود به ویرایش ساده</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
+    </div>
+  </div>
 
   <section class="card">
     <div class="card-header card-no-border"><div class="header-top"><h3>بازنشانی کنترل‌شده</h3><button class="btn danger small" type="button" data-open-modal="reset-contract-template"><i data-feather="rotate-ccw"></i> ساخت پیش‌نویس پیش‌فرض</button></div></div>

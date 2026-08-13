@@ -1,6 +1,6 @@
 :root {
-  --proma-field-height: 44px;
-  --proma-field-radius: 12px;
+  --proma-field-height: var(--ui-control-height, 48px);
+  --proma-field-radius: var(--ui-control-radius, 12px);
   --proma-field-bg: #f7f7fa;
   --proma-field-bg-hover: #f2eff7;
   --proma-field-bg-focus: #fff;
@@ -22,9 +22,9 @@
   --proma-control-radius: var(--proma-field-radius);
   --proma-control-font-size: 14px;
   --proma-control-line-height: 1.6;
-  --proma-field-gap: 7px;
+  --proma-field-gap: var(--ui-control-gap, 8px);
   --proma-form-column-gap: 16px;
-  --proma-form-row-gap: 18px;
+  --proma-form-row-gap: var(--ui-field-gap, 18px);
   --proma-label-min-height: 24px;
   --proma-control-border: transparent;
   --proma-control-bg: var(--proma-field-bg);
@@ -310,11 +310,9 @@ select[multiple].proma-form-control {
 .install-form > label:focus-within { color: var(--proma-field-focus); }
 
 :is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) select:not([multiple]) {
-  appearance: none;
+  appearance: auto;
   padding-inline-start: 40px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: left 14px center;
+  background-image: none;
 }
 
 :is(.page-body, .proma-auth-content, .proma-public-content, .modal, .proma-accounting) input:-webkit-autofill,
@@ -473,13 +471,39 @@ label.required-field::after {
 }
 
 .proma-table-actions,
-table .actions {
+.actions:not(td) {
   min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+/* A table cell must retain table-cell layout. Put flex controls in a wrapper,
+   while legacy action cells remain compact and aligned without breaking rows. */
+td.actions {
+  display: table-cell;
+  min-width: max-content;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+td.actions > :is(.btn, button, form) {
+  display: inline-flex;
+  vertical-align: middle;
+  margin: 2px;
+}
+
+td.actions > form {
+  align-items: center;
+}
+
+/* Keep payment-table controls in a real table cell. Applying a flex layout to
+   the <td> itself breaks column alignment in some Chromium/RTL combinations. */
+.proma-payment-row-actions {
+  min-width: max-content;
+  white-space: nowrap;
 }
 
 .proma-plugin-toolbar,

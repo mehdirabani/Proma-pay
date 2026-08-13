@@ -1,125 +1,81 @@
 <?php
 
+/** Read model backed by the canonical installment financial state. */
 class ContractFinancialSummaryService
 {
-    public static function summarize($contractId, $calculationDate = null)
+    public static function summarize($contractId, $calculationDate = null, ?array $preloadedInstallments = null)
     {
         $contract = Contract::find((int) $contractId);
-        if (!$contract) {
-            throw new InvalidArgumentException('قرارداد پیدا نشد.');
-        }
-
-        $date = self::normalizeDate($calculationDate);
-        Payment::ensureCorrectionSchema();
-        LegalCase::ensureSchema();
-        LegalCaseLog::ensureSchema();
-
-        $settings = Settings::allKeyed();
-        $installments = Installment::all(['contract_id' => (int) $contractId, 'custom_last' => true]);
-        $downPaymentContract = (float) ($contract['down_payment_amount'] ?? 0);
+        if (!$contract) throw new InvalidArgumentException('قرارداد پیدا نشد.');
+        $date = self::date($calculationDate);
+        $installments = $preloadedInstallments ?? Installment::all(['contract_id' => (int) $contractId, 'custom_last' => true]);
+        $settlement = PaymentAllocationService::quote($installments, $date);
+        $downPaymentContract = normalize_money($contract['down_payment_amount'] ?? 0);
         $downPaymentPaid = self::downPaymentPaidUntil((int) $contractId, $date);
-
-        $contractTotal = $downPaymentContract;
-        $paidTotal = min($downPaymentContract, $downPaymentPaid);
-        $dueInstallmentsTotal = 0;
-        $unpaidInstallmentsTotal = 0;
-        $remainingPrincipal = max(0, $downPaymentContract - $downPaymentPaid);
-        $latePenaltyTotal = 0;
-        $normalLatePenaltyTotal = 0;
-        $legalLatePenaltyTotal = 0;
-        $latePenaltyMode = 'normal';
-        $earlySettlementRewardTotal = 0;
-
+        $dueInstallments = 0;
+        $contractInstallments = 0;
+        $paidInstallments = 0;
+        $projectedLegalPenalty = 0;
+        $projectedLegalPenaltyVisible = false;
+        $actualLegalReferral = false;
+        $calculationWarnings = [];
         foreach ($installments as $installment) {
-            $payments = Payment::forInstallment((int) $installment['id']);
-            $preview = FinanceHelper::preview($installment, $payments, $settings, $date);
-            $baseAmount = (float) ($installment['base_amount'] ?? 0);
-            $remainingAmount = (float) ($preview['remaining_amount'] ?? 0);
-            $paidAmount = (float) ($preview['paid_amount'] ?? 0);
-            $penalty = (float) ($preview['penalty'] ?? 0);
-            if (($preview['penalty_mode'] ?? 'normal') === 'legal') {
-                $latePenaltyMode = 'legal';
+            $base = normalize_money($installment['original_principal'] ?? $installment['base_amount'] ?? 0);
+            $contractInstallments += $base;
+            $paidInstallments += normalize_money($installment['effective_paid_principal'] ?? $installment['paid_amount'] ?? 0);
+            $projectedLegalPenalty += normalize_money($installment['projected_legal_penalty'] ?? 0);
+            $projectedLegalPenaltyVisible = $projectedLegalPenaltyVisible || !empty($installment['show_projected_legal_penalty']);
+            $actualLegalReferral = $actualLegalReferral || !empty($installment['canonical_legal_referral_at']);
+            if (!in_array((string) ($installment['calculation_status'] ?? 'calculated'), ['calculated', 'not_applicable'], true)) {
+                $calculationWarnings[] = [
+                    'installment_id' => (int) ($installment['id'] ?? 0),
+                    'status' => (string) ($installment['calculation_status'] ?? 'calculation_failed'),
+                    'messages' => (array) ($installment['calculation_warnings'] ?? []),
+                ];
             }
-
-            $contractTotal += $baseAmount;
-            $paidTotal += $paidAmount;
-            if (($installment['status'] ?? '') === 'cancelled') {
-                continue;
-            }
-            $remainingPrincipal += $remainingAmount;
-
-            if (($installment['due_date'] ?? '') <= $date) {
-                $dueInstallmentsTotal += $baseAmount;
-            }
-            if ($remainingAmount > 0) {
-                $unpaidInstallmentsTotal += $remainingAmount;
-            }
-            if ($remainingAmount > 0 && ($installment['due_date'] ?? '') < $date) {
-                $latePenaltyTotal += $penalty;
-                $normalLatePenaltyTotal += (float) ($preview['normal_penalty'] ?? $penalty);
-                $legalLatePenaltyTotal += (float) ($preview['legal_penalty'] ?? $penalty);
-            }
-            if ($remainingAmount > 0 && ($installment['due_date'] ?? '') >= $date) {
-                $settlementPreview = FinanceHelper::paymentPreview(
-                    $installment,
-                    $payments,
-                    $settings,
-                    $remainingAmount + $penalty,
-                    $date
-                );
-                $earlySettlementRewardTotal += (float) ($settlementPreview['calculated_reward'] ?? 0);
-            }
+            if (($installment['due_date'] ?? '') <= $date && ($installment['status'] ?? '') !== 'cancelled') $dueInstallments += $base;
         }
-
-        $legalCostsTotal = LegalCaseLog::costTotalForContract((int) $contractId) + LegalCase::expenseTotalForContract((int) $contractId);
-        $finalCollectableAmount = max(0, $remainingPrincipal + $latePenaltyTotal - $earlySettlementRewardTotal + $legalCostsTotal);
-
+        $legalCostSummary = ContractLegalCostSummaryService::forContract((int) $contractId);
+        $legalCosts = normalize_money($legalCostSummary['outstanding_chargeable_legal_costs'] ?? 0);
+        $final = max(0,
+            normalize_money($settlement['principal_total']) + normalize_money($settlement['normal_penalty_total'])
+            + normalize_money($settlement['legal_penalty_total']) - normalize_money($settlement['reward_total']) + $legalCosts
+        );
         return [
-            'contract_total' => self::roundMoney($contractTotal),
-            'paid_total' => self::roundMoney($paidTotal),
-            'due_installments_total' => self::roundMoney($dueInstallmentsTotal),
-            'unpaid_installments_total' => self::roundMoney($unpaidInstallmentsTotal),
-            'remaining_principal' => self::roundMoney($remainingPrincipal),
-            'late_penalty_total' => self::roundMoney($latePenaltyTotal),
-            'normal_late_penalty_total' => self::roundMoney($normalLatePenaltyTotal),
-            'legal_late_penalty_total' => self::roundMoney($legalLatePenaltyTotal),
-            'late_penalty_mode' => $latePenaltyMode,
-            'early_settlement_reward_total' => self::roundMoney($earlySettlementRewardTotal),
-            'legal_costs_total' => self::roundMoney($legalCostsTotal),
-            'final_collectable_amount' => self::roundMoney($finalCollectableAmount),
+            'contract_total' => $downPaymentContract + $contractInstallments,
+            'paid_total' => min($downPaymentContract, $downPaymentPaid) + $paidInstallments,
+            'due_installments_total' => $dueInstallments,
+            'unpaid_installments_total' => normalize_money($settlement['principal_total']),
+            'remaining_principal' => max(0, $downPaymentContract - $downPaymentPaid) + normalize_money($settlement['principal_total']),
+            'late_penalty_total' => normalize_money($settlement['normal_penalty_total']) + normalize_money($settlement['legal_penalty_total']),
+            'normal_late_penalty_total' => normalize_money($settlement['normal_penalty_total']),
+            'legal_late_penalty_total' => normalize_money($settlement['legal_penalty_total']),
+            'projected_legal_penalty_total' => $projectedLegalPenalty,
+            'show_projected_legal_penalty' => $projectedLegalPenaltyVisible,
+            'actual_legal_referral' => $actualLegalReferral,
+            'effective_penalty_payable_total' => normalize_money($settlement['normal_penalty_total']) + normalize_money($settlement['legal_penalty_total']),
+            'late_penalty_mode' => normalize_money($settlement['legal_penalty_total']) > 0 ? 'legal' : 'normal',
+            'early_settlement_reward_total' => normalize_money($settlement['reward_total']),
+            'legal_costs_total' => $legalCosts,
+            'approved_outstanding_legal_costs' => $legalCosts,
+            'legal_cost_summary' => $legalCostSummary,
+            'final_collectable_amount' => $final,
+            'calculation_version' => InstallmentFinancialStateService::CALCULATION_VERSION,
+            'calculation_status' => $calculationWarnings ? 'needs_review' : 'calculated',
+            'calculation_warnings' => $calculationWarnings,
         ];
     }
 
     protected static function downPaymentPaidUntil($contractId, $date)
     {
-        $row = Payment::fetch(
-            "SELECT COALESCE(SUM(amount), 0) AS total
-             FROM payments
-             WHERE contract_id = ?
-               AND status = 'paid'
-               AND COALESCE(is_corrected, 0) = 0
-               AND COALESCE(payment_type, 'installment') = 'down_payment'
-               AND COALESCE(payment_date, DATE(paid_at), DATE(created_at)) <= ?",
-            [(int) $contractId, $date]
-        );
-        return (float) ($row['total'] ?? 0);
+        $row = Payment::fetch("SELECT COALESCE(SUM(amount), 0) AS total FROM payments WHERE contract_id = ? AND status = 'paid' AND COALESCE(is_corrected, 0) = 0 AND COALESCE(payment_type, 'installment') = 'down_payment' AND COALESCE(payment_date, DATE(paid_at), DATE(created_at)) <= ?", [(int) $contractId, $date]);
+        return normalize_money($row['total'] ?? 0);
     }
 
-    protected static function normalizeDate($value)
+    protected static function date($value)
     {
-        if ($value instanceof DateTimeInterface) {
-            return $value->format('Y-m-d');
-        }
-        $value = trim((string) $value);
-        if ($value === '') {
-            return date('Y-m-d');
-        }
-        $parsed = parse_jalali_date($value) ?: $value;
-        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $parsed) ? $parsed : date('Y-m-d');
-    }
-
-    protected static function roundMoney($value)
-    {
-        return max(0, ceil((float) $value));
+        if ($value instanceof DateTimeInterface) return $value->format('Y-m-d');
+        $value = parse_jalali_date((string) $value) ?: trim((string) $value);
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) ? $value : date('Y-m-d');
     }
 }

@@ -103,7 +103,7 @@ class ContractTemplateRenderer
         }
 
         if (!class_exists('DOMDocument')) {
-            return self::sanitizeFallback($html);
+            throw new RuntimeException('ویرایش و انتشار HTML ساختاریافته به افزونه DOM در PHP نیاز دارد. تا زمان فعال‌سازی آن، از حالت متن ساده استفاده کنید.');
         }
 
         $allowed = array_flip([
@@ -189,20 +189,6 @@ class ContractTemplateRenderer
         libxml_clear_errors();
         libxml_use_internal_errors($previous);
         return trim($output);
-    }
-
-    protected static function sanitizeFallback($html)
-    {
-        $allowed = '<p><br><strong><b><em><i><u><h2><h3><h4><ul><ol><li><blockquote><span><section><div><table><thead><tbody><tfoot><tr><th><td>';
-        $html = strip_tags((string) $html, $allowed);
-        $html = preg_replace('/\s+(?:on[a-z]+|style|src|href)\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
-        $html = preg_replace('/\s+(?!class\b|dir\b|colspan\b|rowspan\b)[a-z0-9_:-]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
-        if (substr_count($html, '**') % 2 === 0) {
-            $html = preg_replace_callback('/\*\*([^<]+?)\*\*/u', static function ($match) {
-                return '<strong class="contract-important-clause">' . $match[1] . '</strong>';
-            }, $html);
-        }
-        return trim($html);
     }
 
     public static function hasBalancedImportantMarkers($source)

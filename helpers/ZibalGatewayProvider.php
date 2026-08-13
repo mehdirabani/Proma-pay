@@ -61,7 +61,8 @@ class ZibalGatewayProvider implements PaymentGatewayProviderInterface
                 (int) ($context['customer_id'] ?? 0),
                 (string) $request['track_id'],
                 trim((string) ($context['idempotency_key'] ?? '')) ?: null,
-                'zibal'
+                'zibal',
+                (string) ($context['quote_uuid'] ?? '')
             );
             return ['ok' => true, 'redirect_url' => $request['start_url'], 'reference' => (string) $request['track_id'], 'payment_group_id' => (int) $group['id']];
         }
@@ -71,7 +72,8 @@ class ZibalGatewayProvider implements PaymentGatewayProviderInterface
             (int) ($context['contract_id'] ?? 0),
             (int) ($context['customer_id'] ?? 0),
             (int) ($context['amount_toman'] ?? 0),
-            (string) $request['track_id']
+            (string) $request['track_id'],
+            (string) ($context['quote_uuid'] ?? '')
         );
         return ['ok' => true, 'redirect_url' => $request['start_url'], 'reference' => (string) $request['track_id'], 'payment_id' => $paymentId];
     }

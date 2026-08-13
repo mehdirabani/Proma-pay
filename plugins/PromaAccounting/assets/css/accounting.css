@@ -148,6 +148,17 @@
 .proma-accounting-summary,
 .proma-accounting-chart-panel { padding: var(--pa-card-padding); }
 
+.proma-accounting-salary .salary-rule-form { align-items: end; }
+.proma-accounting-salary .salary-rule-form .proma-accounting-control small { margin-inline-start: 8px; color: var(--pa-muted); }
+.proma-accounting-salary .proma-accounting-row-actions input { max-width: 96px; min-height: 40px; }
+@media (max-width: 767px) {
+  .proma-accounting-salary .salary-rule-form { grid-template-columns: 1fr; }
+  .proma-accounting-salary .salary-rule-form .span-6,
+  .proma-accounting-salary .salary-rule-form .span-12 { grid-column: 1 / -1; }
+  .proma-accounting-salary .proma-accounting-row-actions { align-items: stretch; flex-direction: column; }
+  .proma-accounting-salary .proma-accounting-row-actions input { max-width: none; width: 100%; }
+}
+
 .proma-accounting-section-heading {
   min-width: 0;
   display: flex;

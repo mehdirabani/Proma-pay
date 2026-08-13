@@ -3,7 +3,7 @@ $metrics = $metrics ?? [];
 $cases = $cases ?? [];
 $eligible = $eligible ?? [];
 ?>
-<div class="row widget-grid proma-role-dashboard proma-role-dashboard--lawyer" style="--role-accent:#e07a19;--role-accent-soft:#fff4e8">
+<div class="row widget-grid proma-role-dashboard proma-role-dashboard--lawyer">
   <div class="col-12">
     <section class="card proma-role-hero">
       <div class="card-body">

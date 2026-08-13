@@ -5,23 +5,23 @@ class OverdueController extends Controller
     public function index()
     {
         $this->requireRole(['admin', 'operator']);
-        $bucket = $_GET['bucket'] ?? null;
-        $search = trim((string) ($_GET['q'] ?? ''));
-        $sort = in_array($_GET['sort'] ?? '', ['oldest', 'newest', 'amount_desc', 'amount_asc', 'name_asc', 'name_desc'], true) ? $_GET['sort'] : 'oldest';
+        $criteria = OverdueFilterCriteria::fromRequest($_GET);
         $operatorId = Auth::role() === 'operator' ? Auth::id() : null;
-        $result = Installment::overduePaginated($bucket, $search, $operatorId, [
-            'page' => max(1, (int) to_english_digits($_GET['page'] ?? 1)),
-            'per_page' => 40,
-            'sort' => $sort,
-        ]);
+        $result = OverdueAggregationService::paginated($criteria, $operatorId);
+        $contractContacts = Contract::contactDirectoryForContracts(array_column($result['items'], 'contract_id'));
+        if (!is_ajax_request() && $criteria->page !== (int) $result['page']) {
+            $params = $criteria->queryParameters(false);
+            $params['page'] = (int) $result['page'];
+            redirect('overdue', $params);
+        }
         $this->render('overdue/index', [
-            'title' => 'اقساط سررسید گذشته',
-            'bucket' => $bucket,
-            'search' => $search,
-            'sort' => $sort,
-            'installments' => $result['items'],
+            'title' => 'صف پیگیری سررسیدهای گذشته',
+            'criteria' => $criteria,
+            'overdueContracts' => $result['items'],
             'pagination' => $result,
+            'contractContacts' => $contractContacts,
             'operators' => User::all('operator'),
+            'lawyers' => User::all('lawyer'),
         ], is_ajax_request() ? null : 'app');
     }
 

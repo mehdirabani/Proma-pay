@@ -44,6 +44,9 @@ $defaultPaymentMethod = $gatewayReady ? 'gateway' : ($cardTransferEnabled ? 'car
 $defaultPaymentDate = jdate(date('Y-m-d'));
 $defaultPaymentTime = date('H:i');
 $pagination = $pagination ?? ['total' => count($installments), 'page' => 1, 'pages' => 1, 'per_page' => count($installments) ?: 20];
+$filters = $filters ?? [];
+$installmentSummary = $installmentSummary ?? [];
+$contractContacts = $contractContacts ?? [];
 $installmentsRoute = $installmentsRoute ?? ($customerMode ? 'installments/panel' : 'installments');
 $pageUrl = function ($page) use ($installmentsRoute) {
     $params = $_GET;
@@ -51,68 +54,93 @@ $pageUrl = function ($page) use ($installmentsRoute) {
     $params['page'] = $page;
     return url($installmentsRoute, $params);
 };
+$activeInstallments = array_values(array_filter($installments, static function ($item) { return ($item['status'] ?? '') !== 'paid' && ($item['status'] ?? '') !== 'cancelled'; }));
+$paidInstallments = array_values(array_filter($installments, static function ($item) { return ($item['status'] ?? '') === 'paid'; }));
+$cancelledInstallments = array_values(array_filter($installments, static function ($item) { return ($item['status'] ?? '') === 'cancelled'; }));
+$visibleInstallments = $customerMode ? $activeInstallments : $installments;
+$projectedPenaltyMessage = '';
+if ($customerMode) {
+  foreach ($visibleInstallments as $installment) {
+    if (!empty($installment['show_projected_legal_penalty'])) {
+      $projectedPenaltyMessage = (string) ($installment['projected_legal_penalty_customer_message'] ?? '');
+      break;
+    }
+  }
+}
+$installmentTabUrl = static function (string $tab) use ($filters): string {
+    $params = $filters;
+    $customPaymentState = ($params['payment_state'] ?? '') === 'custom' ? 'custom' : '';
+    unset($params['route'], $params['page'], $params['status'], $params['payment_state'], $params['due_today']);
+    if ($customPaymentState !== '') $params['payment_state'] = $customPaymentState;
+    $params['tab'] = $tab;
+    return url('installments', array_filter($params, static fn ($value): bool => $value !== '' && $value !== false && $value !== null));
+};
 ?>
 <?php if (!$customerMode): ?>
-<section class="card">
-  <div class="card-header card-no-border"><h2>جستجو و فیلتر اقساط</h2></div>
-  <div class="card-body">
-    <form method="get" action="<?= e(url('installments')) ?>" class="form-grid four proma-installment-filters" data-ajax-filter data-ajax-target="[data-ajax-results='installments']">
+<section class="proma-installments-page" aria-label="مدیریت عملیاتی اقساط">
+  <header class="proma-page-intro">
+    <div><span class="proma-eyebrow">عملیات مالی</span><h2>مدیریت اقساط</h2><p>هر تب نتیجهٔ مستقل، شمارش واقعی و صفحه‌بندی فشرده دارد.</p></div>
+    <a class="btn" href="<?= e(url('contracts')) ?>"><?= proma_icon('file') ?><span>قراردادها</span></a>
+  </header>
+  <div class="proma-kpi-grid proma-installment-kpis" aria-label="خلاصه اقساط">
+    <article class="proma-stat-card"><span>اقساط فعال</span><strong><?= to_persian_digits($installmentSummary['active_count'] ?? 0) ?></strong></article>
+    <article class="proma-stat-card is-warning"><span>سررسید امروز</span><strong><?= to_persian_digits($installmentSummary['today_count'] ?? 0) ?></strong></article>
+    <article class="proma-stat-card is-danger"><span>معوق</span><strong><?= to_persian_digits($installmentSummary['overdue_count'] ?? 0) ?></strong></article>
+    <article class="proma-stat-card is-warning"><span>پرداخت جزئی</span><strong><?= to_persian_digits($installmentSummary['partial_count'] ?? 0) ?></strong></article>
+    <article class="proma-stat-card is-success"><span>پرداخت‌شده</span><strong><?= to_persian_digits($installmentSummary['paid_count'] ?? 0) ?></strong></article>
+    <article class="proma-stat-card"><span>ماندهٔ اصل اقساط</span><strong><?= money_toman($installmentSummary['current_payable_total'] ?? 0) ?></strong></article>
+  </div>
+  <section class="card proma-filter-card">
+    <div class="card-header card-no-border"><div class="header-top"><div><h5>جستجو و فیلتر</h5><span>با هر تغییر فیلتر، نتیجه از صفحهٔ اول نمایش داده می‌شود.</span></div></div></div>
+    <div class="card-body pt-0">
+    <form method="get" action="<?= e(url('installments')) ?>" class="proma-operational-filter" data-ajax-filter data-ajax-target="[data-ajax-results='installments']" data-filter-reset-page="1">
       <input type="hidden" name="route" value="installments">
-      <label>جستجوی کلی<input name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="نام، قرارداد، موبایل یا کد ملی"></label>
-      <label>نام مشتری<input name="customer_name" value="<?= e($_GET['customer_name'] ?? '') ?>"></label>
-      <label>شماره قرارداد<input name="contract_number" value="<?= e($_GET['contract_number'] ?? '') ?>" dir="ltr"></label>
-      <label>وضعیت
-        <select name="status">
-          <option value="">همه وضعیت‌ها</option>
-          <?php foreach (['pending', 'partial', 'paid', 'overdue'] as $status): ?>
-            <option value="<?= e($status) ?>"<?= selected($_GET['status'] ?? '', $status) ?>><?= e(status_label($status)) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </label>
-      <details class="full proma-filter-details" <?= !empty($_GET['mobile']) || !empty($_GET['national_id']) || !empty($_GET['due_from']) || !empty($_GET['due_to']) || !empty($_GET['amount_min']) || !empty($_GET['amount_max']) || !empty($_GET['payment_state']) ? 'open' : '' ?>>
+      <input type="hidden" name="tab" value="<?= e($filters['tab'] ?? 'active') ?>">
+      <input type="hidden" name="page" value="1" data-filter-page>
+      <label class="proma-filter-search"><span>جستجوی مشتری یا قرارداد</span><input name="q" value="<?= e($filters['search'] ?? '') ?>" placeholder="نام، قرارداد، موبایل یا کد ملی"></label>
+      <label><span>شماره قرارداد</span><input name="contract_number" value="<?= e($filters['contract_number'] ?? '') ?>" dir="ltr"></label>
+      <label><span>سررسید از</span><input name="due_from" value="<?= e(!empty($filters['due_from']) ? jdate($filters['due_from']) : '') ?>" placeholder="۱۴۰۵/۰۱/۰۱"></label>
+      <label><span>سررسید تا</span><input name="due_to" value="<?= e(!empty($filters['due_to']) ? jdate($filters['due_to']) : '') ?>" placeholder="۱۴۰۵/۱۲/۲۹"></label>
+      <label><span>مرتب‌سازی</span><select name="sort"><option value="financial"<?= selected($filters['sort'] ?? '', 'financial') ?>>اولویت مالی</option><option value="due_asc"<?= selected($filters['sort'] ?? '', 'due_asc') ?>>قدیمی‌ترین سررسید</option><option value="due_desc"<?= selected($filters['sort'] ?? '', 'due_desc') ?>>جدیدترین سررسید</option><option value="amount_desc"<?= selected($filters['sort'] ?? '', 'amount_desc') ?>>بیشترین مبلغ</option><option value="customer_asc"<?= selected($filters['sort'] ?? '', 'customer_asc') ?>>نام مشتری</option></select></label>
+      <label><span>تعداد در صفحه</span><select name="per_page"><?php foreach ([25, 50, 100] as $size): ?><option value="<?= $size ?>"<?= selected($filters['per_page'] ?? 25, $size) ?>><?= to_persian_digits($size) ?></option><?php endforeach; ?></select></label>
+      <div class="proma-filter-submit"><button class="btn" type="submit">اعمال فیلتر</button><a class="btn secondary" href="<?= e(url('installments')) ?>">پاک‌کردن</a><span class="proma-ajax-status" data-ajax-status></span></div>
+      <details class="proma-filter-drawer full" <?= !empty($filters['customer_name']) || !empty($filters['mobile']) || !empty($filters['national_id']) || !empty($filters['amount_min']) || !empty($filters['amount_max']) ? 'open' : '' ?>>
         <summary>فیلترهای پیشرفته</summary>
-        <div class="form-grid four">
-          <label>شماره تماس<input name="mobile" value="<?= e($_GET['mobile'] ?? '') ?>" inputmode="tel"></label>
-          <label>کد ملی<input name="national_id" value="<?= e($_GET['national_id'] ?? '') ?>" inputmode="numeric"></label>
-          <label>سررسید از<input name="due_from" value="<?= e($_GET['due_from'] ?? '') ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
-          <label>سررسید تا<input name="due_to" value="<?= e($_GET['due_to'] ?? '') ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
-          <label>مبلغ از<input name="amount_min" value="<?= e($_GET['amount_min'] ?? '') ?>" data-money></label>
-          <label>مبلغ تا<input name="amount_max" value="<?= e($_GET['amount_max'] ?? '') ?>" data-money></label>
-          <label>نوع فیلتر
-            <select name="payment_state">
-              <option value="">همه اقساط</option>
-              <option value="paid"<?= selected($_GET['payment_state'] ?? '', 'paid') ?>>پرداخت‌شده</option>
-              <option value="unpaid"<?= selected($_GET['payment_state'] ?? '', 'unpaid') ?>>پرداخت‌نشده</option>
-              <option value="overdue"<?= selected($_GET['payment_state'] ?? '', 'overdue') ?>>معوق</option>
-              <option value="custom"<?= selected($_GET['payment_state'] ?? '', 'custom') ?>>سفارشی</option>
-            </select>
-          </label>
+        <div class="proma-filter-drawer__content">
+          <label><span>نام مشتری</span><input name="customer_name" value="<?= e($filters['customer_name'] ?? '') ?>"></label>
+          <label><span>شماره تماس</span><input name="mobile" value="<?= e($filters['mobile'] ?? '') ?>" inputmode="tel"></label>
+          <label><span>کد ملی</span><input name="national_id" value="<?= e($filters['national_id'] ?? '') ?>" inputmode="numeric"></label>
+          <label><span>مبلغ از</span><input name="amount_min" value="<?= e($filters['amount_min'] ?? '') ?>" data-money></label>
+          <label><span>مبلغ تا</span><input name="amount_max" value="<?= e($filters['amount_max'] ?? '') ?>" data-money></label>
+          <label><span>نوع قسط</span><select name="payment_state"><option value="">همه</option><option value="custom"<?= selected($filters['payment_state'] ?? '', 'custom') ?>>سفارشی</option></select></label>
+          <label class="proma-filter-check"><input type="checkbox" name="exclude_legal_cases" value="1"<?= checked(!empty($filters['exclude_legal_cases'])) ?>><span>قراردادهای دارای پروندهٔ حقوقی فعال نمایش داده نشوند</span></label>
         </div>
       </details>
-      <div class="actions full">
-        <button class="btn secondary" type="submit">اعمال فیلتر</button>
-        <a class="btn small secondary" href="<?= e(url('installments')) ?>">حذف فیلترها</a>
-        <span class="badge info">نتایج: <?= to_persian_digits($pagination['total'] ?? 0) ?></span>
-        <span class="proma-ajax-status" data-ajax-status></span>
-      </div>
     </form>
-  </div>
+    <nav class="proma-status-tabs" aria-label="وضعیت اقساط">
+      <?php foreach (['active' => ['فعال', 'active_count'], 'today' => ['سررسید امروز', 'today_count'], 'overdue' => ['معوق', 'overdue_count'], 'partial' => ['پرداخت جزئی', 'partial_count'], 'paid' => ['پرداخت‌شده', 'paid_count'], 'all' => ['همه', 'all_count']] as $key => [$label, $countKey]): ?>
+        <a class="<?= ($filters['tab'] ?? 'active') === $key ? 'active' : '' ?>" href="<?= e($installmentTabUrl($key)) ?>"><?= e($label) ?><span><?= to_persian_digits($installmentSummary[$countKey] ?? 0) ?></span></a>
+      <?php endforeach; ?>
+    </nav>
+    </div>
+  </section>
 </section>
 <?php endif; ?>
 <div data-ajax-results="installments">
 <?php if ($customerMode && !empty($installmentGroups)): ?>
 <section class="card proma-installment-group-payment">
-  <div class="card-header card-no-border"><div><h2>پرداخت آنلاین چند قسطی</h2><p class="text-muted">اقساط هر قرارداد جداگانه پرداخت می‌شوند و مبلغ اضافه به قسط بعدی همان قرارداد می‌رود.</p></div></div>
+  <div class="card-header card-no-border"><div><h2>پرداخت آنلاین چند قسطی</h2><p class="text-muted">مبلغ فقط بین اقساط انتخاب‌شده و با ترتیب مالی ثابت تخصیص می‌یابد؛ مبلغ اضافی پذیرفته نمی‌شود.</p></div></div>
   <div class="card-body">
     <?php if (!$groupGatewayReady): ?><div class="notice warning">درگاه آنلاین برای پرداخت گروهی فعال یا تنظیم نشده است.</div><?php endif; ?>
     <?php foreach ($installmentGroups as $group): ?>
-      <form method="post" action="<?= e(url('payments/gatewayGroup')) ?>" class="proma-installment-group-form" data-payment-group-form data-disable-on-submit>
-        <?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $group['contract_id'] ?>"><input type="hidden" name="idempotency_key" value="<?= e(bin2hex(random_bytes(24))) ?>">
+      <form method="post" action="<?= e(url('payments/gatewayGroup')) ?>" class="proma-installment-group-form" data-payment-group-form data-quote-url="<?= e(url('contracts/settlementQuote/' . (int) $group['contract_id'])) ?>" data-disable-on-submit>
+        <?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $group['contract_id'] ?>"><input type="hidden" name="idempotency_key" value="<?= e(bin2hex(random_bytes(24))) ?>"><input type="hidden" name="payment_request_uuid" value="<?= e(bin2hex(random_bytes(16))) ?>"><input type="hidden" name="quote_uuid" value="" data-group-quote-uuid>
         <div class="proma-installment-group-head"><strong>قرارداد <?= e($group['contract_number']) ?></strong><span data-group-total><?= money_toman($group['total']) ?></span></div>
         <div class="proma-installment-group-items">
-          <?php foreach ($group['items'] as $groupItem): ?><label class="proma-group-check"><input type="checkbox" name="installment_ids[]" value="<?= (int) $groupItem['id'] ?>" data-group-item data-amount="<?= e((string) (float) ($groupItem['payable'] ?? 0)) ?>" checked><span>قسط <?= to_persian_digits($groupItem['installment_number']) ?> - <?= e(jdate($groupItem['due_date'])) ?></span><strong><?= money_toman($groupItem['payable']) ?></strong></label><?php endforeach; ?>
+          <?php foreach ($group['items'] as $groupItem): ?><label class="proma-group-check"><input type="checkbox" name="installment_ids[]" value="<?= (int) $groupItem['id'] ?>" data-group-item checked><span>قسط <?= to_persian_digits($groupItem['installment_number']) ?> - <?= e(jdate($groupItem['due_date'])) ?></span><strong><?= money_toman($groupItem['payable']) ?></strong></label><?php endforeach; ?>
         </div>
-        <label class="proma-group-amount">مبلغ پرداخت<input name="amount" data-group-amount value="<?= e((string) (int) round($group['total'])) ?>" inputmode="numeric" required></label>
+        <div class="proma-preview-grid" data-group-breakdown aria-live="polite"><span><small>مبلغ تسویه اقساط انتخاب‌شده</small><strong data-group-total><?= money_toman($group['total']) ?></strong></span><span><small>برای مبلغ دلخواه، مبلغ کمتر وارد کنید</small><strong>بدون انتقال به اقساط انتخاب‌نشده</strong></span></div>
+        <label class="proma-group-amount">مبلغ پرداخت<input name="amount" data-group-amount value="<?= e((string) normalize_money($group['total'])) ?>" inputmode="numeric" required aria-describedby="group-payment-help"></label><small id="group-payment-help">پیش از انتقال به درگاه، مبلغ و اقساط روی سرور دوباره بررسی می‌شوند.</small>
         <?php if ($groupGatewayReady): ?>
           <div class="proma-gateway-choice" role="radiogroup" aria-label="انتخاب درگاه پرداخت گروهی">
             <?php foreach ($groupGatewayOptions as $gatewayOption): ?>
@@ -129,26 +157,49 @@ $pageUrl = function ($page) use ($installmentsRoute) {
     <?php endforeach; ?>
   </div>
 </section>
-<script>
-document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
-  var amount = form.querySelector('[data-group-amount]');
-  var refresh = function () {
-    var total = 0;
-    form.querySelectorAll('[data-group-item]:checked').forEach(function (item) { total += Number(item.getAttribute('data-amount') || 0); });
-    amount.value = String(Math.round(total));
-  };
-  form.querySelectorAll('[data-group-item]').forEach(function (item) { item.addEventListener('change', refresh); });
-});
-</script>
+  <script>
+  document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
+    var amount = form.querySelector('[data-group-amount]');
+    var total = form.querySelector('[data-group-total]');
+    var quoteInput = form.querySelector('[data-group-quote-uuid]');
+    var breakdown = form.querySelector('[data-group-breakdown]');
+    var timer = null, controller = null, customAmount = false;
+    amount.addEventListener('input', function () { customAmount = true; });
+    var refresh = function () {
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        var ids = Array.prototype.map.call(form.querySelectorAll('[data-group-item]:checked'), function (item) { return item.value; });
+        if (!ids.length) { quoteInput.value = ''; total.textContent = 'قسطی انتخاب نشده است'; return; }
+        if (controller) controller.abort();
+        controller = new AbortController();
+        var query = ids.map(function (id) { return 'installment_ids[]=' + encodeURIComponent(id); }).join('&');
+        fetch(form.getAttribute('data-quote-url') + '&scope=selected&' + query, { credentials: 'same-origin', signal: controller.signal })
+          .then(function (response) { return response.json(); })
+          .then(function (data) {
+            if (!data.ok) throw new Error(data.message || 'محاسبه مبلغ انجام نشد.');
+            var quote = data.quote || {};
+            quoteInput.value = quote.quote_uuid || '';
+            total.textContent = (quote.formatted && quote.formatted.final_payable) || '۰ تومان';
+            if (!customAmount) amount.value = String(quote.full_settlement_total || quote.final_payable || 0);
+            if (breakdown && quote.formatted) breakdown.innerHTML = '<span><small>مانده اصل</small><strong>' + quote.formatted.principal_total + '</strong></span><span><small>جریمه عادی</small><strong>' + quote.formatted.normal_penalty_total + '</strong></span><span><small>جریمه حقوقی</small><strong>' + quote.formatted.legal_penalty_total + '</strong></span><span><small>پاداش تسویه</small><strong>' + quote.formatted.reward_total + '-</strong></span>';
+          })
+          .catch(function (error) { if (error.name !== 'AbortError') { quoteInput.value = ''; total.textContent = 'نیازمند محاسبه مجدد'; } });
+      }, 650);
+    };
+    form.querySelectorAll('[data-group-item]').forEach(function (item) { item.addEventListener('change', refresh); });
+  });
+  </script>
 <?php endif; ?>
 <section class="card">
   <div class="card-header card-no-border">
     <div class="header-top">
-      <h2><?= $customerMode ? 'اقساط قابل پرداخت' : 'فهرست اقساط' ?></h2>
+      <div><h2><?= $customerMode ? 'اقساط قابل پرداخت' : 'نتایج اقساط' ?></h2><?php if (!$customerMode): ?><span>نمایش <?= to_persian_digits($pagination['total'] ?? 0) ?> نتیجه در تب «<?= e(['active' => 'فعال', 'today' => 'سررسید امروز', 'overdue' => 'معوق', 'partial' => 'پرداخت جزئی', 'paid' => 'پرداخت‌شده', 'all' => 'همه'][$filters['tab'] ?? 'active'] ?? 'فعال') ?>»</span><?php endif; ?></div>
       <?php if (!$customerMode): ?><a class="btn" href="<?= e(url('contracts')) ?>"><i data-feather="file-text"></i><span>افزودن قسط از جزئیات قرارداد</span></a><?php endif; ?>
     </div>
   </div>
-  <div class="table-wrap">
+  <?php if (!$visibleInstallments): ?>
+    <div class="card-body pt-0"><div class="proma-empty-state"><i data-feather="calendar"></i><h3><?= $customerMode ? 'قسط قابل پرداختی وجود ندارد.' : 'نتیجه‌ای برای این تب و فیلترها پیدا نشد.' ?></h3><p><?= $customerMode ? 'با ثبت قرارداد یا نزدیک‌شدن سررسید، اقساط شما در این بخش ظاهر می‌شوند.' : 'تب دیگری را انتخاب کنید یا فیلترها را پاک کنید.' ?></p><?php if (!$customerMode): ?><a class="btn secondary" href="<?= e(url('installments')) ?>">حذف فیلترها</a><?php endif; ?></div></div>
+  <?php else: ?><div class="table-wrap">
     <table>
       <thead>
         <tr>
@@ -156,7 +207,11 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
         </tr>
       </thead>
       <tbody>
-      <?php foreach ($installments as $item): ?>
+       <?php foreach ($visibleInstallments as $item): ?>
+        <?php
+          $contactDirectory = $contractContacts[(int) ($item['contract_id'] ?? 0)] ?? [];
+          $contactDirectoryJson = json_encode($contactDirectory, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?: '[]';
+        ?>
         <tr>
           <td><?= e($item['contract_number']) ?></td>
           <td><?= e($item['customer_name']) ?></td>
@@ -184,17 +239,28 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
               <?php endif; ?>
             <?php else: ?>
               <?php if (!empty($item['payment_allowed'])): ?><button class="btn small secondary" type="button" data-open-modal="manual-<?= (int) $item['id'] ?>">پرداخت دستی</button><?php endif; ?>
+              <button class="proma-icon-button info" type="button" data-open-modal="contact-directory" data-contact-directory="<?= e($contactDirectoryJson) ?>" data-contact-title="تماس‌های قرارداد <?= e($item['contract_number']) ?>" title="تماس با مشتری و ضامن‌ها" aria-label="تماس با مشتری و ضامن‌های قرارداد <?= e($item['contract_number']) ?>"><?= proma_icon('phone') ?></button>
               <button class="btn small warning" type="button" data-open-modal="adjust-<?= (int) $item['id'] ?>">تنظیم</button>
               <?php if (!empty($item['payment_allowed'])): ?><form method="post" action="<?= e(url('installments/markPaid/' . $item['id'])) ?>"><?= csrf_field() ?><button class="btn small success" type="submit">تسویه</button></form><?php endif; ?>
             <?php endif; ?>
           </td>
         </tr>
       <?php endforeach; ?>
-      <?php if (!$installments): ?><tr><td colspan="11" class="empty">قسطی برای نمایش وجود ندارد.</td></tr><?php endif; ?>
       </tbody>
     </table>
   </div>
+  <?php endif; ?>
 </section>
+
+<?php if ($customerMode && $paidInstallments): ?>
+<details class="card proma-paid-installments"<?= count($paidInstallments) <= 3 ? ' open' : '' ?>>
+  <summary><strong>اقساط پرداخت‌شده (<?= to_persian_digits(count($paidInstallments)) ?>)</strong><span>برای مشاهده تاریخ و مبلغ تسویه باز کنید</span></summary>
+  <div class="table-wrap"><table><thead><tr><th>قرارداد</th><th>مشتری</th><th>قسط</th><th>سررسید</th><th>مبلغ پرداخت‌شده</th><th>روش / پیگیری</th><th>تاریخ تسویه</th><th>وضعیت</th></tr></thead><tbody>
+    <?php foreach ($paidInstallments as $item): ?><tr><td><?= e($item['contract_number']) ?></td><td><?= e($item['customer_name']) ?></td><td><?= to_persian_digits($item['installment_number']) ?></td><td><?= e(jdate($item['due_date'])) ?></td><td><?= money_toman($item['paid_amount']) ?></td><td><?= !empty($item['last_payment_method']) ? e(payment_method_label($item['last_payment_method'])) : '—' ?><?php if (!empty($item['last_payment_reference'])): ?><br><small class="ltr"><?= e($item['last_payment_reference']) ?></small><?php endif; ?></td><td><?= !empty($item['effective_settlement_date']) ? e(jdate($item['effective_settlement_date'])) : '—' ?></td><td><span class="badge success">تسویه‌شده</span></td></tr><?php endforeach; ?>
+  </tbody></table></div>
+</details>
+<?php endif; ?>
+<?php if ($cancelledInstallments): ?><details class="card proma-paid-installments"><summary><strong>اقساط لغوشده (<?= to_persian_digits(count($cancelledInstallments)) ?>)</strong></summary><div class="notice warning">اقساط لغوشده از اقساط فعال و قابل پرداخت جدا نگه داشته شده‌اند.</div></details><?php endif; ?>
 
 <?php if ($customerMode): ?>
   <?php foreach ($installments as $item): ?>
@@ -287,6 +353,7 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
     </div>
   <?php endforeach; ?>
 <?php else: ?>
+  <?php if ($projectedPenaltyMessage !== ''): ?><div class="notice info proma-customer-penalty-note"><strong>راهنمای جریمه حقوقی:</strong> <?= e($projectedPenaltyMessage) ?></div><?php endif; ?>
   <?php foreach ($installments as $item): ?>
     <?php if (!empty($item['payment_allowed'])): ?>
     <div class="modal" id="manual-<?= (int) $item['id'] ?>">
@@ -332,11 +399,7 @@ document.querySelectorAll('[data-payment-group-form]').forEach(function (form) {
 <?php endif; ?>
 
 <?php if (!$customerMode && ($pagination['pages'] ?? 1) > 1): ?>
-<nav class="proma-pagination">
-  <?php for ($page = 1; $page <= (int) $pagination['pages']; $page++): ?>
-    <a class="tab-link <?= $page === (int) $pagination['page'] ? 'active' : '' ?>" href="<?= e($pageUrl($page)) ?>"><?= to_persian_digits($page) ?></a>
-  <?php endfor; ?>
-</nav>
+<?= render_pagination($pagination, $pageUrl) ?>
 <?php endif; ?>
 
 </div>

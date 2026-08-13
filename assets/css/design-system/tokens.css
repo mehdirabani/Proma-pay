@@ -13,6 +13,16 @@
   --proma-radius: 8px;
   --proma-shadow: 0 6px 18px rgba(33, 33, 33, .05);
   --proma-control-focus: var(--proma-brand-700);
+  /* Shared UI scale. Keep these values as the single source for page forms,
+     dialogs and compact table controls. */
+  --ui-control-height: 48px;
+  --ui-compact-control-height: 42px;
+  --ui-control-radius: 12px;
+  --ui-control-gap: 8px;
+  --ui-field-gap: 18px;
+  --ui-action-gap: 8px;
+  --ui-focus-ring: 0 0 0 3px rgba(106, 27, 154, .18);
+  --ui-surface-subtle: #f7f7fa;
 }
 
 html { background: var(--proma-canvas); }

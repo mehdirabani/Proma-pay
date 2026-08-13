@@ -12,7 +12,7 @@ $assert = static function ($condition, string $message): void {
 
 $manifest = json_decode((string) file_get_contents($plugin . '/plugin.json'), true);
 $assert(version_compare((string) ($manifest['version'] ?? '0.0.0'), '1.2.3', '>='), 'Plugin version must retain V1.2.3 compatibility.');
-$assert(($manifest['requires_core'] ?? '') === '1.3.2', 'Plugin must require route-scoped asset support from core 1.3.2.');
+$assert((bool) preg_match('/^(?:>=)?1\\.3\\.2$/', trim((string) ($manifest['requires_core'] ?? ''))), 'Plugin must require route-scoped asset support from core 1.3.2 or newer.');
 $routeOrder = array_map(static fn (array $route): string => (string) ($route['path'] ?? ''), $manifest['routes'] ?? []);
 $ledgerPostIndex = array_search('plugin/accounting/ledger/post', $routeOrder, true);
 $ledgerReverseIndex = array_search('plugin/accounting/ledger/reverse/{entryId}', $routeOrder, true);

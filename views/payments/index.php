@@ -1,4 +1,4 @@
-<section class="card">
+<section class="card proma-filter-card">
   <div class="card-header card-no-border">
     <div class="header-top">
       <h2>گزارش پرداخت‌ها</h2>
@@ -6,19 +6,19 @@
     </div>
   </div>
   <div class="card-body">
-    <form method="get" action="<?= e(url('payments')) ?>" class="form-grid four" data-ajax-filter data-ajax-target="[data-ajax-results='payments']">
+    <form method="get" action="<?= e(url('payments')) ?>" class="form-grid four proma-filter-toolbar proma-filter-toolbar--payments" data-ajax-filter data-ajax-target="[data-ajax-results='payments']">
       <input type="hidden" name="route" value="payments">
       <label>از تاریخ<input name="date_from" value="<?= e($_GET['date_from'] ?? '') ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
       <label>تا تاریخ<input name="date_to" value="<?= e($_GET['date_to'] ?? '') ?>" placeholder="۱۴۰۳/۱۲/۲۹"></label>
       <label>شماره قرارداد<input name="contract_number" value="<?= e($_GET['contract_number'] ?? '') ?>"></label>
       <label>مشتری<input name="customer" value="<?= e($_GET['customer'] ?? '') ?>" placeholder="نام، کد ملی یا موبایل"></label>
-      <div class="full actions"><button class="btn" type="submit">اعمال فیلتر</button><span class="proma-ajax-status" data-ajax-status></span></div>
+      <div class="proma-filter-actions"><button class="btn" type="submit">اعمال فیلتر</button><span class="proma-ajax-status" data-ajax-status></span></div>
     </form>
   </div>
 </section>
 
 <div data-ajax-results="payments">
-<section class="card" style="margin-top:16px">
+<section class="card proma-list-section">
   <div class="card-header card-no-border">
     <div class="header-top">
       <h2>سوابق پرداخت</h2>
@@ -70,11 +70,13 @@
               <span class="badge badge-light-success">بدون اصلاحیه</span>
             <?php endif; ?>
           </td>
-          <td class="actions">
-            <a class="btn small secondary" href="<?= e(url('contracts')) ?>">مشاهده</a>
-            <?php if (($payment['status'] ?? '') === 'paid' && !$isCorrected && $paymentType !== 'down_payment'): ?>
-              <button class="btn small warning" type="button" data-open-modal="correct-payment-<?= (int) $payment['id'] ?>">اصلاحیه</button>
-            <?php endif; ?>
+          <td>
+            <div class="proma-table-actions proma-payment-row-actions">
+              <a class="btn small secondary" href="<?= e(url('contracts')) ?>">مشاهده</a>
+              <?php if (($payment['status'] ?? '') === 'paid' && !$isCorrected && $paymentType !== 'down_payment'): ?>
+                <button class="btn small warning" type="button" data-open-modal="correct-payment-<?= (int) $payment['id'] ?>">اصلاحیه</button>
+              <?php endif; ?>
+            </div>
           </td>
         </tr>
       <?php endforeach; ?>

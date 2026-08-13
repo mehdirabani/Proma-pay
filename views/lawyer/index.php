@@ -3,6 +3,7 @@ $legalStages = app_config('legal_stages', []);
 $readyCases = $readyCases ?? [];
 $filedCases = $filedCases ?? [];
 $referredCases = $referredCases ?? [];
+$eligible = $eligible ?? [];
 ?>
 <div data-ajax-results="lawyer">
 <section class="card">
@@ -66,9 +67,30 @@ $referredCases = $referredCases ?? [];
   </section>
 </div>
 <section class="card">
-  <div class="card-header"><h2>ثبت پرونده شکایت</h2></div>
+  <div class="card-header"><h2>قراردادهای واجد شرایط بررسی حقوقی</h2><span class="badge warning"><?= to_persian_digits(count($eligible)) ?></span></div>
   <div class="card-body">
-    <div class="empty">ثبت پرونده حقوقی فقط پس از ارجاع مدیریت فعال می‌شود. وکیل فقط به قرارداد، اقساط معوقه و پرداخت‌های مشتری همان پرونده دسترسی دارد.</div>
+    <div class="notice info">تشکیل پرونده در این بخش داخلی است. اخطار قراردادی و پیش‌نویس‌ها تا زمان ثبت واقعی و تایید صریح در مرجع مربوط، ابلاغ قضایی یا دادخواست ثبت‌شده نیستند.</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>قرارداد</th><th>مشتری</th><th>قدیمی‌ترین سررسید</th><th>روز تاخیر</th><th>اقساط معوق</th><th>مانده موثر</th><th>سیاست</th><th>اقدام</th></tr></thead>
+      <tbody>
+      <?php foreach ($eligible as $item): ?>
+        <tr>
+          <td><?= e($item['contract_number'] ?? '') ?></td>
+          <td><?= e($item['customer_name'] ?? '') ?><br><span class="badge muted"><?= to_persian_digits($item['mobile'] ?? '') ?></span></td>
+          <td><?= e(jdate($item['oldest_due_date'] ?? '')) ?></td>
+          <td><?= to_persian_digits($item['delay_days'] ?? 0) ?></td>
+          <td><?= to_persian_digits($item['overdue_count'] ?? 0) ?></td>
+          <td><?= money_toman($item['overdue_amount'] ?? 0) ?></td>
+          <td>نسخه <?= to_persian_digits($item['policy_version'] ?? 0) ?></td>
+          <td><button class="btn small warning" type="button" data-open-modal="legal-initiate-<?= (int) $item['id'] ?>">تشکیل پرونده داخلی</button></td>
+        </tr>
+        <div class="modal" id="legal-initiate-<?= (int) $item['id'] ?>"><div class="modal-content"><div class="modal-header"><h3>تشکیل پرونده داخلی</h3><button class="icon-btn" type="button" data-close-modal>×</button></div><form method="post" action="<?= e(url('lawyer/create')) ?>"><div class="modal-body form-grid"><?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $item['id'] ?>"><input type="hidden" name="legal_case_request_uuid" value="<?= e(bin2hex(random_bytes(16))) ?>"><div class="full notice warning">این عمل پرونده داخلی ایجاد می‌کند و به معنای ثبت رسمی قضایی یا ابلاغ رسمی نیست.</div><label class="full">یادداشت بررسی اولیه<textarea name="notes" rows="4" placeholder="علت بررسی و اقدامات داخلی"></textarea></label></div><div class="modal-footer"><button class="btn warning" type="submit">ایجاد پرونده داخلی</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div></form></div></div>
+      <?php endforeach; ?>
+      <?php if (!$eligible): ?><tr><td colspan="8" class="empty">در محدوده بررسی فعلی، قرارداد واجد شرایطی یافت نشد.</td></tr><?php endif; ?>
+      </tbody>
+    </table>
   </div>
 </section>
 

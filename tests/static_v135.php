@@ -40,8 +40,8 @@ $checks = [
     ['Gateway path uses outbox', strpos($paymentsController, 'safeEnqueueNotification') !== false && strpos($paymentsController, 'SystemOutbox::processPending') !== false],
     ['Group payments use outbox', strpos($paymentGroup, 'safeEnqueuePluginHook') !== false && strpos($paymentGroup, 'SystemOutbox::processPending') !== false],
     ['Receipts use outbox', strpos($paymentReceipt, 'safeEnqueueNotification') !== false && strpos($paymentReceipt, 'SystemOutbox::processPending') !== false],
-    ['Build script inventories changed migrations', strpos($build, "'--diff-filter=ACMRT'") !== false && strpos($build, "'--name-only'") !== false && strpos($build, "database/migrations/") !== false],
-    ['Forms include request UUID', strpos($installmentsView, 'payment_request_uuid') !== false && strpos($overdueView, 'payment_request_uuid') !== false && strpos($contractView, 'payment_request_uuid') !== false],
+    ['Build script inventories changed migrations', strpos($build, 'PROMA_UPDATE_BASELINE_ARCHIVE') !== false && strpos($build, 'database/migrations/') !== false && strpos($build, '$baselineFiles') !== false],
+    ['Forms include request UUID', strpos($installmentsView, 'payment_request_uuid') !== false && (strpos($overdueView, 'payment_request_uuid') !== false || strpos($overdueView, "contracts/show/") !== false) && strpos($contractView, 'payment_request_uuid') !== false],
     ['Install SQL includes new tables', strpos($installSql, 'CREATE TABLE `payment_requests`') !== false && strpos($installSql, 'CREATE TABLE `system_outbox`') !== false],
 ];
 

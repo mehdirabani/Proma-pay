@@ -1,0 +1,843 @@
+/*
+ * Shared panel language
+ * A compact, RTL-first layer over the template styles. It deliberately
+ * standardises density and hierarchy without changing business-page markup.
+ */
+:root {
+  --proma-panel-radius: 14px;
+  --proma-panel-border: #e7eaf1;
+  --proma-panel-shadow: 0 8px 24px rgba(32, 39, 56, .055);
+  --proma-panel-shadow-hover: 0 12px 30px rgba(32, 39, 56, .09);
+  --proma-panel-title: #182230;
+  --proma-panel-muted: #667085;
+}
+
+.proma-page-content {
+  gap: clamp(16px, 1.45vw, 24px);
+}
+
+/* Keep active sidebar branches visible without CSP-blocked inline styles. */
+.sidebar-submenu.is-open { display: block; }
+
+.proma-page-content > .row {
+  margin-top: 0;
+  margin-bottom: 0;
+  align-items: flex-start;
+}
+
+.proma-page-content .card {
+  border: 1px solid var(--proma-panel-border);
+  border-radius: var(--proma-panel-radius);
+  box-shadow: var(--proma-panel-shadow);
+  overflow: clip;
+}
+
+.proma-page-content .card:hover {
+  box-shadow: var(--proma-panel-shadow-hover);
+}
+
+.proma-page-content .card > .card-header {
+  padding: 18px 20px 10px;
+}
+
+.proma-page-content .card > .card-body {
+  padding: 16px 20px 20px;
+}
+
+.proma-page-content .card-header .header-top > div:first-child {
+  min-width: 0;
+}
+
+.proma-page-content .card-header :is(h2, h3, h4, h5, h6) {
+  color: var(--proma-panel-title);
+  font-weight: 800;
+}
+
+.proma-page-content .card-header :is(.header-top > div > span, .f-light) {
+  display: block;
+  margin-top: 3px;
+  color: var(--proma-panel-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.proma-page-content .table-responsive {
+  border: 1px solid #eef0f4;
+  border-radius: 10px;
+}
+
+.proma-page-content .table > :not(caption) > * > * {
+  padding: 11px 12px;
+}
+
+.proma-page-content .table thead th {
+  color: var(--proma-panel-muted);
+  background: #fafbfc;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.proma-page-content .table tbody td {
+  color: #344054;
+  font-size: 13px;
+}
+
+.proma-page-content .table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.proma-page-content :is(.btn, button, a):focus-visible {
+  outline: 3px solid rgba(106, 27, 154, .24);
+  outline-offset: 2px;
+}
+
+.proma-customer-history {
+  display: grid;
+  gap: clamp(16px, 1.45vw, 24px);
+}
+
+.proma-history-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.proma-history-kpi {
+  min-width: 0;
+  min-height: 118px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--proma-panel-border);
+  border-radius: var(--proma-panel-radius);
+  background: #fff;
+  box-shadow: var(--proma-panel-shadow);
+}
+
+.proma-history-kpi > div {
+  min-width: 0;
+}
+
+.proma-history-kpi :is(small, strong, span) {
+  display: block;
+}
+
+.proma-history-kpi small,
+.proma-history-kpi span {
+  color: var(--proma-panel-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.proma-history-kpi strong {
+  overflow: hidden;
+  margin: 3px 0;
+  color: var(--proma-panel-title);
+  font-size: clamp(18px, 1.45vw, 23px);
+  font-weight: 850;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proma-history-kpi__icon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 14px;
+  background: #f8f7ff;
+}
+
+.proma-history-kpi__icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.proma-history-kpi__icon.is-primary { color: #6d5dfc; background: #f1efff; }
+.proma-history-kpi__icon.is-success { color: #16803c; background: #edf9f0; }
+.proma-history-kpi__icon.is-warning { color: #b54708; background: #fff6e5; }
+
+.proma-purchase-contract-list {
+  width: min(100%, 1080px);
+  display: grid;
+  gap: 14px;
+}
+
+.proma-purchase-contract-card {
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 19px 20px;
+}
+
+.proma-purchase-contract-card__header,
+.proma-purchase-contract-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.proma-purchase-contract-card__header h3 { margin: 1px 0 3px; color: var(--proma-panel-title); font-size: 19px; font-weight: 850; }
+.proma-purchase-contract-card__header small { color: var(--proma-panel-muted); font-size: 12px; }
+
+.proma-purchase-contract-card__amounts,
+.proma-purchase-contract-card__facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.proma-purchase-contract-card__amounts > span,
+.proma-purchase-contract-card__facts > span {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  padding: 10px 11px;
+  border-radius: 9px;
+  background: #fafbfc;
+}
+
+.proma-purchase-contract-card :is(.proma-purchase-contract-card__amounts, .proma-purchase-contract-card__facts) small { color: var(--proma-panel-muted); font-size: 11px; }
+.proma-purchase-contract-card :is(.proma-purchase-contract-card__amounts, .proma-purchase-contract-card__facts) strong { overflow: hidden; color: var(--proma-panel-title); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.proma-purchase-contract-card__facts .is-alert { background: #fff3f2; }
+.proma-purchase-contract-card__facts .is-alert strong { color: #bc352d; }
+
+.proma-payment-progress { margin-top: 15px; }
+.proma-payment-progress > div { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; color: var(--proma-panel-muted); font-size: 12px; }
+.proma-payment-progress > div strong { color: var(--proma-brand-700, #6246ea); }
+.proma-payment-progress > progress { width: 100%; height: 7px; display: block; overflow: hidden; border: 0; border-radius: 999px; background: #eeeefd; accent-color: #6a1b9a; }
+.proma-payment-progress > progress::-webkit-progress-bar { background: #eeeefd; }
+.proma-payment-progress > progress::-webkit-progress-value { background: linear-gradient(90deg, #6a1b9a, #b388ff); }
+.proma-payment-progress > progress::-moz-progress-bar { background: linear-gradient(90deg, #6a1b9a, #b388ff); }
+
+.proma-purchase-contract-card__actions { justify-content: flex-start; flex-wrap: wrap; margin-top: 17px; padding-top: 14px; border-top: 1px solid var(--proma-panel-border); }
+.proma-purchase-contract-card__actions .link-only { margin-inline-start: auto; color: var(--proma-brand-700, #6246ea); font-size: 12px; font-weight: 800; }
+
+.proma-history-overview,
+.proma-history-detail {
+  --bs-gutter-x: 20px;
+  --bs-gutter-y: 20px;
+  align-items: flex-start;
+}
+
+.proma-history-overview > [class*="col-"],
+.proma-history-detail > [class*="col-"] {
+  display: flex;
+  align-items: flex-start;
+}
+
+.proma-history-card {
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  align-self: flex-start;
+}
+
+.proma-history-status-card .card-body {
+  padding-bottom: 18px;
+}
+
+.proma-history-status-card .proma-status-stack {
+  gap: 8px;
+}
+
+.proma-history-status-card .proma-status-stack span {
+  min-height: 48px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fafbfc;
+}
+
+.proma-history-status-card .proma-status-stack b {
+  color: var(--proma-brand-700);
+  font-size: 18px;
+}
+
+.proma-history-table {
+  margin-bottom: 0;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+}
+
+.proma-history-table .table {
+  margin: 0;
+}
+
+.proma-history-table .btn.small {
+  min-height: 32px;
+  padding: 5px 10px;
+}
+
+.proma-history-timeline-card .card-body {
+  padding-bottom: 14px;
+}
+
+.proma-history-timeline-card .proma-timeline-list {
+  gap: 0;
+}
+
+.proma-history-timeline-card .proma-timeline-list li {
+  min-height: 56px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 9px 0;
+}
+
+.proma-history-timeline-card .proma-timeline-list time {
+  max-width: 145px;
+  font-size: 11px;
+  text-align: left;
+}
+
+/* Operational pages: the same information hierarchy works for admin,
+   operator and customer views without forcing a different template shell. */
+.proma-page-intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 16px;
+}
+
+.proma-page-intro h2 {
+  margin: 0;
+  color: var(--proma-panel-title);
+  font-size: clamp(22px, 2vw, 29px);
+  font-weight: 850;
+}
+
+.proma-page-intro p {
+  max-width: 680px;
+  margin: 5px 0 0;
+  color: var(--proma-panel-muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.proma-eyebrow {
+  color: var(--proma-brand-700, #6246ea);
+}
+
+.proma-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.proma-installment-kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.proma-installment-kpis .proma-stat-card { min-height: 94px; padding: 14px; }
+.proma-installment-kpis .proma-stat-card > strong { font-size: clamp(16px, 1.35vw, 21px); }
+
+.proma-stat-card {
+  min-height: 102px;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--proma-panel-border);
+  border-radius: 13px;
+  background: linear-gradient(135deg, #fff, #fbfbff);
+  box-shadow: var(--proma-panel-shadow);
+}
+
+.proma-stat-card > span {
+  color: var(--proma-panel-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.proma-stat-card > strong {
+  overflow: hidden;
+  color: var(--proma-panel-title);
+  font-size: clamp(19px, 1.75vw, 25px);
+  font-weight: 850;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proma-stat-card.is-warning { border-inline-start: 4px solid #f79009; }
+.proma-stat-card.is-danger { border-inline-start: 4px solid #e24c4b; }
+.proma-stat-card.is-success { border-inline-start: 4px solid #12a150; }
+
+.proma-filter-card { margin-bottom: 16px; }
+
+/* Shared filter toolbar for ordinary list pages. The old template's
+   `form-grid` classes remain supported, but the action area is no longer
+   positioned with per-page margins. */
+.proma-filter-toolbar,
+.proma-filter-toolbar.form-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: end;
+  gap: var(--ui-field-gap, 18px) 16px;
+}
+
+.proma-filter-toolbar > label {
+  min-width: 0;
+  display: grid;
+  gap: var(--ui-control-gap, 8px);
+  margin: 0;
+  color: var(--proma-panel-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.proma-filter-toolbar > label > :is(input, select) { min-height: var(--ui-control-height, 48px); }
+.proma-filter-toolbar--payments > label,
+.proma-filter-toolbar--users > label { grid-column: span 3; }
+.proma-filter-toolbar--customers > label:first-of-type { grid-column: span 7; }
+.proma-filter-toolbar--customers > label:nth-of-type(2) { grid-column: span 3; }
+.proma-filter-toolbar--contracts > label { grid-column: span 10; }
+
+.proma-filter-actions {
+  min-height: var(--ui-control-height, 48px);
+  display: flex;
+  align-items: center;
+  align-self: end;
+  flex-wrap: wrap;
+  gap: var(--ui-action-gap, 8px);
+}
+
+.proma-filter-toolbar--payments .proma-filter-actions,
+.proma-filter-toolbar--users .proma-filter-actions { grid-column: 1 / -1; }
+.proma-filter-toolbar--customers .proma-filter-actions,
+.proma-filter-toolbar--contracts .proma-filter-actions { grid-column: span 2; }
+
+.proma-filter-actions .btn { min-height: var(--ui-control-height, 48px); }
+.proma-list-section { margin-top: 0; }
+
+/* A contact directory is rendered once in the app shell and populated with
+   safe text nodes by app.js. It intentionally uses the normal dialog
+   vocabulary so keyboard and backdrop behaviour stay identical. */
+.proma-contact-modal { width: min(560px, calc(100vw - 32px)); }
+.proma-contact-directory {
+  display: grid;
+  gap: 10px;
+  max-height: min(58dvh, 520px);
+  overflow: auto;
+}
+.proma-contact-directory__empty { margin: 0; color: var(--proma-panel-muted); line-height: 1.8; }
+.proma-contact-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--proma-panel-border);
+  border-radius: 10px;
+  background: #fff;
+}
+.proma-contact-row__identity { min-width: 0; display: grid; gap: 3px; }
+.proma-contact-row__identity strong { overflow: hidden; color: var(--proma-panel-title); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.proma-contact-row__identity small { color: var(--proma-panel-muted); font-size: 12px; }
+.proma-contact-row__actions { display: flex; align-items: center; gap: 7px; }
+.proma-contact-row__actions .btn { min-height: var(--ui-compact-control-height, 42px); }
+.proma-contact-row__actions .proma-icon-button { width: var(--ui-compact-control-height, 42px); min-width: var(--ui-compact-control-height, 42px); height: var(--ui-compact-control-height, 42px); padding: 0; }
+
+/* The template made cards stretch to the height of their grid row. Medal
+   descriptions are optional, so stretching produced the tall empty cards
+   seen in the management page. */
+.proma-medal-grid { align-items: start; grid-auto-rows: auto; }
+.proma-medal-grid .proma-medal-card {
+  height: auto !important;
+  min-height: 0 !important;
+  align-self: start;
+}
+.proma-medal-grid .proma-medal-card footer { margin-top: 14px; }
+.proma-medal-grid .proma-medal-card :is(p, dd, small) { overflow-wrap: anywhere; word-break: normal; }
+
+.proma-operational-filter {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.proma-operational-filter label,
+.proma-filter-drawer__content label {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  color: var(--proma-panel-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.proma-operational-filter :is(input, select),
+.proma-filter-drawer__content :is(input, select) {
+  width: 100%;
+  min-height: var(--ui-control-height, 48px);
+  border-radius: 9px;
+}
+
+.proma-operational-filter .proma-filter-check,
+.proma-filter-drawer__content .proma-filter-check {
+  min-height: 42px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--proma-panel-border);
+  border-radius: 9px;
+  color: #475467;
+  background: #fff;
+  line-height: 1.55;
+}
+
+.proma-operational-filter .proma-filter-check input,
+.proma-filter-drawer__content .proma-filter-check input {
+  width: 17px;
+  min-width: 17px;
+  min-height: 17px;
+  margin: 0;
+  accent-color: var(--proma-brand-700, #6246ea);
+}
+
+.proma-operational-filter .proma-filter-check span,
+.proma-filter-drawer__content .proma-filter-check span {
+  min-width: 0;
+  font-size: 11px;
+}
+
+.proma-operational-filter .proma-filter-search { grid-column: span 2; }
+
+.proma-filter-submit {
+  min-height: var(--ui-control-height, 48px);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.proma-filter-submit .btn { min-height: var(--ui-control-height, 48px); }
+
+.proma-filter-drawer {
+  grid-column: 1 / -1;
+  border-top: 1px dashed var(--proma-panel-border);
+  padding-top: 10px;
+}
+
+.proma-filter-drawer > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  cursor: pointer;
+  color: var(--proma-brand-700, #6246ea);
+  font-size: 12px;
+  font-weight: 800;
+  list-style: none;
+}
+
+.proma-filter-drawer > summary::-webkit-details-marker { display: none; }
+
+.proma-filter-drawer__content {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.proma-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.proma-filter-chips span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 29px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  color: #4b4563;
+  background: #f1efff;
+  font-size: 11px;
+}
+
+.proma-filter-chips a { color: var(--proma-brand-700, #6246ea); font-size: 12px; font-weight: 800; }
+
+.proma-status-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.proma-status-tabs a {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 6px 11px;
+  border: 1px solid var(--proma-panel-border);
+  border-radius: 9px;
+  color: var(--proma-panel-muted);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.proma-status-tabs a span {
+  min-width: 20px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  color: inherit;
+  background: rgba(98, 70, 234, .08);
+  font-size: 11px;
+  text-align: center;
+}
+
+.proma-status-tabs a.active {
+  border-color: var(--proma-brand-700, #6246ea);
+  color: #fff;
+  background: var(--proma-brand-700, #6246ea);
+}
+
+.proma-status-tabs a.active span { background: rgba(255, 255, 255, .2); }
+
+.proma-empty-state {
+  min-height: 200px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 9px;
+  padding: 26px;
+  color: var(--proma-panel-muted);
+  text-align: center;
+}
+
+.proma-empty-state :is(svg, i) { width: 32px; height: 32px; color: var(--proma-brand-700, #6246ea); }
+.proma-empty-state h3 { margin: 0; color: var(--proma-panel-title); font-size: 16px; font-weight: 850; }
+.proma-empty-state p { max-width: 470px; margin: 0; font-size: 12px; line-height: 1.8; }
+
+.proma-overdue-table { margin-bottom: 0; }
+.proma-overdue-table table { min-width: 990px; margin: 0; }
+.proma-overdue-table td > small,
+.proma-metric-pair :is(span, small) { display: block; margin-top: 4px; color: var(--proma-panel-muted); font-size: 11px; line-height: 1.55; }
+.proma-metric-pair > strong { color: var(--proma-panel-title); font-size: 13px; }
+
+.proma-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.proma-row-actions .icon-btn {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--proma-panel-border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.proma-action-menu { position: relative; }
+.proma-action-menu > summary {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border: 1px solid var(--proma-panel-border);
+  border-radius: 8px;
+  background: #fff;
+  list-style: none;
+}
+.proma-action-menu > summary::-webkit-details-marker { display: none; }
+.proma-action-menu > div {
+  min-width: 145px;
+  position: absolute;
+  z-index: 50;
+  inset-inline-end: 0;
+  top: calc(100% + 5px);
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--proma-panel-border);
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(31, 37, 51, .14);
+}
+.proma-action-menu > div a { padding: 9px 10px; color: #344054; font-size: 12px; white-space: nowrap; }
+.proma-action-menu > div a:hover { background: #f7f6ff; color: var(--proma-brand-700, #6246ea); }
+
+.proma-overdue-mobile-list { display: none; }
+
+body.dark-only :is(.proma-stat-card, .proma-status-tabs a, .proma-row-actions .icon-btn, .proma-action-menu > summary, .proma-action-menu > div),
+[data-theme="dark"] :is(.proma-stat-card, .proma-status-tabs a, .proma-row-actions .icon-btn, .proma-action-menu > summary, .proma-action-menu > div) {
+  border-color: var(--proma-line);
+  background: var(--proma-surface);
+}
+
+@media (max-width: 991.98px) {
+  .proma-filter-toolbar--payments > label,
+  .proma-filter-toolbar--users > label { grid-column: span 4; }
+  .proma-filter-toolbar--customers > label:first-of-type { grid-column: span 7; }
+  .proma-filter-toolbar--customers > label:nth-of-type(2) { grid-column: span 3; }
+  .proma-filter-toolbar--contracts > label { grid-column: span 9; }
+  .proma-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .proma-operational-filter { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .proma-filter-drawer__content { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .proma-purchase-contract-card__amounts,
+  .proma-purchase-contract-card__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .proma-history-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .proma-history-kpi:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .proma-filter-toolbar,
+  .proma-filter-toolbar.form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .proma-filter-toolbar > label,
+  .proma-filter-toolbar--payments > label,
+  .proma-filter-toolbar--users > label,
+  .proma-filter-toolbar--customers > label:first-of-type,
+  .proma-filter-toolbar--customers > label:nth-of-type(2),
+  .proma-filter-toolbar--contracts > label { grid-column: span 1; }
+  .proma-filter-toolbar--contracts > label { grid-column: 1 / -1; }
+  .proma-filter-toolbar--payments .proma-filter-actions,
+  .proma-filter-toolbar--users .proma-filter-actions,
+  .proma-filter-toolbar--customers .proma-filter-actions,
+  .proma-filter-toolbar--contracts .proma-filter-actions { grid-column: 1 / -1; }
+  .proma-contact-row { grid-template-columns: minmax(0, 1fr); }
+  .proma-contact-row__actions { width: 100%; }
+  .proma-contact-row__actions .btn { flex: 1 1 auto; }
+  .proma-page-intro { align-items: stretch; flex-direction: column; margin-bottom: 14px; }
+  .proma-page-intro > .btn { align-self: flex-start; }
+  .proma-kpi-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-bottom: 12px; }
+  .proma-stat-card { min-height: 86px; padding: 13px; }
+  .proma-stat-card > strong { font-size: 18px; }
+  .proma-operational-filter { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+  .proma-operational-filter .proma-filter-search,
+  .proma-filter-drawer { grid-column: 1 / -1; }
+  .proma-filter-submit { grid-column: 1 / -1; }
+  .proma-filter-drawer__content { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+  .proma-status-tabs { margin-top: 13px; }
+  .proma-overdue-table { display: none; }
+  .proma-overdue-mobile-list { display: grid; gap: 10px; }
+  .proma-overdue-mobile-card { display: grid; gap: 13px; padding: 14px; border: 1px solid var(--proma-panel-border); border-radius: 11px; background: #fff; }
+  .proma-overdue-mobile-card header,
+  .proma-overdue-mobile-card footer { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
+  .proma-overdue-mobile-card header > div { min-width: 0; display: grid; gap: 3px; }
+  .proma-overdue-mobile-card header small { color: var(--proma-panel-muted); font-size: 11px; }
+  .proma-overdue-mobile-card__metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+  .proma-overdue-mobile-card__metrics span { min-width: 0; display: grid; gap: 3px; padding: 8px; border-radius: 8px; background: #fafbfc; }
+  .proma-overdue-mobile-card__metrics small { color: var(--proma-panel-muted); font-size: 10px; }
+  .proma-overdue-mobile-card__metrics strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+  .proma-overdue-mobile-card footer { justify-content: flex-start; }
+  .proma-purchase-contract-card { padding: 16px; }
+  .proma-purchase-contract-card__header { align-items: flex-start; }
+  .proma-purchase-contract-card__actions .link-only { width: 100%; margin-inline-start: 0; }
+
+  .proma-page-content .card > .card-header {
+    padding: 16px 16px 9px;
+  }
+
+  .proma-page-content .card > .card-body {
+    padding: 14px 16px 16px;
+  }
+
+  .proma-history-kpis {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .proma-history-kpi,
+  .proma-history-kpi:last-child {
+    grid-column: auto;
+    min-height: 96px;
+    padding: 14px;
+  }
+
+  .proma-history-overview,
+  .proma-history-detail {
+    --bs-gutter-x: 12px;
+    --bs-gutter-y: 16px;
+  }
+
+  .proma-history-timeline-card .proma-timeline-list li {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .proma-history-timeline-card .proma-timeline-list time {
+    grid-column: 2;
+    max-width: none;
+    text-align: right;
+  }
+
+  .proma-history-table {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .proma-history-overview .proma-history-table .table {
+    min-width: 660px;
+  }
+
+  .proma-history-detail .proma-history-table .table {
+    min-width: 460px;
+  }
+}
+
+@media (max-width: 430px) {
+  .proma-filter-toolbar,
+  .proma-filter-toolbar.form-grid { grid-template-columns: minmax(0, 1fr); }
+  .proma-filter-toolbar > label,
+  .proma-filter-toolbar--payments > label,
+  .proma-filter-toolbar--users > label,
+  .proma-filter-toolbar--customers > label:first-of-type,
+  .proma-filter-toolbar--customers > label:nth-of-type(2) { grid-column: 1 / -1; }
+  .proma-kpi-grid,
+  .proma-operational-filter,
+  .proma-filter-drawer__content { grid-template-columns: minmax(0, 1fr); }
+  .proma-purchase-contract-card__amounts,
+  .proma-purchase-contract-card__facts { grid-template-columns: minmax(0, 1fr); }
+  .proma-overdue-mobile-card__metrics { grid-template-columns: minmax(0, 1fr); }
+}
+
+body.dark-only .proma-page-content .card,
+[data-theme="dark"] .proma-page-content .card,
+body.dark-only .proma-history-kpi,
+[data-theme="dark"] .proma-history-kpi {
+  border-color: var(--proma-line);
+  background: var(--proma-surface);
+}
+
+body.dark-only .proma-page-content .table thead th,
+[data-theme="dark"] .proma-page-content .table thead th,
+body.dark-only .proma-history-status-card .proma-status-stack span,
+[data-theme="dark"] .proma-history-status-card .proma-status-stack span {
+  background: rgba(255, 255, 255, .04);
+}
+
+body.dark-only .proma-page-content .table tbody td,
+[data-theme="dark"] .proma-page-content .table tbody td,
+body.dark-only .proma-page-content .card-header :is(h2, h3, h4, h5, h6),
+[data-theme="dark"] .proma-page-content .card-header :is(h2, h3, h4, h5, h6),
+body.dark-only .proma-history-kpi strong,
+[data-theme="dark"] .proma-history-kpi strong {
+  color: var(--proma-ink);
+}

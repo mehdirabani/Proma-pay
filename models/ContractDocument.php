@@ -121,16 +121,59 @@ TEXT;
         return self::fetchAll('SELECT * FROM contract_items WHERE contract_id = ? ORDER BY id', [(int) $contractId]);
     }
 
+    public static function itemsForContracts(array $contractIds)
+    {
+        return self::groupedByContract('contract_items', $contractIds);
+    }
+
     public static function guarantees($contractId)
     {
         self::ensureSchema();
         return self::fetchAll('SELECT * FROM contract_guarantees WHERE contract_id = ? ORDER BY id', [(int) $contractId]);
     }
 
+    public static function guaranteesForContracts(array $contractIds)
+    {
+        return self::groupedByContract('contract_guarantees', $contractIds);
+    }
+
     public static function guarantorPeople($contractId)
     {
         self::ensureSchema();
         return self::fetchAll('SELECT * FROM contract_guarantor_people WHERE contract_id = ? ORDER BY id', [(int) $contractId]);
+    }
+
+    public static function guarantorPeopleForContracts(array $contractIds)
+    {
+        return self::groupedByContract('contract_guarantor_people', $contractIds);
+    }
+
+    /**
+     * Contract index pages preload edit dialogs. Fetch every relation for the
+     * visible page at once instead of issuing one query per contract/dialog.
+     */
+    protected static function groupedByContract($table, array $contractIds)
+    {
+        self::ensureSchema();
+        $allowed = ['contract_items', 'contract_guarantees', 'contract_guarantor_people'];
+        if (!in_array($table, $allowed, true)) {
+            throw new InvalidArgumentException('رابط سند قرارداد معتبر نیست.');
+        }
+        $contractIds = array_values(array_unique(array_filter(array_map('intval', $contractIds))));
+        if (!$contractIds) {
+            return [];
+        }
+
+        $result = array_fill_keys($contractIds, []);
+        $placeholders = implode(',', array_fill(0, count($contractIds), '?'));
+        $rows = self::fetchAll(
+            'SELECT * FROM `' . $table . '` WHERE contract_id IN (' . $placeholders . ') ORDER BY contract_id ASC, id ASC',
+            $contractIds
+        );
+        foreach ($rows as $row) {
+            $result[(int) $row['contract_id']][] = $row;
+        }
+        return $result;
     }
 
     public static function document($contractId)

@@ -36,6 +36,18 @@ $staticTests = [
     'tests/static_v145.php',
     'tests/session_v144.php',
     'tests/update_v144.php',
+    'tests/request_flood_guard_v148.php',
+    'tests/contract_preview_storm_v149.php',
+    'tests/installment_settlement_engine_v150.php',
+    'tests/static_v150.php',
+    'tests/static_v151.php',
+    'tests/static_ui_panels_v153.php',
+    'tests/static_v154.php',
+    'tests/static_v155.php',
+    'tests/legal_penalty_projection_v156.php',
+    'tests/static_v156.php',
+    'tests/static_v157.php',
+    'tests/static_v158.php',
     'tests/static_accounting_update_2014.php',
     'plugins/PromaAccounting/tests/static.php',
     'plugins/PromaAccounting/tests/v110.php',
@@ -64,6 +76,14 @@ $integrationTests = [
     'tests/integration_v140_core_workflows.php',
     'tests/integration_v141_release_blockers.php',
     'tests/integration_v143_release.php',
+    'tests/integration_settlement_migration_v151.php',
+    'tests/integration_installment_settlement_v150.php',
+    'tests/integration_installment_settlement_concurrency_v150.php',
+    'tests/integration_legal_workflow_v150.php',
+    'tests/integration_legal_penalty_projection_v156.php',
+    'tests/integration_contract_installment_management_v157.php',
+    'tests/integration_legal_financial_summary_v158.php',
+    'tests/integration_overdue_aggregation_v153.php',
     'tests/http_v141_role_smoke.php',
     'tests/http_v143_modal_smoke.php',
     'tests/Performance/AccountingDashboardMariaDbTest.php',
@@ -118,8 +138,14 @@ foreach (['PROMA_TEST_DB_DSN', 'PROMA_QA_BASE_URL'] as $requiredEnvironment) {
 
 if (!$failed) {
     echo "[PHASE] Database and HTTP integration tests\n";
-    foreach ($integrationTests as $test) {
-        $run($test);
+    // A few integration tests intentionally exercise plugin state. Rebuild the
+    // isolated QA fixture immediately before the HTTP suite so its result is
+    // independent of the static-test execution order.
+    $run('tests/qa_seed_roles_v150.php');
+    if (!$failed) {
+        foreach ($integrationTests as $test) {
+            $run($test);
+        }
     }
 }
 

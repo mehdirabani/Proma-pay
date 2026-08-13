@@ -5,8 +5,6 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $versionInfo = require $root . '/config/version.php';
 $version = (string) ($versionInfo['application'] ?? '0.0.0');
-$accountingManifest = json_decode((string) file_get_contents($root . '/plugins/PromaAccounting/plugin.json'), true, 512, JSON_THROW_ON_ERROR);
-$accountingVersion = (string) ($accountingManifest['version'] ?? '0.0.0');
 if (!class_exists('ZipArchive')) {
     throw new RuntimeException('PHP ZipArchive extension is required.');
 }
@@ -34,9 +32,9 @@ $assertSafeNames = static function (ZipArchive $zip, string $label) use ($assert
 };
 
 $corePath = $root . '/dist/core/PromaPay-v' . $version . '.zip';
-$updatePath = $root . '/dist/core/PromaPay-Update-v' . $version . '.zip';
-$updateManifestPath = $root . '/dist/core/PromaPay-Update-v' . $version . '-manifest.json';
-$pluginPath = $root . '/dist/plugins/PromaAccounting-v' . $accountingVersion . '.zip';
+$updatePath = $root . '/dist/updates/PromaPay-Update-v' . $version . '.zip';
+$updateManifestPath = $root . '/dist/updates/PromaPay-Update-v' . $version . '-manifest.json';
+$pluginPath = '';
 $checksumPath = $root . '/dist/core/SHA256SUMS.txt';
 $releaseNotesPath = $root . '/dist/core/RELEASE_NOTES-v' . $version . '.md';
 $testReportPath = $root . '/dist/core/TEST_REPORT-v' . $version . '.md';
@@ -47,6 +45,12 @@ $coreManifestRaw = $core->getFromName('release-manifest.json');
 $assert(is_string($coreManifestRaw), 'Core release-manifest.json is missing.');
 $coreManifest = json_decode($coreManifestRaw, true, 512, JSON_THROW_ON_ERROR);
 $assert(($coreManifest['version'] ?? '') === $version, 'Core archive version is incorrect.');
+$coreFileHashes = [];
+foreach (($coreManifest['files'] ?? []) as $file) {
+    if (is_array($file) && !empty($file['path']) && !empty($file['sha256'])) {
+        $coreFileHashes[(string) $file['path']] = strtolower((string) $file['sha256']);
+    }
+}
 $assert($core->locateName('install.php') !== false, 'Core archive does not contain install.php.');
 $assert(trim((string) $core->getFromName('health-static.txt')) === 'proma-static-ok', 'Core archive does not contain the static health probe.');
 foreach (['config/database.php', 'installed.lock', '.env', '1.xlsx'] as $forbidden) {
@@ -56,9 +60,24 @@ for ($i = 0; $i < $core->numFiles; $i++) {
     $name = str_replace('\\', '/', (string) $core->getNameIndex($i));
     $assert(strpos($name, 'plugins/PromaAccounting/') !== 0 && strpos($name, 'plugins/PromaZarinpal/') !== 0, 'Core archive contains optional plugin source: ' . $name);
     $assert(strpos($name, 'storage/secure_uploads/') !== 0, 'Core archive contains secure user uploads.');
-    foreach (['docs/', 'electron/', 'html/', 'scripts/', 'tests/', 'tools/'] as $developmentPrefix) {
+    if (strpos($name, 'html/') === 0) {
+        $assert(strpos($name, 'html/RTL/assets/') === 0, 'Core archive contains a non-runtime HTML asset: ' . $name);
+    }
+    foreach (['docs/', 'electron/', 'scripts/', 'tests/', 'tools/'] as $developmentPrefix) {
         $assert(strpos($name, $developmentPrefix) !== 0, 'Core archive contains development-only content: ' . $name);
     }
+}
+foreach ([
+    'html/RTL/assets/css/vendors/bootstrap.rtl.min.css',
+    'html/RTL/assets/css/style.css',
+    'html/RTL/assets/css/responsive.css',
+    'html/RTL/assets/js/jquery.min.js',
+    'html/RTL/assets/js/bootstrap/bootstrap.bundle.min.js',
+    'html/RTL/assets/js/login.js',
+    'html/RTL/assets/js/sidebar-menu.js',
+    'html/RTL/assets/images/favicon.png',
+] as $runtimeAsset) {
+    $assert($core->locateName($runtimeAsset) !== false, 'Core archive is missing required UI runtime asset: ' . $runtimeAsset);
 }
 $core->close();
 
@@ -68,29 +87,53 @@ $updateManifestRaw = $update->getFromName('proma-update.json');
 $assert(is_string($updateManifestRaw), 'Update proma-update.json is missing.');
 $updateManifest = json_decode($updateManifestRaw, true, 512, JSON_THROW_ON_ERROR);
 $assert(($updateManifest['version'] ?? '') === $version, 'Update archive version is incorrect.');
-$assert(($updateManifest['minimum_version'] ?? '') === '1.4.2', 'Update minimum version must be V1.4.2.');
-$assert(trim((string) $update->getFromName('health-static.txt')) === 'proma-static-ok', 'Update archive does not contain the static health probe.');
-foreach ([
-    'database/migrations/2026_07_22_release_v143.sql',
-    'database/migrations/2026_07_23_release_v144.sql',
-] as $requiredMigration) {
-    $assert(in_array($requiredMigration, $updateManifest['migrations'] ?? [], true), $requiredMigration . ' is absent from the update manifest.');
+$baseline = $updateManifest['baseline'] ?? [];
+$baselineVersion = (string) ($baseline['version'] ?? '');
+$assert(preg_match('/^\d+\.\d+\.\d+$/', $baselineVersion) === 1, 'Update baseline version is invalid.');
+$assert(($updateManifest['minimum_version'] ?? '') === $baselineVersion, 'Update minimum version must equal its verified baseline.');
+$baselinePath = trim((string) getenv('PROMA_UPDATE_BASELINE_ARCHIVE'));
+if ($baselinePath === '') {
+    $baselinePath = $root . '/dist/core/PromaPay-v' . $baselineVersion . '.zip';
 }
-$v143Migration = $update->getFromName('database/migrations/2026_07_22_release_v143.sql');
-$assert(is_string($v143Migration), 'Corrected V1.4.3 migration is absent from the update archive.');
-$assert(!preg_match('/\bDELETE\s+FROM\b/i', $v143Migration), 'Update archive contains the rejected destructive V1.4.3 migration.');
+$baselineZip = $open($baselinePath);
+$baselineRaw = $baselineZip->getFromName('release-manifest.json');
+$baselineZip->close();
+$assert(is_string($baselineRaw) && hash_equals((string) ($baseline['release_manifest_sha256'] ?? ''), hash('sha256', $baselineRaw)), 'Update baseline manifest checksum is invalid.');
+$baselineManifest = json_decode($baselineRaw, true, 512, JSON_THROW_ON_ERROR);
+$baselineHashes = [];
+foreach (($baselineManifest['files'] ?? []) as $file) {
+    if (is_array($file) && !empty($file['path']) && !empty($file['sha256'])) {
+        $baselineHashes[(string) $file['path']] = strtolower((string) $file['sha256']);
+    }
+}
+$assert($update->locateName('UPDATE_README.md') !== false, 'Differential update instruction file is missing.');
+$assert(count($updateManifest['files'] ?? []) < count($baselineHashes), 'Update archive is not differential; it contains the full installer inventory.');
 foreach (($updateManifest['files'] ?? []) as $file) {
     $source = (string) ($file['source'] ?? '');
     $assert($source !== '' && strpos($source, 'plugins/') !== 0 && $source !== 'config/database.php' && strpos($source, 'storage/') !== 0, 'Update manifest contains a forbidden target: ' . $source);
     $content = $update->getFromName($source);
     $assert(is_string($content), 'Update file is absent from the archive: ' . $source);
     $assert(hash_equals((string) ($file['sha256'] ?? ''), hash('sha256', $content)), 'Update checksum mismatch: ' . $source);
+    $assert(($coreFileHashes[$source] ?? '') === hash('sha256', $content), 'Update file is not identical to the target core package: ' . $source);
+    $assert(($file['expected_previous_sha256'] ?? null) === ($baselineHashes[$source] ?? null), 'Update baseline hash mismatch: ' . $source);
+    $assert(($baselineHashes[$source] ?? '') !== hash('sha256', $content), 'Update includes an unchanged baseline file: ' . $source);
 }
 $update->close();
 
 $assert(is_file($updateManifestPath), 'Update sidecar manifest is missing.');
 $sidecar = json_decode((string) file_get_contents($updateManifestPath), true, 512, JSON_THROW_ON_ERROR);
 $assert(($sidecar['version'] ?? '') === $version, 'Update sidecar version is incorrect.');
+
+$checksumLines = is_file($checksumPath) ? file($checksumPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
+$pluginArchives = [];
+foreach ($checksumLines as $line) {
+    if (preg_match('/\\s{2}(PromaAccounting-v(\\d+\\.\\d+\\.\\d+)\\.zip)$/', trim((string) $line), $match)) {
+        $pluginArchives[] = ['name' => $match[1], 'version' => $match[2]];
+    }
+}
+$assert(count($pluginArchives) === 1, 'SHA256SUMS.txt must identify exactly one Accounting archive.');
+$accountingVersion = $pluginArchives[0]['version'];
+$pluginPath = $root . '/dist/plugins/' . $pluginArchives[0]['name'];
 
 $plugin = $open($pluginPath);
 $assertSafeNames($plugin, 'Proma Accounting archive');
@@ -101,7 +144,6 @@ $assert(($pluginJson['id'] ?? '') === 'proma-accounting', 'Proma Accounting plug
 $assert(($pluginJson['version'] ?? '') === $accountingVersion, 'Proma Accounting archive version is invalid.');
 $plugin->close();
 
-$checksumLines = is_file($checksumPath) ? file($checksumPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
 $assert(is_array($checksumLines) && count($checksumLines) === 3, 'SHA256SUMS.txt must contain exactly the Core, update and Accounting archives.');
 $targets = [basename($corePath) => $corePath, basename($updatePath) => $updatePath, basename($pluginPath) => $pluginPath];
 foreach ($checksumLines as $line) {
@@ -116,13 +158,13 @@ $assert($targets === [], 'One or more release archives are absent from SHA256SUM
 $assert(is_file($releaseNotesPath) && filesize($releaseNotesPath) > 300, 'Release notes are missing or incomplete.');
 $assert(is_file($testReportPath) && filesize($testReportPath) > 1000, 'Final test report is missing or incomplete.');
 
-$versionSlug = str_replace('.', '-', $version);
-$coreAliasPath = $root . '/dist/core/proma-pay_v' . $versionSlug . '.zip';
-$updateAliasPath = $root . '/dist/core/proma-update_v' . $versionSlug . '.zip';
-$updateManifestAliasPath = $root . '/dist/core/proma-update_v' . $versionSlug . '-manifest.json';
-$assert(is_file($coreAliasPath) && hash_equals(hash_file('sha256', $corePath), hash_file('sha256', $coreAliasPath)), 'Core marketplace alias is missing or differs.');
-$assert(is_file($updateAliasPath) && hash_equals(hash_file('sha256', $updatePath), hash_file('sha256', $updateAliasPath)), 'Update marketplace alias is missing or differs.');
-$assert(is_file($updateManifestAliasPath) && hash_equals(hash_file('sha256', $updateManifestPath), hash_file('sha256', $updateManifestAliasPath)), 'Update manifest alias is missing or differs.');
+foreach ([
+    $root . '/dist/core/proma-pay_v*.zip',
+    $root . '/dist/updates/proma-update_v*.zip',
+    $root . '/dist/updates/proma-update_v*-manifest.json',
+] as $legacyPattern) {
+    $assert((glob($legacyPattern) ?: []) === [], 'Legacy duplicate release alias remains: ' . $legacyPattern);
+}
 
 $extractRoot = sys_get_temp_dir() . '/proma-release-verify-' . bin2hex(random_bytes(6));
 if (!mkdir($extractRoot, 0700, true) && !is_dir($extractRoot)) {

@@ -83,15 +83,14 @@ $healthCards = [
       <div class="card-body pt-0">
         <div class="proma-admin-health-list">
           <?php foreach ($healthCards as $item): ?>
+            <?php $healthTone = $item['value'] > 65 ? 'success' : ($item['value'] > 35 ? 'warning' : 'danger'); ?>
             <div class="proma-admin-health">
               <div>
                 <strong><?= e($item['label']) ?></strong>
                 <small><?= $item['hint'] ?></small>
               </div>
               <span><?= to_persian_digits($item['value']) ?>٪</span>
-              <div class="progress sm-progress-bar">
-                <div class="progress-bar <?= $item['value'] > 65 ? 'bg-success' : ($item['value'] > 35 ? 'bg-warning' : 'bg-danger') ?>" style="width: <?= e(min(100, max(0, $item['value']))) ?>%"></div>
-              </div>
+              <progress class="proma-admin-health-progress is-<?= e($healthTone) ?>" value="<?= e(min(100, max(0, $item['value']))) ?>" max="100" aria-label="<?= e($item['label']) ?>"></progress>
             </div>
           <?php endforeach; ?>
         </div>

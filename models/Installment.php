@@ -36,13 +36,11 @@ class Installment extends Model
             array_push($params, $needle, $needle, $needle, $needle);
         }
         self::appendAdvancedFilters($filters, $where, $params);
-        $orderBy = !empty($filters['custom_last'])
-            ? 'COALESCE(i.is_custom, 0) ASC, i.installment_number ASC, i.due_date ASC, i.id ASC'
-            : 'i.due_date ASC, i.id ASC';
+        $orderBy = self::financialOrderBy(!empty($filters['custom_last']));
         $sql = "SELECT i.*, c.contract_number, c.customer_id, c.status AS contract_status, c.legal_status AS contract_legal_status,
                 u.full_name AS customer_name, u.mobile, u.national_id,
                 (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_case_count,
-                (SELECT MIN(DATE(lc.created_at)) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_started_at
+                (SELECT MIN(lc.legal_referred_at) FROM legal_cases lc WHERE lc.contract_id = c.id AND lc.legal_referred_at IS NOT NULL) AS legal_started_at
                 FROM installments i
                 JOIN contracts c ON c.id = i.contract_id
                 JOIN users u ON u.id = c.customer_id"
@@ -82,12 +80,12 @@ class Installment extends Model
             "SELECT i.*, c.contract_number, c.customer_id, c.assigned_operator_id, c.status AS contract_status, c.legal_status AS contract_legal_status,
              u.full_name AS customer_name, u.mobile, u.national_id,
              (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_case_count,
-             (SELECT MIN(DATE(lc.created_at)) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_started_at
+               (SELECT MIN(lc.legal_referred_at) FROM legal_cases lc WHERE lc.contract_id = c.id AND lc.legal_referred_at IS NOT NULL) AS legal_started_at
              FROM installments i
              JOIN contracts c ON c.id = i.contract_id
              JOIN users u ON u.id = c.customer_id
              {$whereSql}
-             ORDER BY i.due_date ASC, i.id ASC
+              ORDER BY " . self::filteredOrderBy($filters) . "
              LIMIT {$perPage} OFFSET {$offset}",
             $params
         );
@@ -98,6 +96,45 @@ class Installment extends Model
             'pages' => $pages,
             'per_page' => $perPage,
         ];
+    }
+
+    /**
+     * Counts for the operational installment tabs.  Deliberately uses the
+     * same safe search/advanced-filter clauses as the list, while ignoring
+     * the currently selected tab so the navigation never lies about counts.
+     */
+    public static function summary(array $filters = []): array
+    {
+        self::ensureSchema();
+        $scope = $filters;
+        $scope['status'] = '';
+        $scope['payment_state'] = '';
+        $scope['due_today'] = false;
+        $params = [];
+        $where = [];
+        if (!empty($scope['search'])) {
+            $needle = '%' . to_english_digits($scope['search']) . '%';
+            $where[] = '(c.contract_number LIKE ? OR u.full_name LIKE ? OR u.national_id LIKE ? OR u.mobile LIKE ? OR u.secondary_phone LIKE ?)';
+            array_push($params, $needle, $needle, $needle, $needle, $needle);
+        }
+        self::appendAdvancedFilters($scope, $where, $params);
+        $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+        $row = self::fetch(
+            "SELECT
+                SUM(CASE WHEN i.status NOT IN ('paid', 'cancelled') THEN 1 ELSE 0 END) AS active_count,
+                SUM(CASE WHEN i.status NOT IN ('paid', 'cancelled') AND i.due_date = CURDATE() THEN 1 ELSE 0 END) AS today_count,
+                SUM(CASE WHEN i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE() THEN 1 ELSE 0 END) AS overdue_count,
+                SUM(CASE WHEN i.status = 'partial' THEN 1 ELSE 0 END) AS partial_count,
+                SUM(CASE WHEN i.status = 'paid' THEN 1 ELSE 0 END) AS paid_count,
+                SUM(CASE WHEN i.status NOT IN ('paid', 'cancelled') THEN GREATEST(COALESCE(i.base_amount, 0) - COALESCE(i.paid_amount, 0), 0) ELSE 0 END) AS current_payable_total,
+                COUNT(*) AS all_count
+             FROM installments i
+             JOIN contracts c ON c.id = i.contract_id
+             JOIN users u ON u.id = c.customer_id
+             {$whereSql}",
+            $params
+        ) ?: [];
+        return array_map(static fn ($value): int => (int) ($value ?? 0), $row);
     }
 
     protected static function appendAdvancedFilters(array $filters, array &$where, array &$params)
@@ -144,27 +181,56 @@ class Installment extends Model
                 $where[] = 'COALESCE(i.is_custom, 0) = 1';
             }
         }
+        if (!empty($filters['due_today'])) {
+            $where[] = 'i.due_date = CURDATE()';
+        }
+        if (!empty($filters['exclude_legal_cases'])) {
+            $where[] = "NOT EXISTS (SELECT 1 FROM legal_cases lc_filter WHERE lc_filter.contract_id = c.id AND lc_filter.status != 'closed')";
+        }
+    }
+
+    protected static function filteredOrderBy(array $filters): string
+    {
+        switch ($filters['sort'] ?? 'financial') {
+            case 'due_desc': $order = 'i.due_date DESC, i.id DESC'; break;
+            case 'amount_desc': $order = 'i.base_amount DESC, i.due_date ASC, i.id ASC'; break;
+            case 'amount_asc': $order = 'i.base_amount ASC, i.due_date ASC, i.id ASC'; break;
+            case 'customer_asc': $order = 'u.full_name ASC, c.contract_number ASC, i.installment_number ASC, i.id ASC'; break;
+            case 'customer_desc': $order = 'u.full_name DESC, c.contract_number DESC, i.installment_number DESC, i.id DESC'; break;
+            case 'due_asc': $order = 'i.due_date ASC, i.id ASC'; break;
+            default: $order = self::financialOrderBy(false);
+        }
+        return ($filters['tab'] ?? '') === 'all'
+            ? "CASE WHEN i.status = 'paid' THEN 1 ELSE 0 END ASC, {$order}"
+            : $order;
     }
 
     public static function find($id)
     {
+        $row = self::findRaw($id);
+        if (!$row) {
+            return null;
+        }
+        $settings = Settings::allKeyed();
+        $item = array_merge($row, InstallmentFinancialStateService::state($row, null, $settings));
+        return array_merge($item, CustomerPenaltyPresentationService::forState($item, $settings));
+    }
+
+    /** Raw row for transactional services; no preview calculation or writes. */
+    public static function findRaw($id)
+    {
         self::ensureSchema();
-        $row = self::fetch(
+        return self::fetch(
             "SELECT i.*, c.contract_number, c.customer_id, c.status AS contract_status, c.legal_status AS contract_legal_status,
              u.full_name AS customer_name, u.mobile, u.national_id,
              (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_case_count,
-             (SELECT MIN(DATE(lc.created_at)) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_started_at
+               (SELECT MIN(lc.legal_referred_at) FROM legal_cases lc WHERE lc.contract_id = c.id AND lc.legal_referred_at IS NOT NULL) AS legal_started_at
              FROM installments i
              JOIN contracts c ON c.id = i.contract_id
              JOIN users u ON u.id = c.customer_id
              WHERE i.id = ?",
             [(int) $id]
         );
-        if (!$row) {
-            return null;
-        }
-        $preview = FinanceHelper::preview($row, Payment::forInstallment($id), Settings::allKeyed());
-        return array_merge($row, $preview);
     }
 
     public static function overdue($bucket = null, $search = null, $operatorId = null, $limit = null, $sort = 'oldest')
@@ -176,7 +242,7 @@ class Installment extends Model
              c.status AS contract_status, c.legal_status AS contract_legal_status,
              u.mobile, u.secondary_phone, u.national_id,
              (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_case_count,
-             (SELECT MIN(DATE(lc.created_at)) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_started_at
+               (SELECT MIN(lc.legal_referred_at) FROM legal_cases lc WHERE lc.contract_id = c.id AND lc.legal_referred_at IS NOT NULL) AS legal_started_at
              FROM installments i
              JOIN contracts c ON c.id = i.contract_id
              JOIN users u ON u.id = c.customer_id
@@ -212,7 +278,7 @@ class Installment extends Model
              c.status AS contract_status, c.legal_status AS contract_legal_status,
              u.mobile, u.secondary_phone, u.national_id,
              (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_case_count,
-             (SELECT MIN(DATE(lc.created_at)) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_started_at
+               (SELECT MIN(lc.legal_referred_at) FROM legal_cases lc WHERE lc.contract_id = c.id AND lc.legal_referred_at IS NOT NULL) AS legal_started_at
              FROM installments i
              JOIN contracts c ON c.id = i.contract_id
              JOIN users u ON u.id = c.customer_id
@@ -352,10 +418,9 @@ class Installment extends Model
             throw new InvalidArgumentException('قسط پیدا نشد.');
         }
         if ((int) ($row['is_custom'] ?? 0) !== 1) {
-            throw new InvalidArgumentException('فقط قسط دلخواه قابل حذف است.');
+            throw new InvalidArgumentException('فقط قسط دلخواه قابل ابطال است.');
         }
-        self::execute('DELETE FROM installments WHERE id = ?', [(int) $id]);
-        return (int) $row['contract_id'];
+        throw new InvalidArgumentException('حذف فیزیکی قسط مجاز نیست؛ از گردش کار ابطال با ثبت علت استفاده کنید.');
     }
 
     public static function bulkAction($contractId, array $ids, $action, $reason, $userId)
@@ -366,7 +431,10 @@ class Installment extends Model
         if ($contractId <= 0 || !$ids || $reason === '') {
             throw new InvalidArgumentException('اقساط و علت عملیات دسته‌جمعی را کامل کنید.');
         }
-        if (!in_array($action, ['cancel', 'restore_pending', 'recalculate'], true)) {
+        if ($action === 'cancel') {
+            throw new InvalidArgumentException('ابطال دسته‌جمعی مجاز نیست؛ هر قسط باید از گردش امن ابطال با بررسی پرداخت، حقوقی و حسابداری عبور کند.');
+        }
+        if (!in_array($action, ['restore_pending', 'recalculate'], true)) {
             throw new InvalidArgumentException('عملیات دسته‌جمعی اقساط معتبر نیست.');
         }
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
@@ -399,10 +467,8 @@ class Installment extends Model
                     if (($row['status'] ?? '') === 'cancelled') {
                         continue;
                     }
-                    $baseAmount = normalize_money($row['base_amount'] ?? 0);
-                    $paidAmount = normalize_money($row['paid_amount'] ?? 0);
-                    $status = FinanceHelper::status($baseAmount, $paidAmount, $row['due_date']);
-                    self::execute('UPDATE installments SET status = ?, remaining_amount = ?, updated_at = NOW() WHERE id = ?', [$status, max(0, $baseAmount - $paidAmount), (int) $row['id']]);
+                    $state = InstallmentFinancialStateService::state($row);
+                    self::execute('UPDATE installments SET status = ?, paid_amount = ?, remaining_amount = ?, effective_settlement_at = ?, updated_at = NOW() WHERE id = ?', [$state['status'], normalize_money($state['effective_paid_principal']), normalize_money($state['remaining_principal']), $state['effective_settlement_date'] ?? null, (int) $row['id']]);
                 }
                 $updated++;
             }
@@ -478,7 +544,6 @@ class Installment extends Model
         if ($amount > 0) {
             Payment::record($id, $installment['contract_id'], $userId, $amount, 'manual', 'paid', null, null, 'تسویه دستی قسط');
         }
-        self::execute('UPDATE installments SET paid_amount = base_amount, remaining_amount = 0, last_payment_date = CURDATE(), status = ? WHERE id = ?', ['paid', (int) $id]);
         return true;
     }
 
@@ -491,25 +556,51 @@ class Installment extends Model
         if (($row['status'] ?? '') === 'cancelled') {
             return;
         }
-        $baseAmount = normalize_money($row['base_amount'] ?? 0);
-        $paidAmount = normalize_money($row['paid_amount'] ?? 0);
-        $status = FinanceHelper::status($baseAmount, $paidAmount, $row['due_date']);
-        self::execute('UPDATE installments SET status = ?, remaining_amount = ? WHERE id = ?', [$status, max(0, $baseAmount - $paidAmount), (int) $id]);
+        $state = InstallmentFinancialStateService::state($row);
+        self::execute('UPDATE installments SET status = ?, paid_amount = ?, remaining_amount = ?, effective_settlement_at = ? WHERE id = ?', [$state['status'], normalize_money($state['effective_paid_principal']), normalize_money($state['remaining_principal']), $state['effective_settlement_date'] ?? null, (int) $id]);
     }
 
     public static function withPreview(array $rows)
     {
         $settings = Settings::allKeyed();
+        $states = InstallmentFinancialStateService::statesForRows($rows, $settings);
         foreach ($rows as &$row) {
-            $storedStatus = $row['status'] ?? null;
-            $storedRemaining = normalize_money($row['remaining_amount'] ?? (normalize_money($row['base_amount'] ?? 0) - normalize_money($row['paid_amount'] ?? 0)));
-            $preview = FinanceHelper::preview($row, Payment::forInstallment($row['id']), $settings);
-            $row = array_merge($row, $preview);
-            if ($row['status'] !== $storedStatus || $storedRemaining !== normalize_money($preview['remaining_amount'] ?? 0)) {
-                self::execute('UPDATE installments SET status = ?, remaining_amount = ? WHERE id = ?', [$row['status'], $row['remaining_amount'], $row['id']]);
-            }
+            $row = array_merge($row, $states[(int) ($row['id'] ?? 0)] ?? []);
+            $row = array_merge($row, CustomerPenaltyPresentationService::forState($row, $settings));
         }
         unset($row);
+        // A display request is read-only. The authoritative transactional path
+        // materializes state after commit; this sort also protects legacy rows
+        // whose old stored status has not yet been reconciled.
+        usort($rows, static function ($left, $right) {
+            $priority = (int) ($left['financial_priority'] ?? 99) <=> (int) ($right['financial_priority'] ?? 99);
+            if ($priority !== 0) return $priority;
+            $due = strcmp((string) ($left['due_date'] ?? ''), (string) ($right['due_date'] ?? ''));
+            if ($due !== 0) return $due;
+            $number = (int) ($left['installment_number'] ?? 0) <=> (int) ($right['installment_number'] ?? 0);
+            return $number !== 0 ? $number : ((int) ($left['id'] ?? 0) <=> (int) ($right['id'] ?? 0));
+        });
         return $rows;
+    }
+
+    protected static function financialOrderBy($customLast = false)
+    {
+        $graceDays = 0;
+        try {
+            $graceDays = max(0, min(365, (int) to_english_digits(Settings::get('late_penalty_grace_days', '0'))));
+        } catch (Throwable $ignored) {
+        }
+        $priority = "CASE
+            WHEN i.status = 'cancelled' THEN 90
+            WHEN i.status = 'paid' OR COALESCE(i.remaining_amount, 0) <= 0 THEN 80
+            WHEN (SELECT COUNT(*) FROM legal_cases lc_order WHERE lc_order.contract_id = c.id AND lc_order.legal_referred_at IS NOT NULL) > 0 AND i.due_date < CURDATE() THEN 0
+            WHEN i.due_date < CURDATE() AND DATEDIFF(CURDATE(), i.due_date) > {$graceDays} THEN 1
+            WHEN i.due_date = CURDATE() THEN 2
+            WHEN i.due_date < CURDATE() THEN 3
+            WHEN i.status = 'partial' OR COALESCE(i.paid_amount, 0) > 0 THEN 4
+            ELSE 5 END";
+        return $priority . ' ASC, '
+            . ($customLast ? 'COALESCE(i.is_custom, 0) ASC, ' : '')
+            . 'i.due_date ASC, i.installment_number ASC, i.id ASC';
     }
 }

@@ -7,6 +7,7 @@ class PluginManager
     protected $providers = [];
     protected $routes = [];
     protected $menus = [];
+    protected $failedRouteClaims = [];
 
     public static function instance()
     {
@@ -40,6 +41,7 @@ class PluginManager
                     RequestTelemetry::recordSpan('plugin.boot_failed', $pluginStartedAt, ['plugin' => $plugin['plugin_id'] ?? 'unknown']);
                 }
                 try {
+                    $manager->registerFailedRouteClaims($plugin, $e);
                     PluginRegistry::setStatus($plugin['plugin_id'], 'failed', $e->getMessage());
                     PluginRegistry::logRuntimeError('plugin_boot:' . $plugin['plugin_id'], $e);
                 } catch (Throwable $ignored) {
@@ -725,6 +727,13 @@ class PluginManager
             $matched[] = [$item, $parameters];
         }
         if (!$matched) {
+            $failedRoute = $this->failedRouteClaim($route);
+            if ($failedRoute) {
+                ErrorHandler::respond(
+                    503,
+                    'افزونه مسئول این مسیر آماده نیست. جزئیات فنی ثبت شده است؛ با شناسه پیگیری صفحه با پشتیبانی تماس بگیرید.'
+                );
+            }
             return false;
         }
         usort($matched, static function ($left, $right) use ($route) {
@@ -750,29 +759,36 @@ class PluginManager
         foreach ($matched as $match) {
             [$item, $parameters] = $match;
             $options = $item['options'];
-            if (($options['method'] ?? '') !== '' && strtoupper((string) $options['method']) !== $requestMethod) {
-                continue;
+            try {
+                if (($options['method'] ?? '') !== '' && strtoupper((string) $options['method']) !== $requestMethod) {
+                    continue;
+                }
+                if (($options['auth'] ?? true) && !Auth::check()) {
+                    Auth::requireLogin();
+                }
+                if (!empty($options['permission'])) {
+                    self::requirePermission($options['permission']);
+                }
+                [$class, $method] = explode('@', $item['handler'], 2);
+                if (!class_exists($class)) {
+                    throw new RuntimeException('کنترلر افزونه بارگذاری نشد.');
+                }
+                $controller = new $class();
+                if (!method_exists($controller, $method)) {
+                    throw new RuntimeException('متد route افزونه پیدا نشد.');
+                }
+                $routeStartedAt = microtime(true);
+                call_user_func_array([$controller, $method], $parameters);
+                if (class_exists('RequestTelemetry', false)) {
+                    RequestTelemetry::recordSpan('plugin.route', $routeStartedAt, ['handler' => $class . '@' . $method]);
+                }
+                return true;
+            } catch (HttpException $e) {
+                throw $e;
+            } catch (Throwable $e) {
+                ErrorHandler::log('plugin_route:' . (string) ($item['plugin_id'] ?? 'unknown'), $e, 500);
+                ErrorHandler::respond(500, 'اجرای این بخش از افزونه کامل نشد. جزئیات فنی ثبت شده است.');
             }
-            if (($options['auth'] ?? true) && !Auth::check()) {
-                Auth::requireLogin();
-            }
-            if (!empty($options['permission'])) {
-                self::requirePermission($options['permission']);
-            }
-            [$class, $method] = explode('@', $item['handler'], 2);
-            if (!class_exists($class)) {
-                throw new RuntimeException('کنترلر افزونه بارگذاری نشد.');
-            }
-            $controller = new $class();
-            if (!method_exists($controller, $method)) {
-                throw new RuntimeException('متد route افزونه پیدا نشد.');
-            }
-            $routeStartedAt = microtime(true);
-            call_user_func_array([$controller, $method], $parameters);
-            if (class_exists('RequestTelemetry', false)) {
-                RequestTelemetry::recordSpan('plugin.route', $routeStartedAt, ['handler' => $class . '@' . $method]);
-            }
-            return true;
         }
         $allowed = [];
         foreach ($matched as $match) {
@@ -809,6 +825,36 @@ class PluginManager
         }
         array_shift($matches);
         return array_map('urldecode', $matches);
+    }
+
+    protected function registerFailedRouteClaims(array $plugin, Throwable $error)
+    {
+        $manifest = json_decode((string) ($plugin['manifest_json'] ?? ''), true);
+        if (!is_array($manifest)) {
+            return;
+        }
+        foreach ((array) ($manifest['routes'] ?? []) as $route) {
+            $path = trim((string) ($route['path'] ?? ''), '/');
+            if ($path === '') {
+                continue;
+            }
+            $this->failedRouteClaims[] = [
+                'path' => $path,
+                'plugin_id' => (string) ($plugin['plugin_id'] ?? ''),
+                'error' => $error,
+            ];
+        }
+    }
+
+    protected function failedRouteClaim($route)
+    {
+        $route = trim((string) $route, '/');
+        foreach ($this->failedRouteClaims as $claim) {
+            if ($this->matchRoute((string) ($claim['path'] ?? ''), $route) !== false) {
+                return $claim;
+            }
+        }
+        return null;
     }
 
     protected function manifestById($pluginId)
@@ -1104,9 +1150,50 @@ class PluginManager
 
     protected function splitSql($sql)
     {
-        $parts = preg_split('/;\s*(?:\r?\n|$)/', (string) $sql);
-        return array_values(array_filter(array_map('trim', $parts), static function ($item) {
-            return $item !== '' && strpos(ltrim($item), '--') !== 0;
-        }));
+        // Plugin migrations may use prepared statements on one physical line.
+        // Split on every real semicolon while preserving quoted SQL literals.
+        $sql = preg_replace('/^\xEF\xBB\xBF/', '', (string) $sql);
+        $statements = [];
+        $buffer = '';
+        $quote = null;
+        $length = strlen($sql);
+        for ($i = 0; $i < $length; $i++) {
+            $char = $sql[$i];
+            $next = $i + 1 < $length ? $sql[$i + 1] : '';
+            if ($quote === null && $char === '-' && $next === '-' && ($i + 2 >= $length || preg_match('/\s/', $sql[$i + 2]))) {
+                while ($i < $length && $sql[$i] !== "\n") $i++;
+                $buffer .= "\n";
+                continue;
+            }
+            if ($quote === null && $char === '#') {
+                while ($i < $length && $sql[$i] !== "\n") $i++;
+                $buffer .= "\n";
+                continue;
+            }
+            if ($quote === null && $char === '/' && $next === '*') {
+                $i += 2;
+                while ($i + 1 < $length && !($sql[$i] === '*' && $sql[$i + 1] === '/')) $i++;
+                $i++;
+                continue;
+            }
+            if ($char === "'" || $char === '"' || $char === '`') {
+                if ($quote === null) {
+                    $quote = $char;
+                } elseif ($quote === $char) {
+                    if ($char !== '`' && $next === $char) { $buffer .= $char . $next; $i++; continue; }
+                    if (!($i > 0 && $sql[$i - 1] === '\\')) $quote = null;
+                }
+            }
+            if ($quote === null && $char === ';') {
+                $statement = trim($buffer);
+                if ($statement !== '') $statements[] = $statement;
+                $buffer = '';
+                continue;
+            }
+            $buffer .= $char;
+        }
+        $tail = trim($buffer);
+        if ($tail !== '') $statements[] = $tail;
+        return $statements;
     }
 }

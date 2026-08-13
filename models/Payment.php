@@ -74,6 +74,43 @@ class Payment extends Model
         );
     }
 
+    /**
+     * Return recent payment timelines for a visible contract page in one
+     * bounded database round-trip. MySQL 5.7 is still common on shared hosts,
+     * so grouping is done in PHP instead of relying on window functions.
+     */
+    public static function recentForContracts(array $contractIds, $limitPerContract = 8)
+    {
+        self::ensureCorrectionSchema();
+        $contractIds = array_values(array_unique(array_filter(array_map('intval', $contractIds))));
+        if (!$contractIds) {
+            return [];
+        }
+
+        $limitPerContract = max(1, min(20, (int) $limitPerContract));
+        $result = array_fill_keys($contractIds, []);
+        $placeholders = implode(',', array_fill(0, count($contractIds), '?'));
+        $rows = self::fetchAll(
+            "SELECT p.*, c.contract_number, u.full_name AS customer_name, i.installment_number
+             FROM payments p
+             JOIN contracts c ON c.id = p.contract_id
+             JOIN users u ON u.id = c.customer_id
+             LEFT JOIN installments i ON i.id = p.installment_id
+             WHERE p.contract_id IN ({$placeholders})
+               AND p.status = 'paid'
+               AND COALESCE(p.is_corrected, 0) = 0
+             ORDER BY p.contract_id ASC, COALESCE(p.payment_date, DATE(p.paid_at), DATE(p.created_at)) DESC, p.id DESC",
+            $contractIds
+        );
+        foreach ($rows as $row) {
+            $contractId = (int) $row['contract_id'];
+            if (count($result[$contractId] ?? []) < $limitPerContract) {
+                $result[$contractId][] = $row;
+            }
+        }
+        return $result;
+    }
+
     public static function forLegalCase($contractId, $customerId)
     {
         self::ensureCorrectionSchema();
@@ -111,6 +148,51 @@ class Payment extends Model
             $data[] = $totals[$date->format('Y-m')] ?? 0;
         }
         return $data;
+    }
+
+    /**
+     * Batched version of monthlyTrendForContract() for the contracts screen.
+     */
+    public static function monthlyTrendsForContracts(array $contractIds, $months = 6)
+    {
+        self::ensureCorrectionSchema();
+        $contractIds = array_values(array_unique(array_filter(array_map('intval', $contractIds))));
+        if (!$contractIds) {
+            return [];
+        }
+
+        $months = max(1, min(24, (int) $months));
+        $start = (new DateTime('first day of this month'))->modify('-' . ($months - 1) . ' months');
+        $result = [];
+        foreach ($contractIds as $contractId) {
+            $result[$contractId] = array_fill(0, $months, 0);
+        }
+        $monthPositions = [];
+        for ($i = 0; $i < $months; $i++) {
+            $monthPositions[(clone $start)->modify('+' . $i . ' months')->format('Y-m')] = $i;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($contractIds), '?'));
+        $rows = self::fetchAll(
+            "SELECT contract_id,
+                    DATE_FORMAT(COALESCE(payment_date, DATE(paid_at), DATE(created_at)), '%Y-%m') AS month_key,
+                    COALESCE(SUM(amount), 0) AS total
+             FROM payments
+             WHERE contract_id IN ({$placeholders})
+               AND status = 'paid'
+               AND COALESCE(is_corrected, 0) = 0
+               AND COALESCE(payment_date, DATE(paid_at), DATE(created_at)) >= ?
+             GROUP BY contract_id, month_key",
+            array_merge($contractIds, [$start->format('Y-m-01')])
+        );
+        foreach ($rows as $row) {
+            $contractId = (int) $row['contract_id'];
+            $position = $monthPositions[$row['month_key'] ?? ''] ?? null;
+            if ($position !== null && isset($result[$contractId])) {
+                $result[$contractId][$position] = normalize_money($row['total'] ?? 0);
+            }
+        }
+        return $result;
     }
 
     public static function monthlyTrendForCustomer($customerId, $months = 6)
@@ -181,23 +263,17 @@ class Payment extends Model
         return self::fetchAll($sql, $params);
     }
 
-    public static function record($installmentId, $contractId, $userId, $amount, $method, $status, $trackId = null, $refId = null, $description = '', $paymentDate = null, $paymentType = 'installment', $paymentTime = null)
+    public static function record($installmentId, $contractId, $userId, $amount, $method, $status, $trackId = null, $refId = null, $description = '', $paymentDate = null, $paymentType = 'installment', $paymentTime = null, ?array $allocation = null, $quoteUuid = null)
     {
         self::ensureCorrectionSchema();
         $contract = self::fetch('SELECT status FROM contracts WHERE id = ? LIMIT 1', [(int) $contractId]);
         if (!$contract) {
             throw new InvalidArgumentException('قرارداد پرداخت پیدا نشد.');
         }
-        if ($installmentId) {
-            $installmentStatus = Installment::find((int) $installmentId);
-            if (!$installmentStatus || (int) ($installmentStatus['contract_id'] ?? 0) !== (int) $contractId) {
-                throw new InvalidArgumentException('قسط انتخاب‌شده قابل پرداخت نیست.');
-            }
-            InstallmentSettlementService::assertPayable($installmentStatus, $amount, $paymentDate ?: date('Y-m-d'));
-        } elseif (in_array(($contract['status'] ?? ''), ['cancelled', 'completed', 'closed'], true)) {
+        if (!$installmentId && in_array(($contract['status'] ?? ''), ['cancelled', 'completed', 'closed'], true)) {
             throw new InvalidArgumentException('برای قرارداد لغو یا تسویه‌شده پرداخت جدید قابل ثبت نیست.');
         }
-        $paymentType = $paymentType === 'down_payment' ? 'down_payment' : 'installment';
+        $paymentType = in_array($paymentType, ['down_payment', 'legal_cost'], true) ? $paymentType : 'installment';
         $paymentDate = $paymentDate ?: date('Y-m-d');
         $paymentTime = normalize_time($paymentTime) ?: date('H:i');
         $paidAt = $paymentDate . ' ' . $paymentTime . ':00';
@@ -211,17 +287,45 @@ class Payment extends Model
         try {
             $preview = null;
             $before = null;
+            $installment = null;
             if ($needsInstallmentTransaction) {
                 self::fetch('SELECT id FROM installments WHERE id = ? FOR UPDATE', [(int) $installmentId]);
-                $installment = Installment::find((int) $installmentId);
-                $preview = InstallmentSettlementService::assertPayable($installment, $amount, $paymentDate);
+                $installment = Installment::findRaw((int) $installmentId);
+                if (!$installment || (int) ($installment['contract_id'] ?? 0) !== (int) $contractId) {
+                    throw new InvalidArgumentException('قسط انتخاب‌شده قابل پرداخت نیست.', 409);
+                }
+                // Keep the settled-installment response consistent for every
+                // entry point.  Planning an empty row used to return a vague
+                // allocation error instead of the explicit 409 contract.
+                InstallmentSettlementService::assertPayable($installment, $amount, $paymentDate);
+                if ($allocation === null) {
+                    $plan = PaymentAllocationService::plan([$installment], $amount, $paymentDate, Settings::allKeyed());
+                    $allocation = $plan['allocations'][0] ?? null;
+                }
+                if (!$allocation || (int) ($allocation['installment_id'] ?? 0) !== (int) $installmentId
+                    || normalize_money($allocation['allocated_amount'] ?? 0) !== $amount) {
+                    throw new InvalidArgumentException('تخصیص مالی پرداخت معتبر نیست.', 409);
+                }
+                $preview = [
+                    'calculated_penalty' => normalize_money($allocation['normal_penalty_before'] ?? 0) + normalize_money($allocation['legal_penalty_before'] ?? 0),
+                    'calculated_reward' => normalize_money($allocation['reward_applied'] ?? 0),
+                    'remaining_before_payment' => normalize_money($allocation['remaining_before'] ?? 0),
+                    'remaining_after_payment' => normalize_money($allocation['remaining_after'] ?? 0),
+                ];
                 $before = self::installmentState($installmentId);
+            } elseif ($installmentId) {
+                $installment = Installment::findRaw((int) $installmentId);
+                if (!$installment || (int) ($installment['contract_id'] ?? 0) !== (int) $contractId) {
+                    throw new InvalidArgumentException('قسط انتخاب‌شده قابل پرداخت نیست.', 409);
+                }
+                InstallmentSettlementService::assertPayable($installment, $amount, $paymentDate);
             }
             self::execute(
                 'INSERT INTO payments
-                 (installment_id, contract_id, user_id, amount, method, status, gateway_track_id, gateway_ref_id, description,
-                  payment_date, calculated_penalty, calculated_reward, remaining_before_payment, remaining_after_payment, payment_type, paid_at, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+                  (installment_id, contract_id, user_id, amount, method, status, gateway_track_id, gateway_ref_id, description,
+                   payment_date, calculated_penalty, calculated_reward, principal_applied, normal_penalty_applied, legal_penalty_applied, reward_applied,
+                   remaining_before_payment, remaining_after_payment, settlement_quote_uuid, payment_type, paid_at, created_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
                 [
                     $installmentId ? (int) $installmentId : null,
                     (int) $contractId,
@@ -235,8 +339,13 @@ class Payment extends Model
                     $status === 'paid' ? $paymentDate : null,
                     $preview['calculated_penalty'] ?? 0,
                     $preview['calculated_reward'] ?? 0,
+                    $allocation['principal_applied'] ?? null,
+                    $allocation['normal_penalty_applied'] ?? null,
+                    $allocation['legal_penalty_applied'] ?? null,
+                    $allocation['reward_applied'] ?? null,
                     $preview['remaining_before_payment'] ?? null,
                     $preview['remaining_after_payment'] ?? null,
+                    $quoteUuid ?: null,
                     $paymentType,
                     $status === 'paid' ? $paidAt : null,
                 ]
@@ -282,14 +391,14 @@ class Payment extends Model
         return self::createPendingGatewayFor('zibal', $installmentId, $contractId, $userId, $amount, $trackId);
     }
 
-    public static function createPendingGatewayFor($gatewayId, $installmentId, $contractId, $userId, $amount, $reference)
+    public static function createPendingGatewayFor($gatewayId, $installmentId, $contractId, $userId, $amount, $reference, $quoteUuid = null)
     {
         $gatewayId = strtolower(trim((string) $gatewayId));
         $reference = trim((string) $reference);
         if (!preg_match('/^[a-z][a-z0-9_-]{1,49}$/', $gatewayId) || $reference === '' || strlen($reference) > 100) {
             throw new InvalidArgumentException('اطلاعات تراکنش درگاه معتبر نیست.');
         }
-        return self::record($installmentId, $contractId, $userId, $amount, $gatewayId, 'pending', $reference, null, 'در انتظار تأیید درگاه ' . $gatewayId);
+        return self::record($installmentId, $contractId, $userId, $amount, $gatewayId, 'pending', $reference, null, 'در انتظار تأیید درگاه ' . $gatewayId, null, 'installment', null, null, $quoteUuid);
     }
 
     public static function failGateway($reference, $reason = '')
@@ -386,24 +495,51 @@ class Payment extends Model
                 return ['ok' => false, 'message' => 'مبلغ تأییدشده درگاه با مبلغ درخواست‌شده یکسان نیست و پرداخت ثبت نشد.'];
             }
             $paymentDate = date('Y-m-d');
-            $installment = Installment::find((int) $payment['installment_id']);
-            $preview = InstallmentSettlementService::assertPayable($installment, $verifiedAmount, $paymentDate);
+            $installment = Installment::findRaw((int) $payment['installment_id']);
+            if (!$installment) {
+                throw new InvalidArgumentException('قسط مرتبط با پرداخت پیدا نشد.', 409);
+            }
+            $contract = self::fetch('SELECT * FROM contracts WHERE id = ? FOR UPDATE', [(int) $payment['contract_id']]);
+            if (!$contract) {
+                throw new InvalidArgumentException('قرارداد مرتبط با پرداخت پیدا نشد.', 409);
+            }
+            $lockedRows = SettlementQuoteService::loadInstallments((int) $payment['contract_id'], [(int) $payment['installment_id']], true);
+            $quoteVerification = SettlementQuoteService::verifyLocked(
+                (string) ($payment['settlement_quote_uuid'] ?? ''),
+                $contract,
+                $lockedRows,
+                [(int) $payment['installment_id']],
+                $verifiedAmount,
+                $payment['user_id'] ? (int) $payment['user_id'] : null,
+                'selected',
+                $paymentDate
+            );
+            $plan = $quoteVerification['plan'];
+            $allocation = $plan['allocations'][0] ?? [];
+            if (normalize_money($allocation['allocated_amount'] ?? 0) !== $verifiedAmount) {
+                throw new InvalidArgumentException('تخصیص مالی پرداخت درگاه معتبر نیست.', 409);
+            }
             $before = self::installmentState((int) $payment['installment_id']);
             self::execute(
-                'UPDATE payments SET status = ?, gateway_ref_id = ?, amount = ?, payment_date = ?, calculated_penalty = ?, calculated_reward = ?, remaining_before_payment = ?, remaining_after_payment = ?, paid_at = NOW() WHERE id = ?',
+                'UPDATE payments SET status = ?, gateway_ref_id = ?, amount = ?, payment_date = ?, calculated_penalty = ?, calculated_reward = ?, principal_applied = ?, normal_penalty_applied = ?, legal_penalty_applied = ?, reward_applied = ?, remaining_before_payment = ?, remaining_after_payment = ?, paid_at = NOW() WHERE id = ?',
                 [
                     'paid',
                     $refId,
                     $verifiedAmount,
                     $paymentDate,
-                    $preview['calculated_penalty'],
-                    $preview['calculated_reward'],
-                    $preview['remaining_before_payment'],
-                    $preview['remaining_after_payment'],
+                    normalize_money($allocation['normal_penalty_before'] ?? 0) + normalize_money($allocation['legal_penalty_before'] ?? 0),
+                    normalize_money($allocation['reward_applied'] ?? 0),
+                    normalize_money($allocation['principal_applied'] ?? 0),
+                    normalize_money($allocation['normal_penalty_applied'] ?? 0),
+                    normalize_money($allocation['legal_penalty_applied'] ?? 0),
+                    normalize_money($allocation['reward_applied'] ?? 0),
+                    normalize_money($allocation['remaining_before'] ?? 0),
+                    normalize_money($allocation['remaining_after'] ?? 0),
                     $payment['id'],
                 ]
             );
             self::applyToInstallment($payment['installment_id']);
+            SettlementQuoteService::markUsed((string) ($payment['settlement_quote_uuid'] ?? ''));
             self::storeSnapshot((int) $payment['id'], $before, self::installmentState((int) $payment['installment_id']));
             self::recordPaymentAudit((int) $payment['id'], [
                 'actor_type' => 'gateway',
@@ -471,27 +607,31 @@ class Payment extends Model
     public static function applyToInstallment($installmentId)
     {
         self::ensureCorrectionSchema();
-        $row = self::fetch('SELECT base_amount, due_date FROM installments WHERE id = ?', [(int) $installmentId]);
+        $row = self::fetch('SELECT contract_id FROM installments WHERE id = ?', [(int) $installmentId]);
         if (!$row) {
             return;
         }
-        $latest = self::fetch(
-            "SELECT remaining_after_payment FROM payments
-             WHERE installment_id = ? AND status = 'paid' AND COALESCE(is_corrected, 0) = 0
-             AND remaining_after_payment IS NOT NULL
-             ORDER BY COALESCE(payment_date, paid_at, created_at) DESC, id DESC LIMIT 1",
+        $state = InstallmentFinancialStateService::stateForInstallment((int) $installmentId);
+        $lastPayment = self::fetch(
+            "SELECT MAX(COALESCE(payment_date, DATE(paid_at), DATE(created_at))) AS payment_date
+             FROM payments WHERE installment_id = ? AND status = 'paid' AND COALESCE(is_corrected, 0) = 0",
             [(int) $installmentId]
         );
-        if ($latest) {
-            $paid = max(0, normalize_money($row['base_amount'] ?? 0) - normalize_money($latest['remaining_after_payment'] ?? 0));
-        } else {
-            $paid = min(normalize_money($row['base_amount'] ?? 0), normalize_money(self::fetch("SELECT COALESCE(SUM(amount), 0) AS total FROM payments WHERE installment_id = ? AND status = 'paid' AND COALESCE(is_corrected, 0) = 0 AND COALESCE(payment_type, 'installment') = 'installment'", [(int) $installmentId])['total'] ?? 0));
-        }
-        $baseAmount = normalize_money($row['base_amount'] ?? 0);
-        $status = FinanceHelper::status($baseAmount, $paid, $row['due_date']);
-        self::execute('UPDATE installments SET paid_amount = ?, remaining_amount = ?, last_payment_date = (SELECT MAX(payment_date) FROM payments WHERE installment_id = ? AND status = ? AND COALESCE(is_corrected, 0) = 0), status = ? WHERE id = ?', [$paid, max(0, $baseAmount - $paid), (int) $installmentId, 'paid', $status, (int) $installmentId]);
+        self::execute(
+            'UPDATE installments
+             SET paid_amount = ?, remaining_amount = ?, last_payment_date = ?, effective_settlement_at = ?, status = ?
+             WHERE id = ?',
+            [
+                normalize_money($state['effective_paid_principal'] ?? 0),
+                normalize_money($state['remaining_principal'] ?? 0),
+                $lastPayment['payment_date'] ?? null,
+                ($state['status'] ?? '') === 'paid' ? (($state['effective_settlement_date'] ?? null) ?: ($lastPayment['payment_date'] ?? null)) : null,
+                (string) ($state['status'] ?? 'pending'),
+                (int) $installmentId,
+            ]
+        );
         if (class_exists('Contract')) {
-            Contract::syncCompletionStatuses();
+            Contract::syncCompletionStatuses((int) ($row['contract_id'] ?? 0));
         }
     }
 
@@ -530,6 +670,10 @@ class Payment extends Model
                      WHERE id = ? AND COALESCE(is_corrected, 0) = 0",
                     [$reason, (int) $adminId, (int) $payment['id']]
                 );
+                self::recordAllocationReversal($payment);
+                if (($payment['payment_type'] ?? 'installment') === 'legal_cost' && empty($payment['installment_id'])) {
+                    LegalCaseCostService::reversePaymentAllocations((int) $payment['id'], (int) $adminId, $reason);
+                }
                 if ($installmentId) {
                     self::applyToInstallment($installmentId);
                 }
@@ -606,6 +750,15 @@ class Payment extends Model
                 self::rollBack();
                 return ['ok' => false, 'message' => 'فقط پرداخت‌های موفق قابل اصلاح هستند.'];
             }
+            if (($payment['payment_type'] ?? 'installment') === 'legal_cost' && empty($payment['installment_id'])) {
+                self::execute(
+                    "UPDATE payments SET is_corrected = 1, status = 'corrected', correction_reason = ?, corrected_at = NOW(), corrected_by = ? WHERE id = ? AND COALESCE(is_corrected, 0) = 0",
+                    [$reason, (int) $adminId, (int) $payment['id']]
+                );
+                LegalCaseCostService::reversePaymentAllocations((int) $payment['id'], (int) $adminId, $reason);
+                self::commit();
+                return ['ok' => true, 'message' => 'اصلاحیه پرداخت هزینه حقوقی ثبت شد.'];
+            }
             if (($payment['payment_type'] ?? 'installment') === 'down_payment' || empty($payment['installment_id'])) {
                 self::rollBack();
                 return ['ok' => false, 'message' => 'پیش‌پرداخت قرارداد به عنوان قسط اصلاح نمی‌شود. مبلغ پیش‌پرداخت را از ویرایش قرارداد تغییر دهید.'];
@@ -627,6 +780,7 @@ class Payment extends Model
                  WHERE id = ? AND COALESCE(is_corrected, 0) = 0",
                 [$reason, (int) $adminId, (int) $payment['id']]
             );
+            self::recordAllocationReversal($payment);
             self::execute(
                 'INSERT INTO payment_corrections
                  (payment_id, installment_id, contract_id, customer_id, reason, snapshot_json, corrected_by, created_at)
@@ -644,6 +798,34 @@ class Payment extends Model
         } catch (Throwable $e) {
             self::rollBack();
             throw $e;
+        }
+    }
+
+    /** Preserve original allocation and append an immutable opposite row. */
+    protected static function recordAllocationReversal(array $payment)
+    {
+        $groupId = (int) ($payment['payment_group_id'] ?? 0);
+        if ($groupId <= 0 || empty($payment['installment_id'])) {
+            return;
+        }
+        $allocations = self::fetchAll(
+            "SELECT * FROM payment_allocations WHERE payment_group_id = ? AND payment_id = ? AND COALESCE(is_reversal, 0) = 0 FOR UPDATE",
+            [$groupId, (int) $payment['id']]
+        );
+        foreach ($allocations as $allocation) {
+            $exists = self::fetch('SELECT id FROM payment_allocations WHERE reversal_of_allocation_id = ? LIMIT 1', [(int) $allocation['id']]);
+            if ($exists) continue;
+            self::execute(
+                'INSERT INTO payment_allocations (payment_group_id, payment_id, contract_id, installment_id, allocated_amount, principal_applied, normal_penalty_applied, legal_penalty_applied, reward_applied, remaining_before, remaining_after, status_after, quote_uuid, reversal_of_allocation_id, is_reversal, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())',
+                [
+                    $groupId, (int) $payment['id'], (int) $allocation['contract_id'], (int) $allocation['installment_id'],
+                    -normalize_money($allocation['allocated_amount']), -normalize_money($allocation['principal_applied']),
+                    -normalize_money($allocation['normal_penalty_applied']), -normalize_money($allocation['legal_penalty_applied']),
+                    -normalize_money($allocation['reward_applied']), normalize_money($allocation['remaining_after']),
+                    normalize_money($allocation['remaining_before']), 'corrected', $allocation['quote_uuid'] ?? null, (int) $allocation['id'],
+                ]
+            );
         }
     }
 

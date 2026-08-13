@@ -2,10 +2,10 @@
   "id": "proma-accounting",
   "name": "حسابداری کاربران",
   "description": "مدیریت فروش، کمیسیون، دفترکل کاربران، هزینه‌ها، پاداش‌ها و دریافت/پرداخت‌ها",
-  "version": "1.2.6",
+  "version": "1.2.14",
   "author": "Proma Pay",
   "plugin_api_version": "1.0",
-  "requires_core": "1.3.2",
+  "requires_core": ">=1.3.2",
   "requires_php": ">=8.1",
   "provider": "Proma\\Plugins\\Accounting\\AccountingServiceProvider",
   "permissions": [
@@ -32,6 +32,19 @@
     {"key":"plugin.proma-accounting.export_user_accounting","label":"خروجی حساب کاربران"},
     {"key":"plugin.proma-accounting.manage_accounting_settings","label":"تنظیمات حسابداری"},
     {"key":"plugin.proma-accounting.backfill_sales","label":"بازسازی فروش‌های قبلی"}
+    ,{"key":"plugin.proma-accounting.analytics_self","label":"مشاهده داشبورد مالی شخصی"}
+    ,{"key":"plugin.proma-accounting.analytics_users_view","label":"مشاهده تحلیل مالی کاربران"}
+    ,{"key":"plugin.proma-accounting.analytics_users_export","label":"خروجی تحلیل مالی کاربران"}
+    ,{"key":"plugin.proma-accounting.analytics_settings_manage","label":"مدیریت طبقه‌بندی مالی و حقوق"}
+    ,{"key":"plugin.proma-accounting.referrals_self","label":"مشاهده معرفی مشتریان و کمیسیون بازاریابی"}
+    ,{"key":"plugin.proma-accounting.referral_admin_view","label":"مدیریت معرفی مشتریان"}
+    ,{"key":"plugin.proma-accounting.referral_admin_manage","label":"مدیریت کمیسیون معرفی مشتریان"}
+    ,{"key":"plugin.proma-accounting.referral_withdrawal_self","label":"ثبت درخواست برداشت معرفی"}
+    ,{"key":"plugin.proma-accounting.analytics_settings_manage","label":"مدیریت طبقه‌بندی مالی و حقوق"}
+    ,{"key":"plugin.proma-accounting.referrals_self","label":"مشاهده معرفی مشتریان و کمیسیون بازاریابی"}
+    ,{"key":"plugin.proma-accounting.referral_admin_view","label":"مدیریت معرفی مشتریان"}
+    ,{"key":"plugin.proma-accounting.referral_admin_manage","label":"مدیریت کمیسیون معرفی مشتریان"}
+    ,{"key":"plugin.proma-accounting.referral_withdrawal_self","label":"ثبت درخواست برداشت معرفی"}
   ],
   "dependencies": [],
   "routes": [
@@ -58,13 +71,31 @@
     {"path":"plugin/accounting/setup/skip","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@skipSetup","method":"POST","permission":"plugin.proma-accounting.manage_accounting_settings"},
     {"path":"plugin/accounting/help","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@help","method":"GET","permission":"plugin.proma-accounting.view"},
     {"path":"plugin/accounting/backfill","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@backfill","method":"GET","permission":"plugin.proma-accounting.backfill_sales"},
-    {"path":"plugin/accounting/backfill/run","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@runBackfill","method":"POST","permission":"plugin.proma-accounting.backfill_sales"}
+    {"path":"plugin/accounting/backfill/run","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@runBackfill","method":"POST","permission":"plugin.proma-accounting.backfill_sales"},
+    {"path":"plugin/accounting/my-finance","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@myFinance","method":"GET","permission":"plugin.proma-accounting.analytics_self"},
+    {"path":"plugin/accounting/analytics/users","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@userAnalytics","method":"GET","permission":"plugin.proma-accounting.analytics_users_view"},
+    {"path":"plugin/accounting/analytics/user/{userId}/summary","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@analyticsSummary","method":"GET","permission":"plugin.proma-accounting.analytics_self"},
+    {"path":"plugin/accounting/salary","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@salary","method":"GET","permission":"plugin.proma-accounting.analytics_settings_manage"},
+    {"path":"plugin/accounting/salary/save","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@saveSalary","method":"POST","permission":"plugin.proma-accounting.analytics_settings_manage"},
+    {"path":"plugin/accounting/salary/post","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@postSalary","method":"POST","permission":"plugin.proma-accounting.analytics_settings_manage"},
+    {"path":"plugin/accounting/referrals","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@referrals","method":"GET","permission":"plugin.proma-accounting.referral_admin_view"},
+    {"path":"portal/referrals","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@referrals","method":"GET","permission":""},
+    {"path":"portal/referrals/code","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@createReferralCode","method":"POST","permission":""},
+    {"path":"plugin/accounting/referrals/my","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@referrals","method":"GET","permission":""},
+    {"path":"portal/referrals/bank","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@bank","method":"GET","permission":""},
+    {"path":"portal/referrals/bank/save","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@saveBank","method":"POST","permission":""},
+    {"path":"portal/referrals/withdrawals","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@withdrawals","method":"GET","permission":""},
+    {"path":"portal/referrals/withdrawals/create","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@createWithdrawal","method":"POST","permission":""},
+    {"path":"plugin/accounting/referrals/withdrawals","handler":"Proma\\Plugins\\Accounting\\Controllers\\AccountingController@withdrawals","method":"GET","permission":"plugin.proma-accounting.referral_admin_view"}
   ],
-  "migrations": [
+    "migrations": [
     "migrations/2026_07_12_accounting_core.sql",
     "migrations/2026_07_13_accounting_v1_1.sql",
     "migrations/2026_07_18_accounting_request_integrity.sql",
-    "migrations/2026_07_21_accounting_dashboard_performance.sql"
+    "migrations/2026_07_21_accounting_dashboard_performance.sql",
+    "migrations/2026_07_26_accounting_analytics_salary.sql",
+    "migrations/2026_07_28_customer_referrals.sql"
+    ,"migrations/2026_07_29_customer_withdrawals_bank.sql"
   ],
   "assets": [
     "assets/css/accounting.css",

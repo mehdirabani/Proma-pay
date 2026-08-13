@@ -388,20 +388,30 @@ function money_toman($value)
 
 function penalty_display_html(array $item)
 {
-    $current = normalize_money($item['penalty'] ?? $item['calculated_penalty'] ?? 0);
-    $normal = normalize_money($item['normal_penalty'] ?? $current);
-    $legal = normalize_money($item['legal_penalty'] ?? $current);
+    $current = normalize_money($item['effective_penalty_payable'] ?? $item['penalty'] ?? $item['calculated_penalty'] ?? 0);
+    $normal = normalize_money($item['normal_penalty_accrued'] ?? $item['normal_penalty'] ?? $current);
+    $legal = normalize_money($item['legal_penalty_accrued'] ?? $item['legal_penalty'] ?? 0);
+    $projected = normalize_money($item['projected_legal_penalty'] ?? 0);
     $mode = (string) ($item['penalty_mode'] ?? 'normal');
 
-    if ($mode !== 'legal' && $legal > $current) {
-        return '<span class="proma-penalty-display proma-penalty-display--discounted">'
-            . '<del title="جریمه حقوقی در صورت ورود پرونده به شکایت">' . money_toman($legal) . '</del>'
+    if (!empty($item['show_projected_legal_penalty']) && $projected > 0) {
+        return '<span class="proma-penalty-display proma-penalty-display--discounted" title="فقط برآورد مقایسه‌ای؛ در بدهی و پرداخت لحاظ نشده است">'
+            . '<small>جریمه عادی قابل پرداخت</small>'
             . '<strong>' . money_toman($current) . '</strong>'
-            . '<small>جریمه قابل اعمال</small>'
+            . '<del>جریمه حقوقی احتمالی: ' . money_toman($projected) . '</del>'
+            . '<small><span class="badge muted">فعلاً اعمال نشده</span> در مبلغ قابل پرداخت امروز محاسبه نشده است.</small>'
             . '</span>';
     }
 
-    $label = $mode === 'legal' ? 'جریمه حقوقی' : ($normal > 0 ? 'جریمه عادی' : '');
+    if ($mode === 'legal' || $legal > 0) {
+        return '<span class="proma-penalty-display proma-penalty-display--legal">'
+            . '<strong>' . money_toman($current) . '</strong>'
+            . '<small>جریمه عادی تا تاریخ ارجاع: ' . money_toman($normal) . '</small>'
+            . '<small>جریمه حقوقی پس از ارجاع: ' . money_toman($legal) . '</small>'
+            . '</span>';
+    }
+
+    $label = $normal > 0 ? 'جریمه عادی قابل پرداخت' : '';
     return '<span class="proma-penalty-display' . ($mode === 'legal' ? ' proma-penalty-display--legal' : '') . '">'
         . '<strong>' . money_toman($current) . '</strong>'
         . ($label !== '' ? '<small>' . e($label) . '</small>' : '')

@@ -15,9 +15,7 @@ $layoutAppIconPath = $layoutLogoIconPath ?: $layoutFaviconPath;
   <link rel="icon" href="<?= e($layoutFaviconPath ? asset_url($layoutFaviconPath) : template_asset_url('images/favicon.png')) ?>">
   <link rel="apple-touch-icon" href="<?= e($layoutAppIconPath ? asset_url($layoutAppIconPath) : template_asset_url('images/favicon.png')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/font-awesome.css')) ?>">
-  <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/icofont.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/themify.css')) ?>">
-  <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/flag-icon.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/feather-icon.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/bootstrap.rtl.min.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/style.css')) ?>">

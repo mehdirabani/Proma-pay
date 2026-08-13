@@ -6,7 +6,7 @@ class AccountingServiceProvider implements \PluginServiceProviderInterface
 {
     public function register(\PluginManager $manager, array $manifest)
     {
-        foreach (['Money', 'AccountingRepository', 'AccountingIdempotencyService', 'LedgerService', 'CommissionCalculationService', 'CommissionService', 'SalesService'] as $file) {
+        foreach (['Money', 'AccountingRepository', 'AccountingIdempotencyService', 'LedgerService', 'CommissionCalculationService', 'CommissionService', 'SalesService', 'AnalyticsService'] as $file) {
             require_once __DIR__ . '/Services/' . $file . '.php';
         }
         require_once __DIR__ . '/Controllers/AccountingController.php';

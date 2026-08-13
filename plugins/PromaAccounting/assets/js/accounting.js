@@ -187,6 +187,11 @@
         activeConfirmForm.appendChild(reason);
       }
       reason.value = reasonInput.value.trim();
+      var submitButton = dialog.querySelector('[data-confirm-submit]');
+      submitButton.disabled = true;
+      submitButton.classList.add('is-loading');
+      var label = submitButton.querySelector('span');
+      if (label) label.textContent = 'در حال ثبت…';
       activeConfirmForm.dataset.confirmed = '1';
       dialog.close();
       activeConfirmForm.requestSubmit();
@@ -284,6 +289,21 @@
     });
   }
 
+  function setupFinanceCharts(root) {
+    if (!window.Chart) return;
+    root.querySelectorAll('[data-accounting-finance-chart]').forEach(function (canvas) {
+      var labels, income, expense, net;
+      try { labels = JSON.parse(canvas.dataset.labels || '[]'); income = JSON.parse(canvas.dataset.income || '[]'); expense = JSON.parse(canvas.dataset.expense || '[]'); net = JSON.parse(canvas.dataset.net || '[]'); } catch (error) { return; }
+      if (!labels.length) return;
+      var textColor = css(root, '--pa-muted', '#73768a');
+      new window.Chart(canvas.getContext('2d'), {type: 'line', data: {labels: labels, datasets: [
+        {label: 'درآمد', data: income, borderColor: css(root, '--pa-success', '#22a65a'), borderWidth: 2, pointRadius: 3, tension: .3},
+        {label: 'هزینه', data: expense, borderColor: css(root, '--pa-danger', '#d94a4a'), borderWidth: 2, pointRadius: 3, tension: .3},
+        {label: 'خالص عملکرد مالی', data: net, borderColor: css(root, '--pa-primary', '#6a1b9a'), borderWidth: 3, pointRadius: 3, tension: .3}
+      ]}, options: {responsive: true, maintainAspectRatio: false, interaction: {mode: 'index', intersect: false}, plugins: {legend: {display: true, rtl: true, labels: {color: textColor}}, tooltip: {rtl: true, callbacks: {label: function (context) { return context.dataset.label + ': ' + money(context.parsed.y); }}}}, scales: {x: {grid: {display: false}, ticks: {color: textColor}}, y: {border: {display: false}, ticks: {color: textColor, callback: function (value) { return localized(value); }}}}}});
+    });
+  }
+
   document.querySelectorAll('.proma-accounting').forEach(function (root) {
     syncCommissionUnit(root);
     syncRounding(root);
@@ -305,5 +325,22 @@
     setupSettingsNav(root);
     setupHelpSearch(root);
     setupCharts(root);
+    setupFinanceCharts(root);
   });
 })();
+
+// Display-only grouping for financial inputs. Server-side Money remains authoritative.
+(function () {
+  function normalize(value) {
+    return String(value || '')
+      .replace(/[۰-۹]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); })
+      .replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); })
+      .replace(/[^0-9]/g, '');
+  }
+  function format(value) { var raw = normalize(value); return raw ? raw.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''; }
+  document.querySelectorAll('[data-money-input]').forEach(function (input) {
+    input.addEventListener('input', function () { input.value = format(input.value); });
+    input.addEventListener('blur', function () { input.value = format(input.value); });
+    if (input.form) input.form.addEventListener('submit', function () { input.value = normalize(input.value); });
+  });
+}());

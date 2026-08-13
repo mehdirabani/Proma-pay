@@ -14,7 +14,7 @@ $assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.3.2', 
 
 $plugin = json_decode((string) file_get_contents($root . '/plugins/PromaAccounting/plugin.json'), true);
 $assert(version_compare((string) ($plugin['version'] ?? '0.0.0'), '1.2.3', '>='), 'Proma Accounting version must retain V1.2.3 compatibility.');
-$assert(($plugin['requires_core'] ?? '') === '1.3.2', 'Proma Accounting must require core 1.3.2.');
+$assert((bool) preg_match('/^(?:>=)?1\\.3\\.2$/', trim((string) ($plugin['requires_core'] ?? ''))), 'Proma Accounting must require core 1.3.2 or newer.');
 
 $layout = (string) file_get_contents($root . '/views/layouts/app.php');
 $manager = (string) file_get_contents($root . '/core/PluginManager.php');
@@ -27,7 +27,7 @@ $assert(is_file($root . '/assets/vendor/chart.umd.min.js'), 'Local Chart.js asse
 $assert(strpos($build, "'plugins/'") !== false, 'Core package does not explicitly exclude plugins.');
 $assert(strpos($build, "'/plugins/PromaAccounting'") !== false && strpos($build, "\$pluginArchiveName = 'PromaAccounting'") !== false, 'Proma Accounting package declaration is missing.');
 $assert(strpos($build, "\$pluginArchiveName") !== false && strpos($build, "\$pluginVersion") !== false, 'Canonical versioned plugin package naming is missing.');
-$assert(strpos($build, "'assets/'") !== false && strpos($build, "'--diff-filter=ACMRT'") !== false && strpos($build, "'--name-only'") !== false, 'Differential update asset inventory is missing.');
+$assert(strpos($build, 'PROMA_UPDATE_BASELINE_ARCHIVE') !== false && strpos($build, 'release-manifest.json') !== false && strpos($build, '$baselineFiles') !== false, 'Differential update baseline inventory is missing.');
 
 $migrations = glob($root . '/plugins/PromaAccounting/migrations/*.sql') ?: [];
 $declaredMigrations = array_values($plugin['migrations'] ?? []);

@@ -120,7 +120,7 @@ class LegalCaseLog extends Model
             'SELECT COALESCE(SUM(cost_amount), 0) AS total FROM legal_case_logs WHERE contract_id = ?',
             [(int) $contractId]
         );
-        return (float) ($row['total'] ?? 0);
+        return normalize_money($row['total'] ?? 0);
     }
 
     public static function createLog(array $data, array $upload = [])
@@ -152,6 +152,7 @@ class LegalCaseLog extends Model
                 ]
             );
             $id = (int) self::lastInsertId();
+            LegalCaseCostService::syncFromLegalLog($id, $payload, (string) $payload['action_title'], (int) ($payload['registered_by'] ?? 0));
             if ($attachmentPath && class_exists('FileRecord')) {
                 try {
                     FileRecord::relatePath($attachmentPath, 'legal_case_log', $id, 'legal_attachment', (int) $payload['registered_by']);
@@ -183,6 +184,7 @@ class LegalCaseLog extends Model
         }
 
         $payload = self::normalizePayload($data + ['contract_id' => $existing['contract_id']]);
+        LegalCaseCostService::assertLogSyncAllowed((int) $id, $payload);
         $attachmentPath = $existing['attachment_path'] ?: null;
         $newAttachmentPath = $attachmentPath;
         $removeAttachment = (int) ($data['remove_attachment'] ?? 0) === 1;
@@ -214,6 +216,7 @@ class LegalCaseLog extends Model
                     (int) $id,
                 ]
             );
+            LegalCaseCostService::syncFromLegalLog((int) $id, $payload, (string) $payload['action_title'], (int) ($payload['registered_by'] ?? 0));
 
             if ($newAttachmentPath && $newAttachmentPath !== $attachmentPath && class_exists('FileRecord')) {
                 try {
@@ -251,6 +254,9 @@ class LegalCaseLog extends Model
         $existing = self::find((int) $id);
         if (!$existing) {
             throw new InvalidArgumentException('لاگ حقوقی پیدا نشد.');
+        }
+        if (normalize_money($existing['cost_amount'] ?? 0) > 0) {
+            throw new InvalidArgumentException('لاگ دارای هزینه مالی قابل حذف نیست؛ از گردش برگشت هزینه و ثبت اصلاحیه استفاده کنید.');
         }
         self::execute('DELETE FROM legal_case_logs WHERE id = ?', [(int) $id]);
         if (!empty($existing['attachment_path'])) {

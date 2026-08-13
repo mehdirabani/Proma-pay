@@ -20,7 +20,9 @@ class Router
         if (strpos($route, 'auth/') !== 0) {
             Auth::releaseSessionLock();
         }
-        if (class_exists('PluginManager')) {
+        // The financial preview is a tiny core-only JSON calculation. Avoid booting
+        // all optional plugins (and their queries) for each keystroke.
+        if (class_exists('PluginManager') && $route !== 'contracts/preview') {
             try {
                 if (PluginManager::boot()->dispatchRoute($route)) {
                     RequestTelemetry::recordSpan('route.plugin', $requestStartedAt, ['route' => $route]);

@@ -30,8 +30,9 @@ if ($localGateCode !== 0) {
 }
 
 $distCore = $root . '/dist/core';
+$distUpdates = $root . '/dist/updates';
 $distPlugins = $root . '/dist/plugins';
-foreach ([$distCore, $distPlugins] as $directory) {
+foreach ([$distCore, $distUpdates, $distPlugins] as $directory) {
     if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
         throw new RuntimeException('Cannot create RC directory: ' . $directory);
     }
@@ -75,6 +76,9 @@ $excluded = static function (string $relative) use ($normalize): bool {
     $path = strtolower($normalize($relative));
     if (in_array($path, ['.env', 'config/database.php', 'installed.lock', '1.xlsx'], true)) {
         return true;
+    }
+    if (strpos($path, 'html/rtl/assets/') === 0) {
+        return !preg_match('#^html/rtl/assets/(?:css|fonts|images|js|json|svg)/#', $path);
     }
     foreach (['.git/', '.github/', '.agents/', '.codex/', 'dist/', 'storage/', 'tmp/', 'plugins/', 'plugin-packages/', 'node_modules/', 'docs/accounting-next/', 'docs/accounting-stability/', 'html/docs/', 'html/rtl/dist/', 'html/rtl/starter-kit/', 'html/rtl/template/'] as $prefix) {
         if (strpos($path, $prefix) === 0) {
@@ -121,7 +125,7 @@ $candidates = array_values(array_unique(array_merge(
     ['config/version.php', 'manifest.json', 'package.json', 'service-worker.js']
 )));
 sort($candidates, SORT_STRING);
-$runtimeRoots = ['assets/', 'config/', 'controllers/', 'core/', 'database/', 'helpers/', 'models/', 'views/'];
+$runtimeRoots = ['assets/', 'config/', 'controllers/', 'core/', 'database/', 'helpers/', 'html/RTL/assets/', 'models/', 'views/'];
 $runtimeRootFiles = ['.htaccess', 'bootstrap.php', 'index.php', 'install.php', 'installer.php', 'manifest.json', 'package.json', 'service-worker.js'];
 $updateFiles = [];
 foreach ($candidates as $candidate) {
@@ -157,14 +161,14 @@ $updateManifest = [
     'preserves' => ['config/database.php', 'plugins/', 'storage/', 'uploads/'],
 ];
 $updateJson = json_encode($updateManifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-$updatePath = $distCore . '/PromaPay-Update-v' . $version . '.zip';
+$updatePath = $distUpdates . '/PromaPay-Update-v' . $version . '.zip';
 $updateZip = $openZip($updatePath);
 foreach ($updateFiles as $path => $source) {
     $updateZip->addFile($source, $path);
 }
 $updateZip->addFromString('proma-update.json', $updateJson);
 $updateZip->close();
-$updateManifestPath = $distCore . '/PromaPay-Update-v' . $version . '-manifest.json';
+$updateManifestPath = $distUpdates . '/PromaPay-Update-v' . $version . '-manifest.json';
 file_put_contents($updateManifestPath, $updateJson . PHP_EOL, LOCK_EX);
 
 $pluginFiles = $walk($accountingRoot, static fn (string $relative): bool => !preg_match('/\.(?:zip|log|tmp)$/i', basename($relative)), 'PromaAccounting');

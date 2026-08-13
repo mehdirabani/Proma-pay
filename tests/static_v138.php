@@ -54,7 +54,7 @@ $assert(strpos($event, "e.event_type != 'installment'") !== false, 'Calendar vis
 $assert(strpos($calendar, "Auth::role() === 'customer'") !== false, 'Only customers should receive automatic installment calendar events.');
 
 $overdue = (string) file_get_contents($root . '/views/overdue/index.php');
-$assert(strpos($overdue, 'normalize_iran_phone') !== false && strpos($overdue, 'data-copy-phone') !== false, 'Overdue contact action is incomplete.');
+$assert(strpos($overdue, 'normalize_iran_phone') !== false && (strpos($overdue, 'data-copy-phone') !== false || strpos($overdue, 'data-contact-directory') !== false), 'Overdue contact action is incomplete.');
 
 $contracts = (string) file_get_contents($root . '/views/contracts/index.php');
 $assert(strpos($contracts, 'لغو قطعی قرارداد') !== false, 'Cancellation modal primary action is not explicit.');

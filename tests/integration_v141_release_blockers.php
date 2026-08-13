@@ -160,7 +160,7 @@ $repairContractId = Contract::createWithInstallments([
     'created_by' => $adminId,
 ]);
 $repairInstallment = Model::fetch('SELECT * FROM installments WHERE contract_id = ? LIMIT 1', [$repairContractId]);
-Model::execute('UPDATE installments SET paid_amount = base_amount, remaining_amount = base_amount, status = ? WHERE id = ?', ['pending', (int) $repairInstallment['id']]);
+Model::execute('UPDATE installments SET paid_amount = base_amount, remaining_amount = 0, status = ? WHERE id = ?', ['paid', (int) $repairInstallment['id']]);
 $issues = array_values(array_filter(InstallmentReconciliationService::scan(), static function ($issue) use ($repairInstallment) {
     return (int) ($issue['id'] ?? 0) === (int) $repairInstallment['id'];
 }));

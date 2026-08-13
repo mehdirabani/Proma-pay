@@ -3,6 +3,7 @@
 namespace Proma\Plugins\Accounting\Controllers;
 
 use Proma\Plugins\Accounting\Services\AccountingRepository;
+use Proma\Plugins\Accounting\Services\AnalyticsService;
 use Proma\Plugins\Accounting\Services\CommissionCalculationService;
 use Proma\Plugins\Accounting\Services\CommissionService;
 use Proma\Plugins\Accounting\Services\LedgerService;
@@ -85,6 +86,8 @@ class AccountingController extends \Controller
             throw new \InvalidArgumentException('کاربر حسابداری پیدا نشد.');
         }
         $result = AccountingRepository::ledger((int) $userId, $_GET['page'] ?? 1, 50);
+        $chartEnd = date('Y-m-d');
+        $chartStart = date('Y-m-01', strtotime('-11 months'));
         $this->render('plugin:proma-accounting/ledger', [
             'title' => 'دفترکل ' . ($user['full_name'] ?? ''),
             'accountUser' => $user,
@@ -93,6 +96,9 @@ class AccountingController extends \Controller
             'balance' => LedgerService::balance((int) $userId),
             'accountSummary' => AccountingRepository::accountSummary((int) $userId),
             'categories' => AccountingRepository::categories(),
+            'financeChart' => AnalyticsService::monthlyChart((int) $userId, $chartStart, $chartEnd),
+            'financeChartStart' => $chartStart,
+            'financeChartEnd' => $chartEnd,
         ]);
     }
 
@@ -291,6 +297,37 @@ class AccountingController extends \Controller
             'is_active' => isset($input['is_active']) ? 1 : 0,
             'priority' => (int) ($input['priority'] ?? 0),
         ];
+    }
+
+    public function myFinance()
+    {
+        $userId = (int) \Auth::id();
+        $start = $_GET['start_date'] ?? date('Y-m-01');
+        $end = $_GET['end_date'] ?? date('Y-m-d');
+        $summary = AnalyticsService::summary($userId, $start, $end);
+        $this->render('plugin:proma-accounting/analytics', ['title' => 'داشبورد مالی من', 'summary' => $summary, 'chart' => AnalyticsService::chart($userId, $start, $end), 'self' => true]);
+    }
+
+    public function userAnalytics()
+    {
+        $userId = (int) ($_GET['user_id'] ?? \Auth::id());
+        $staff = AccountingRepository::staff($_GET['q'] ?? '');
+        $start = $_GET['start_date'] ?? date('Y-m-01');
+        $end = $_GET['end_date'] ?? date('Y-m-d');
+        $summary = AnalyticsService::summary($userId, $start, $end);
+        $this->render('plugin:proma-accounting/analytics', ['title' => 'تحلیل مالی کاربران', 'summary' => $summary, 'chart' => AnalyticsService::chart($userId, $start, $end), 'staff' => $staff, 'selectedUserId' => $userId, 'self' => false]);
+    }
+
+    public function analyticsSummary($userId)
+    {
+        $requested = (int) $userId;
+        $self = (int) \Auth::id() === $requested;
+        if (!$self && \Auth::role() !== 'admin') {
+            throw new \RuntimeException('دسترسی به تحلیل مالی این کاربر مجاز نیست.');
+        }
+        $start = $_GET['start_date'] ?? date('Y-m-01');
+        $end = $_GET['end_date'] ?? date('Y-m-d');
+        $this->json(['ok' => true, 'user_id' => $requested, 'summary' => AnalyticsService::summary($requested, $start, $end), 'chart' => AnalyticsService::chart($requested, $start, $end)]);
     }
 
     public function settings()

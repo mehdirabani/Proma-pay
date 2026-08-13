@@ -35,6 +35,30 @@ ErrorDocument 504 /static-errors/504.html
     Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
 </IfModule>
 
+# Runtime assets use versioned URLs. Caching them prevents every navigation or
+# refresh from re-downloading dozens of CSS, JS, font and image files on a
+# shared host. Dynamic PHP routes, service-worker.js and health-static.txt are
+# deliberately excluded below and remain non-cacheable.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(?:css|js|mjs|woff2?|ttf|otf|svg|png|jpe?g|gif|webp|ico)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
 <FilesMatch "^(installed\.lock|\.env|composer\.(json|lock)|package(-lock)?\.json)$">
     <IfModule mod_authz_core.c>
         Require all denied

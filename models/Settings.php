@@ -10,16 +10,10 @@ class Settings extends Model
             return;
         }
         SchemaGuard::requireColumns('settings', ['setting_key', 'setting_value', 'is_secret']);
-        try {
-            self::execute(
-                "UPDATE settings
-                 SET setting_value = 'پروما'
-                 WHERE setting_key IN ('system_name', 'logo_text')
-                 AND setting_value IN ('پرما پرداخت', 'پرما ابزار')"
-            );
-        } catch (Throwable $e) {
-        }
-        self::seedCalendarDefaults();
+        // Seed and data-normalization work belongs to the installer or an
+        // explicit migration. Running writes from this method made every page
+        // view contend on the settings table, which is especially harmful on
+        // shared hosts with a small database worker pool.
         self::$schemaReady = true;
     }
 
@@ -83,9 +77,24 @@ class Settings extends Model
             'contract_print_color_mode' => 'color',
             'monthly_penalty_rate' => '10',
             'legal_monthly_penalty_rate' => '20',
+            'show_projected_legal_penalty_to_customer' => '1',
+            'projected_legal_penalty_customer_message' => 'جریمه حقوقی نمایش‌داده‌شده صرفاً برآورد مقایسه‌ای است و تا ثبت ارجاع رسمی، به مبلغ قابل پرداخت شما اضافه نمی‌شود.',
             'late_penalty_grace_days' => '0',
-            'contract_legal_penalty_clause' => 'اینجانب امانت‌دار اعلام می‌کنم بند جریمه دیرکرد عادی و جریمه دیرکرد مرحله حقوقی را مطالعه کرده و می‌پذیرم. تا پیش از ثبت یا ارجاع پرونده حقوقی، جریمه دیرکرد با نرخ عادی ماهانه محاسبه می‌شود؛ از زمان ورود قرارداد به مرحله حقوقی یا شکایت، جریمه دیرکرد با نرخ حقوقی ماهانه محاسبه خواهد شد.',
+            'contract_legal_penalty_clause' => 'اینجانب امانت‌دار اعلام می‌کنم بند جریمه دیرکرد عادی و جریمه دیرکرد مرحله حقوقی را مطالعه کرده و می‌پذیرم. تا پیش از ثبت ارجاع رسمی و قابل‌پیگیری، جریمه دیرکرد با نرخ عادی ماهانه محاسبه می‌شود؛ از زمان ثبت ارجاع رسمی، جریمه دیرکرد با نرخ حقوقی ماهانه محاسبه خواهد شد.',
+            'legal_delay_value' => '30',
+            'legal_delay_unit' => 'day',
+            'legal_overdue_count_threshold' => '1',
+            'legal_overdue_amount_enabled' => '0',
+            'legal_overdue_amount_threshold' => '0',
+            'legal_eligibility_operator' => 'delay_only',
+            'legal_warning_before_days' => '0',
+            'legal_allow_self_initiation' => '1',
+            'legal_contractual_warning_template' => "این سند «اخطار قراردادی داخلی» است و ابلاغ قضایی رسمی محسوب نمی‌شود.\n\nطرف قرارداد: {{customer_name}}\nشماره قرارداد: {{contract_number}}\nمبلغ معوق فعلی: {{overdue_amount}}\nمهلت پیشنهادی اقدام: {{deadline_date}}",
+            'legal_petition_draft_template' => "این متن صرفاً پیش‌نویس داخلی دادخواست است و تا ثبت واقعی در مرجع صالح، دادخواست ثبت‌شده محسوب نمی‌شود.\n\nخواهان: {{company_name}}\nخوانده: {{customer_name}}\nشماره قرارداد: {{contract_number}}\nمبلغ معوق فعلی: {{overdue_amount}}\nخواسته و شرح: {{legal_notes}}",
+            'legal_complaint_draft_template' => "این متن صرفاً پیش‌نویس داخلی شکواییه/درخواست حقوقی است و تا ثبت واقعی در مرجع صالح، ثبت رسمی محسوب نمی‌شود.\n\nمتقاضی: {{company_name}}\nطرف قرارداد: {{customer_name}}\nشماره قرارداد: {{contract_number}}\nشرح اولیه: {{legal_notes}}",
             'monthly_reward_rate' => '1',
+            // Shared by management, customer and gateway settlement quotes.
+            'settlement_quote_ttl_seconds' => '300',
             'zibal_enabled' => '1',
             'zibal_test_mode' => '0',
             'zibal_merchant' => '',

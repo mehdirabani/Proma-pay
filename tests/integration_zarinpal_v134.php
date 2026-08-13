@@ -162,9 +162,9 @@ if ($groupAmount <= 0) {
     throw new RuntimeException('Group payable fixture is invalid.');
 }
 $group = $requestService->create([
-    // Only one installment is selected; the verified overpayment must be
-    // allocated to the next eligible installment by the core service.
-    'type' => 'group', 'installment_ids' => [$installmentIds[1]],
+    // The selected set is authoritative. A group may allocate only inside
+    // this set, so both installments are explicitly selected.
+    'type' => 'group', 'installment_ids' => [$installmentIds[1], $installmentIds[2]],
     'contract_id' => $contractId, 'contract_number' => $contractNumber, 'customer_id' => $customerId,
     'customer_name' => $customerName, 'customer_mobile' => $mobile, 'customer_email' => $email,
     'amount_toman' => $groupAmount, 'idempotency_key' => $idempotencyPrefix . 'group',

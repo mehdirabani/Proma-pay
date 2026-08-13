@@ -104,33 +104,69 @@
     }, 4200);
   };
 
+  // A corrupted extension, a double-bound handler or an aggressive browser retry
+  // must not turn one open tab into a burst of requests on a shared host.
+  // This queue applies to application fetches only; static assets stay browser-cached.
+  const clientRequestBudget = {
+    minimumGapMs: 750,
+    nextAvailableAt: 0,
+    blockedUntil: 0
+  };
+
+  const reserveClientRequestSlot = function () {
+    const now = Date.now();
+    const startsAt = Math.max(now, clientRequestBudget.nextAvailableAt, clientRequestBudget.blockedUntil);
+    clientRequestBudget.nextAvailableAt = startsAt + clientRequestBudget.minimumGapMs;
+    return new Promise(function (resolve) {
+      window.setTimeout(resolve, Math.max(0, startsAt - now));
+    });
+  };
+
+  const rememberRateLimit = function (response) {
+    if (!response || response.status !== 429) return;
+    const retryAfter = Math.max(3, Number.parseInt(response.headers.get('Retry-After') || '0', 10) || 0);
+    const resumeAt = Date.now() + (retryAfter * 1000);
+    clientRequestBudget.blockedUntil = Math.max(clientRequestBudget.blockedUntil, resumeAt);
+    clientRequestBudget.nextAvailableAt = Math.max(clientRequestBudget.nextAvailableAt, resumeAt);
+  };
+
   const fetchWithDeadline = function (url, options, timeoutMs) {
     const requestOptions = Object.assign({}, options || {});
-    if (!window.AbortController) return fetch(url, requestOptions);
-
-    const controller = new AbortController();
-    const upstreamSignal = requestOptions.signal;
-    const abortFromUpstream = function () { controller.abort(); };
-    if (upstreamSignal) {
-      if (upstreamSignal.aborted) {
-        controller.abort();
-      } else {
-        upstreamSignal.addEventListener('abort', abortFromUpstream, { once: true });
+    return reserveClientRequestSlot().then(function () {
+      if (!window.AbortController) {
+        return window.fetch(url, requestOptions).then(function (response) {
+          rememberRateLimit(response);
+          return response;
+        });
       }
-    }
-    requestOptions.signal = controller.signal;
-    const timeout = window.setTimeout(function () {
-      controller.abort();
-    }, Math.max(1000, Number(timeoutMs) || 10000));
 
-    return fetch(url, requestOptions).finally(function () {
-      window.clearTimeout(timeout);
-      if (upstreamSignal) upstreamSignal.removeEventListener('abort', abortFromUpstream);
+      const controller = new AbortController();
+      const upstreamSignal = requestOptions.signal;
+      const abortFromUpstream = function () { controller.abort(); };
+      if (upstreamSignal) {
+        if (upstreamSignal.aborted) {
+          controller.abort();
+        } else {
+          upstreamSignal.addEventListener('abort', abortFromUpstream, { once: true });
+        }
+      }
+      requestOptions.signal = controller.signal;
+      const timeout = window.setTimeout(function () {
+        controller.abort();
+      }, Math.max(1000, Number(timeoutMs) || 10000));
+
+      return window.fetch(url, requestOptions).then(function (response) {
+        rememberRateLimit(response);
+        return response;
+      }).finally(function () {
+        window.clearTimeout(timeout);
+        if (upstreamSignal) upstreamSignal.removeEventListener('abort', abortFromUpstream);
+      });
     });
   };
 
   const createAdaptivePoller = function (task, options) {
-    const config = Object.assign({ interval: 15000, maxInterval: 120000, hiddenInterval: 60000, timeout: 10000, leaseKey: '' }, options || {});
+    const config = Object.assign({ interval: 60000, maxInterval: 900000, hiddenInterval: 300000, timeout: 10000, leaseKey: '' }, options || {});
     let timer = null;
     let requestTimer = null;
     let controller = null;
@@ -313,6 +349,21 @@
   const initModals = function () {
     let lastOpener = null;
     const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    // Mobile browsers can shift the visual viewport when the virtual
+    // keyboard opens. Keep the shared modal inset in sync without inline CSS.
+    const syncVisualViewport = function () {
+      const viewport = window.visualViewport;
+      if (!viewport) return;
+      const offset = Math.max(0, Math.round(viewport.offsetTop || 0));
+      document.documentElement.style.setProperty('--proma-visual-offset-top', offset + 'px');
+      document.documentElement.style.setProperty('--proma-visual-height', Math.max(1, Math.round(viewport.height || window.innerHeight)) + 'px');
+    };
+    if (window.visualViewport && document.documentElement.dataset.visualViewportBound !== '1') {
+      document.documentElement.dataset.visualViewportBound = '1';
+      window.visualViewport.addEventListener('resize', syncVisualViewport, { passive: true });
+      window.visualViewport.addEventListener('scroll', syncVisualViewport, { passive: true });
+      syncVisualViewport();
+    }
     Array.from(document.querySelectorAll('.modal')).forEach(function (modal) {
       if (modal.parentElement === document.body) return;
       if (modal.id) {
@@ -358,6 +409,7 @@
       modal.classList.remove('open');
       modal.setAttribute('aria-hidden', 'true');
       syncPageState();
+      modal.dispatchEvent(new CustomEvent('proma:modal-closed'));
       if (restoreFocus !== false && lastOpener && typeof lastOpener.focus === 'function' && document.contains(lastOpener)) {
         lastOpener.focus({ preventScroll: true });
       }
@@ -459,23 +511,6 @@
     syncPageState();
   };
 
-  const initViewportMetrics = function () {
-    const sync = function () {
-      const viewport = window.visualViewport;
-      const height = viewport ? viewport.height : window.innerHeight;
-      const offsetTop = viewport ? viewport.offsetTop : 0;
-      document.documentElement.style.setProperty('--proma-visual-height', Math.max(320, Math.round(height)) + 'px');
-      document.documentElement.style.setProperty('--proma-visual-offset-top', Math.max(0, Math.round(offsetTop)) + 'px');
-    };
-    sync();
-    window.addEventListener('resize', sync, { passive: true });
-    window.addEventListener('orientationchange', sync, { passive: true });
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', sync, { passive: true });
-      window.visualViewport.addEventListener('scroll', sync, { passive: true });
-    }
-  };
-
   const initProfileMenu = function () {
     const trigger = document.querySelector('.proma-profile-trigger');
     if (!trigger || trigger.dataset.profileMenuBound === '1') return;
@@ -539,6 +574,83 @@
   };
 
   const initContactActions = function () {
+    const contactModal = document.getElementById('contact-directory');
+    const contactTitle = contactModal ? contactModal.querySelector('[data-contact-directory-title]') : null;
+    const contactBody = contactModal ? contactModal.querySelector('[data-contact-directory-body]') : null;
+    const copyPhone = function (value) {
+      const copied = function () { showToast('شماره تماس کپی شد.', 'success'); };
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(value).then(copied).catch(function () { fallbackCopy(value, copied); });
+        return;
+      }
+      fallbackCopy(value, copied);
+    };
+
+    document.querySelectorAll('[data-contact-directory]').forEach(function (trigger) {
+      if (trigger.dataset.contactDirectoryBound === '1') return;
+      trigger.dataset.contactDirectoryBound = '1';
+      trigger.addEventListener('click', function () {
+        if (!contactModal || !contactBody) return;
+        let contacts = [];
+        try {
+          const parsed = JSON.parse(trigger.getAttribute('data-contact-directory') || '[]');
+          contacts = Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+          contacts = [];
+        }
+        contactBody.textContent = '';
+        if (contactTitle) contactTitle.textContent = trigger.getAttribute('data-contact-title') || 'فهرست تماس قرارداد';
+        if (!contacts.length) {
+          const empty = document.createElement('p');
+          empty.className = 'proma-contact-directory__empty';
+          empty.textContent = 'برای این قرارداد شمارهٔ تماس ثبت نشده است.';
+          contactBody.appendChild(empty);
+          return;
+        }
+        contacts.forEach(function (contact) {
+          const rawPhone = String(contact && contact.phone || '').trim();
+          const dialPhone = toEnglishDigits(rawPhone).replace(/[^\d+]/g, '');
+          if (!dialPhone) return;
+          const row = document.createElement('article');
+          row.className = 'proma-contact-row';
+          const identity = document.createElement('div');
+          identity.className = 'proma-contact-row__identity';
+          const name = document.createElement('strong');
+          name.textContent = String(contact.name || 'بدون نام');
+          const details = document.createElement('small');
+          const relationship = String(contact.relationship || 'تماس');
+          details.textContent = relationship + ' · ' + toPersianDigits(rawPhone);
+          identity.appendChild(name);
+          identity.appendChild(details);
+          const actions = document.createElement('div');
+          actions.className = 'proma-contact-row__actions';
+          const call = document.createElement('a');
+          call.className = 'btn small success';
+          call.href = 'tel:' + dialPhone;
+          call.textContent = 'تماس';
+          call.setAttribute('aria-label', 'تماس با ' + String(contact.name || 'مخاطب'));
+          const copy = document.createElement('button');
+          copy.type = 'button';
+          copy.className = 'proma-icon-button secondary';
+          copy.setAttribute('aria-label', 'کپی شماره ' + String(contact.name || 'مخاطب'));
+          copy.title = 'کپی شماره';
+          copy.textContent = '⧉';
+          copy.addEventListener('click', function () { copyPhone(rawPhone); });
+          actions.appendChild(call);
+          actions.appendChild(copy);
+          row.appendChild(identity);
+          row.appendChild(actions);
+          contactBody.appendChild(row);
+        });
+        if (!contactBody.childElementCount) {
+          const empty = document.createElement('p');
+          empty.className = 'proma-contact-directory__empty';
+          empty.textContent = 'برای این قرارداد شمارهٔ قابل تماس ثبت نشده است.';
+          contactBody.appendChild(empty);
+        }
+      });
+    });
+
     document.querySelectorAll('[data-copy-phone]').forEach(function (button) {
       if (button.dataset.copyPhoneBound === '1') return;
       button.dataset.copyPhoneBound = '1';
@@ -548,12 +660,7 @@
           showToast('شماره قابل کپی نیست.', 'error');
           return;
         }
-        const copied = function () { showToast('شماره تماس کپی شد.', 'success'); };
-        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-          navigator.clipboard.writeText(value).then(copied).catch(function () { fallbackCopy(value, copied); });
-          return;
-        }
-        fallbackCopy(value, copied);
+        copyPhone(value);
       });
     });
   };
@@ -675,14 +782,31 @@
         timer = window.setTimeout(load, Math.max(150, delay));
       };
 
+      const resetFilterPage = function () {
+        if (form.getAttribute('data-filter-reset-page') !== '1') return;
+        let pageField = form.querySelector('[data-filter-page], input[name="page"]');
+        if (!pageField) {
+          pageField = document.createElement('input');
+          pageField.type = 'hidden';
+          pageField.name = 'page';
+          pageField.setAttribute('data-filter-page', '');
+          form.appendChild(pageField);
+        }
+        pageField.value = '1';
+      };
+
       form.addEventListener('submit', function (event) {
         event.preventDefault();
         window.clearTimeout(timer);
+        resetFilterPage();
         load();
       });
       form.querySelectorAll('input, select').forEach(function (field) {
         if (field.type === 'hidden' || field.type === 'file') return;
-        field.addEventListener(field.tagName === 'SELECT' ? 'change' : 'input', schedule);
+        field.addEventListener(field.tagName === 'SELECT' ? 'change' : 'input', function () {
+          resetFilterPage();
+          schedule();
+        });
       });
     });
   };
@@ -1117,6 +1241,122 @@
     });
   };
 
+  class ContractPreviewController {
+    constructor(form, options) {
+      this.form = form;
+      this.options = options;
+      this.timer = null;
+      this.request = null;
+      this.sequence = 0;
+      this.inFlightKey = '';
+      this.lastSuccessfulKey = '';
+      this.cache = new Map();
+    }
+
+    init() {
+      if (this.form.dataset.contractPreviewInitialized === '1') return;
+      this.form.dataset.contractPreviewInitialized = '1';
+      const onFinanceChange = (event) => {
+        const field = event.target;
+        if (!field || !this.isFinanceField(field)) return;
+        this.schedulePreview();
+      };
+      this.form.addEventListener('input', onFinanceChange);
+      this.form.addEventListener('change', onFinanceChange);
+      const modal = this.form.closest('.modal');
+      if (modal) {
+        modal.addEventListener('proma:modal-opened', () => this.syncLocal());
+        modal.addEventListener('proma:modal-closed', () => this.cancel());
+      }
+      this.syncLocal();
+    }
+
+    isFinanceField(field) {
+      return field === this.options.principal || field === this.options.downPayment || field === this.options.months || field === this.options.rate || field.name === 'interest_type';
+    }
+
+    isActive() {
+      if (!this.form.isConnected || this.form.hasAttribute('disabled')) return false;
+      const modal = this.form.closest('.modal');
+      return modal ? modal.classList.contains('open') : this.form.getClientRects().length > 0;
+    }
+
+    payload() {
+      const raw = (field) => toEnglishDigits(field ? field.value : '').replace(/[٬،,\s]/g, '').replace(/٫/g, '.');
+      const principal = parseMoney(raw(this.options.principal));
+      const downPayment = parseMoney(raw(this.options.downPayment));
+      const months = Number(raw(this.options.months).replace(/[^\d]/g, '')) || 0;
+      const rate = raw(this.options.rate);
+      const interestType = this.options.interestType() === 'simple' ? 'simple' : 'compound';
+      if (principal <= 0 || downPayment < 0 || downPayment > principal || months < 1 || months > 480 || !/^\d+(?:\.\d{1,4})?$/.test(rate || '0') || Number(rate || 0) > 100) return null;
+      return { principal_amount: String(principal), down_payment_amount: String(downPayment), months: String(months), monthly_interest_rate: rate || '0', interest_type: interestType };
+    }
+
+    syncLocal() {
+      const principal = parseMoney(this.options.principal ? this.options.principal.value : 0);
+      const downPayment = parseMoney(this.options.downPayment ? this.options.downPayment.value : 0);
+      const financed = Math.max(0, principal - downPayment);
+      this.options.render({ principal_amount: formatMoney(principal), down_payment_amount: formatMoney(downPayment), financed_amount: formatMoney(financed), installment_amount: formatMoney(0), total_payable: formatMoney(0) });
+      this.options.setError(downPayment > principal ? 'مبلغ پیش‌پرداخت نمی‌تواند بیشتر از مبلغ اصل قرارداد باشد.' : '');
+    }
+
+    schedulePreview() {
+      this.syncLocal();
+      const payload = this.payload();
+      if (!payload || !this.isActive() || !this.options.endpoint) {
+        this.cancel();
+        return;
+      }
+      const key = JSON.stringify(payload);
+      if (key === this.lastSuccessfulKey || key === this.inFlightKey) return;
+      const cached = this.cache.get(key);
+      if (cached && cached.expiresAt > Date.now()) {
+        this.lastSuccessfulKey = key;
+        this.options.render(cached.formatted);
+        return;
+      }
+      window.clearTimeout(this.timer);
+      this.timer = window.setTimeout(() => this.requestPreview(key, payload), 650);
+    }
+
+    requestPreview(key, payload) {
+      if (!this.isActive() || key !== JSON.stringify(this.payload() || {})) return;
+      this.cancelRequest();
+      const sequence = ++this.sequence;
+      this.inFlightKey = key;
+      this.request = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const url = new URL(this.options.endpoint, window.location.href);
+      Object.keys(payload).forEach((name) => url.searchParams.set(name, payload[name]));
+      fetchWithDeadline(url.toString(), this.request ? { signal: this.request.signal, headers: { Accept: 'application/json' } } : { headers: { Accept: 'application/json' } }, 10000)
+        .then((response) => response.json())
+        .then((json) => {
+          if (sequence !== this.sequence || !this.isActive() || !json || !json.ok || !json.preview || !json.preview.formatted) return;
+          this.lastSuccessfulKey = key;
+          this.cache.set(key, { formatted: json.preview.formatted, expiresAt: Date.now() + 60000 });
+          this.options.render(json.preview.formatted);
+        })
+        .catch((error) => {
+          if (!error || error.name !== 'AbortError') this.lastSuccessfulKey = '';
+        })
+        .finally(() => {
+          if (sequence === this.sequence) this.inFlightKey = '';
+        });
+    }
+
+    cancelRequest() {
+      if (this.request && typeof this.request.abort === 'function') this.request.abort();
+      this.request = null;
+      this.inFlightKey = '';
+    }
+
+    cancel() {
+      window.clearTimeout(this.timer);
+      this.timer = null;
+      ++this.sequence;
+      this.cancelRequest();
+    }
+  }
+
   const initContractForms = function () {
     document.querySelectorAll('[data-contract-form]').forEach(function (form) {
       if (form.dataset.contractFormBound === '1') return;
@@ -1138,9 +1378,6 @@
       const identityStatus = form.querySelector('[data-customer-identity-status]');
       const identityEndpoint = form.getAttribute('data-identity-check-url');
       const previewUrl = form.getAttribute('data-preview-url');
-      let previewTimer = null;
-      let previewRequest = null;
-      let previewKey = '';
 
       const checkedInterestType = function () {
         const checked = form.querySelector('[name="interest_type"]:checked');
@@ -1288,46 +1525,23 @@
         }
       };
 
-      const updatePreview = function () {
-        const principalValue = parseMoney(principal ? principal.value : 0);
-        const downValue = parseMoney(downPayment ? downPayment.value : 0);
-        const monthsValue = Number(toEnglishDigits(months ? months.value : 1).replace(/[^\d]/g, '')) || 1;
-        const financedValue = Math.max(0, principalValue - downValue);
-        if (financed) financed.textContent = formatMoney(financedValue);
-        setText('[data-preview-principal]', formatMoney(principalValue));
-        setText('[data-preview-down-payment]', formatMoney(downValue));
-        setText('[data-preview-financed]', formatMoney(financedValue));
-        setText('[data-preview-installment]', formatMoney(0));
-        setText('[data-preview-total]', formatMoney(0));
-        showError(downValue > principalValue ? 'مبلغ پیش‌پرداخت نمی‌تواند بیشتر از مبلغ اصل قرارداد باشد.' : '');
-        if (!previewUrl || principalValue <= 0 || downValue > principalValue) return;
-        window.clearTimeout(previewTimer);
-        previewTimer = window.setTimeout(function () {
-          const params = new URLSearchParams({
-            principal_amount: principal ? principal.value : '',
-            down_payment_amount: downPayment ? downPayment.value : '',
-            months: months ? months.value : '',
-            monthly_interest_rate: rate ? rate.value : '',
-            interest_type: checkedInterestType()
-          });
-          const requestUrl = previewUrl + '&' + params.toString();
-          if (requestUrl === previewKey) return;
-          previewKey = requestUrl;
-          if (previewRequest && typeof previewRequest.abort === 'function') previewRequest.abort();
-          previewRequest = typeof AbortController !== 'undefined' ? new AbortController() : null;
-          fetchJsonCached(requestUrl, previewRequest ? { signal: previewRequest.signal } : {}, 5000).then(function (json) {
-            if (!json.ok || !json.preview || !json.preview.formatted) return;
-            setText('[data-preview-principal]', json.preview.formatted.principal_amount);
-            setText('[data-preview-down-payment]', json.preview.formatted.down_payment_amount);
-            setText('[data-preview-financed]', json.preview.formatted.financed_amount);
-            setText('[data-preview-installment]', json.preview.formatted.installment_amount);
-            setText('[data-preview-total]', json.preview.formatted.total_payable);
-            if (financed) financed.textContent = json.preview.formatted.financed_amount;
-          }).catch(function (requestError) {
-            if (!requestError || requestError.name !== 'AbortError') previewKey = '';
-          });
-        }, 500);
-      };
+      const previewController = new ContractPreviewController(form, {
+        endpoint: previewUrl,
+        principal: principal,
+        downPayment: downPayment,
+        months: months,
+        rate: rate,
+        interestType: checkedInterestType,
+        setError: showError,
+        render: function (formatted) {
+          setText('[data-preview-principal]', formatted.principal_amount);
+          setText('[data-preview-down-payment]', formatted.down_payment_amount);
+          setText('[data-preview-financed]', formatted.financed_amount);
+          setText('[data-preview-installment]', formatted.installment_amount);
+          setText('[data-preview-total]', formatted.total_payable);
+          if (financed) financed.textContent = formatted.financed_amount;
+        }
+      });
 
       customerModeTabs.forEach(function (tab) {
         tab.addEventListener('click', function () {
@@ -1413,14 +1627,7 @@
       });
       setCustomerMode(form.querySelector('[data-customer-select]') && form.querySelector('[data-customer-select]').value ? 'existing' : 'existing', false);
 
-      [principal, downPayment, months, rate].forEach(function (field) {
-        if (!field) return;
-        field.addEventListener('input', updatePreview);
-        field.addEventListener('change', updatePreview);
-      });
-      form.querySelectorAll('[name="interest_type"]').forEach(function (field) {
-        field.addEventListener('change', updatePreview);
-      });
+      previewController.init();
       if (customerSelect) {
         customerSelect.addEventListener('change', function () {
           syncCustomerChip();
@@ -1467,7 +1674,6 @@
       syncCustomerChip();
       syncGuarantorChips();
       syncLiveGuarantorChips();
-      updatePreview();
     });
   };
 
@@ -2067,7 +2273,7 @@
         button.textContent = 'در حال تست...';
         result.className = 'ai-test-result';
         result.textContent = 'در حال ارسال درخواست تست به OpenRouter...';
-        fetch(button.getAttribute('data-ai-test-url'), {
+        fetchWithDeadline(button.getAttribute('data-ai-test-url'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
@@ -2075,7 +2281,7 @@
             openrouter_api_key: apiKey ? apiKey.value : '',
             openrouter_model: model ? model.value : ''
           })
-        }).then(function (response) {
+        }, 15000).then(function (response) {
           return response.json();
         }).then(function (json) {
           result.classList.add(json.ok ? 'success' : 'error');
@@ -2269,12 +2475,12 @@
       ? 'receiver-' + receiver.value
       : 'channel-' + (channel && channel.value ? channel.value : 'none');
     const chatPoller = createAdaptivePoller(poll, {
-      interval: 15000,
-      maxInterval: 180000,
-      hiddenInterval: 90000,
+      interval: 60000,
+      maxInterval: 900000,
+      hiddenInterval: 600000,
       timeout: 8000,
       leaseKey: 'chat:' + (document.body.getAttribute('data-user-id') || 'guest') + ':' + chatLeaseTarget,
-      leaseMs: 30000
+      leaseMs: 90000
     });
 
     chatForm.addEventListener('submit', function (event) {
@@ -2442,12 +2648,12 @@
       });
     }
     createAdaptivePoller(fetchFeed, {
-      interval: 45000,
-      maxInterval: 300000,
-      hiddenInterval: 180000,
+      interval: 180000,
+      maxInterval: 1800000,
+      hiddenInterval: 900000,
       timeout: 8000,
       leaseKey: 'notifications:' + userId,
-      leaseMs: 60000
+      leaseMs: 210000
     });
   };
 
@@ -2477,10 +2683,6 @@
   const setQuillHtml = function (quill, html) {
     if (!quill) return;
     const value = String(html || '');
-    if (quill.clipboard && typeof quill.clipboard.dangerouslyPasteHTML === 'function') {
-      quill.clipboard.dangerouslyPasteHTML(value);
-      return;
-    }
     if (typeof quill.pasteHTML === 'function') {
       quill.pasteHTML(value);
       return;
@@ -2501,7 +2703,7 @@
 
   const initPromaRichEditors = function () {
     if (!window.Quill) return;
-    document.querySelectorAll('textarea[data-rich-editor]').forEach(function (textarea) {
+    document.querySelectorAll('textarea[data-rich-editor]:not([data-contract-template-editor])').forEach(function (textarea) {
       if (textarea.dataset.richEditorReady === '1') return;
       textarea.dataset.richEditorReady = '1';
 
@@ -2615,6 +2817,62 @@
     });
   };
 
+  const initContractDetailWorkspace = function () {
+    const workspace = document.querySelector('[data-contract-tabs]');
+    if (!workspace) return;
+    const buttons = Array.from(workspace.querySelectorAll('[data-contract-tab-open]'));
+    const panels = Array.from(document.querySelectorAll('[data-contract-tab-panel]'));
+    const activate = function (name) {
+      const target = String(name || 'summary');
+      buttons.forEach(function (button) {
+        const active = button.getAttribute('data-contract-tab-open') === target;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      panels.forEach(function (panel) {
+        panel.hidden = panel.getAttribute('data-contract-tab-panel') !== target;
+      });
+      try { window.history.replaceState(null, '', '#contract-' + encodeURIComponent(target)); } catch (error) {}
+    };
+    buttons.forEach(function (button) {
+      button.setAttribute('role', 'tab');
+      button.addEventListener('click', function () { activate(button.getAttribute('data-contract-tab-open')); });
+    });
+    const hash = (window.location.hash || '').replace(/^#contract-/, '');
+    activate(buttons.some(function (button) { return button.getAttribute('data-contract-tab-open') === hash; }) ? hash : 'summary');
+  };
+
+  const initContractSettlement = function () {
+    document.querySelectorAll('[data-contract-settlement-form]').forEach(function (form) {
+      if (form.dataset.settlementBound === '1') return;
+      form.dataset.settlementBound = '1';
+      const quoteInput = form.querySelector('[data-contract-settlement-quote]');
+      const amountInput = form.querySelector('[data-contract-settlement-amount]');
+      const submit = form.querySelector('[data-contract-settlement-submit]');
+      form.addEventListener('submit', function (event) {
+        if (form.dataset.quoteSubmitting === '1') return;
+        event.preventDefault();
+        const ids = Array.prototype.map.call(form.querySelectorAll('input[name="installment_ids[]"]'), function (input) { return input.value; });
+        if (!ids.length) return;
+        if (submit) { submit.disabled = true; submit.textContent = 'در حال محاسبه مبلغ قطعی...'; }
+        const query = ids.map(function (id) { return 'installment_ids[]=' + encodeURIComponent(id); }).join('&');
+        fetchWithDeadline(form.getAttribute('data-quote-url') + '&scope=contract&' + query, { credentials: 'same-origin' }, 10000)
+          .then(function (response) { return response.json(); })
+          .then(function (data) {
+            if (!data.ok || !data.quote || !data.quote.quote_uuid) throw new Error(data.message || 'محاسبه مبلغ قطعی انجام نشد.');
+            quoteInput.value = data.quote.quote_uuid;
+            amountInput.value = String(data.quote.full_settlement_total || data.quote.final_payable || 0);
+            form.dataset.quoteSubmitting = '1';
+            form.submit();
+          })
+          .catch(function (error) {
+            form.dataset.quoteSubmitting = '';
+            if (submit) { submit.disabled = false; submit.textContent = error.message || 'تلاش دوباره برای تسویه کامل'; }
+          });
+      });
+    });
+  };
+
   document.addEventListener('error', function (event) {
     const image = event.target;
     if (!image || !image.matches || !image.matches('[data-avatar-image]')) return;
@@ -2624,6 +2882,10 @@
   const initTour = function () {
     const tour = document.querySelector('[data-tour]');
     if (!tour || !window.localStorage) return;
+    const route = String(new URL(window.location.href).searchParams.get('route') || 'dashboard').replace(/^\/+|\/+$/g, '');
+    // The onboarding dialog introduces the dashboard. Showing it above a
+    // payment, filter or form page blocks the very task the user came to do.
+    if (route !== 'dashboard') return;
     const userId = document.body.getAttribute('data-user-id') || 'guest';
     const key = 'proma-tour-seen-' + userId;
     if (localStorage.getItem(key) === '1') return;
@@ -2665,6 +2927,124 @@
     tour.hidden = false;
   };
 
+  const initLazyContractConfirmations = function () {
+    const createSummaryItem = function (label, value) {
+      const item = document.createElement('span');
+      const small = document.createElement('small');
+      const strong = document.createElement('strong');
+      small.textContent = label;
+      strong.textContent = value;
+      item.appendChild(small);
+      item.appendChild(strong);
+      return item;
+    };
+    const money = function (value) {
+      const number = Number(value || 0);
+      return number.toLocaleString('fa-IR') + ' تومان';
+    };
+    const requestJson = function (url) {
+      return fetchWithDeadline(url, {
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+      }, 10000).then(function (response) {
+        return response.json().catch(function () { return {}; }).then(function (payload) {
+          if (!response.ok || !payload.ok) throw new Error(payload.message || 'دریافت اطلاعات انجام نشد.');
+          return payload;
+        });
+      });
+    };
+
+    document.querySelectorAll('[data-contract-cancel-summary]').forEach(function (modal) {
+      if (modal.dataset.cancelSummaryBound === '1') return;
+      modal.dataset.cancelSummaryBound = '1';
+      modal.addEventListener('proma:modal-opened', function () {
+        if (modal.dataset.cancelSummaryState === 'loaded' || modal.dataset.cancelSummaryState === 'loading') return;
+        const url = modal.getAttribute('data-summary-url');
+        const content = modal.querySelector('[data-cancel-summary-content]');
+        if (!url || !content) return;
+        modal.dataset.cancelSummaryState = 'loading';
+        requestJson(url).then(function (payload) {
+          const summary = payload.summary || {};
+          const loading = content.querySelector('[data-cancel-summary-loading]');
+          if (loading && loading.parentElement) loading.parentElement.remove();
+          [
+            ['اقساط فعال', toPersianDigits(summary.active_installments || 0)],
+            ['اقساط معوق', toPersianDigits(summary.overdue_installments || 0)],
+            ['مانده فعال', money(summary.outstanding_amount)],
+            ['پرداخت ثبت‌شده', money(summary.confirmed_payment_amount)],
+            ['تعداد پرداخت', toPersianDigits(summary.confirmed_payment_count || 0)],
+            ['سند قرارداد', toPersianDigits(summary.document_count || 0)],
+            ['پرونده حقوقی', toPersianDigits(summary.legal_case_count || 0)],
+            ['وابستگی حسابداری', toPersianDigits(summary.accounting_relation_count || 0)]
+          ].forEach(function (item) { content.appendChild(createSummaryItem(item[0], item[1])); });
+          modal.dataset.cancelSummaryState = 'loaded';
+        }).catch(function () {
+          const loading = content.querySelector('[data-cancel-summary-loading]');
+          if (loading) loading.textContent = 'جزئیات مالی اکنون در دسترس نیست؛ تأیید نهایی در سرور انجام می‌شود.';
+          modal.dataset.cancelSummaryState = 'failed';
+        });
+      });
+    });
+
+    document.querySelectorAll('[data-contract-deletion-preview]').forEach(function (modal) {
+      if (modal.dataset.deletionPreviewBound === '1') return;
+      modal.dataset.deletionPreviewBound = '1';
+      modal.addEventListener('proma:modal-opened', function () {
+        if (modal.dataset.deletionPreviewState === 'loaded' || modal.dataset.deletionPreviewState === 'loading') return;
+        const url = modal.getAttribute('data-preview-url');
+        const notice = modal.querySelector('[data-delete-preview-notice]');
+        const stats = modal.querySelector('[data-delete-preview-stats]');
+        const labels = modal.querySelector('[data-delete-preview-labels]');
+        const historyOption = modal.querySelector('[data-delete-history-option]');
+        const gatewayOption = modal.querySelector('[data-delete-gateway-option]');
+        if (!url || !notice || !stats || !labels) return;
+        modal.dataset.deletionPreviewState = 'loading';
+        requestJson(url).then(function (payload) {
+          const preview = payload.preview || {};
+          const dependencies = preview.dependencies || {};
+          const hasDependencies = !preview.eligible_for_permanent_delete;
+          notice.classList.remove('warning', 'danger', 'success');
+          notice.classList.add(hasDependencies ? 'warning' : 'success');
+          notice.textContent = hasDependencies
+            ? 'این قرارداد سابقه وابسته دارد. حذف فقط پس از آرشیو کامل و تأییدهای زیر انجام می‌شود.'
+            : 'این قرارداد وابستگی فعالی ندارد و پس از ثبت آرشیو ایمن قابل حذف است.';
+          stats.textContent = '';
+          [
+            ['کل پرداخت‌ها', toPersianDigits(preview.payment_count || 0)],
+            ['رسیدها', toPersianDigits(dependencies.payment_receipt_count || 0)],
+            ['پرونده حقوقی', toPersianDigits(preview.legal_case_count || 0)],
+            ['اسناد قرارداد', toPersianDigits((dependencies.generated_document_count || 0) + (dependencies.document_version_count || 0))]
+          ].forEach(function (item) { stats.appendChild(createSummaryItem(item[0], item[1])); });
+          stats.hidden = false;
+          const dependencyLabels = Array.isArray(preview.blocking_dependency_labels) ? preview.blocking_dependency_labels : [];
+          labels.textContent = dependencyLabels.length ? 'سوابق وابسته: ' + dependencyLabels.join('، ') : '';
+          labels.hidden = !dependencyLabels.length;
+          if (historyOption) {
+            const input = historyOption.querySelector('input');
+            historyOption.hidden = !hasDependencies;
+            if (input) {
+              input.required = hasDependencies;
+            }
+          }
+          const hasGatewayPayment = Number(preview.gateway_payment_count || 0) > 0;
+          if (gatewayOption) {
+            const input = gatewayOption.querySelector('input');
+            gatewayOption.hidden = !hasGatewayPayment;
+            if (input) {
+              input.required = hasGatewayPayment;
+            }
+          }
+          modal.dataset.deletionPreviewState = 'loaded';
+        }).catch(function () {
+          notice.classList.remove('warning', 'success');
+          notice.classList.add('danger');
+          notice.textContent = 'پیش‌نمایش در دسترس نیست. برای حفظ ایمنی، سرور هنگام ثبت حذف همه وابستگی‌ها را دوباره بررسی می‌کند.';
+          modal.dataset.deletionPreviewState = 'failed';
+        });
+      });
+    });
+  };
+
   const initServiceWorker = function () {
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', function () {
@@ -2686,7 +3066,6 @@
   };
 
 document.addEventListener('DOMContentLoaded', function () {
-  initViewportMetrics();
   document.querySelectorAll('[data-medal-color-field]').forEach(function (field) {
     var picker = field.querySelector('[data-medal-color-picker]');
     var textInput = field.querySelector('[data-medal-color-text]');
@@ -2696,7 +3075,10 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!/^#[0-9a-f]{6}$/i.test(value || '')) return;
       picker.value = value;
       textInput.value = value.toUpperCase();
-      if (preview) preview.style.setProperty('--medal-color', value);
+      // The application CSP intentionally blocks inline style attributes.
+      // Keep the field and its stored colour in sync without writing runtime
+      // styles; medal cards use the shared brand treatment instead.
+      if (preview) preview.setAttribute('data-color-value', value);
     };
     picker.addEventListener('input', function () { applyColor(picker.value); });
     textInput.addEventListener('input', function () { applyColor(textInput.value.trim()); });
@@ -2746,10 +3128,13 @@ document.addEventListener('DOMContentLoaded', function () {
     initCharts();
     initChat();
     initCardLinks();
+    initContractDetailWorkspace();
+    initContractSettlement();
     initContactActions();
     initCopyShortcodes();
     initSettingResets();
     initPromaRichEditors();
+    initLazyContractConfirmations();
     initTour();
     initServiceWorker();
   });

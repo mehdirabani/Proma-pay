@@ -27,7 +27,7 @@ class SettingsController extends Controller
         $this->requireRole('admin');
         $this->onlyPost();
         $values = [];
-        $digitFields = ['monthly_penalty_rate', 'legal_monthly_penalty_rate', 'late_penalty_grace_days', 'monthly_reward_rate', 'contract_next_serial', 'contract_year', 'company_representative_national_id', 'company_postal_code', 'company_phone', 'notifications_sound_volume', 'chat_file_auto_delete_days', 'card_transfer_card_number', 'card_transfer_account_number', 'smtp_port'];
+        $digitFields = ['monthly_penalty_rate', 'legal_monthly_penalty_rate', 'late_penalty_grace_days', 'monthly_reward_rate', 'contract_next_serial', 'contract_year', 'company_representative_national_id', 'company_postal_code', 'company_phone', 'notifications_sound_volume', 'chat_file_auto_delete_days', 'card_transfer_card_number', 'card_transfer_account_number', 'smtp_port', 'legal_delay_value', 'legal_overdue_count_threshold', 'legal_overdue_amount_threshold', 'legal_warning_before_days'];
         foreach (Settings::defaults() as $key => $default) {
             if (array_key_exists($key, $_POST)) {
                 $rawValue = trim((string) $_POST[$key]);
@@ -50,6 +50,22 @@ class SettingsController extends Controller
                     $rawValue = in_array($rawValue, ['mail', 'smtp'], true) ? $rawValue : 'mail';
                 } elseif ($key === 'smtp_encryption') {
                     $rawValue = in_array($rawValue, ['', 'tls', 'ssl'], true) ? $rawValue : 'tls';
+                } elseif ($key === 'legal_delay_unit') {
+                    $rawValue = in_array($rawValue, ['day', 'month'], true) ? $rawValue : 'day';
+                } elseif ($key === 'legal_eligibility_operator') {
+                    $rawValue = in_array($rawValue, ['delay_only', 'and', 'or'], true) ? $rawValue : 'delay_only';
+                } elseif ($key === 'projected_legal_penalty_customer_message') {
+                    $rawValue = trim(preg_replace('/\s+/u', ' ', strip_tags($rawValue)));
+                    $rawValue = mb_substr($rawValue, 0, 280, 'UTF-8');
+                    if ($rawValue === '') {
+                        $rawValue = CustomerPenaltyPresentationService::DEFAULT_MESSAGE;
+                    }
+                } elseif (in_array($key, ['legal_contractual_warning_template', 'legal_petition_draft_template', 'legal_complaint_draft_template'], true)) {
+                    $rawValue = trim(strip_tags($rawValue));
+                    $rawValue = mb_substr($rawValue, 0, 12000, 'UTF-8');
+                    if ($rawValue === '') {
+                        $rawValue = Settings::defaults()[$key];
+                    }
                 } elseif (strpos($key, 'social_') === 0) {
                     $rawValue = $this->normalizeSocialUrl($key, $rawValue);
                 } elseif ($key === 'card_transfer_sheba') {
@@ -62,12 +78,16 @@ class SettingsController extends Controller
                 $values[$key] = $rawValue;
             }
         }
-        foreach (['password_reset_enabled', 'calendar_notifications_enabled', 'calendar_notify_admin_without_user', 'calendar_due_day_repeat_enabled', 'notifications_sound_enabled', 'zibal_enabled', 'zibal_test_mode', 'card_transfer_enabled', 'card_transfer_show_sheba', 'card_transfer_show_account_number', 'email_enabled', 'ecommerce_enabled', 'landing_enabled'] as $checkbox) {
+        foreach (['password_reset_enabled', 'calendar_notifications_enabled', 'calendar_notify_admin_without_user', 'calendar_due_day_repeat_enabled', 'notifications_sound_enabled', 'zibal_enabled', 'zibal_test_mode', 'card_transfer_enabled', 'card_transfer_show_sheba', 'card_transfer_show_account_number', 'email_enabled', 'ecommerce_enabled', 'landing_enabled', 'legal_overdue_amount_enabled', 'legal_allow_self_initiation', 'show_projected_legal_penalty_to_customer'] as $checkbox) {
             $values[$checkbox] = isset($_POST[$checkbox]) ? '1' : '0';
         }
         $values['notifications_sound_volume'] = (string) max(0, min(1, (float) ($values['notifications_sound_volume'] ?? '0.45')));
         $values['chat_file_auto_delete_days'] = (string) max(1, min(365, (int) ($values['chat_file_auto_delete_days'] ?? '7')));
         $values['late_penalty_grace_days'] = (string) max(0, min(365, (int) to_english_digits($values['late_penalty_grace_days'] ?? '0')));
+        $values['legal_delay_value'] = (string) max(1, min(3650, (int) to_english_digits($values['legal_delay_value'] ?? '30')));
+        $values['legal_overdue_count_threshold'] = (string) max(1, min(1000, (int) to_english_digits($values['legal_overdue_count_threshold'] ?? '1')));
+        $values['legal_overdue_amount_threshold'] = (string) max(0, normalize_money($values['legal_overdue_amount_threshold'] ?? '0'));
+        $values['legal_warning_before_days'] = (string) max(0, min(365, (int) to_english_digits($values['legal_warning_before_days'] ?? '0')));
         $values['card_transfer_primary_color'] = sanitize_hex_color($values['card_transfer_primary_color'] ?? '', '#7366ff');
         $values['card_transfer_secondary_color'] = sanitize_hex_color($values['card_transfer_secondary_color'] ?? '', '#16c7f9');
         $values['smtp_port'] = (string) max(1, min(65535, (int) to_english_digits($values['smtp_port'] ?? '587')));
@@ -111,7 +131,12 @@ class SettingsController extends Controller
         if (empty($values['calendar_cron_token'])) {
             unset($values['calendar_cron_token']);
         }
+        $previousLegalPolicy = LegalEligibilityService::defaults($currentSettings);
         Settings::saveMany($values);
+        $nextLegalPolicy = LegalEligibilityService::defaults(Settings::allKeyed());
+        if ($previousLegalPolicy !== $nextLegalPolicy) {
+            LegalEligibilityService::publishFromSettings(Auth::id());
+        }
         try {
             Chat::ensureSchema();
         } catch (Throwable $e) {
@@ -165,12 +190,32 @@ class SettingsController extends Controller
                 $_POST['body_source'] ?? '',
                 $_POST['body_format'] ?? ContractTemplateRenderer::FORMAT_PLAIN
             );
+            $source = $_POST['body_source'] ?? '';
+            $format = $_POST['body_format'] ?? ContractTemplateRenderer::FORMAT_PLAIN;
+            $reason = $_POST['change_reason'] ?? '';
             $id = ContractTemplateService::createVersion(
-                $_POST['body_source'] ?? '',
-                $_POST['body_format'] ?? ContractTemplateRenderer::FORMAT_PLAIN,
-                $_POST['change_reason'] ?? '',
+                $source,
+                $format,
+                $reason,
                 Auth::id()
             );
+            $convertedFrom = (string) ($_POST['editor_original_format'] ?? '');
+            $conversionSource = (string) ($_POST['editor_conversion_source'] ?? '');
+            if ($convertedFrom === ContractTemplateRenderer::FORMAT_PLAIN
+                && $format === ContractTemplateRenderer::FORMAT_HTML
+                && $conversionSource === 'visual_editor') {
+                $saved = ContractTemplateService::findVersion($id);
+                ContractTemplateService::audit('template_format_converted', 1, $id,
+                    ['format' => $convertedFrom],
+                    [
+                        'format' => ContractTemplateRenderer::FORMAT_HTML,
+                        'conversion_source' => 'visual_editor',
+                        'content_hash' => (string) ($saved['content_hash'] ?? ''),
+                    ],
+                    $reason,
+                    Auth::id()
+                );
+            }
             $message = 'پیش‌نویس نسخه ' . to_persian_digits((ContractTemplateService::findVersion($id)['version_number'] ?? '')) . ' ذخیره شد.';
             if (!empty($validation['warnings'])) {
                 $message .= ' هشدار: ' . implode(' ', $validation['warnings']);

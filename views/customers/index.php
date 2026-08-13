@@ -16,7 +16,7 @@ $pageUrl = function ($page) use ($viewMode) {
     return url('customers', array_filter($params, fn($value) => $value !== null && $value !== ''));
 };
 ?>
-<section class="card">
+<section class="card proma-filter-card">
   <div class="card-header card-no-border">
     <div class="header-top">
       <h2>فهرست مشتریان</h2>
@@ -29,7 +29,7 @@ $pageUrl = function ($page) use ($viewMode) {
     </div>
   </div>
   <div class="card-body">
-    <form method="get" action="<?= e(url('customers')) ?>" class="form-grid three" data-ajax-filter data-ajax-target="[data-ajax-results='customers']">
+    <form method="get" action="<?= e(url('customers')) ?>" class="form-grid three proma-filter-toolbar proma-filter-toolbar--customers" data-ajax-filter data-ajax-target="[data-ajax-results='customers']">
       <input type="hidden" name="route" value="customers">
       <input type="hidden" name="view" value="<?= e($viewMode) ?>">
       <label>جستجو<input name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="نام، کد ملی یا موبایل"></label>
@@ -40,7 +40,7 @@ $pageUrl = function ($page) use ($viewMode) {
           <option value="inactive"<?= selected($_GET['status'] ?? '', 'inactive') ?>>غیرفعال</option>
         </select>
       </label>
-      <div class="actions"><button class="btn secondary" type="submit">اعمال فیلتر</button><span class="proma-ajax-status" data-ajax-status></span></div>
+      <div class="proma-filter-actions"><button class="btn secondary" type="submit">اعمال فیلتر</button><span class="proma-ajax-status" data-ajax-status></span></div>
     </form>
   </div>
 </section>
@@ -97,7 +97,7 @@ $pageUrl = function ($page) use ($viewMode) {
 <?php endif; ?>
 
 <?php if ($viewMode === 'list'): ?>
-<section class="card" style="margin-top:16px">
+<section class="card proma-list-section">
   <div class="card-header card-no-border"><h2>نمای جدولی مشتریان</h2></div>
   <div class="table-wrap">
     <table>

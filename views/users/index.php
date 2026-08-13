@@ -16,7 +16,7 @@ $pageUrl = function ($page) use ($viewMode) {
     return url('users', array_filter($params, fn($value) => $value !== null && $value !== ''));
 };
 ?>
-<section class="card">
+<section class="card proma-filter-card">
   <div class="card-header card-no-border">
     <div class="header-top">
       <h2>فهرست کاربران</h2>
@@ -28,7 +28,7 @@ $pageUrl = function ($page) use ($viewMode) {
     </div>
   </div>
   <div class="card-body">
-    <form method="get" action="<?= e(url('users')) ?>" class="form-grid four" data-ajax-filter data-ajax-target="[data-ajax-results='users']">
+    <form method="get" action="<?= e(url('users')) ?>" class="form-grid four proma-filter-toolbar proma-filter-toolbar--users" data-ajax-filter data-ajax-target="[data-ajax-results='users']">
       <input type="hidden" name="route" value="users">
       <input type="hidden" name="view" value="<?= e($viewMode) ?>">
       <label>جستجو<input name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="نام، موبایل، ایمیل یا شناسه"></label>
@@ -56,7 +56,7 @@ $pageUrl = function ($page) use ($viewMode) {
           </select>
         </label>
       <?php endif; ?>
-      <div class="actions"><button class="btn secondary" type="submit">اعمال فیلتر</button><span class="proma-ajax-status" data-ajax-status></span></div>
+      <div class="proma-filter-actions"><button class="btn secondary" type="submit">اعمال فیلتر</button><span class="proma-ajax-status" data-ajax-status></span></div>
     </form>
   </div>
 </section>
@@ -114,7 +114,7 @@ $pageUrl = function ($page) use ($viewMode) {
 <?php endif; ?>
 
 <?php if ($viewMode === 'list'): ?>
-<section class="card" style="margin-top:16px">
+<section class="card proma-list-section">
   <div class="card-header card-no-border"><h2>نمای جدولی کاربران</h2></div>
   <div class="table-wrap">
     <table>
@@ -148,7 +148,7 @@ $pageUrl = function ($page) use ($viewMode) {
 <?= render_pagination($pagination, $pageUrl) ?>
 
 <?php if ($canManageUsers && !empty($identityRequests)): ?>
-<section class="card" style="margin-top:16px">
+<section class="card proma-list-section">
   <div class="card-header card-no-border"><h5>مدارک هویتی در انتظار بررسی</h5></div>
   <div class="table-wrap">
     <table>

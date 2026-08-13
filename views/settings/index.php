@@ -216,8 +216,28 @@ if (!isset($tabs[$activeTab])) {
       <label>نرخ جریمه حقوقی ماهانه<input name="legal_monthly_penalty_rate" value="<?= e($settings['legal_monthly_penalty_rate'] ?? $settings['monthly_penalty_rate']) ?>" inputmode="decimal"></label>
       <label>مدت تنفس دیرکرد<input name="late_penalty_grace_days" value="<?= e(to_persian_digits($settings['late_penalty_grace_days'] ?? '0')) ?>" inputmode="numeric" placeholder="مثلاً ۵ روز"></label>
       <label>نرخ پاداش ماهانه<input name="monthly_reward_rate" value="<?= e($settings['monthly_reward_rate']) ?>" inputmode="decimal"></label>
+      <label class="proma-feature-toggle"><span>نمایش برآورد جریمه حقوقی برای مشتری</span><input type="checkbox" name="show_projected_legal_penalty_to_customer" value="1"<?= checked($settings['show_projected_legal_penalty_to_customer'] ?? '1', '1') ?>></label>
+      <label class="full">پیام برآورد جریمه حقوقی برای مشتری<textarea name="projected_legal_penalty_customer_message" rows="3"><?= e($settings['projected_legal_penalty_customer_message'] ?? CustomerPenaltyPresentationService::DEFAULT_MESSAGE) ?></textarea></label>
+      <div class="full notice warning">برآورد جریمه حقوقی فقط برای مقایسه نمایش داده می‌شود؛ هرگز در مبلغ قابل پرداخت، تسویه، درگاه، رسید یا حسابداری وارد نمی‌شود. اگر نرخ حقوقی صفر یا نامعتبر باشد، این برآورد نمایش داده نمی‌شود.</div>
       <div class="full notice info">اگر مدت تنفس ۵ روز باشد، تا پایان روز پنجم پس از سررسید جریمه دیرکرد محاسبه نمی‌شود و محاسبه از روز بعد آغاز می‌شود.</div>
+      <div class="full notice info">شرایط اقدام حقوقی برای قراردادهای جدید نسخه‌دار می‌شود؛ تغییر تنظیمات، نسخه ثبت‌شده قراردادهای قبلی را خودکار تغییر نمی‌دهد.</div>
+      <label>حد تاخیر پیش از اقدام حقوقی<input name="legal_delay_value" value="<?= e(to_persian_digits($settings['legal_delay_value'] ?? '30')) ?>" inputmode="numeric"></label>
+      <label>واحد تاخیر
+        <select name="legal_delay_unit"><option value="day"<?= selected($settings['legal_delay_unit'] ?? 'day', 'day') ?>>روز</option><option value="month"<?= selected($settings['legal_delay_unit'] ?? '', 'month') ?>>ماه تقویمی</option></select>
+      </label>
+      <label>حداقل تعداد اقساط معوق<input name="legal_overdue_count_threshold" value="<?= e(to_persian_digits($settings['legal_overdue_count_threshold'] ?? '1')) ?>" inputmode="numeric"></label>
+      <label>منطق احراز شرایط
+        <select name="legal_eligibility_operator"><option value="delay_only"<?= selected($settings['legal_eligibility_operator'] ?? 'delay_only', 'delay_only') ?>>فقط تاخیر</option><option value="and"<?= selected($settings['legal_eligibility_operator'] ?? '', 'and') ?>>همه شروط (AND)</option><option value="or"<?= selected($settings['legal_eligibility_operator'] ?? '', 'or') ?>>هر شرط کافی است (OR)</option></select>
+      </label>
+      <label>حداقل مبلغ معوق<input name="legal_overdue_amount_threshold" data-money value="<?= e(number_format(normalize_money($settings['legal_overdue_amount_threshold'] ?? 0))) ?>"></label>
+      <label class="proma-feature-toggle"><span>فعال‌بودن حد مبلغ</span><input type="checkbox" name="legal_overdue_amount_enabled" value="1"<?= checked($settings['legal_overdue_amount_enabled'] ?? '0', '1') ?>></label>
+      <label>مهلت پیشنهادی اخطار داخلی (روز)<input name="legal_warning_before_days" value="<?= e(to_persian_digits($settings['legal_warning_before_days'] ?? '0')) ?>" inputmode="numeric"></label>
+      <label class="proma-feature-toggle"><span>ایجاد مستقل پرونده توسط واحد حقوقی</span><input type="checkbox" name="legal_allow_self_initiation" value="1"<?= checked($settings['legal_allow_self_initiation'] ?? '1', '1') ?>></label>
       <label class="full">متن تأیید جریمه حقوقی در قرارداد<textarea name="contract_legal_penalty_clause" rows="4"><?= e($settings['contract_legal_penalty_clause'] ?? '') ?></textarea></label>
+      <div class="full notice info">قالب‌های حقوقی فقط پیش‌نویس داخلی تولید می‌کنند. متغیرهای قابل استفاده: <code>{{company_name}}</code>، <code>{{customer_name}}</code>، <code>{{customer_mobile}}</code>، <code>{{contract_number}}</code>، <code>{{overdue_amount}}</code>، <code>{{deadline_date}}</code> و <code>{{legal_notes}}</code>.</div>
+      <label class="full">قالب پیش‌فرض اخطار قراردادی داخلی<textarea name="legal_contractual_warning_template" rows="7"><?= e($settings['legal_contractual_warning_template'] ?? Settings::defaults()['legal_contractual_warning_template']) ?></textarea></label>
+      <label class="full">قالب پیش‌فرض پیش‌نویس دادخواست<textarea name="legal_petition_draft_template" rows="7"><?= e($settings['legal_petition_draft_template'] ?? Settings::defaults()['legal_petition_draft_template']) ?></textarea></label>
+      <label class="full">قالب پیش‌فرض پیش‌نویس شکواییه<textarea name="legal_complaint_draft_template" rows="7"><?= e($settings['legal_complaint_draft_template'] ?? Settings::defaults()['legal_complaint_draft_template']) ?></textarea></label>
       <div class="full actions"><button class="btn" type="submit">ذخیره تنظیمات مالی</button></div>
     </div>
   </section>
@@ -564,7 +584,7 @@ if (!isset($tabs[$activeTab])) {
   <section class="card proma-settings-panel <?= $activeTab === 'security' ? 'active' : '' ?>" data-settings-panel="security">
     <div class="card-header"><h2>امنیت</h2></div>
     <div class="card-body">
-      <p style="color:var(--muted);margin-top:0">نشست‌ها با کوکی امن، بررسی نقش و محافظت ضد جعل درخواست کنترل می‌شوند. بکاپ و بازیابی فقط برای مدیر فعال است.</p>
+      <p class="text-muted mt-0">نشست‌ها با کوکی امن، بررسی نقش و محافظت ضد جعل درخواست کنترل می‌شوند. بکاپ و بازیابی فقط برای مدیر فعال است.</p>
       <button class="btn" type="submit">ذخیره تنظیمات</button>
     </div>
   </section>

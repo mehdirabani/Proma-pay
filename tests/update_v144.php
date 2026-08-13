@@ -24,10 +24,14 @@ $assert(empty($same['is_installable']) && $same['state'] === 'current', 'Same-ve
 $older = $method->invoke(null, ['version' => '1.4.3', 'minimum_version' => '1.4.2']);
 $assert(empty($older['is_installable']) && $older['state'] === 'older', 'Older package must be rejected.');
 
-$upgrade = $method->invoke(null, ['version' => '1.4.6', 'minimum_version' => '1.4.2']);
+$segments = array_map('intval', explode('.', $currentVersion));
+$nextVersion = ($segments[0] ?? 1) . '.' . ($segments[1] ?? 0) . '.' . (($segments[2] ?? 0) + 1);
+$minimumAfterNext = ($segments[0] ?? 1) . '.' . ($segments[1] ?? 0) . '.' . (($segments[2] ?? 0) + 2);
+
+$upgrade = $method->invoke(null, ['version' => $nextVersion, 'minimum_version' => '1.4.2']);
 $assert(!empty($upgrade['is_installable']) && $upgrade['state'] === 'upgrade', 'Newer compatible package must remain installable.');
 
-$incompatible = $method->invoke(null, ['version' => '1.5.0', 'minimum_version' => '1.4.6']);
+$incompatible = $method->invoke(null, ['version' => $minimumAfterNext, 'minimum_version' => $minimumAfterNext]);
 $assert(empty($incompatible['is_installable']) && $incompatible['state'] === 'incompatible', 'Minimum-version guard is not enforced.');
 
 echo "UPDATE_V144_OK\n";

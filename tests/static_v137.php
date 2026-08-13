@@ -110,7 +110,7 @@ $assert(version_compare((string) ($settings['asset_version'] ?? '0.0.0'), '1.3.7
 $builder = (string) file_get_contents($root . '/scripts/build_release.php');
 $assert(strpos($builder, 'Stable release packaging requires a stable semantic Core version') !== false, 'Release builder can label a prerelease as a stable archive.');
 $assert(strpos($builder, "'/tools/release-gate.php'") !== false, 'Release builder does not enforce the strict gate before packaging.');
-$assert(strpos($builder, "'install.php'") !== false, 'Update package must include install.php when installer schema changes.');
+$assert(strpos($builder, '$coreFiles') !== false && strpos($builder, '$baselineFiles') !== false, 'Update package must include installer changes only when they differ from its verified baseline.');
 
 $errorView = (string) file_get_contents($root . '/views/errors/system.php');
 $assert(strpos($errorView, 'صفحه اصلی') === false, 'Error page still contains a duplicate home action.');

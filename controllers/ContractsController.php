@@ -7,15 +7,27 @@ class ContractsController extends Controller
         $this->requireRole(['admin', 'operator']);
         $readOnly = Auth::role() === 'operator';
         $today = date('Y-m-d');
+        $viewMode = in_array($_GET['view'] ?? '', ['cards', 'list'], true) ? $_GET['view'] : 'cards';
         $result = Contract::paginated([
             'search' => $_GET['q'] ?? null,
             'page' => $_GET['page'] ?? 1,
-            'per_page' => 24,
+            // A card also ships chart, timeline and edit UI. Keeping card
+            // pages intentionally smaller protects shared-host PHP workers
+            // without reducing the denser list view.
+            'per_page' => $viewMode === 'cards' ? 12 : 24,
         ]);
+        $contractIds = array_column($result['items'], 'id');
         $this->render('contracts/index', [
             'title' => $readOnly ? 'قراردادها' : 'مدیریت قراردادها',
             'contracts' => $result['items'],
             'pagination' => $result,
+            'contractStats' => Contract::installmentStatsForContracts($contractIds),
+            'contractTrends' => Payment::monthlyTrendsForContracts($contractIds, 6),
+            'contractTimelines' => Payment::recentForContracts($contractIds, 8),
+            'contractGuarantors' => Contract::guarantorsForContracts($contractIds),
+            'contractItems' => $readOnly ? [] : ContractDocument::itemsForContracts($contractIds),
+            'contractGuarantees' => $readOnly ? [] : ContractDocument::guaranteesForContracts($contractIds),
+            'contractGuarantorPeople' => $readOnly ? [] : ContractDocument::guarantorPeopleForContracts($contractIds),
             'customers' => [],
             'operators' => $readOnly ? [] : User::all('operator'),
             'settings' => Settings::allKeyed(),
@@ -25,6 +37,37 @@ class ContractsController extends Controller
             'contractsRoute' => 'contracts',
             'readOnlyTitle' => 'فهرست قراردادها',
         ], is_ajax_request() ? null : 'app');
+    }
+
+    /**
+     * Detail is intentionally loaded only when the destructive-confirmation
+     * dialog is opened. Rendering these summaries for every visible contract
+     * caused hundreds of dependency queries on a single card page.
+     */
+    public function cancellationSummary($id)
+    {
+        $this->requireRole('admin');
+        $contract = Contract::find((int) $id);
+        if (!$contract) {
+            $this->json(['ok' => false, 'message' => 'قرارداد پیدا نشد.'], 404);
+        }
+        $this->json([
+            'ok' => true,
+            'summary' => Contract::cancellationSummary((int) $id),
+        ]);
+    }
+
+    public function deletionPreview($id)
+    {
+        $this->requireRole('admin');
+        try {
+            $this->json([
+                'ok' => true,
+                'preview' => Contract::deletionPreview((int) $id),
+            ]);
+        } catch (InvalidArgumentException $e) {
+            $this->json(['ok' => false, 'message' => $e->getMessage()], 404);
+        }
     }
 
     public function duplicates()
@@ -168,10 +211,20 @@ class ContractsController extends Controller
         $canViewLegalCosts = !$isCustomer && $this->canViewLegalCosts($user, $contract, $currentLegalCase);
         $canReferToLegal = !$isCustomer && $this->canReferToLegal($user, $contract, $currentLegalCase);
         $canViewFinancialSummary = $this->canViewFinancialSummary($user);
+        $legalCostSummary = $canViewLegalCosts ? ContractLegalCostSummaryService::forContract($contractId) : [];
+        $legalCosts = $canViewLegalCosts ? LegalCaseCostService::forContract($contractId) : [];
 
+        $installmentBatch = ContractInstallmentFinancialBatchService::load($contractId, date('Y-m-d'));
+        $installments = $installmentBatch['items'];
+        $settlementPreview = PaymentAllocationService::quote($installments, date('Y-m-d'));
         $financialSummary = $canViewFinancialSummary
-            ? ContractFinancialSummaryService::summarize($contractId, date('Y-m-d'))
+            ? ContractFinancialSummaryService::summarize($contractId, date('Y-m-d'), $installments)
             : null;
+        $canViewOperatorDebtScenarios = $canViewFinancialSummary
+            && (Auth::role() === 'admin' || Auth::role() === 'operator');
+        $operatorDebtCards = $canViewOperatorDebtScenarios && $financialSummary
+            ? OperatorDebtScenarioService::cards($financialSummary, !empty($financialSummary['actual_legal_referral']))
+            : [];
 
         $editableLogIds = [];
         $deletableLogIds = [];
@@ -194,7 +247,9 @@ class ContractsController extends Controller
             'items' => ContractDocument::items($contractId),
             'guarantees' => ContractDocument::guarantees($contractId),
             'guarantorPeople' => ContractDocument::guarantorPeople($contractId),
-            'installments' => Installment::all(['contract_id' => $contractId]),
+            'installments' => $installments,
+            'installmentBatch' => $installmentBatch,
+            'settlementPreview' => $settlementPreview,
             'paymentTimeline' => Payment::recentForContract($contractId, 8),
             'logs' => ContractDocument::logs($contractId),
             'canManageDocument' => Auth::role() === 'admin',
@@ -212,13 +267,84 @@ class ContractsController extends Controller
             'canReferToLegal' => $canReferToLegal,
             'canViewFinancialSummary' => $canViewFinancialSummary,
             'financialSummary' => $financialSummary,
+            'operatorDebtCards' => $operatorDebtCards,
             'financialSummaryDate' => date('Y-m-d'),
             'legalLogCostTotal' => $canViewLegalCosts ? LegalCaseLog::costTotalForContract($contractId) : 0,
             'legacyLegalCostTotal' => $canViewLegalCosts ? LegalCase::expenseTotalForContract($contractId) : 0,
+            'legalCostSummary' => $legalCostSummary,
+            'legalCosts' => $legalCosts,
             'editableLegalLogIds' => $editableLogIds,
             'deletableLegalLogIds' => $deletableLogIds,
             'cancellationSummary' => Contract::cancellationSummary($contractId),
         ]);
+    }
+
+    public function changeInstallment($contractId)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $contract = Contract::find((int) $contractId);
+        $this->authorizeContractAccess($contract);
+        try {
+            $result = InstallmentChangeService::change((int) ($_POST['installment_id'] ?? 0), $_POST, Auth::id());
+            set_flash('success', ($result['mode'] ?? '') === 'applied'
+                ? 'قسط با ثبت تاریخچه و محاسبه مجدد مالی به‌روزرسانی شد.'
+                : 'قسط دارای سابقه مالی/حقوقی است؛ درخواست اصلاح برنامه برای بررسی ثبت شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ویرایش امن قسط انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) $contractId);
+    }
+
+    public function voidInstallment($contractId)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $contract = Contract::find((int) $contractId);
+        $this->authorizeContractAccess($contract);
+        try {
+            $result = InstallmentChangeService::void((int) ($_POST['installment_id'] ?? 0), $_POST, Auth::id());
+            set_flash('success', ($result['mode'] ?? '') === 'applied'
+                ? 'قسط به‌صورت منطقی ابطال و سوابق آن حفظ شد.'
+                : 'قسط دارای وابستگی مالی یا حقوقی است؛ درخواست اصلاح برنامه ثبت شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ابطال امن قسط انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) $contractId);
+    }
+
+    public function approveLegalCost($contractId, $costId)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $contract = Contract::find((int) $contractId);
+        $this->authorizeContractAccess($contract);
+        try {
+            $cost = Model::fetch('SELECT id FROM legal_case_costs WHERE id = ? AND contract_id = ?', [(int) $costId, (int) $contractId]);
+            if (!$cost) throw new InvalidArgumentException('هزینه حقوقی متعلق به این قرارداد نیست.');
+            LegalCaseCostService::approve((int) $costId, (int) Auth::id());
+            set_flash('success', 'هزینه حقوقی تأیید شد و در مبلغ قابل مطالبه قرارداد وارد شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'تأیید هزینه حقوقی انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) $contractId . '#legal');
+    }
+
+    public function reverseLegalCost($contractId, $costId)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $contract = Contract::find((int) $contractId);
+        $this->authorizeContractAccess($contract);
+        try {
+            $cost = Model::fetch('SELECT id FROM legal_case_costs WHERE id = ? AND contract_id = ?', [(int) $costId, (int) $contractId]);
+            if (!$cost) throw new InvalidArgumentException('هزینه حقوقی متعلق به این قرارداد نیست.');
+            LegalCaseCostService::reverse((int) $costId, (string) ($_POST['reason'] ?? ''), (int) Auth::id());
+            set_flash('success', 'برگشت هزینه حقوقی با حفظ تاریخچه ثبت شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'برگشت هزینه حقوقی انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) $contractId . '#legal');
     }
 
     public function storeLegalLog($contractId)
@@ -459,8 +585,12 @@ class ContractsController extends Controller
                 Auth::id(),
                 $_POST['payment_method'] ?? 'manual',
                 $_POST['group_description'] ?? '',
-                !empty($_POST['allocate_to_next']),
-                'manual-group:' . hash('sha256', (int) $id . '|' . implode(',', array_map('intval', (array) ($_POST['installment_ids'] ?? []))) . '|' . ($_POST['group_amount'] ?? '') . '|' . ($_POST['_csrf'] ?? ''))
+                false,
+                $_POST['payment_request_uuid'] ?? null,
+                $_POST['quote_uuid'] ?? null,
+                parse_jalali_date($_POST['payment_date'] ?? '') ?: date('Y-m-d'),
+                $_POST['payment_time'] ?? date('H:i'),
+                ($_POST['settlement_scope'] ?? 'selected') === 'contract' ? 'contract' : 'selected'
             );
             set_flash('success', 'پرداخت گروهی ' . ($group['group_number'] ?? '') . ' ثبت شد.');
         } catch (Throwable $e) {
@@ -483,8 +613,11 @@ class ContractsController extends Controller
                     Auth::id(),
                     $_POST['payment_method'] ?? 'manual',
                     $_POST['group_description'] ?? '',
-                    !empty($_POST['allocate_to_next']),
-                    'manual-group:' . hash('sha256', (int) $id . '|' . implode(',', array_map('intval', (array) ($_POST['installment_ids'] ?? []))) . '|' . ($_POST['group_amount'] ?? '') . '|' . ($_POST['_csrf'] ?? ''))
+                    false,
+                    $_POST['payment_request_uuid'] ?? null,
+                    $_POST['quote_uuid'] ?? null,
+                    parse_jalali_date($_POST['payment_date'] ?? '') ?: date('Y-m-d'),
+                    $_POST['payment_time'] ?? date('H:i')
                 );
                 $result = ['updated' => count($_POST['installment_ids'] ?? []), 'group_number' => $group['group_number'] ?? ''];
             } else {
@@ -495,6 +628,24 @@ class ContractsController extends Controller
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'عملیات دسته‌جمعی اقساط انجام نشد.');
         }
         redirect('contracts/show/' . (int) $id);
+    }
+
+    public function settlementQuote($id)
+    {
+        Auth::requireLogin();
+        $contract = Contract::find((int) $id);
+        $this->authorizeContractAccess($contract);
+        $scope = ($_GET['scope'] ?? 'selected') === 'contract' ? 'contract' : 'selected';
+        $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($_GET['installment_ids'] ?? [])))));
+        if ($scope !== 'contract' && !$ids) {
+            $this->json(['ok' => false, 'message' => 'حداقل یک قسط را انتخاب کنید.'], 422);
+        }
+        try {
+            $quote = SettlementQuoteService::create((int) $contract['id'], $scope === 'contract' ? [] : $ids, Auth::id(), $scope);
+            $this->json(['ok' => true, 'quote' => $quote]);
+        } catch (Throwable $e) {
+            $this->json(['ok' => false, 'message' => $e instanceof InvalidArgumentException ? $e->getMessage() : 'محاسبه پیش‌فاکتور تسویه انجام نشد.'], $e->getCode() === 409 ? 409 : 422);
+        }
     }
 
     public function printDocument($id)
@@ -518,12 +669,24 @@ class ContractsController extends Controller
     public function preview()
     {
         $this->requireRole('admin');
+        Auth::releaseSessionLock();
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+
+        $principal = normalize_money($_GET['principal_amount'] ?? 0);
+        $downPayment = normalize_money($_GET['down_payment_amount'] ?? 0);
+        $months = (int) to_english_digits($_GET['months'] ?? 0);
+        $rate = trim(str_replace(['٪', '%', 'درصد', ',', '،', '٬', ' '], '', to_english_digits((string) ($_GET['monthly_interest_rate'] ?? '0'))));
+        $interestType = ($_GET['interest_type'] ?? 'compound') === 'simple' ? 'simple' : 'compound';
+        if ($principal <= 0 || $downPayment > $principal || $months < 1 || $months > 480 || !preg_match('/^\d+(?:\.\d{1,4})?$/', $rate) || (float) $rate > 100) {
+            $this->json(['ok' => false, 'message' => 'پارامترهای پیش‌نمایش قرارداد معتبر نیستند.'], 422);
+        }
         $preview = FinanceHelper::contractPreview(
-            $_GET['principal_amount'] ?? 0,
-            $_GET['down_payment_amount'] ?? 0,
-            $_GET['months'] ?? 6,
-            $_GET['monthly_interest_rate'] ?? 0,
-            ($_GET['interest_type'] ?? 'compound') === 'simple' ? 'simple' : 'compound'
+            $principal,
+            $downPayment,
+            $months,
+            $rate,
+            $interestType
         );
         $preview['formatted'] = [
             'principal_amount' => money_toman($preview['principal_amount']),
@@ -532,6 +695,7 @@ class ContractsController extends Controller
             'installment_amount' => money_toman($preview['installment_amount']),
             'total_payable' => money_toman($preview['total_payable']),
         ];
+        $preview['calculation_version'] = 'contract-finance-v1';
         $this->json(['ok' => true, 'preview' => $preview]);
     }
 

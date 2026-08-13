@@ -56,6 +56,51 @@ class PortalController extends Controller
                 $itemCount = 0;
             }
         }
+        $historyByContract = [];
+        $totalPaid = 0.0;
+        if ($contractIds) {
+            $placeholders = implode(',', array_fill(0, count($contractIds), '?'));
+            $installmentStats = Model::fetchAll(
+                "SELECT contract_id,
+                    COUNT(*) AS installment_count,
+                    SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) AS paid_installment_count,
+                    SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN 1 ELSE 0 END) AS open_installment_count,
+                    SUM(CASE WHEN status NOT IN ('paid', 'cancelled') AND due_date < CURDATE() THEN 1 ELSE 0 END) AS overdue_installment_count,
+                    SUM(COALESCE(base_amount, 0)) AS installment_total,
+                    SUM(COALESCE(paid_amount, 0)) AS installment_paid,
+                    MIN(CASE WHEN status NOT IN ('paid', 'cancelled') THEN due_date END) AS next_due_date
+                 FROM installments WHERE contract_id IN ({$placeholders}) GROUP BY contract_id",
+                $contractIds
+            );
+            foreach ($installmentStats as $stat) $historyByContract[(int) $stat['contract_id']] = $stat;
+            $paymentsByContract = Model::fetchAll(
+                "SELECT contract_id, SUM(amount) AS paid_total, MAX(COALESCE(payment_date, DATE(paid_at), DATE(created_at))) AS last_payment_date
+                 FROM payments WHERE contract_id IN ({$placeholders}) AND status = 'paid' AND COALESCE(is_corrected, 0) = 0
+                 GROUP BY contract_id",
+                $contractIds
+            );
+            foreach ($paymentsByContract as $payment) {
+                $contractId = (int) $payment['contract_id'];
+                $historyByContract[$contractId] = array_merge($historyByContract[$contractId] ?? [], $payment);
+                $totalPaid += normalize_money($payment['paid_total'] ?? 0);
+            }
+        }
+        foreach ($contracts as &$contract) {
+            $stat = $historyByContract[(int) $contract['id']] ?? [];
+            $contract['history'] = [
+                'installment_count' => (int) ($stat['installment_count'] ?? 0),
+                'paid_installment_count' => (int) ($stat['paid_installment_count'] ?? 0),
+                'open_installment_count' => (int) ($stat['open_installment_count'] ?? 0),
+                'overdue_installment_count' => (int) ($stat['overdue_installment_count'] ?? 0),
+                'paid_total' => normalize_money($stat['paid_total'] ?? $stat['installment_paid'] ?? 0),
+                'next_due_date' => $stat['next_due_date'] ?? null,
+                'last_payment_date' => $stat['last_payment_date'] ?? null,
+            ];
+            $principal = normalize_money($contract['principal_amount'] ?? 0);
+            $contract['history']['remaining_total'] = max(0, $principal - $contract['history']['paid_total']);
+            $contract['history']['progress'] = $principal > 0 ? min(100, (int) round(($contract['history']['paid_total'] / $principal) * 100)) : 0;
+        }
+        unset($contract);
         $this->render('portal/history', [
             'title' => 'سوابق خرید',
             'contracts' => $contracts,
@@ -66,6 +111,10 @@ class PortalController extends Controller
                 'purchases' => $itemCount ?: count($contracts),
                 'last_purchase' => $contracts[0] ?? null,
                 'statuses' => $statusCounts,
+                'total_paid' => $totalPaid,
+                'active_contracts' => (int) ($statusCounts['active'] ?? 0),
+                'completed_contracts' => (int) ($statusCounts['completed'] ?? $statusCounts['closed'] ?? 0),
+                'cancelled_contracts' => (int) ($statusCounts['cancelled'] ?? 0),
             ],
         ]);
     }

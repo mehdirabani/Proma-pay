@@ -320,6 +320,9 @@ class ContractTemplateService extends Model
         if (!in_array($format, [ContractTemplateRenderer::FORMAT_PLAIN, ContractTemplateRenderer::FORMAT_HTML], true)) {
             $errors[] = 'فرمت قالب معتبر نیست.';
         }
+        if ($format === ContractTemplateRenderer::FORMAT_HTML && !class_exists('DOMDocument')) {
+            $errors[] = 'ویرایش و انتشار HTML ساختاریافته به افزونه DOM در PHP نیاز دارد.';
+        }
         return ['valid' => !$errors, 'errors' => $errors, 'warnings' => array_values(array_unique($warnings)), 'unknown_variables' => $unknown];
     }
 

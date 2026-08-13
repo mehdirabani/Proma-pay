@@ -7,11 +7,14 @@ class InstallmentsController extends Controller
         $this->requireRole('admin');
         $filters = $this->filters();
         $result = Installment::filtered($filters);
+        $contractContacts = Contract::contactDirectoryForContracts(array_column($result['items'], 'contract_id'));
         $this->render('installments/index', [
             'title' => 'مدیریت اقساط',
             'installments' => $result['items'],
             'filters' => $filters,
             'pagination' => $result,
+            'installmentSummary' => Installment::summary($filters),
+            'contractContacts' => $contractContacts,
             'contracts' => [],
             'defaultDueDate' => jdate(FinanceHelper::addMonths(date('Y-m-d'), 1)),
         ], is_ajax_request() ? null : 'app');
@@ -23,7 +26,7 @@ class InstallmentsController extends Controller
         $customerInstallments = Installment::all(['customer_id' => Auth::id()]);
         $installmentGroups = [];
         foreach ($customerInstallments as $item) {
-            if ((float) ($item['payable'] ?? 0) <= 0) {
+            if (empty($item['payment_allowed'])) {
                 continue;
             }
             $contractId = (int) ($item['contract_id'] ?? 0);
@@ -31,8 +34,13 @@ class InstallmentsController extends Controller
                 $installmentGroups[$contractId] = ['contract_id' => $contractId, 'contract_number' => $item['contract_number'] ?? '', 'items' => [], 'total' => 0];
             }
             $installmentGroups[$contractId]['items'][] = $item;
-            $installmentGroups[$contractId]['total'] += (float) ($item['payable'] ?? 0);
+            $installmentGroups[$contractId]['total'] += normalize_money($item['final_payable'] ?? $item['payable'] ?? 0);
         }
+        foreach ($installmentGroups as &$group) {
+            $group['settlement_preview'] = PaymentAllocationService::quote($group['items'], date('Y-m-d'));
+            $group['total'] = normalize_money($group['settlement_preview']['full_settlement_total'] ?? 0);
+        }
+        unset($group);
         $this->render('installments/index', [
             'title' => 'پنل اقساط من',
             'installments' => $customerInstallments,
@@ -213,7 +221,14 @@ class InstallmentsController extends Controller
         $allowedStatuses = ['pending', 'partial', 'paid', 'overdue', 'referred', 'corrected', 'cancelled'];
         $paymentState = $_GET['payment_state'] ?? '';
         $allowedStates = ['paid', 'unpaid', 'overdue', 'custom'];
-        return [
+        $tab = $_GET['tab'] ?? 'active';
+        $allowedTabs = ['active', 'today', 'overdue', 'partial', 'paid', 'all'];
+        $tab = in_array($tab, $allowedTabs, true) ? $tab : 'active';
+        $perPage = (int) to_english_digits($_GET['per_page'] ?? 25);
+        $perPage = in_array($perPage, [25, 50, 100], true) ? $perPage : 25;
+        $sort = (string) ($_GET['sort'] ?? 'financial');
+        $allowedSorts = ['financial', 'due_asc', 'due_desc', 'amount_desc', 'amount_asc', 'customer_asc', 'customer_desc'];
+        $filters = [
             'search' => trim((string) ($_GET['q'] ?? '')),
             'customer_name' => trim((string) ($_GET['customer_name'] ?? '')),
             'contract_number' => trim((string) ($_GET['contract_number'] ?? '')),
@@ -225,8 +240,22 @@ class InstallmentsController extends Controller
             'amount_min' => trim((string) ($_GET['amount_min'] ?? '')),
             'amount_max' => trim((string) ($_GET['amount_max'] ?? '')),
             'payment_state' => in_array($paymentState, $allowedStates, true) ? $paymentState : '',
+            'exclude_legal_cases' => in_array(strtolower(trim((string) ($_GET['exclude_legal_cases'] ?? ''))), ['1', 'true', 'yes', 'on'], true),
             'page' => max(1, (int) to_english_digits($_GET['page'] ?? 1)),
-            'per_page' => 20,
+            'per_page' => $perPage,
+            'sort' => in_array($sort, $allowedSorts, true) ? $sort : 'financial',
+            'tab' => $tab,
+            'due_today' => false,
         ];
+        // Explicit legacy query values always win; otherwise tab is the one
+        // source of truth for the list and its result count.
+        if ($status === '' && $filters['payment_state'] === '') {
+            if ($tab === 'active') $filters['payment_state'] = 'unpaid';
+            if ($tab === 'today') { $filters['payment_state'] = 'unpaid'; $filters['due_today'] = true; }
+            if ($tab === 'overdue') $filters['payment_state'] = 'overdue';
+            if ($tab === 'partial') $filters['status'] = 'partial';
+            if ($tab === 'paid') $filters['status'] = 'paid';
+        }
+        return $filters;
     }
 }

@@ -83,6 +83,49 @@
   display: none !important;
 }
 
+.proma-template-editor-card [data-contract-template-editor][hidden],
+.proma-template-editor-card .proma-template-visual-editor[hidden] {
+  display: none !important;
+}
+
+.proma-template-editor-card .proma-template-visual-editor .proma-rich-editor {
+  min-height: 620px;
+}
+
+.proma-template-editor-status,
+.proma-template-editor-recovery {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.proma-template-editor-status[data-state="warning"] {
+  color: #7c4b00;
+  background: #fff7e7;
+}
+
+.proma-template-editor-status[data-state="success"] {
+  color: #246a2a;
+  background: #eef9ed;
+}
+
+.proma-template-copy-buffer {
+  position: fixed;
+  inset-inline-start: 12px;
+  bottom: 12px;
+  width: min(420px, calc(100vw - 24px));
+  min-height: 96px;
+  z-index: 1100;
+}
+
+@media (max-width: 767px) {
+  .proma-template-editor-card .proma-template-visual-editor .proma-rich-editor {
+    min-height: 420px;
+  }
+}
+
 .proma-rich-editor-shell {
   width: 100%;
   overflow: hidden;
@@ -4218,12 +4261,24 @@ label:has(> input[data-select-filter="customer-select"]) {
   font-weight: 900;
 }
 
-.proma-admin-health .progress {
+.proma-admin-health-progress {
   grid-column: 1 / -1;
+  width: 100%;
   height: 8px;
   margin: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
   background: #eef1f7;
 }
+
+.proma-admin-health-progress::-webkit-progress-bar { background: #eef1f7; }
+.proma-admin-health-progress.is-success::-webkit-progress-value { background: #1e9d55; }
+.proma-admin-health-progress.is-warning::-webkit-progress-value { background: #e9a019; }
+.proma-admin-health-progress.is-danger::-webkit-progress-value { background: #d94b4b; }
+.proma-admin-health-progress.is-success::-moz-progress-bar { background: #1e9d55; }
+.proma-admin-health-progress.is-warning::-moz-progress-bar { background: #e9a019; }
+.proma-admin-health-progress.is-danger::-moz-progress-bar { background: #d94b4b; }
 
 .proma-admin-task-list,
 .proma-admin-status-grid {
@@ -4722,6 +4777,12 @@ label:has(> input[data-select-filter="customer-select"]) {
 
 .proma-penalty-display--legal strong {
   color: var(--proma-danger);
+}
+
+.proma-projected-penalty {
+  color: var(--proma-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--proma-danger);
 }
 
 .proma-customer-summary {
@@ -5242,6 +5303,16 @@ label:has(> input[data-select-filter="customer-select"]) {
 .proma-role-dashboard {
   --role-accent: #7366ff;
   --role-accent-soft: #f0efff;
+}
+
+.proma-role-dashboard--lawyer {
+  --role-accent: #e07a19;
+  --role-accent-soft: #fff4e8;
+}
+
+.proma-role-dashboard--customer {
+  --role-accent: #188b83;
+  --role-accent-soft: #e8f8f5;
 }
 
 .proma-role-dashboard .proma-role-hero {
@@ -7563,6 +7634,207 @@ tr[data-card-href]:hover td {
 .proma-health-note p {
   margin: 0;
   line-height: 1.8;
+}
+
+/* V1.5.7 — shared contract-detail spacing and control system. */
+:root {
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --page-padding-x: 24px;
+  --page-padding-y: 24px;
+  --section-gap: 24px;
+  --card-padding: 20px;
+  --card-gap: 16px;
+  --control-height: 48px;
+  --control-radius: 12px;
+  --card-radius: 16px;
+}
+
+.proma-contract-tabs {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  margin: 0 0 var(--section-gap);
+  padding: var(--space-2);
+  border: 1px solid var(--proma-line);
+  border-radius: var(--card-radius);
+  background: #fff;
+  scrollbar-width: thin;
+}
+
+.proma-contract-tabs button {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--proma-muted);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+}
+
+.proma-contract-tabs button:hover,
+.proma-contract-tabs button:focus-visible,
+.proma-contract-tabs button.active {
+  color: #fff;
+  background: var(--proma-primary);
+}
+
+.proma-contract-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--section-gap);
+}
+
+.proma-contract-workspace:has(.proma-contract-sidebar) {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+}
+
+.proma-contract-installments-card {
+  min-width: 0;
+}
+
+.proma-contract-sidebar {
+  align-self: start;
+}
+
+.proma-installment-financials {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(126px, 1fr));
+  gap: var(--space-2);
+  min-width: 440px;
+}
+
+.proma-installment-financials > span {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid #edf0f7;
+  border-radius: 10px;
+  background: #fbfcff;
+}
+
+.proma-installment-financials small {
+  color: var(--proma-muted);
+  font-size: 11px;
+}
+
+.proma-installment-financials strong {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+.proma-installment-financials .proma-installment-payable {
+  border-color: rgba(115, 102, 255, .22);
+  background: rgba(115, 102, 255, .07);
+}
+
+.proma-payment-workspace {
+  display: grid;
+  gap: var(--card-gap);
+  padding: var(--card-padding);
+  border: 1px solid var(--proma-line);
+  border-radius: var(--card-radius);
+  background: #fbfcff;
+}
+
+.proma-payment-workspace__summary {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.proma-payment-workspace__summary span {
+  color: var(--proma-muted);
+  font-size: 13px;
+}
+
+.proma-payment-workspace :is(input, select, .btn) {
+  min-height: var(--control-height);
+  border-radius: var(--control-radius);
+}
+
+.proma-contract-settlement-card,
+.proma-management-card,
+.proma-operator-debt-summary,
+.proma-contract-workspace,
+.proma-legal-card {
+  margin-bottom: var(--section-gap);
+}
+
+.proma-operator-debt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--card-gap);
+}
+
+.proma-operator-debt-grid article {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--card-padding);
+  border: 1px solid var(--proma-line);
+  border-radius: var(--control-radius);
+  background: #fbfcff;
+}
+
+.proma-operator-debt-grid small { color: var(--proma-muted); }
+.proma-operator-debt-grid strong { overflow-wrap: anywhere; font-size: 16px; }
+.proma-operator-debt-grid .badge { justify-self: start; }
+.proma-operator-debt-card--emphasis { border-color: rgba(115, 102, 255, .36) !important; background: rgba(115, 102, 255, .07) !important; }
+
+.proma-legal-cost-table {
+  display: grid;
+  gap: var(--card-gap);
+  margin: var(--section-gap) 0;
+  padding: var(--card-padding);
+  border: 1px solid var(--proma-line);
+  border-radius: var(--card-radius);
+  background: #fbfcff;
+}
+
+.proma-legal-cost-table h3,
+.proma-legal-cost-table p { margin: 0; }
+.proma-legal-cost-table p { color: var(--proma-muted); font-size: 13px; }
+.proma-legal-cost-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); }
+.proma-legal-cost-kpis span { display: grid; gap: var(--space-1); padding: var(--space-3); border-radius: 10px; background: #fff; }
+.proma-legal-cost-kpis small { color: var(--proma-muted); }
+.proma-legal-cost-kpis strong { overflow-wrap: anywhere; }
+
+@media (max-width: 991.98px) {
+  .proma-contract-workspace:has(.proma-contract-sidebar) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767.98px) {
+  :root {
+    --page-padding-x: 12px;
+    --page-padding-y: 16px;
+    --section-gap: 16px;
+    --card-padding: 16px;
+  }
+
+  .proma-contract-tabs {
+    margin-bottom: var(--section-gap);
+  }
+
+  .proma-installment-financials {
+    grid-template-columns: repeat(2, minmax(132px, 1fr));
+    min-width: 300px;
+  }
+
+  .proma-operator-debt-grid { grid-template-columns: minmax(0, 1fr); }
+  .proma-legal-cost-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 1199.98px) {

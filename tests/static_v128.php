@@ -37,7 +37,7 @@ $assert(strpos($pluginView, 'plugins/rescan') !== false, 'Plugin rescan action i
 $assert(strpos($pluginView, "PluginStatus::canInstall") !== false, 'Plugin install action is not centralized.');
 
 $formsCss = (string) file_get_contents($root . '/assets/css/components/forms.css');
-$assert(strpos($formsCss, '--proma-field-height: 44px') !== false && strpos($formsCss, '--proma-control-height: var(--proma-field-height)') !== false, 'Shared control height is not defined.');
+$assert(strpos($formsCss, '--proma-field-height: var(--ui-control-height, 48px)') !== false && strpos($formsCss, '--proma-control-height: var(--proma-field-height)') !== false, 'Shared control height is not defined.');
 $assert(strpos($formsCss, 'textarea.proma-form-control') !== false, 'Textarea exception is missing.');
 
 $printCss = (string) file_get_contents($root . '/assets/css/components/contract-print.css');

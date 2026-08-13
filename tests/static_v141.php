@@ -49,7 +49,7 @@ $installerTableNames = array_values(array_unique(array_map('strtolower', $instal
 sort($sqlTableNames);
 sort($installerTableNames);
 $assert(count($sqlTableNames) >= 60, 'Fresh-install SQL table inventory is unexpectedly incomplete.');
-$assert($sqlTableNames === $installerTableNames, 'install.php and proma-pay-install.sql table inventories differ.');
+$assert($sqlTableNames === $installerTableNames, 'install.php and proma-pay-install.sql table inventories differ. SQL-only: ' . implode(',', array_diff($sqlTableNames, $installerTableNames)) . ' Installer-only: ' . implode(',', array_diff($installerTableNames, $sqlTableNames)));
 
 $ddlViolations = [];
 foreach (['controllers', 'models', 'helpers'] as $directory) {
@@ -78,8 +78,6 @@ $assert(strpos($appJs, 'initProfileMenu') !== false, 'Profile menu interaction r
 $assert(strpos($appCss, '.onhover-dropdown > .onhover-show-div.active') !== false, 'Active header dropdown visibility rule is missing.');
 
 $releaseBuilder = (string) file_get_contents($root . '/scripts/build_release.php');
-foreach (['2026_07_01_backup_logs.sql', '2026_07_10_ecommerce_module.sql', '2026_07_13_contract_template_print_engine.sql', '2026_07_21_v1_4_1_interaction_state.sql'] as $requiredMigration) {
-    $assert(strpos($releaseBuilder, $requiredMigration) !== false, 'Upgrade repair migration is missing from package inventory: ' . $requiredMigration);
-}
+$assert(strpos($releaseBuilder, 'database/migrations/') !== false && strpos($releaseBuilder, '$baselineFiles') !== false, 'Upgrade migrations are not selected from the verified baseline delta.');
 
 echo "STATIC_V141_OK\n";

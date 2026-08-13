@@ -19,6 +19,12 @@ $headerActions = trim(ob_get_clean());
     <article class="proma-accounting-kpi"><span class="proma-accounting-kpi-icon is-green"><i data-feather="download"></i></span><div><span class="proma-accounting-kpi-label">دریافت‌شده از کاربر</span><strong><?= money_toman($accountSummary['received_from_user'] ?? 0) ?></strong><small>دریافت‌های ثبت‌شده در دفترکل</small></div></article>
   </div>
 
+  <?php $financeChart = $financeChart ?? ['labels'=>[], 'income'=>[], 'expense'=>[], 'net'=>[]]; ?>
+  <section class="proma-accounting-panel proma-accounting-finance-chart">
+    <div class="proma-accounting-section-heading"><div><span class="proma-accounting-section-icon is-purple"><i data-feather="bar-chart-2"></i></span><div><h3>روند ماهانه درآمد و خالص عملکرد مالی</h3><p>گزارش تجمیعی ۱۲ ماه اخیر حساب کاربر؛ این گزارش صورت سود و زیان رسمی شرکت نیست.</p></div></div></div>
+    <?php if (!empty($financeChart['labels'])): ?><div class="proma-accounting-chart-wrap"><canvas data-accounting-finance-chart data-labels="<?= e(json_encode($financeChart['labels'], JSON_UNESCAPED_UNICODE)) ?>" data-income="<?= e(json_encode($financeChart['income'])) ?>" data-expense="<?= e(json_encode($financeChart['expense'])) ?>" data-net="<?= e(json_encode($financeChart['net'])) ?>" aria-label="نمودار ماهانه درآمد هزینه و خالص عملکرد مالی"></canvas></div><?php else: ?><?= pa_empty_state('هنوز داده‌ای برای نمودار وجود ندارد', 'پس از ثبت سندهای مالی، روند ماهانه در این بخش نمایش داده می‌شود.', 'bar-chart-2') ?><?php endif; ?>
+  </section>
+
   <section class="proma-accounting-panel">
     <div class="proma-accounting-section-heading"><div><span class="proma-accounting-section-icon is-purple"><i data-feather="edit-3"></i></span><div><h3>ثبت سند حسابداری</h3><p>مبلغ و اثر عملیات قبل از ارسال به سرور محاسبه و نمایش داده می‌شود.</p></div></div></div>
     <form method="post" action="<?= e(url('plugin/accounting/ledger/post')) ?>" class="proma-accounting-form-grid" data-accounting-ledger-form data-balance="<?= $currentBalance ?>" data-accounting-confirm data-confirm-title="تأیید ثبت سند" data-confirm-person="<?= e($accountUser['full_name'] ?? '') ?>" data-confirm-operation="ثبت سند جدید" data-confirm-effect="مانده قبل و بعد در پیش‌نمایش صفحه نمایش داده شده است">

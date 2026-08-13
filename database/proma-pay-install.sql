@@ -435,6 +435,7 @@ CREATE TABLE `installments` (
   `paid_amount` decimal(18,2) NOT NULL DEFAULT 0.00,
   `remaining_amount` decimal(18,2) NOT NULL DEFAULT 0.00,
   `last_payment_date` date DEFAULT NULL,
+  `effective_settlement_at` datetime DEFAULT NULL,
   `manual_penalty_adjustment` decimal(18,2) NOT NULL DEFAULT 0.00,
   `manual_reward_adjustment` decimal(18,2) NOT NULL DEFAULT 0.00,
   `penalty_discount_amount` decimal(18,2) NOT NULL DEFAULT 0.00,
@@ -508,12 +509,17 @@ CREATE TABLE `legal_cases` (
   `expense_amount` decimal(18,2) NOT NULL DEFAULT 0.00,
   `expense_reason` text DEFAULT NULL,
   `notes` text DEFAULT NULL,
+  `request_uuid` varchar(64) DEFAULT NULL,
+  `legal_referred_at` datetime DEFAULT NULL,
+  `archived_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_legal_lawyer` (`lawyer_id`),
   KEY `fk_legal_customer` (`customer_id`),
   KEY `fk_legal_contract` (`contract_id`),
+  KEY `idx_legal_contract_status` (`contract_id`,`status`),
+  UNIQUE KEY `uq_legal_case_request_uuid` (`request_uuid`),
   CONSTRAINT `fk_legal_contract` FOREIGN KEY (`contract_id`) REFERENCES `contracts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_legal_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_legal_lawyer` FOREIGN KEY (`lawyer_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
@@ -641,10 +647,14 @@ CREATE TABLE `payment_requests` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `request_uuid` varchar(64) NOT NULL,
   `user_id` bigint(20) unsigned DEFAULT NULL,
-  `installment_id` bigint(20) unsigned NOT NULL,
+  `installment_id` bigint(20) unsigned DEFAULT NULL,
+  `contract_id` bigint(20) unsigned DEFAULT NULL,
+  `quote_uuid` varchar(64) DEFAULT NULL,
+  `selection_json` longtext DEFAULT NULL,
   `request_hash` char(64) NOT NULL,
   `status` varchar(30) NOT NULL DEFAULT 'processing',
   `payment_id` bigint(20) unsigned DEFAULT NULL,
+  `payment_group_id` bigint(20) unsigned DEFAULT NULL,
   `response_code` varchar(60) DEFAULT NULL,
   `error_message` text DEFAULT NULL,
   `created_at` datetime NOT NULL,
@@ -653,7 +663,9 @@ CREATE TABLE `payment_requests` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_payment_requests_uuid` (`request_uuid`),
   KEY `idx_payment_requests_installment` (`installment_id`),
-  KEY `idx_payment_requests_payment` (`payment_id`)
+  KEY `idx_payment_requests_payment` (`payment_id`),
+  KEY `idx_payment_requests_group` (`payment_group_id`),
+  KEY `idx_payment_requests_contract` (`contract_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `system_outbox`;
@@ -747,8 +759,13 @@ CREATE TABLE `payments` (
   `payment_date` date DEFAULT NULL,
   `calculated_penalty` decimal(18,2) NOT NULL DEFAULT 0.00,
   `calculated_reward` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `principal_applied` decimal(18,2) DEFAULT NULL,
+  `normal_penalty_applied` decimal(18,2) DEFAULT NULL,
+  `legal_penalty_applied` decimal(18,2) DEFAULT NULL,
+  `reward_applied` decimal(18,2) DEFAULT NULL,
   `remaining_before_payment` decimal(18,2) DEFAULT NULL,
   `remaining_after_payment` decimal(18,2) DEFAULT NULL,
+  `settlement_quote_uuid` varchar(64) DEFAULT NULL,
   `payment_type` varchar(40) NOT NULL DEFAULT 'installment',
   `is_corrected` tinyint(1) NOT NULL DEFAULT 0,
   `correction_reason` text DEFAULT NULL,
@@ -761,6 +778,7 @@ CREATE TABLE `payments` (
   UNIQUE KEY `uq_gateway_track` (`gateway_track_id`),
   KEY `idx_payment_paid_at` (`paid_at`),
   KEY `idx_payment_contract` (`contract_id`),
+  KEY `idx_payment_contract_status` (`contract_id`,`status`,`is_corrected`,`id`),
   KEY `fk_payment_installment` (`installment_id`),
   KEY `fk_payment_user` (`user_id`),
   CONSTRAINT `fk_payment_contract` FOREIGN KEY (`contract_id`) REFERENCES `contracts` (`id`) ON DELETE CASCADE,
@@ -901,6 +919,7 @@ DROP TABLE IF EXISTS `user_medal_history`;
 DROP TABLE IF EXISTS `user_medals`;
 DROP TABLE IF EXISTS `medal_definitions`;
 DROP TABLE IF EXISTS `installment_bulk_operations`;
+DROP TABLE IF EXISTS `settlement_quotes`;
 DROP TABLE IF EXISTS `payment_allocations`;
 DROP TABLE IF EXISTS `payment_groups`;
 DROP TABLE IF EXISTS `contract_document_versions`;
@@ -919,8 +938,9 @@ CREATE TABLE IF NOT EXISTS `contract_template_audit_logs` (`id` bigint(20) unsig
 CREATE TABLE IF NOT EXISTS `contract_document_rebuild_jobs` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `target_template_version_id` bigint(20) unsigned NOT NULL, `status` varchar(30) NOT NULL DEFAULT 'pending', `total_documents` int(10) unsigned NOT NULL DEFAULT 0, `processed_documents` int(10) unsigned NOT NULL DEFAULT 0, `failed_documents` int(10) unsigned NOT NULL DEFAULT 0, `last_contract_id` bigint(20) unsigned NOT NULL DEFAULT 0, `failure_report_json` longtext DEFAULT NULL, `created_by` bigint(20) unsigned DEFAULT NULL, `created_at` datetime NOT NULL, `started_at` datetime DEFAULT NULL, `completed_at` datetime DEFAULT NULL, `updated_at` datetime DEFAULT NULL, PRIMARY KEY (`id`), KEY `idx_contract_rebuild_status` (`status`,`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 INSERT IGNORE INTO `contract_templates` (`id`,`name`,`description`,`status`,`created_at`) VALUES (1,'قالب اصلی قرارداد','قالب پیش فرض اسناد قرارداد','active',NOW());
 CREATE TABLE `contract_document_versions` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `contract_id` bigint(20) unsigned NOT NULL, `template_version_id` bigint(20) unsigned DEFAULT NULL, `version_number` int(10) unsigned NOT NULL, `rendered_title` varchar(190) DEFAULT NULL, `rendered_header` text DEFAULT NULL, `rendered_body` longtext NOT NULL, `source` varchar(30) NOT NULL DEFAULT 'generated', `checksum` char(64) NOT NULL, `is_published` tinyint(1) NOT NULL DEFAULT 1, `is_finalized` tinyint(1) NOT NULL DEFAULT 0, `generated_by` bigint(20) unsigned DEFAULT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_contract_document_version` (`contract_id`,`version_number`), KEY `idx_contract_document_versions_published` (`contract_id`,`is_published`,`version_number`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE `payment_groups` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `group_number` varchar(80) NOT NULL, `contract_id` bigint(20) unsigned NOT NULL, `customer_id` bigint(20) unsigned NOT NULL, `created_by` bigint(20) unsigned DEFAULT NULL, `requested_amount` decimal(18,2) NOT NULL, `allocated_amount` decimal(18,2) NOT NULL DEFAULT 0.00, `method` varchar(30) NOT NULL DEFAULT 'manual', `status` varchar(30) NOT NULL DEFAULT 'paid', `gateway_track_id` varchar(100) DEFAULT NULL, `idempotency_key` varchar(120) DEFAULT NULL, `description` text DEFAULT NULL, `selection_json` longtext DEFAULT NULL, `created_at` datetime NOT NULL, `completed_at` datetime DEFAULT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_payment_groups_number` (`group_number`), UNIQUE KEY `uq_payment_groups_idempotency` (`idempotency_key`), KEY `idx_payment_groups_contract` (`contract_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE `payment_allocations` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `payment_group_id` bigint(20) unsigned NOT NULL, `payment_id` bigint(20) unsigned NOT NULL, `contract_id` bigint(20) unsigned NOT NULL, `installment_id` bigint(20) unsigned NOT NULL, `allocated_amount` decimal(18,2) NOT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_payment_allocation_installment` (`payment_group_id`,`installment_id`), KEY `idx_payment_allocations_payment` (`payment_id`), CONSTRAINT `fk_payment_allocation_group` FOREIGN KEY (`payment_group_id`) REFERENCES `payment_groups` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `settlement_quotes` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `quote_uuid` varchar(64) NOT NULL, `actor_id` bigint(20) unsigned DEFAULT NULL, `customer_id` bigint(20) unsigned NOT NULL, `contract_id` bigint(20) unsigned NOT NULL, `scope` varchar(20) NOT NULL DEFAULT 'selected', `selected_installment_ids_json` longtext NOT NULL, `calculation_date` date NOT NULL, `calculated_at` datetime NOT NULL, `principal_total` decimal(18,2) NOT NULL DEFAULT 0.00, `normal_penalty_total` decimal(18,2) NOT NULL DEFAULT 0.00, `legal_penalty_total` decimal(18,2) NOT NULL DEFAULT 0.00, `reward_total` decimal(18,2) NOT NULL DEFAULT 0.00, `final_payable` decimal(18,2) NOT NULL DEFAULT 0.00, `snapshot_hash` char(64) NOT NULL, `calculation_version` varchar(120) NOT NULL, `status` varchar(30) NOT NULL DEFAULT 'open', `expires_at` datetime NOT NULL, `used_at` datetime DEFAULT NULL, `payment_group_id` bigint(20) unsigned DEFAULT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_settlement_quotes_uuid` (`quote_uuid`), KEY `idx_settlement_quotes_contract_status` (`contract_id`,`status`,`expires_at`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `payment_groups` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `group_number` varchar(80) NOT NULL, `contract_id` bigint(20) unsigned NOT NULL, `customer_id` bigint(20) unsigned NOT NULL, `created_by` bigint(20) unsigned DEFAULT NULL, `requested_amount` decimal(18,2) NOT NULL, `allocated_amount` decimal(18,2) NOT NULL DEFAULT 0.00, `method` varchar(30) NOT NULL DEFAULT 'manual', `status` varchar(30) NOT NULL DEFAULT 'paid', `gateway_track_id` varchar(100) DEFAULT NULL, `idempotency_key` varchar(120) DEFAULT NULL, `quote_uuid` varchar(64) DEFAULT NULL, `payment_request_uuid` varchar(64) DEFAULT NULL, `description` text DEFAULT NULL, `selection_json` longtext DEFAULT NULL, `allocation_json` longtext DEFAULT NULL, `created_at` datetime NOT NULL, `completed_at` datetime DEFAULT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_payment_groups_number` (`group_number`), UNIQUE KEY `uq_payment_groups_idempotency` (`idempotency_key`), KEY `idx_payment_groups_contract` (`contract_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `payment_allocations` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `payment_group_id` bigint(20) unsigned NOT NULL, `payment_id` bigint(20) unsigned NOT NULL, `contract_id` bigint(20) unsigned NOT NULL, `installment_id` bigint(20) unsigned NOT NULL, `allocated_amount` decimal(18,2) NOT NULL, `principal_applied` decimal(18,2) NOT NULL DEFAULT 0.00, `normal_penalty_applied` decimal(18,2) NOT NULL DEFAULT 0.00, `legal_penalty_applied` decimal(18,2) NOT NULL DEFAULT 0.00, `reward_applied` decimal(18,2) NOT NULL DEFAULT 0.00, `remaining_before` decimal(18,2) NOT NULL DEFAULT 0.00, `remaining_after` decimal(18,2) NOT NULL DEFAULT 0.00, `status_after` varchar(30) DEFAULT NULL, `quote_uuid` varchar(64) DEFAULT NULL, `reversal_of_allocation_id` bigint(20) unsigned DEFAULT NULL, `is_reversal` tinyint(1) NOT NULL DEFAULT 0, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), KEY `idx_payment_allocations_group_installment` (`payment_group_id`,`installment_id`,`is_reversal`), KEY `idx_payment_allocations_payment` (`payment_id`), CONSTRAINT `fk_payment_allocation_group` FOREIGN KEY (`payment_group_id`) REFERENCES `payment_groups` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `installment_bulk_operations` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `operation_number` varchar(80) NOT NULL, `contract_id` bigint(20) unsigned NOT NULL, `operation_type` varchar(40) NOT NULL, `installment_ids_json` longtext NOT NULL, `old_snapshot_json` longtext DEFAULT NULL, `new_snapshot_json` longtext DEFAULT NULL, `reason` text NOT NULL, `performed_by` bigint(20) unsigned DEFAULT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_installment_bulk_operation_number` (`operation_number`), KEY `idx_installment_bulk_operations_contract` (`contract_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `medal_definitions` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `slug` varchar(100) NOT NULL, `title` varchar(190) NOT NULL, `short_description` varchar(255) DEFAULT NULL, `full_description` text DEFAULT NULL, `how_to_earn` text DEFAULT NULL, `icon_key` varchar(50) NOT NULL DEFAULT 'award', `icon_path` varchar(255) DEFAULT NULL, `color` varchar(20) NOT NULL DEFAULT '#f59e0b', `category` varchar(30) NOT NULL DEFAULT 'activity', `points` int(11) NOT NULL DEFAULT 0, `award_type` varchar(30) NOT NULL DEFAULT 'automatic', `behavior_type` varchar(30) NOT NULL DEFAULT 'permanent', `revocation_behavior` varchar(30) NOT NULL DEFAULT 'never', `reactivation_behavior` varchar(30) NOT NULL DEFAULT 'restore', `criteria_type` varchar(50) DEFAULT NULL, `criteria_json` longtext DEFAULT NULL, `is_repeatable` tinyint(1) NOT NULL DEFAULT 0, `maximum_awards` int(10) unsigned DEFAULT NULL, `is_active` tinyint(1) NOT NULL DEFAULT 1, `sort_order` int(11) NOT NULL DEFAULT 0, `created_by` bigint(20) unsigned DEFAULT NULL, `created_at` datetime NOT NULL, `updated_at` datetime DEFAULT NULL, `last_evaluated_at` datetime DEFAULT NULL, `archived_at` datetime DEFAULT NULL, PRIMARY KEY (`id`), UNIQUE KEY `uq_medal_definition_slug` (`slug`), KEY `idx_medal_definitions_active_sort` (`is_active`,`sort_order`), KEY `idx_medal_definitions_behavior` (`behavior_type`,`revocation_behavior`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `user_medals` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `user_id` bigint(20) unsigned NOT NULL, `medal_definition_id` bigint(20) unsigned NOT NULL, `source` varchar(30) NOT NULL DEFAULT 'automatic', `note` text DEFAULT NULL, `related_contract_id` bigint(20) unsigned DEFAULT NULL, `related_payment_id` bigint(20) unsigned DEFAULT NULL, `awarded_by` bigint(20) unsigned DEFAULT NULL, `awarded_at` datetime NOT NULL, `revoked_at` datetime DEFAULT NULL, `revoked_by` bigint(20) unsigned DEFAULT NULL, `revoke_reason` text DEFAULT NULL, `created_at` datetime NOT NULL, PRIMARY KEY (`id`), KEY `idx_user_medals_user_active` (`user_id`,`revoked_at`), KEY `idx_user_medals_definition` (`medal_definition_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1033,4 +1053,157 @@ CREATE TABLE `contract_requests` (
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- V1.5.0 legal policy, internal workflow and immutable-document metadata.
+CREATE TABLE IF NOT EXISTS `legal_policy_versions` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `policy_code` varchar(64) NOT NULL DEFAULT 'default',
+  `version_number` int unsigned NOT NULL,
+  `policy_json` longtext NOT NULL,
+  `approved_by` bigint unsigned DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_legal_policy_version` (`policy_code`,`version_number`),
+  KEY `idx_legal_policy_active` (`policy_code`,`is_active`,`version_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS `contract_legal_policy_snapshots` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `contract_id` bigint unsigned NOT NULL,
+  `policy_version_id` bigint unsigned DEFAULT NULL,
+  `policy_version_number` int unsigned NOT NULL DEFAULT 0,
+  `policy_json` longtext NOT NULL,
+  `source` varchar(40) NOT NULL DEFAULT 'legacy_review_required',
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_contract_legal_policy_snapshot` (`contract_id`),
+  KEY `idx_contract_legal_policy_version` (`policy_version_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS `legal_case_requests` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `request_uuid` varchar(64) NOT NULL,
+  `contract_id` bigint unsigned NOT NULL,
+  `legal_case_id` bigint unsigned DEFAULT NULL,
+  `requested_by` bigint unsigned NOT NULL,
+  `payload_hash` char(64) NOT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_legal_case_request_uuid` (`request_uuid`),
+  KEY `idx_legal_case_request_contract` (`contract_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS `legal_documents` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `document_uuid` varchar(64) NOT NULL,
+  `request_uuid` varchar(64) NOT NULL,
+  `legal_case_id` bigint unsigned NOT NULL,
+  `contract_id` bigint unsigned NOT NULL,
+  `document_type` varchar(40) NOT NULL,
+  `title` varchar(190) NOT NULL,
+  `body` longtext NOT NULL,
+  `document_status` varchar(50) NOT NULL DEFAULT 'internal_draft',
+  `deadline_date` date DEFAULT NULL,
+  `policy_snapshot_json` longtext DEFAULT NULL,
+  `debt_snapshot_json` longtext DEFAULT NULL,
+  `external_reference` varchar(190) DEFAULT NULL,
+  `external_authority` varchar(190) DEFAULT NULL,
+  `external_submitted_at` date DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `externally_confirmed_by` bigint unsigned DEFAULT NULL,
+  `externally_confirmed_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_legal_document_uuid` (`document_uuid`),
+  UNIQUE KEY `uq_legal_document_request` (`request_uuid`),
+  KEY `idx_legal_document_case` (`legal_case_id`,`document_status`),
+  KEY `idx_legal_document_contract` (`contract_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS `legal_case_costs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `cost_uuid` varchar(64) NOT NULL,
+  `legal_case_id` bigint unsigned DEFAULT NULL,
+  `contract_id` bigint unsigned NOT NULL,
+  `source_legal_log_id` bigint unsigned DEFAULT NULL,
+  `category` varchar(100) NOT NULL,
+  `title` varchar(190) NOT NULL,
+  `amount_toman` bigint NOT NULL,
+  `paid_amount_toman` bigint NOT NULL DEFAULT 0,
+  `cost_date` date NOT NULL,
+  `payment_status` varchar(30) NOT NULL DEFAULT 'pending',
+  `approval_status` varchar(30) NOT NULL DEFAULT 'pending_approval',
+  `paid_by` bigint unsigned DEFAULT NULL,
+  `chargeable_to_customer` tinyint(1) NOT NULL DEFAULT 1,
+  `description` text DEFAULT NULL,
+  `external_reference` varchar(190) DEFAULT NULL,
+  `attachment_path` varchar(255) DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `approved_by` bigint unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `reversed_at` datetime DEFAULT NULL,
+  `reversal_reason` text DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_legal_case_cost_uuid` (`cost_uuid`),
+  UNIQUE KEY `uq_legal_case_cost_source_log` (`source_legal_log_id`),
+  KEY `idx_legal_case_cost_contract_status` (`contract_id`,`approval_status`,`payment_status`),
+  KEY `idx_legal_case_cost_case_date` (`legal_case_id`,`cost_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS `legal_cost_payment_allocations` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `payment_group_id` bigint unsigned NOT NULL,
+  `payment_id` bigint unsigned NOT NULL,
+  `legal_case_cost_id` bigint unsigned NOT NULL,
+  `contract_id` bigint unsigned NOT NULL,
+  `allocated_amount_toman` bigint NOT NULL,
+  `reversal_of_allocation_id` bigint unsigned DEFAULT NULL,
+  `is_reversal` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_legal_cost_payment_group` (`payment_group_id`),
+  KEY `idx_legal_cost_payment_cost` (`legal_case_cost_id`,`is_reversal`),
+  UNIQUE KEY `uq_legal_cost_payment_source` (`payment_id`,`legal_case_cost_id`,`is_reversal`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS `installment_change_requests` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `request_id` varchar(48) NOT NULL,
+  `installment_id` bigint unsigned NOT NULL,
+  `contract_id` bigint unsigned NOT NULL,
+  `request_type` varchar(24) NOT NULL,
+  `status` varchar(24) NOT NULL,
+  `before_snapshot_json` longtext NOT NULL,
+  `requested_snapshot_json` longtext NOT NULL,
+  `dependency_snapshot_json` longtext DEFAULT NULL,
+  `reason` text NOT NULL,
+  `requested_by` bigint unsigned NOT NULL,
+  `approved_by` bigint unsigned DEFAULT NULL,
+  `affected_installment_ids_json` text DEFAULT NULL,
+  `calculation_version` varchar(64) NOT NULL,
+  `created_at` datetime NOT NULL,
+  `applied_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_installment_change_request` (`request_id`),
+  KEY `idx_installment_change_contract_status` (`contract_id`,`status`),
+  KEY `idx_installment_change_installment` (`installment_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS `installment_voids` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `installment_id` bigint unsigned NOT NULL,
+  `contract_id` bigint unsigned NOT NULL,
+  `previous_amount` bigint NOT NULL,
+  `previous_due_date` date NOT NULL,
+  `void_reason` text NOT NULL,
+  `voided_by` bigint unsigned NOT NULL,
+  `request_id` varchar(48) NOT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_installment_void_once` (`installment_id`),
+  KEY `idx_installment_void_contract` (`contract_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT IGNORE INTO `settings` (`setting_key`,`setting_value`,`is_secret`) VALUES
+('legal_delay_value','30',0),('legal_delay_unit','day',0),('legal_overdue_count_threshold','1',0),('legal_overdue_amount_enabled','0',0),('legal_overdue_amount_threshold','0',0),('legal_eligibility_operator','delay_only',0),('legal_warning_before_days','0',0),('legal_allow_self_initiation','1',0);
+INSERT IGNORE INTO `legal_policy_versions` (`policy_code`,`version_number`,`policy_json`,`is_active`,`created_at`) VALUES
+('default',1,'{"delay_value":30,"delay_unit":"day","overdue_count_threshold":1,"overdue_amount_enabled":0,"overdue_amount_threshold":0,"eligibility_operator":"delay_only","warning_before_days":0,"allow_self_initiation":1,"legal_referred_at_mode":"persisted_referral_confirmation"}',1,NOW());
 

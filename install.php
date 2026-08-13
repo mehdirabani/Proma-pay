@@ -193,6 +193,23 @@ function create_or_update_initial_admin(PDO $pdo, array $admin)
 
 function create_schema(PDO $pdo)
 {
+    // A fresh installation must use the canonical schema shipped with the
+    // release. Keeping a second hand-maintained schema here caused new
+    // installations to miss columns added by later releases.
+    if (!installer_table_exists($pdo, 'users')) {
+        $schemaPath = __DIR__ . '/database/proma-pay-install.sql';
+        $schemaSql = is_file($schemaPath) ? file_get_contents($schemaPath) : false;
+        if (!is_string($schemaSql) || trim($schemaSql) === '') {
+            throw new RuntimeException('Canonical installation schema is missing or empty.');
+        }
+        $pdo->exec($schemaSql);
+        $pdo->exec(
+            "INSERT IGNORE INTO chat_channels (title, slug, type, is_pinned, is_system, created_at)
+             VALUES ('پرما پرداخت', 'public-announcements', 'public', 1, 1, NOW())"
+        );
+        return;
+    }
+
     $statements = [
         "CREATE TABLE IF NOT EXISTS users (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -520,6 +537,26 @@ function create_schema(PDO $pdo)
             CONSTRAINT fk_legal_case_logs_case FOREIGN KEY (legal_case_id) REFERENCES legal_cases(id) ON DELETE SET NULL,
             CONSTRAINT fk_legal_case_logs_registered_by FOREIGN KEY (registered_by) REFERENCES users(id) ON DELETE SET NULL,
             CONSTRAINT fk_legal_case_logs_lawyer FOREIGN KEY (assigned_lawyer_id) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS legal_policy_versions (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, policy_code VARCHAR(64) NOT NULL DEFAULT 'default', version_number INT UNSIGNED NOT NULL, policy_json LONGTEXT NOT NULL, approved_by BIGINT UNSIGNED NULL, approved_at DATETIME NULL, is_active TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
+            UNIQUE KEY uq_legal_policy_version (policy_code, version_number), KEY idx_legal_policy_active (policy_code, is_active, version_number)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS contract_legal_policy_snapshots (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, contract_id BIGINT UNSIGNED NOT NULL, policy_version_id BIGINT UNSIGNED NULL, policy_version_number INT UNSIGNED NOT NULL DEFAULT 0, policy_json LONGTEXT NOT NULL, source VARCHAR(40) NOT NULL DEFAULT 'legacy_review_required', created_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, updated_at DATETIME NULL,
+            UNIQUE KEY uq_contract_legal_policy_snapshot (contract_id), KEY idx_contract_legal_policy_version (policy_version_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS legal_case_requests (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, request_uuid VARCHAR(64) NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, legal_case_id BIGINT UNSIGNED NULL, requested_by BIGINT UNSIGNED NOT NULL, payload_hash CHAR(64) NOT NULL, created_at DATETIME NOT NULL,
+            UNIQUE KEY uq_legal_case_request_uuid (request_uuid), KEY idx_legal_case_request_contract (contract_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS legal_documents (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, document_uuid VARCHAR(64) NOT NULL, request_uuid VARCHAR(64) NOT NULL, legal_case_id BIGINT UNSIGNED NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, document_type VARCHAR(40) NOT NULL, title VARCHAR(190) NOT NULL, body LONGTEXT NOT NULL, document_status VARCHAR(50) NOT NULL DEFAULT 'internal_draft', deadline_date DATE NULL, policy_snapshot_json LONGTEXT NULL, debt_snapshot_json LONGTEXT NULL, external_reference VARCHAR(190) NULL, external_authority VARCHAR(190) NULL, external_submitted_at DATE NULL, created_by BIGINT UNSIGNED NULL, externally_confirmed_by BIGINT UNSIGNED NULL, externally_confirmed_at DATETIME NULL, created_at DATETIME NOT NULL, updated_at DATETIME NULL,
+            UNIQUE KEY uq_legal_document_uuid (document_uuid), UNIQUE KEY uq_legal_document_request (request_uuid), KEY idx_legal_document_case (legal_case_id, document_status), KEY idx_legal_document_contract (contract_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS settlement_quotes (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, quote_uuid VARCHAR(64) NOT NULL, actor_id BIGINT UNSIGNED NULL, customer_id BIGINT UNSIGNED NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, scope VARCHAR(20) NOT NULL DEFAULT 'selected', selected_installment_ids_json LONGTEXT NOT NULL, calculation_date DATE NOT NULL, calculated_at DATETIME NOT NULL, principal_total DECIMAL(18,2) NOT NULL DEFAULT 0, normal_penalty_total DECIMAL(18,2) NOT NULL DEFAULT 0, legal_penalty_total DECIMAL(18,2) NOT NULL DEFAULT 0, reward_total DECIMAL(18,2) NOT NULL DEFAULT 0, final_payable DECIMAL(18,2) NOT NULL DEFAULT 0, snapshot_hash CHAR(64) NOT NULL, calculation_version VARCHAR(120) NOT NULL, status VARCHAR(30) NOT NULL DEFAULT 'open', expires_at DATETIME NOT NULL, used_at DATETIME NULL, payment_group_id BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL,
+            UNIQUE KEY uq_settlement_quotes_uuid (quote_uuid), KEY idx_settlement_quotes_contract_status (contract_id, status, expires_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS chat_channels (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -885,6 +922,10 @@ function create_v126_core_schema(PDO $pdo)
         "CREATE TABLE IF NOT EXISTS payment_groups (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, group_number VARCHAR(80) NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, customer_id BIGINT UNSIGNED NOT NULL, created_by BIGINT UNSIGNED NULL, requested_amount DECIMAL(18,2) NOT NULL, allocated_amount DECIMAL(18,2) NOT NULL DEFAULT 0, method VARCHAR(30) NOT NULL DEFAULT 'manual', status VARCHAR(30) NOT NULL DEFAULT 'paid', gateway_track_id VARCHAR(100) NULL, idempotency_key VARCHAR(120) NULL, description TEXT NULL, selection_json LONGTEXT NULL, created_at DATETIME NOT NULL, completed_at DATETIME NULL, UNIQUE KEY uq_payment_groups_number (group_number), UNIQUE KEY uq_payment_groups_idempotency (idempotency_key), KEY idx_payment_groups_contract (contract_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS payment_allocations (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, payment_group_id BIGINT UNSIGNED NOT NULL, payment_id BIGINT UNSIGNED NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, installment_id BIGINT UNSIGNED NOT NULL, allocated_amount DECIMAL(18,2) NOT NULL, created_at DATETIME NOT NULL, UNIQUE KEY uq_payment_allocation_installment (payment_group_id, installment_id), KEY idx_payment_allocations_payment (payment_id), CONSTRAINT fk_payment_allocation_group FOREIGN KEY (payment_group_id) REFERENCES payment_groups(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS installment_bulk_operations (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, operation_number VARCHAR(80) NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, operation_type VARCHAR(40) NOT NULL, installment_ids_json LONGTEXT NOT NULL, old_snapshot_json LONGTEXT NULL, new_snapshot_json LONGTEXT NULL, reason TEXT NOT NULL, performed_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, UNIQUE KEY uq_installment_bulk_operation_number (operation_number), KEY idx_installment_bulk_operations_contract (contract_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS installment_change_requests (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, request_id VARCHAR(48) NOT NULL, installment_id BIGINT UNSIGNED NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, request_type VARCHAR(24) NOT NULL, status VARCHAR(24) NOT NULL, before_snapshot_json LONGTEXT NOT NULL, requested_snapshot_json LONGTEXT NOT NULL, dependency_snapshot_json LONGTEXT NULL, reason TEXT NOT NULL, requested_by BIGINT UNSIGNED NOT NULL, approved_by BIGINT UNSIGNED NULL, affected_installment_ids_json TEXT NULL, calculation_version VARCHAR(64) NOT NULL, created_at DATETIME NOT NULL, applied_at DATETIME NULL, UNIQUE KEY uq_installment_change_request (request_id), KEY idx_installment_change_contract_status (contract_id, status), KEY idx_installment_change_installment (installment_id, created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS installment_voids (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, installment_id BIGINT UNSIGNED NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, previous_amount BIGINT NOT NULL, previous_due_date DATE NOT NULL, void_reason TEXT NOT NULL, voided_by BIGINT UNSIGNED NOT NULL, request_id VARCHAR(48) NOT NULL, created_at DATETIME NOT NULL, UNIQUE KEY uq_installment_void_once (installment_id), KEY idx_installment_void_contract (contract_id, created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS legal_case_costs (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, cost_uuid VARCHAR(64) NOT NULL, legal_case_id BIGINT UNSIGNED NULL, contract_id BIGINT UNSIGNED NOT NULL, source_legal_log_id BIGINT UNSIGNED NULL, category VARCHAR(100) NOT NULL, title VARCHAR(190) NOT NULL, amount_toman BIGINT NOT NULL, paid_amount_toman BIGINT NOT NULL DEFAULT 0, cost_date DATE NOT NULL, payment_status VARCHAR(30) NOT NULL DEFAULT 'pending', approval_status VARCHAR(30) NOT NULL DEFAULT 'pending_approval', paid_by BIGINT UNSIGNED NULL, chargeable_to_customer TINYINT(1) NOT NULL DEFAULT 1, description TEXT NULL, external_reference VARCHAR(190) NULL, attachment_path VARCHAR(255) NULL, created_by BIGINT UNSIGNED NULL, approved_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, approved_at DATETIME NULL, reversed_at DATETIME NULL, reversal_reason TEXT NULL, UNIQUE KEY uq_legal_case_cost_uuid (cost_uuid), UNIQUE KEY uq_legal_case_cost_source_log (source_legal_log_id), KEY idx_legal_case_cost_contract_status (contract_id, approval_status, payment_status), KEY idx_legal_case_cost_case_date (legal_case_id, cost_date)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS legal_cost_payment_allocations (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, payment_group_id BIGINT UNSIGNED NOT NULL, payment_id BIGINT UNSIGNED NOT NULL, legal_case_cost_id BIGINT UNSIGNED NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, allocated_amount_toman BIGINT NOT NULL, reversal_of_allocation_id BIGINT UNSIGNED NULL, is_reversal TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL, KEY idx_legal_cost_payment_group (payment_group_id), KEY idx_legal_cost_payment_cost (legal_case_cost_id, is_reversal), UNIQUE KEY uq_legal_cost_payment_source (payment_id, legal_case_cost_id, is_reversal)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS medal_definitions (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, slug VARCHAR(100) NOT NULL, title VARCHAR(190) NOT NULL, short_description VARCHAR(255) NULL, full_description TEXT NULL, how_to_earn TEXT NULL, icon_key VARCHAR(50) NOT NULL DEFAULT 'award', icon_path VARCHAR(255) NULL, color VARCHAR(20) NOT NULL DEFAULT '#f59e0b', category VARCHAR(30) NOT NULL DEFAULT 'activity', points INT NOT NULL DEFAULT 0, award_type VARCHAR(30) NOT NULL DEFAULT 'automatic', behavior_type VARCHAR(30) NOT NULL DEFAULT 'permanent', revocation_behavior VARCHAR(30) NOT NULL DEFAULT 'never', reactivation_behavior VARCHAR(30) NOT NULL DEFAULT 'restore', criteria_type VARCHAR(50) NULL, criteria_json LONGTEXT NULL, is_repeatable TINYINT(1) NOT NULL DEFAULT 0, maximum_awards INT UNSIGNED NULL, is_active TINYINT(1) NOT NULL DEFAULT 1, sort_order INT NOT NULL DEFAULT 0, created_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, updated_at DATETIME NULL, last_evaluated_at DATETIME NULL, archived_at DATETIME NULL, UNIQUE KEY uq_medal_definition_slug (slug), KEY idx_medal_definitions_active_sort (is_active, sort_order), KEY idx_medal_definitions_behavior (behavior_type, revocation_behavior)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS user_medals (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, medal_definition_id BIGINT UNSIGNED NOT NULL, source VARCHAR(30) NOT NULL DEFAULT 'automatic', note TEXT NULL, related_contract_id BIGINT UNSIGNED NULL, related_payment_id BIGINT UNSIGNED NULL, awarded_by BIGINT UNSIGNED NULL, awarded_at DATETIME NOT NULL, revoked_at DATETIME NULL, revoked_by BIGINT UNSIGNED NULL, revoke_reason TEXT NULL, created_at DATETIME NOT NULL, KEY idx_user_medals_user_active (user_id, revoked_at), KEY idx_user_medals_definition (medal_definition_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS user_medal_history (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_medal_id BIGINT UNSIGNED NOT NULL, action VARCHAR(30) NOT NULL, reason TEXT NULL, performed_by BIGINT UNSIGNED NULL, snapshot_json LONGTEXT NULL, created_at DATETIME NOT NULL, KEY idx_user_medal_history_medal (user_medal_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
@@ -945,6 +986,19 @@ function ensure_install_schema_compatibility(PDO $pdo)
         }
     }
 
+    foreach ([
+        'request_uuid' => 'VARCHAR(64) NULL AFTER notes',
+        'legal_referred_at' => 'DATETIME NULL AFTER request_uuid',
+        'archived_at' => 'DATETIME NULL AFTER legal_referred_at',
+    ] as $column => $definition) {
+        if (!installer_column_exists($pdo, 'legal_cases', $column)) {
+            $pdo->exec("ALTER TABLE legal_cases ADD COLUMN {$column} {$definition}");
+        }
+    }
+    if (!installer_index_exists($pdo, 'legal_cases', 'uq_legal_case_request_uuid')) {
+        $pdo->exec('ALTER TABLE legal_cases ADD UNIQUE KEY uq_legal_case_request_uuid (request_uuid)');
+    }
+
     try {
         $pdo->exec('ALTER TABLE messages MODIFY receiver_id BIGINT UNSIGNED NULL');
     } catch (Throwable $e) {
@@ -965,6 +1019,18 @@ function ensure_install_schema_compatibility(PDO $pdo)
     if (!installer_foreign_key_name($pdo, 'messages', 'channel_id', 'chat_channels')) {
         $pdo->exec('ALTER TABLE messages ADD CONSTRAINT fk_message_channel FOREIGN KEY (channel_id) REFERENCES chat_channels(id) ON DELETE CASCADE');
     }
+}
+
+function installer_table_exists(PDO $pdo, $table)
+{
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(*) FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+    );
+    $stmt->execute([(string) $table]);
+    $exists = (int) $stmt->fetchColumn() > 0;
+    $stmt->closeCursor();
+    return $exists;
 }
 
 function installer_column_exists(PDO $pdo, $table, $column)
@@ -1043,8 +1109,8 @@ function seed_system_announcements(PDO $pdo, $adminId)
 function seed_settings(PDO $pdo)
 {
     $defaults = [
-        'system_name' => 'پرما پرداخت',
-        'logo_text' => 'پرما پرداخت',
+        'system_name' => 'پروما',
+        'logo_text' => 'پروما',
         'logo_path' => '',
         'logo_icon_path' => '',
         'favicon_path' => '',

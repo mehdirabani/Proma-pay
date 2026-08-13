@@ -34,8 +34,8 @@ $safeNames = static function (ZipArchive $zip, string $label) use ($assert): voi
 };
 
 $corePath = $root . '/dist/core/PromaPay-v' . $version . '.zip';
-$updatePath = $root . '/dist/core/PromaPay-Update-v' . $version . '.zip';
-$sidecarPath = $root . '/dist/core/PromaPay-Update-v' . $version . '-manifest.json';
+$updatePath = $root . '/dist/updates/PromaPay-Update-v' . $version . '.zip';
+$sidecarPath = $root . '/dist/updates/PromaPay-Update-v' . $version . '-manifest.json';
 $pluginPath = $root . '/dist/plugins/PromaAccounting-v' . $pluginVersion . '.zip';
 $checksumsPath = $root . '/dist/core/SHA256SUMS-v' . $version . '.txt';
 
@@ -54,6 +54,12 @@ for ($index = 0; $index < $core->numFiles; $index++) {
     $assert(strpos($name, 'plugins/PromaZarinpal/') !== 0, 'Core archive contains Zarinpal source.');
     $assert(strpos($name, 'storage/secure_uploads/') !== 0, 'Core archive contains private uploads.');
     $assert(strpos($name, 'docs/accounting-next/') !== 0 && strpos($name, 'docs/accounting-stability/') !== 0, 'Core archive contains unrelated worktree documents.');
+    if (strpos($name, 'html/') === 0) {
+        $assert(strpos($name, 'html/RTL/assets/') === 0, 'Core RC contains a non-runtime HTML asset: ' . $name);
+    }
+}
+foreach (['html/RTL/assets/css/style.css', 'html/RTL/assets/js/jquery.min.js', 'html/RTL/assets/images/favicon.png'] as $runtimeAsset) {
+    $assert($core->locateName($runtimeAsset) !== false, 'Core RC is missing required UI runtime asset: ' . $runtimeAsset);
 }
 $core->close();
 

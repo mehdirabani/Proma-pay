@@ -36,8 +36,8 @@ foreach ([
 
 $forms = (string) file_get_contents($root . '/assets/css/components/forms.css');
 foreach ([
-    '--proma-field-height: 44px',
-    '--proma-field-radius: 12px',
+    '--proma-field-height: var(--ui-control-height, 48px)',
+    '--proma-field-radius: var(--ui-control-radius, 12px)',
     'background: var(--proma-field-bg)',
     'background: var(--proma-field-bg-focus)',
     'box-shadow: inset 0 -2px 0 var(--proma-field-focus)',
@@ -97,9 +97,9 @@ foreach ([
 }
 
 $releaseBuilder = (string) file_get_contents($root . '/scripts/build_release.php');
-$assert(strpos($releaseBuilder, "'--diff-filter=ACMRT'") !== false && strpos($releaseBuilder, "'--name-only'") !== false, 'Release builder does not derive update files from the release baseline.');
-$assert(strpos($releaseBuilder, 'PROMA_RELEASE_BASE_REF') !== false, 'Release builder has no explicit update baseline.');
-$assert(strpos($releaseBuilder, '2026_07_21_v1_4_1_interaction_state.sql') !== false, 'Release builder omits the current migration.');
+$assert(strpos($releaseBuilder, 'release-manifest.json') !== false && strpos($releaseBuilder, '$baselineFiles') !== false, 'Release builder does not derive update files from the verified release baseline.');
+$assert(strpos($releaseBuilder, 'PROMA_UPDATE_BASELINE_ARCHIVE') !== false, 'Release builder has no explicit update baseline override.');
+$assert(strpos($releaseBuilder, 'database/migrations/') !== false, 'Release builder does not discover changed migrations from the baseline comparison.');
 
 $errorHandler = (string) file_get_contents($root . '/core/ErrorHandler.php');
 $assert(strpos($errorHandler, "PHP_SAPI === 'cli'") !== false && strpos($errorHandler, 'exit(1);') !== false, 'CLI failures must return a non-zero status for the release gate.');

@@ -1,323 +1,250 @@
 <?php
 
+/**
+ * Commits a quoted payment as one parent payment_group and immutable child
+ * allocations.  It never spills money to installments outside the selection.
+ */
 class PaymentGroupService
 {
-    public static function create($contractId, array $installmentIds, $amount, $userId, $method = 'manual', $description = '', $allocateToNext = true, $idempotencyKey = null)
+    public static function create($contractId, array $installmentIds, $amount, $userId, $method = 'manual', $description = '', $allocateToNext = false, $idempotencyKey = null, $quoteUuid = null, $paymentDate = null, $paymentTime = null, $scope = 'selected')
+    {
+        return self::commit(
+            (int) $contractId,
+            $installmentIds,
+            $amount,
+            $userId,
+            $method,
+            $description,
+            $idempotencyKey,
+            $quoteUuid,
+            $paymentDate ?: date('Y-m-d'),
+            $paymentTime ?: date('H:i'),
+            null,
+            null,
+            $scope
+        );
+    }
+
+    public static function createPendingGateway($contractId, array $installmentIds, $amount, $userId, $trackId, $idempotencyKey = null, $gatewayId = 'zibal', $quoteUuid = null)
     {
         $contractId = (int) $contractId;
         $amount = self::moneyInteger($amount);
-        $installmentIds = array_values(array_unique(array_filter(array_map('intval', $installmentIds))));
-        if ($contractId <= 0 || $amount <= 0) {
-            throw new InvalidArgumentException('قرارداد و مبلغ پرداخت گروهی معتبر نیست.');
-        }
-        if (!$installmentIds) {
-            throw new InvalidArgumentException('حداقل یک قسط را انتخاب کنید.');
-        }
-        $started = false;
-        if (!Model::db()->inTransaction()) {
-            Model::begin();
-            $started = true;
-        }
+        $ids = self::ids($installmentIds);
+        if ($contractId <= 0 || !$ids || $amount <= 0) throw new InvalidArgumentException('اطلاعات پرداخت آنلاین چندقسطی معتبر نیست.');
+        $started = !Model::db()->inTransaction();
+        if ($started) Model::begin();
         try {
-            if ($idempotencyKey) {
-                $existing = Model::fetch('SELECT * FROM payment_groups WHERE idempotency_key = ? LIMIT 1 FOR UPDATE', [(string) $idempotencyKey]);
-                if ($existing) {
-                    if ($started) {
-                        Model::commit();
-                    }
-                    return $existing;
-                }
+            if ($idempotencyKey && ($existing = Model::fetch('SELECT * FROM payment_groups WHERE idempotency_key = ? LIMIT 1 FOR UPDATE', [(string) $idempotencyKey]))) {
+                if ($started) Model::commit();
+                return $existing;
             }
-            $contract = Model::fetch('SELECT * FROM contracts WHERE id = ? FOR UPDATE', [$contractId]);
-            if (!$contract || ($contract['status'] ?? '') === 'cancelled') {
-                throw new InvalidArgumentException('قرارداد برای پرداخت گروهی معتبر نیست.');
-            }
-            $placeholders = implode(',', array_fill(0, count($installmentIds), '?'));
-            $params = array_merge([$contractId], $installmentIds);
-            $selected = Model::fetchAll(
-                "SELECT * FROM installments
-                 WHERE contract_id = ? AND id IN ({$placeholders}) AND status NOT IN ('paid', 'cancelled')
-                 ORDER BY installment_number ASC FOR UPDATE",
-                $params
-            );
-            if (count($selected) !== count($installmentIds)) {
-                throw new InvalidArgumentException('یکی از اقساط انتخاب‌شده قابل پرداخت نیست یا به این قرارداد تعلق ندارد.');
-            }
-            if ($allocateToNext) {
-                $selectedIds = array_map('intval', array_column($selected, 'id'));
-                $next = Model::fetchAll(
-                    "SELECT * FROM installments
-                     WHERE contract_id = ? AND status NOT IN ('paid', 'cancelled')
-                     AND id NOT IN ({$placeholders})
-                     ORDER BY installment_number ASC FOR UPDATE",
-                    array_merge([$contractId], $selectedIds)
-                );
-                $selected = array_merge($selected, $next);
-            }
-            $totalOutstanding = 0;
-            foreach ($selected as $row) {
-                $totalOutstanding += self::payableToday($row);
-            }
-            if ($amount > $totalOutstanding) {
-                throw new InvalidArgumentException('مبلغ پرداخت از مجموع بدهی قابل تخصیص این قرارداد بیشتر است.');
-            }
-            $groupNumber = 'PG-' . date('YmdHis') . '-' . strtoupper(bin2hex(random_bytes(3)));
+            $contract = self::lockedContract($contractId, $userId, true);
+            $rows = SettlementQuoteService::loadInstallments($contractId, $ids, true);
+            $verified = SettlementQuoteService::verifyLocked($quoteUuid, $contract, $rows, $ids, $amount, $userId, 'selected');
+            $groupNumber = self::number('PG-' . strtoupper(substr((string) $gatewayId, 0, 3)));
             Model::execute(
-                'INSERT INTO payment_groups (group_number, contract_id, customer_id, created_by, requested_amount, method, status, idempotency_key, description, created_at, completed_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
-                [$groupNumber, $contractId, (int) $contract['customer_id'], $userId ? (int) $userId : null, self::moneyDecimal($amount), $method === 'card_transfer' ? 'card_transfer' : 'manual', 'paid', $idempotencyKey, trim((string) $description) ?: 'پرداخت گروهی اقساط']
+                'INSERT INTO payment_groups (group_number, contract_id, customer_id, created_by, requested_amount, method, status, gateway_track_id, idempotency_key, quote_uuid, description, selection_json, allocation_json, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+                [$groupNumber, $contractId, (int) $contract['customer_id'], (int) $userId, self::moneyDecimal($amount), self::method($gatewayId), 'pending', trim((string) $trackId), $idempotencyKey, trim((string) $quoteUuid) ?: null, 'پرداخت آنلاین چندقسطی', json_encode($ids), json_encode($verified['plan']['allocations'], JSON_UNESCAPED_UNICODE)]
             );
             $groupId = (int) Model::lastInsertId();
-            $remaining = $amount;
-            $allocated = 0;
-            foreach ($selected as $row) {
-                if ($remaining <= 0) {
-                    break;
-                }
-                $outstanding = self::payableToday($row);
-                $chunk = min($remaining, $outstanding);
-                if ($chunk <= 0) {
-                    continue;
-                }
-                $paymentId = Payment::record((int) $row['id'], $contractId, $userId, self::moneyDecimal($chunk), $method, 'paid', null, null, 'پرداخت گروهی ' . $groupNumber, date('Y-m-d'), 'installment');
-                Model::execute('UPDATE payments SET payment_group_id = ? WHERE id = ?', [$groupId, $paymentId]);
-                Model::execute(
-                    'INSERT INTO payment_allocations (payment_group_id, payment_id, contract_id, installment_id, allocated_amount, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
-                    [$groupId, $paymentId, $contractId, (int) $row['id'], self::moneyDecimal($chunk)]
-                );
-                $remaining -= $chunk;
-                $allocated += $chunk;
-            }
-            if ($remaining !== 0) {
-                throw new RuntimeException('تخصیص کامل مبلغ پرداخت گروهی انجام نشد.');
-            }
-            Model::execute('UPDATE payment_groups SET allocated_amount = ?, status = ?, completed_at = NOW() WHERE id = ?', [self::moneyDecimal($allocated), 'completed', $groupId]);
-            if (class_exists('AuditLog')) {
-                try {
-                    AuditLog::record('payment', 'group_completed', 'payment_group', $groupId, [
-                        'actor_user_id' => $userId,
-                        'customer_id' => (int) $contract['customer_id'],
-                        'contract_id' => $contractId,
-                        'new_values' => ['requested_amount' => self::moneyDecimal($amount), 'allocated_amount' => self::moneyDecimal($allocated)],
-                    ]);
-                } catch (Throwable $e) {
-                    if (class_exists('PluginRegistry')) {
-                        PluginRegistry::logRuntimeError('payment.group.audit', $e);
-                    }
-                }
-            }
-            if (class_exists('SystemOutbox')) {
-                SystemOutbox::safeEnqueuePluginHook('payment.group.completed', ['payment_group_id' => $groupId, 'contract_id' => $contractId, 'actor_user_id' => $userId], 'payment_group', $groupId);
-            }
-            if ($started) {
-                Model::commit();
-                if (class_exists('SystemOutbox')) {
-                    SystemOutbox::processPending(50);
-                }
-            }
+            if ($started) Model::commit();
             return Model::fetch('SELECT * FROM payment_groups WHERE id = ?', [$groupId]);
         } catch (Throwable $e) {
-            if ($started) {
-                Model::rollBack();
-            }
+            if ($started) Model::rollBack();
             throw $e;
         }
     }
 
-    public static function createPendingGateway($contractId, array $installmentIds, $amount, $userId, $trackId, $idempotencyKey = null, $gatewayId = 'zibal')
+    public static function completeGateway($groupId, $amount, $refId, $actorId = null)
     {
-        $contractId = (int) $contractId;
-        $amount = self::moneyInteger($amount);
-        $gatewayId = strtolower(trim((string) $gatewayId));
-        $installmentIds = array_values(array_unique(array_filter(array_map('intval', $installmentIds))));
-        if ($contractId <= 0 || $amount <= 0 || !$installmentIds || !preg_match('/^[a-z][a-z0-9_-]{1,49}$/', $gatewayId)) {
-            throw new InvalidArgumentException('اطلاعات پرداخت گروهی آنلاین معتبر نیست.');
-        }
-        $started = false;
-        if (!Model::db()->inTransaction()) {
-            Model::begin();
-            $started = true;
-        }
+        $groupId = (int) $groupId;
+        $started = !Model::db()->inTransaction();
+        if ($started) Model::begin();
         try {
-            if ($idempotencyKey) {
-                $existing = Model::fetch('SELECT * FROM payment_groups WHERE idempotency_key = ? LIMIT 1 FOR UPDATE', [$idempotencyKey]);
-                if ($existing) {
-                    if ($started) {
-                        Model::commit();
-                    }
-                    return $existing;
-                }
+            $group = Model::fetch('SELECT * FROM payment_groups WHERE id = ? FOR UPDATE', [$groupId]);
+            if (!$group) throw new InvalidArgumentException('پرداخت گروهی درگاه پیدا نشد.');
+            if (($group['status'] ?? '') === 'completed') {
+                if ($started) Model::commit();
+                return $group;
             }
-            $contract = Model::fetch('SELECT * FROM contracts WHERE id = ? FOR UPDATE', [$contractId]);
-            if (!$contract || (int) $contract['customer_id'] !== (int) $userId || in_array($contract['status'], ['cancelled', 'completed', 'closed'], true)) {
-                throw new InvalidArgumentException('قرارداد برای پرداخت آنلاین معتبر نیست.');
+            if (($group['status'] ?? '') !== 'pending' || self::moneyInteger($group['requested_amount']) !== self::moneyInteger($amount)) {
+                throw new InvalidArgumentException('مبلغ یا وضعیت پرداخت گروهی درگاه معتبر نیست.', 409);
             }
-            $selected = self::lockedInstallments($contractId, $installmentIds);
-            if (count($selected) !== count($installmentIds)) {
-                throw new InvalidArgumentException('یکی از اقساط انتخاب‌شده دیگر قابل پرداخت نیست.');
-            }
-            $allPayable = Model::fetchAll(
-                "SELECT * FROM installments WHERE contract_id = ? AND status NOT IN ('paid','cancelled') ORDER BY installment_number ASC FOR UPDATE",
-                [$contractId]
-            );
-            $maximumPayable = 0;
-            foreach ($allPayable as $row) {
-                $maximumPayable += self::payableToday($row);
-            }
-            if ($amount > $maximumPayable) {
-                throw new InvalidArgumentException('مبلغ پرداخت از مجموع بدهی قابل تخصیص این قرارداد بیشتر است.');
-            }
-            $groupNumber = 'PG-' . strtoupper(substr($gatewayId, 0, 3)) . '-' . date('YmdHis') . '-' . strtoupper(bin2hex(random_bytes(3)));
-            Model::execute(
-                'INSERT INTO payment_groups (group_number, contract_id, customer_id, created_by, requested_amount, method, status, gateway_track_id, idempotency_key, description, selection_json, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
-                [$groupNumber, $contractId, (int) $userId, (int) $userId, self::moneyDecimal($amount), $gatewayId, 'pending', trim((string) $trackId), $idempotencyKey, 'پرداخت آنلاین چندقسطی', json_encode($installmentIds, JSON_UNESCAPED_UNICODE)]
-            );
-            $groupId = (int) Model::lastInsertId();
-            if (class_exists('AuditLog')) {
-                try {
-                    AuditLog::record('payment', 'group_created', 'payment_group', $groupId, ['actor_user_id' => $userId, 'customer_id' => $userId, 'contract_id' => $contractId, 'new_values' => ['status' => 'pending', 'amount' => self::moneyDecimal($amount), 'installment_ids' => $installmentIds]]);
-                } catch (Throwable $e) {
-                    if (class_exists('PluginRegistry')) {
-                        PluginRegistry::logRuntimeError('payment.group.audit', $e);
-                    }
-                }
-            }
-            if ($started) {
-                Model::commit();
-            }
-            return Model::fetch('SELECT * FROM payment_groups WHERE id = ?', [$groupId]);
+            $ids = self::ids(json_decode((string) ($group['selection_json'] ?? '[]'), true) ?: []);
+            $contract = self::lockedContract((int) $group['contract_id'], (int) $group['customer_id'], true);
+            $rows = SettlementQuoteService::loadInstallments((int) $group['contract_id'], $ids, true);
+            $verified = SettlementQuoteService::verifyLocked((string) ($group['quote_uuid'] ?? ''), $contract, $rows, $ids, $amount, (int) $group['customer_id'], 'selected');
+            $result = self::writeAllocations($group, $verified['plan'], date('Y-m-d'), date('H:i'), $refId, $actorId ?: (int) $group['customer_id']);
+            SettlementQuoteService::markUsed((string) ($group['quote_uuid'] ?? ''), (int) $group['id']);
+            if ($started) Model::commit();
+            if ($started) self::afterCommit($result, $actorId ?: (int) $group['customer_id']);
+            return $result;
         } catch (Throwable $e) {
-            if ($started) {
-                Model::rollBack();
-            }
+            if ($started) Model::rollBack();
             throw $e;
         }
     }
 
     public static function failGateway($groupId, $reason = '')
     {
-        $groupId = (int) $groupId;
-        if ($groupId <= 0) {
-            return 0;
-        }
-        return Model::execute(
-            "UPDATE payment_groups SET status = 'failed', description = ? WHERE id = ? AND status = 'pending'",
-            [substr(trim((string) $reason) ?: 'پرداخت گروهی در درگاه تکمیل نشد.', 0, 255), $groupId]
-        );
+        return Model::execute("UPDATE payment_groups SET status = 'failed', description = ? WHERE id = ? AND status = 'pending'", [substr(trim((string) $reason) ?: 'پرداخت گروهی در درگاه تکمیل نشد.', 0, 255), (int) $groupId]);
     }
 
-    public static function completeGateway($groupId, $amount, $refId, $actorId = null)
+    private static function commit($contractId, array $installmentIds, $amount, $userId, $method, $description, $requestUuid, $quoteUuid, $paymentDate, $paymentTime, $gatewayTrackId, $gatewayRefId, $scope = 'selected')
     {
+        $ids = self::ids($installmentIds);
         $amount = self::moneyInteger($amount);
-        $started = false;
-        if (!Model::db()->inTransaction()) {
-            Model::begin();
-            $started = true;
+        if ($contractId <= 0 || !$ids || $amount <= 0) throw new InvalidArgumentException('قرارداد، اقساط و مبلغ پرداخت را کامل کنید.');
+        $requestUuid = PaymentRequest::normalizeUuid($requestUuid ?: '');
+        $requestHash = PaymentRequest::hash([
+            'contract_id' => (int) $contractId, 'installment_ids' => $ids, 'amount' => $amount,
+            'method' => self::method($method), 'quote_uuid' => trim((string) $quoteUuid), 'payment_date' => $paymentDate,
+        ]);
+        $request = PaymentRequest::beginSettlement($requestUuid, $userId, $contractId, $ids, $quoteUuid, $requestHash);
+        if (($request['status'] ?? '') === 'completed') {
+            return Model::fetch('SELECT * FROM payment_groups WHERE id = ?', [(int) $request['payment_group_id']]);
         }
+        Model::begin();
         try {
-            $group = Model::fetch('SELECT * FROM payment_groups WHERE id = ? FOR UPDATE', [(int) $groupId]);
-            if (!$group) {
-                throw new InvalidArgumentException('پرداخت گروهی درگاه پیدا نشد.');
+            $contract = self::lockedContract($contractId, $userId, false);
+            $rows = SettlementQuoteService::loadInstallments($contractId, $ids, true);
+            if (trim((string) $quoteUuid) === '') {
+                $generatedQuote = SettlementQuoteService::persistQuote($contract, $rows, $userId, 'selected', $paymentDate);
+                $quoteUuid = (string) ($generatedQuote['quote_uuid'] ?? '');
             }
-            if ($group['status'] === 'completed') {
-                if ($started) {
-                    Model::commit();
-                }
-                return $group;
-            }
-            if ($group['status'] !== 'pending' || self::moneyInteger($group['requested_amount']) !== $amount) {
-                throw new InvalidArgumentException('مبلغ یا وضعیت پرداخت گروهی درگاه معتبر نیست.');
-            }
-            $ids = json_decode((string) ($group['selection_json'] ?? ''), true) ?: [];
-            $selected = self::lockedInstallments((int) $group['contract_id'], $ids);
-            if (count($selected) !== count($ids)) {
-                throw new InvalidArgumentException('یکی از اقساط پرداخت گروهی دیگر قابل تخصیص نیست.');
-            }
-            $selectedIds = array_map('intval', array_column($selected, 'id'));
-            $placeholders = implode(',', array_fill(0, count($selectedIds), '?'));
-            $next = Model::fetchAll(
-                "SELECT * FROM installments WHERE contract_id = ? AND status NOT IN ('paid','cancelled') AND id NOT IN ({$placeholders}) ORDER BY installment_number ASC FOR UPDATE",
-                array_merge([(int) $group['contract_id']], $selectedIds)
+            $scope = $scope === 'contract' ? 'contract' : 'selected';
+            $verified = SettlementQuoteService::verifyLocked($quoteUuid, $contract, $rows, $ids, $amount, $userId, $scope, $paymentDate);
+            $groupNumber = self::number('PG');
+            Model::execute(
+                'INSERT INTO payment_groups (group_number, contract_id, customer_id, created_by, requested_amount, method, status, idempotency_key, quote_uuid, payment_request_uuid, description, selection_json, allocation_json, created_at, completed_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+                [$groupNumber, $contractId, (int) $contract['customer_id'], $userId ? (int) $userId : null, self::moneyDecimal($amount), self::method($method), 'completed', $requestUuid, trim((string) $quoteUuid) ?: null, $requestUuid, trim((string) $description) ?: 'پرداخت گروهی اقساط', json_encode($ids), json_encode($verified['plan']['allocations'], JSON_UNESCAPED_UNICODE)]
             );
-            $selected = array_merge($selected, $next);
-            $remaining = $amount;
-            $allocated = 0;
-            foreach ($selected as $row) {
-                if ($remaining <= 0) {
-                    break;
-                }
-                $outstanding = self::payableToday($row);
-                $chunk = min($remaining, $outstanding);
-                if ($chunk <= 0) {
-                    continue;
-                }
-                $allocationTrackId = substr((string) $group['gateway_track_id'], 0, 80) . ':' . (int) $row['id'];
-                $paymentId = Payment::record((int) $row['id'], (int) $group['contract_id'], (int) $group['customer_id'], self::moneyDecimal($chunk), $group['method'], 'paid', $allocationTrackId, $refId, 'پرداخت آنلاین گروهی ' . $group['group_number'], date('Y-m-d'), 'installment');
-                Model::execute('UPDATE payments SET payment_group_id = ? WHERE id = ?', [(int) $group['id'], $paymentId]);
-                Model::execute('INSERT INTO payment_allocations (payment_group_id, payment_id, contract_id, installment_id, allocated_amount, created_at) VALUES (?, ?, ?, ?, ?, NOW())', [(int) $group['id'], $paymentId, (int) $group['contract_id'], (int) $row['id'], self::moneyDecimal($chunk)]);
-                $remaining -= $chunk;
-                $allocated += $chunk;
-            }
-            if ($remaining !== 0) {
-                throw new InvalidArgumentException('تخصیص مبلغ درگاه به اقساط کامل نشد.');
-            }
-            Model::execute('UPDATE payment_groups SET allocated_amount = ?, status = \'completed\', description = ?, completed_at = NOW() WHERE id = ?', [self::moneyDecimal($allocated), 'پرداخت آنلاین چندقسطی - ref ' . trim((string) $refId), (int) $group['id']]);
-            if (class_exists('AuditLog')) {
-                try {
-                    AuditLog::record('payment', 'group_completed', 'payment_group', (int) $group['id'], ['actor_user_id' => $actorId ?: $group['customer_id'], 'customer_id' => (int) $group['customer_id'], 'contract_id' => (int) $group['contract_id'], 'new_values' => ['allocated_amount' => self::moneyDecimal($allocated), 'gateway_ref_id' => $refId]]);
-                } catch (Throwable $e) {
-                    if (class_exists('PluginRegistry')) {
-                        PluginRegistry::logRuntimeError('payment.group.audit', $e);
-                    }
-                }
-            }
-            if (class_exists('SystemOutbox')) {
-                SystemOutbox::safeEnqueuePluginHook('payment.group.completed', ['payment_group_id' => (int) $group['id'], 'contract_id' => (int) $group['contract_id'], 'actor_user_id' => $actorId ?: (int) $group['customer_id']], 'payment_group', (int) $group['id']);
-            }
-            if ($started) {
-                Model::commit();
-                if (class_exists('SystemOutbox')) {
-                    SystemOutbox::processPending(50);
-                }
-            }
-            return Model::fetch('SELECT * FROM payment_groups WHERE id = ?', [(int) $group['id']]);
+            $group = Model::fetch('SELECT * FROM payment_groups WHERE id = ?', [(int) Model::lastInsertId()]);
+            $result = self::writeAllocations($group, $verified['plan'], $paymentDate, $paymentTime, $gatewayRefId, $userId);
+            SettlementQuoteService::markUsed((string) ($quoteUuid ?? ''), (int) $group['id']);
+            PaymentRequest::completeSettlement($requestUuid, (int) $group['id']);
+            Model::commit();
+            self::afterCommit($result, $userId);
+            return $result;
         } catch (Throwable $e) {
-            if ($started) {
-                Model::rollBack();
-            }
+            Model::rollBack();
+            PaymentRequest::fail($requestUuid, $e);
             throw $e;
         }
     }
 
-    protected static function lockedInstallments($contractId, array $installmentIds)
+    private static function writeAllocations(array $group, array $plan, $paymentDate, $paymentTime, $gatewayRefId, $actorId)
     {
-        $ids = array_values(array_unique(array_filter(array_map('intval', $installmentIds))));
-        if (!$ids) {
-            return [];
+        $allocated = 0;
+        foreach ($plan['allocations'] as $allocation) {
+            if (normalize_money($allocation['allocated_amount'] ?? 0) <= 0) continue;
+            $track = self::allocationTrackId($group, $allocation);
+            $paymentId = Payment::record(
+                (int) $allocation['installment_id'], (int) $group['contract_id'], $actorId ?: (int) $group['customer_id'],
+                self::moneyDecimal($allocation['allocated_amount']), (string) $group['method'], 'paid', $track, $gatewayRefId,
+                'تخصیص پرداخت ' . $group['group_number'], $paymentDate, 'installment', $paymentTime, $allocation, $group['quote_uuid'] ?? null
+            );
+            Model::execute('UPDATE payments SET payment_group_id = ? WHERE id = ?', [(int) $group['id'], $paymentId]);
+            Model::execute(
+                'INSERT INTO payment_allocations (payment_group_id, payment_id, contract_id, installment_id, allocated_amount, principal_applied, normal_penalty_applied, legal_penalty_applied, reward_applied, remaining_before, remaining_after, status_after, quote_uuid, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+                [(int) $group['id'], $paymentId, (int) $group['contract_id'], (int) $allocation['installment_id'], self::moneyDecimal($allocation['allocated_amount']), self::moneyDecimal($allocation['principal_applied']), self::moneyDecimal($allocation['normal_penalty_applied']), self::moneyDecimal($allocation['legal_penalty_applied']), self::moneyDecimal($allocation['reward_applied']), self::moneyDecimal($allocation['remaining_before']), self::moneyDecimal($allocation['remaining_after']), $allocation['final_status'], $group['quote_uuid'] ?? null]
+            );
+            $allocated += normalize_money($allocation['allocated_amount']);
         }
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        return Model::fetchAll("SELECT * FROM installments WHERE contract_id = ? AND id IN ({$placeholders}) AND status NOT IN ('paid','cancelled') ORDER BY installment_number ASC FOR UPDATE", array_merge([(int) $contractId], $ids));
-    }
-
-    protected static function payableToday(array $installment)
-    {
-        $payments = Payment::forInstallment((int) ($installment['id'] ?? 0));
-        $preview = FinanceHelper::preview($installment, $payments, Settings::allKeyed(), date('Y-m-d'));
-        return max(0, self::moneyInteger($preview['payable'] ?? 0));
-    }
-
-    protected static function moneyInteger($value)
-    {
-        $value = trim(str_replace(['٬', ',', '،', 'تومان', 'ریال', ' '], '', to_english_digits($value)));
-        if ($value === '' || !preg_match('/^\d+(?:\.\d+)?$/', $value)) {
-            return 0;
+        foreach ($plan['legal_cost_allocations'] ?? [] as $allocation) {
+            $amount = normalize_money($allocation['allocated_amount_toman'] ?? 0);
+            if ($amount <= 0) continue;
+            $paymentId = Payment::record(
+                null,
+                (int) $group['contract_id'],
+                $actorId ?: (int) $group['customer_id'],
+                self::moneyDecimal($amount),
+                (string) $group['method'],
+                'paid',
+                null,
+                $gatewayRefId,
+                'دریافت هزینه حقوقی ' . $group['group_number'],
+                $paymentDate,
+                'legal_cost',
+                $paymentTime,
+                null,
+                $group['quote_uuid'] ?? null
+            );
+            Model::execute('UPDATE payments SET payment_group_id = ? WHERE id = ?', [(int) $group['id'], $paymentId]);
+            LegalCaseCostService::recordPaymentAllocation(
+                (int) $allocation['legal_case_cost_id'],
+                (int) $group['id'],
+                $paymentId,
+                (int) $group['contract_id'],
+                $amount,
+                (int) $actorId
+            );
+            $allocated += $amount;
         }
-        return (int) preg_replace('/\..*$/', '', $value);
+        if ($allocated !== normalize_money($group['requested_amount'])) throw new RuntimeException('تخصیص کامل مبلغ پرداخت انجام نشد.');
+        Model::execute("UPDATE payment_groups SET allocated_amount = ?, status = 'completed', completed_at = NOW() WHERE id = ?", [self::moneyDecimal($allocated), (int) $group['id']]);
+        return Model::fetch('SELECT * FROM payment_groups WHERE id = ?', [(int) $group['id']]);
     }
 
-    protected static function moneyDecimal($value)
+    private static function lockedContract($contractId, $userId, $customerOnly)
     {
-        return number_format(self::moneyInteger($value), 2, '.', '');
+        $contract = Model::fetch('SELECT * FROM contracts WHERE id = ? FOR UPDATE', [(int) $contractId]);
+        if (!$contract || in_array((string) ($contract['status'] ?? ''), ['cancelled', 'closed'], true)) {
+            throw new InvalidArgumentException('قرارداد برای پرداخت معتبر نیست.', 409);
+        }
+        if ($customerOnly && (int) $contract['customer_id'] !== (int) $userId) {
+            throw new InvalidArgumentException('دسترسی پرداخت این قرارداد را ندارید.', 403);
+        }
+        return $contract;
+    }
+
+    private static function afterCommit(array $group, $actorId)
+    {
+        try {
+            if (class_exists('AuditLog')) AuditLog::record('payment', 'group_completed', 'payment_group', (int) $group['id'], ['actor_user_id' => $actorId ?: null, 'contract_id' => (int) $group['contract_id'], 'new_values' => ['requested_amount' => $group['requested_amount'], 'allocated_amount' => $group['allocated_amount']]]);
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::safeEnqueuePluginHook('payment.group.completed', ['payment_group_id' => (int) $group['id'], 'contract_id' => (int) $group['contract_id'], 'actor_user_id' => $actorId ?: null], 'payment_group', (int) $group['id']);
+                SystemOutbox::processPending(25);
+            }
+        } catch (Throwable $e) {
+            if (class_exists('PluginRegistry')) PluginRegistry::logRuntimeError('payment.group.post_commit', $e);
+        }
+    }
+
+    private static function allocationTrackId(array $group, array $allocation)
+    {
+        if (empty($group['gateway_track_id'])) return null;
+        return substr((string) $group['gateway_track_id'], 0, 80) . ':' . (int) ($allocation['installment_id'] ?? 0);
+    }
+
+    private static function ids(array $ids)
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        sort($ids);
+        return $ids;
+    }
+
+    private static function method($method)
+    {
+        $method = strtolower(trim((string) $method));
+        return preg_match('/^[a-z][a-z0-9_-]{1,29}$/', $method) ? $method : 'manual';
+    }
+
+    private static function number($prefix)
+    {
+        return $prefix . '-' . date('YmdHis') . '-' . strtoupper(bin2hex(random_bytes(4)));
+    }
+
+    private static function moneyInteger($value)
+    {
+        return normalize_money($value);
+    }
+
+    private static function moneyDecimal($value)
+    {
+        return number_format(normalize_money($value), 2, '.', '');
     }
 }

@@ -16,7 +16,6 @@ class Contract extends Model
     public static function all($filters = [])
     {
         self::ensureSchema();
-        self::syncCompletionStatuses();
         $params = [];
         $where = self::listWhere($filters, $params);
         $sql = "SELECT c.*, u.full_name AS customer_name, u.mobile, u.national_id, u.secondary_phone, u.avatar_key, u.avatar_path, u.avatar_version,
@@ -36,14 +35,17 @@ class Contract extends Model
     public static function paginated(array $filters = [])
     {
         self::ensureSchema();
-        self::syncCompletionStatuses();
         $params = [];
         $where = self::listWhere($filters, $params);
         $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+        // The users join is only necessary when a search predicate refers to
+        // customer fields. Avoiding it on normal page navigation keeps the
+        // count query inexpensive on shared MySQL instances.
+        $countJoin = !empty($filters['search']) ? ' JOIN users u ON u.id = c.customer_id' : '';
         $count = self::fetch(
             "SELECT COUNT(*) AS total
              FROM contracts c
-             JOIN users u ON u.id = c.customer_id
+             {$countJoin}
              {$whereSql}",
             $params
         );
@@ -100,7 +102,6 @@ class Contract extends Model
     public static function find($id)
     {
         self::ensureSchema();
-        self::syncCompletionStatuses((int) $id);
         return self::fetch(
             "SELECT c.*, u.full_name AS customer_name, u.father_name AS customer_father_name,
              u.issued_from AS customer_issued_from, u.mobile, u.national_id, u.secondary_phone,
@@ -116,6 +117,34 @@ class Contract extends Model
             'SELECT u.* FROM contract_guarantors cg JOIN users u ON u.id = cg.guarantor_id WHERE cg.contract_id = ? ORDER BY u.full_name',
             [(int) $contractId]
         );
+    }
+
+    /**
+     * Fetch guarantors for a page of contracts in one query. Contract list
+     * pages render several dialogs per row, so per-contract lookups easily
+     * exhaust the small PHP/MySQL worker pools common on shared hosting.
+     */
+    public static function guarantorsForContracts(array $contractIds)
+    {
+        $contractIds = array_values(array_unique(array_filter(array_map('intval', $contractIds))));
+        if (!$contractIds) {
+            return [];
+        }
+
+        $result = array_fill_keys($contractIds, []);
+        $placeholders = implode(',', array_fill(0, count($contractIds), '?'));
+        $rows = self::fetchAll(
+            "SELECT cg.contract_id, u.*
+             FROM contract_guarantors cg
+             JOIN users u ON u.id = cg.guarantor_id
+             WHERE cg.contract_id IN ({$placeholders})
+             ORDER BY cg.contract_id ASC, u.full_name ASC",
+            $contractIds
+        );
+        foreach ($rows as $row) {
+            $result[(int) $row['contract_id']][] = $row;
+        }
+        return $result;
     }
 
     public static function guarantorPeople($contractId)
@@ -144,6 +173,84 @@ class Contract extends Model
             $contacts[] = $person;
         }
         return $contacts;
+    }
+
+    /**
+     * Build a contact directory for the contracts visible on one list page.
+     *
+     * This deliberately uses three bounded queries instead of calling
+     * guarantors() for every displayed record. Shared hosting installations
+     * have small PHP/MySQL worker pools and an N+1 lookup here made opening a
+     * follow-up queue unnecessarily expensive.
+     */
+    public static function contactDirectoryForContracts(array $contractIds): array
+    {
+        self::ensureSchema();
+        $contractIds = array_values(array_unique(array_filter(array_map('intval', $contractIds))));
+        if (!$contractIds) {
+            return [];
+        }
+
+        if (class_exists('ContractDocument')) {
+            ContractDocument::ensureSchema();
+        }
+
+        $directory = array_fill_keys($contractIds, []);
+        $placeholders = implode(',', array_fill(0, count($contractIds), '?'));
+        $add = static function (int $contractId, string $name, string $phone, string $relationship) use (&$directory): void {
+            $phone = trim(to_english_digits($phone));
+            if ($phone === '' || !isset($directory[$contractId])) {
+                return;
+            }
+            foreach ($directory[$contractId] as $existing) {
+                if (($existing['phone'] ?? '') === $phone) {
+                    return;
+                }
+            }
+            $directory[$contractId][] = [
+                'name' => trim($name) ?: 'بدون نام',
+                'phone' => $phone,
+                'relationship' => trim($relationship) ?: 'تماس',
+            ];
+        };
+
+        $customers = self::fetchAll(
+            "SELECT c.id AS contract_id, u.full_name, u.mobile, u.secondary_phone
+             FROM contracts c JOIN users u ON u.id = c.customer_id
+             WHERE c.id IN ({$placeholders})",
+            $contractIds
+        );
+        foreach ($customers as $customer) {
+            $contractId = (int) $customer['contract_id'];
+            $add($contractId, (string) $customer['full_name'], (string) ($customer['mobile'] ?? ''), 'مشتری');
+            $add($contractId, (string) $customer['full_name'], (string) ($customer['secondary_phone'] ?? ''), 'شماره دوم مشتری');
+        }
+
+        $guarantors = self::fetchAll(
+            "SELECT cg.contract_id, u.full_name, u.mobile, u.secondary_phone
+             FROM contract_guarantors cg JOIN users u ON u.id = cg.guarantor_id
+             WHERE cg.contract_id IN ({$placeholders})
+             ORDER BY cg.contract_id ASC, u.full_name ASC",
+            $contractIds
+        );
+        foreach ($guarantors as $guarantor) {
+            $contractId = (int) $guarantor['contract_id'];
+            $add($contractId, (string) $guarantor['full_name'], (string) ($guarantor['mobile'] ?? ''), 'ضامن');
+            $add($contractId, (string) $guarantor['full_name'], (string) ($guarantor['secondary_phone'] ?? ''), 'شماره دوم ضامن');
+        }
+
+        $people = self::fetchAll(
+            "SELECT contract_id, full_name, mobile, relationship
+             FROM contract_guarantor_people
+             WHERE contract_id IN ({$placeholders}) AND mobile IS NOT NULL AND mobile != ''
+             ORDER BY contract_id ASC, full_name ASC",
+            $contractIds
+        );
+        foreach ($people as $person) {
+            $add((int) $person['contract_id'], (string) $person['full_name'], (string) $person['mobile'], (string) ($person['relationship'] ?? 'ضامن'));
+        }
+
+        return $directory;
     }
 
     public static function search($query, $limit = 12, array $filters = [])
@@ -201,6 +308,58 @@ class Contract extends Model
              WHERE contract_id = ?",
             [(int) $contractId]
         ) ?: ['total' => 0, 'paid' => 0, 'cancelled' => 0, 'active_remaining' => 0, 'overdue' => 0, 'outstanding' => 0];
+    }
+
+    /**
+     * Aggregated counterpart of installmentStats() for contract index pages.
+     * This prevents one aggregate query per visible card.
+     */
+    public static function installmentStatsForContracts(array $contractIds)
+    {
+        $contractIds = array_values(array_unique(array_filter(array_map('intval', $contractIds))));
+        if (!$contractIds) {
+            return [];
+        }
+
+        $empty = [
+            'total' => 0,
+            'paid' => 0,
+            'cancelled' => 0,
+            'active_remaining' => 0,
+            'overdue' => 0,
+            'outstanding' => 0,
+        ];
+        $result = [];
+        foreach ($contractIds as $contractId) {
+            $result[$contractId] = $empty;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($contractIds), '?'));
+        $rows = self::fetchAll(
+            "SELECT contract_id,
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) AS paid,
+                    SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled,
+                    SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN 1 ELSE 0 END) AS active_remaining,
+                    SUM(CASE WHEN status NOT IN ('paid', 'cancelled') AND due_date < CURDATE() THEN 1 ELSE 0 END) AS overdue,
+                    COALESCE(SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN GREATEST(base_amount - paid_amount, 0) ELSE 0 END), 0) AS outstanding
+             FROM installments
+             WHERE contract_id IN ({$placeholders})
+             GROUP BY contract_id",
+            $contractIds
+        );
+        foreach ($rows as $row) {
+            $contractId = (int) $row['contract_id'];
+            $result[$contractId] = [
+                'total' => (int) ($row['total'] ?? 0),
+                'paid' => (int) ($row['paid'] ?? 0),
+                'cancelled' => (int) ($row['cancelled'] ?? 0),
+                'active_remaining' => (int) ($row['active_remaining'] ?? 0),
+                'overdue' => (int) ($row['overdue'] ?? 0),
+                'outstanding' => normalize_money($row['outstanding'] ?? 0),
+            ];
+        }
+        return $result;
     }
 
     public static function cancellationSummary($contractId)
@@ -285,6 +444,9 @@ class Contract extends Model
             ContractDocument::saveGuarantee($contractId, $guarantee);
             ContractDocument::saveGuarantorPeople($contractId, $guarantorPeople);
             self::generateInstallments($contractId, $data);
+            // A new contract keeps the policy that was active at creation;
+            // later setting changes must not silently change its legal terms.
+            LegalEligibilityService::snapshotForContract($contractId, $data['created_by'] ?? null);
             Payment::syncDownPayment($contractId, $data['created_by'] ?? null, normalize_money($data['down_payment_amount'] ?? 0), $data['start_date']);
             ContractDocument::generate($contractId, $data['created_by'] ?? null);
             Settings::set('contract_next_serial', (string) ($serial + 1));
@@ -1015,6 +1177,45 @@ class Contract extends Model
                 WHERE i.contract_id = c.id
                   AND (i.status NOT IN ('paid', 'cancelled') OR GREATEST(COALESCE(i.remaining_amount, i.base_amount - i.paid_amount), 0) > 0)
              )"
+        );
+    }
+
+    /**
+     * Reconcile only contracts changed by a bounded maintenance job. This is
+     * deliberately separate from the global repair path so a shared host does
+     * not scan every contract after a small batch of installment fixes.
+     */
+    public static function syncCompletionStatusesForContracts(array $contractIds)
+    {
+        $contractIds = array_values(array_unique(array_filter(array_map('intval', $contractIds))));
+        if (!$contractIds) {
+            return;
+        }
+        $placeholders = implode(',', array_fill(0, count($contractIds), '?'));
+        self::execute(
+            "UPDATE contracts c
+             SET status = 'completed', updated_at = NOW()
+             WHERE c.id IN ({$placeholders})
+             AND c.status IN ('active', 'referred', 'processing', 'pending', 'closed')
+             AND EXISTS (SELECT 1 FROM installments i1 WHERE i1.contract_id = c.id)
+             AND NOT EXISTS (
+                SELECT 1 FROM installments i2
+                WHERE i2.contract_id = c.id
+                  AND (i2.status NOT IN ('paid', 'cancelled') OR GREATEST(COALESCE(i2.remaining_amount, i2.base_amount - i2.paid_amount), 0) > 0)
+             )",
+            $contractIds
+        );
+        self::execute(
+            "UPDATE contracts c
+             SET status = 'active', updated_at = NOW()
+             WHERE c.id IN ({$placeholders})
+             AND c.status IN ('completed', 'closed')
+             AND EXISTS (
+                SELECT 1 FROM installments i
+                WHERE i.contract_id = c.id
+                  AND (i.status NOT IN ('paid', 'cancelled') OR GREATEST(COALESCE(i.remaining_amount, i.base_amount - i.paid_amount), 0) > 0)
+             )",
+            $contractIds
         );
     }
 

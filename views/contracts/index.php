@@ -3,6 +3,13 @@ $readOnly = $readOnly ?? false;
 $contractsRoute = $contractsRoute ?? ($readOnly ? 'portal/guaranteed' : 'contracts');
 $pageTitle = $readOnlyTitle ?? ($readOnly ? 'قراردادهای ضمانت شده' : 'فهرست قراردادها');
 $singleOperator = !$readOnly && count($operators ?? []) === 1 ? $operators[0] : null;
+$contractStats = $contractStats ?? [];
+$contractTrends = $contractTrends ?? [];
+$contractTimelines = $contractTimelines ?? [];
+$contractGuarantors = $contractGuarantors ?? [];
+$contractItems = $contractItems ?? [];
+$contractGuarantees = $contractGuarantees ?? [];
+$contractGuarantorPeople = $contractGuarantorPeople ?? [];
 $viewMode = in_array($_GET['view'] ?? '', ['cards', 'list'], true) ? $_GET['view'] : 'cards';
 $pagination = $pagination ?? ['total' => count($contracts ?? []), 'page' => 1, 'pages' => 1, 'per_page' => count($contracts ?? []) ?: 24];
 $pageUrl = function ($page) use ($contractsRoute, $viewMode) {
@@ -19,7 +26,7 @@ for ($i = 0; $i < 6; $i++) {
     $contractTrendLabels[] = mb_substr(jdate((clone $contractTrendStart)->modify('+' . $i . ' months')->format('Y-m-01')), 0, 7, 'UTF-8');
 }
 ?>
-<section class="card">
+<section class="card proma-filter-card">
   <div class="card-header card-no-border">
     <div class="header-top">
       <h2><?= e($pageTitle) ?></h2>
@@ -32,11 +39,11 @@ for ($i = 0; $i < 6; $i++) {
     </div>
   </div>
   <div class="card-body">
-    <form method="get" action="<?= e(url($contractsRoute)) ?>" class="form-grid three" data-ajax-filter data-ajax-target="[data-ajax-results='contracts']">
+    <form method="get" action="<?= e(url($contractsRoute)) ?>" class="form-grid three proma-filter-toolbar proma-filter-toolbar--contracts" data-ajax-filter data-ajax-target="[data-ajax-results='contracts']">
       <input type="hidden" name="route" value="<?= e($contractsRoute) ?>">
       <input type="hidden" name="view" value="<?= e($viewMode) ?>">
       <label class="full">جستجو در قرارداد و مشتری<input name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="شماره قرارداد، نام، کد ملی یا موبایل"></label>
-      <div class="actions"><button class="btn secondary" type="submit">جستجو</button><span class="proma-ajax-status" data-ajax-status></span></div>
+      <div class="proma-filter-actions"><button class="btn secondary" type="submit">جستجو</button><span class="proma-ajax-status" data-ajax-status></span></div>
     </form>
   </div>
 </section>
@@ -52,9 +59,9 @@ for ($i = 0; $i < 6; $i++) {
       <div class="proma-contract-card-grid">
         <?php foreach ($contracts as $cardContract): ?>
           <?php
-          $stats = Contract::installmentStats((int) $cardContract['id']);
-          $trend = Payment::monthlyTrendForContract((int) $cardContract['id']);
-          $timeline = Payment::recentForContract((int) $cardContract['id'], 3);
+          $stats = $contractStats[(int) $cardContract['id']] ?? ['total' => 0, 'paid' => 0, 'cancelled' => 0, 'active_remaining' => 0, 'overdue' => 0, 'outstanding' => 0];
+          $trend = $contractTrends[(int) $cardContract['id']] ?? array_fill(0, 6, 0);
+          $timeline = array_slice($contractTimelines[(int) $cardContract['id']] ?? [], 0, 3);
           $remainingCount = (int) ($stats['active_remaining'] ?? max(0, (int) $stats['total'] - (int) $stats['paid'] - (int) ($stats['cancelled'] ?? 0)));
           $financedAmount = max(0, (float) $cardContract['principal_amount'] - (float) ($cardContract['down_payment_amount'] ?? 0));
           $progress = (int) $stats['total'] > 0 ? (int) round(((int) $stats['paid'] / (int) $stats['total']) * 100) : 0;
@@ -115,7 +122,7 @@ for ($i = 0; $i < 6; $i++) {
       <thead><tr><th>شماره</th><th>مشتری</th><th>مبالغ قرارداد</th><th>سود</th><th>اقساط</th><th>ضامنان</th><th>وضعیت</th><th>عملیات</th></tr></thead>
       <tbody>
       <?php foreach ($contracts as $contract): ?>
-        <?php $guarantors = Contract::guarantors($contract['id']); ?>
+        <?php $guarantors = $contractGuarantors[(int) $contract['id']] ?? []; ?>
         <tr data-contract-card data-card-href="<?= e(url('contracts/show/' . $contract['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده جزئیات قرارداد <?= e($contract['contract_number']) ?>">
           <td><a href="<?= e(url('contracts/show/' . $contract['id'])) ?>"><?= e($contract['contract_number']) ?></a></td>
           <td><?= e($contract['customer_name']) ?><br><span class="badge muted"><?= to_persian_digits($contract['mobile']) ?></span></td>
@@ -152,8 +159,8 @@ for ($i = 0; $i < 6; $i++) {
 
 <?php foreach ($contracts as $contract): ?>
   <?php
-    $contractTrend = Payment::monthlyTrendForContract((int) $contract['id']);
-    $contractTimeline = Payment::recentForContract((int) $contract['id'], 8);
+    $contractTrend = $contractTrends[(int) $contract['id']] ?? array_fill(0, 6, 0);
+    $contractTimeline = $contractTimelines[(int) $contract['id']] ?? [];
   ?>
   <div class="modal" id="contract-chart-<?= (int) $contract['id'] ?>">
     <div class="modal-content">
@@ -380,11 +387,11 @@ for ($i = 0; $i < 6; $i++) {
 
 <?php foreach ($contracts as $contract): ?>
   <?php
-    $guarantors = Contract::guarantors($contract['id']);
-    $contractItems = ContractDocument::items((int) $contract['id']);
-    $contractGuarantees = ContractDocument::guarantees((int) $contract['id']);
-    $contractGuarantee = $contractGuarantees[0] ?? [];
-    $contractGuarantorPeople = ContractDocument::guarantorPeople((int) $contract['id']);
+    $guarantors = $contractGuarantors[(int) $contract['id']] ?? [];
+    $contractItemRows = $contractItems[(int) $contract['id']] ?? [];
+    $contractGuaranteeRows = $contractGuarantees[(int) $contract['id']] ?? [];
+    $contractGuarantee = $contractGuaranteeRows[0] ?? [];
+    $contractGuarantorPeopleRows = $contractGuarantorPeople[(int) $contract['id']] ?? [];
   ?>
   <div class="modal" id="edit-contract-<?= (int) $contract['id'] ?>">
     <div class="modal-content proma-modal-xl">
@@ -461,7 +468,7 @@ for ($i = 0; $i < 6; $i++) {
               <button class="btn small secondary" type="button" data-repeater-add>افزودن کالا</button>
             </div>
             <div class="proma-repeat-list" data-repeater-list>
-              <?php foreach ($contractItems ?: [['product_model' => '', 'imei_1' => '', 'imei_2' => '', 'description' => '']] as $itemIndex => $item): ?>
+              <?php foreach ($contractItemRows ?: [['product_model' => '', 'imei_1' => '', 'imei_2' => '', 'description' => '']] as $itemIndex => $item): ?>
                 <div class="proma-repeat-row" data-repeater-row>
                   <div class="form-grid four">
                     <label>مدل کالا<input name="items[<?= (int) $itemIndex ?>][product_model]" value="<?= e($item['product_model'] ?? '') ?>"></label>
@@ -509,7 +516,7 @@ for ($i = 0; $i < 6; $i++) {
               <button class="btn small secondary" type="button" data-repeater-add>افزودن ضامن</button>
             </div>
             <div class="proma-repeat-list" data-repeater-list>
-              <?php foreach ($contractGuarantorPeople as $personIndex => $person): ?>
+              <?php foreach ($contractGuarantorPeopleRows as $personIndex => $person): ?>
                 <div class="proma-repeat-row" data-repeater-row>
                   <div class="form-grid four">
                     <label>نام و نام خانوادگی<input name="guarantor_people[<?= (int) $personIndex ?>][full_name]" value="<?= e($person['full_name'] ?? '') ?>"></label>
@@ -591,26 +598,18 @@ for ($i = 0; $i < 6; $i++) {
     </div>
   </div>
 
-  <?php $cancellationSummary = Contract::cancellationSummary((int) $contract['id']); ?>
-  <div class="modal" id="cancel-contract-<?= (int) $contract['id'] ?>">
+  <div class="modal" id="cancel-contract-<?= (int) $contract['id'] ?>" data-contract-cancel-summary data-summary-url="<?= e(url('contracts/cancellationSummary/' . (int) $contract['id'])) ?>">
     <div class="modal-content">
       <div class="modal-header"><h3><?= proma_icon('slash') ?> لغو قرارداد</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن پنجره لغو قرارداد" title="بستن"><?= proma_icon('close') ?></button></div>
       <form method="post" action="<?= e(url('contracts/cancel/' . $contract['id'])) ?>">
         <div class="modal-body form-grid">
           <?= csrf_field() ?>
           <div class="notice error">لغو قرارداد باعث حذف سوابق مالی و پرداخت‌ها نمی‌شود و تنها قرارداد را از چرخه فعال وصول خارج می‌کند. تمام اقساط فعال نیز لغو می‌شوند و دیگر در مطالبات و معوقات قرار نمی‌گیرند.</div>
-          <div class="proma-cancellation-summary">
+          <div class="proma-cancellation-summary" data-cancel-summary-content>
             <span><small>قرارداد</small><strong><?= e($contract['contract_number']) ?></strong></span>
             <span><small>مشتری</small><strong><?= e($contract['customer_name']) ?></strong></span>
             <span><small>وضعیت</small><strong><?= e(status_label($contract['status'] ?? '')) ?></strong></span>
-            <span><small>اقساط فعال</small><strong><?= to_persian_digits($cancellationSummary['active_installments'] ?? 0) ?></strong></span>
-            <span><small>اقساط معوق</small><strong><?= to_persian_digits($cancellationSummary['overdue_installments'] ?? 0) ?></strong></span>
-            <span><small>مانده فعال</small><strong><?= money_toman($cancellationSummary['outstanding_amount'] ?? 0) ?></strong></span>
-            <span><small>پرداخت ثبت‌شده</small><strong><?= money_toman($cancellationSummary['confirmed_payment_amount'] ?? 0) ?></strong></span>
-            <span><small>تعداد پرداخت</small><strong><?= to_persian_digits($cancellationSummary['confirmed_payment_count'] ?? 0) ?></strong></span>
-            <span><small>سند قرارداد</small><strong><?= to_persian_digits($cancellationSummary['document_count'] ?? 0) ?></strong></span>
-            <span><small>پرونده حقوقی</small><strong><?= to_persian_digits($cancellationSummary['legal_case_count'] ?? 0) ?></strong></span>
-            <span><small>وابستگی حسابداری</small><strong><?= to_persian_digits($cancellationSummary['accounting_relation_count'] ?? 0) ?></strong></span>
+            <span><small>وضعیت مالی</small><strong data-cancel-summary-loading>در حال دریافت…</strong></span>
           </div>
           <label>علت لغو قرارداد<textarea name="cancellation_reason" required minlength="3" rows="3"></textarea></label>
           <label class="proma-confirm-check"><input type="checkbox" name="confirm_cancel" value="1" required> پیامدهای لغو قرارداد را مطالعه کردم.</label>
@@ -620,24 +619,19 @@ for ($i = 0; $i < 6; $i++) {
       </form>
     </div>
   </div>
-  <?php $deletionPreview = Contract::deletionPreview((int) $contract['id']); $canPermanentlyDelete = !empty($deletionPreview['eligible_for_permanent_delete']); ?>
-  <div class="modal" id="delete-contract-<?= (int) $contract['id'] ?>">
+  <div class="modal" id="delete-contract-<?= (int) $contract['id'] ?>" data-contract-deletion-preview data-preview-url="<?= e(url('contracts/deletionPreview/' . (int) $contract['id'])) ?>">
     <div class="modal-content">
       <div class="modal-header"><h3>حذف قرارداد آزمایشی یا اشتباهی</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن"><i data-feather="x"></i></button></div>
       <form method="post" action="<?= e(url('contracts/retire/' . $contract['id'])) ?>">
         <div class="modal-body form-grid">
           <?= csrf_field() ?>
-          <div class="notice <?= $canPermanentlyDelete ? 'success' : 'warning' ?> full"><?= $canPermanentlyDelete ? 'این قرارداد وابستگی فعالی ندارد و پس از ثبت آرشیو ایمن قابل حذف است.' : 'این قرارداد سابقه وابسته دارد. مدیریت می‌تواند پس از آرشیو کامل و تأییدهای زیر، قرارداد و سوابق وابسته آن را حذف کند.' ?></div>
-          <div class="proma-cancellation-summary full"><span><small>کل پرداخت‌ها</small><strong><?= to_persian_digits($deletionPreview['payment_count'] ?? 0) ?></strong></span><span><small>رسیدها</small><strong><?= to_persian_digits($deletionPreview['dependencies']['payment_receipt_count'] ?? 0) ?></strong></span><span><small>پرونده حقوقی</small><strong><?= to_persian_digits($deletionPreview['legal_case_count'] ?? 0) ?></strong></span><span><small>اسناد قرارداد</small><strong><?= to_persian_digits(($deletionPreview['dependencies']['generated_document_count'] ?? 0) + ($deletionPreview['dependencies']['document_version_count'] ?? 0)) ?></strong></span></div>
-          <?php if (!$canPermanentlyDelete): ?><p class="full small text-muted">سوابق وابسته: <?= e(implode('، ', $deletionPreview['blocking_dependency_labels'] ?? [])) ?></p><?php endif; ?>
+          <div class="notice warning full" data-delete-preview-notice>پیش‌نمایش سوابق وابسته در حال دریافت است. حذف تا پیش از بررسی دقیق سرور انجام نمی‌شود.</div>
+          <div class="proma-cancellation-summary full" data-delete-preview-stats hidden></div>
+          <p class="full small text-muted" data-delete-preview-labels hidden></p>
           <label class="full required-field">علت حذف<textarea name="retirement_reason" required minlength="5" rows="3" placeholder="علت دقیق حذف قرارداد را ثبت کنید"></textarea></label>
           <label class="full required-field">برای تأیید، شماره قرارداد را وارد کنید<input name="confirm_contract_number" required autocomplete="off" placeholder="<?= e($contract['contract_number']) ?>"></label>
-          <?php if (!$canPermanentlyDelete): ?>
-            <label class="proma-confirm-check proma-danger-check full"><input type="checkbox" name="include_related_history" value="1" required> قرارداد، پرداخت‌ها، اقساط، پرونده‌های حقوقی، اسناد و سوابق عملیاتی وابسته حذف شوند. پیش از حذف، آرشیو کامل و غیرقابل‌ویرایش ثبت می‌شود.</label>
-          <?php endif; ?>
-          <?php if ((int) ($deletionPreview['gateway_payment_count'] ?? 0) > 0): ?>
-            <label class="proma-confirm-check proma-danger-check full"><input type="checkbox" name="accept_gateway_notice" value="1" required> می‌دانم حذف سابقه درگاه، بازگشت وجه بانکی انجام نمی‌دهد و مسئولیت بازپرداخت واقعی جداگانه است.</label>
-          <?php endif; ?>
+          <label class="proma-confirm-check proma-danger-check full" data-delete-history-option hidden><input type="checkbox" name="include_related_history" value="1"> قرارداد، پرداخت‌ها، اقساط، پرونده‌های حقوقی، اسناد و سوابق عملیاتی وابسته حذف شوند. پیش از حذف، آرشیو کامل و غیرقابل‌ویرایش ثبت می‌شود.</label>
+          <label class="proma-confirm-check proma-danger-check full" data-delete-gateway-option hidden><input type="checkbox" name="accept_gateway_notice" value="1"> می‌دانم حذف سابقه درگاه، بازگشت وجه بانکی انجام نمی‌دهد و مسئولیت بازپرداخت واقعی جداگانه است.</label>
           <label class="proma-confirm-check proma-danger-check full"><input type="checkbox" name="confirm_mistake" value="1" required> حذف دائمی این قرارداد و پیامدهای آن را بررسی و تأیید می‌کنم.</label>
         </div>
         <div class="modal-footer"><button class="btn danger" type="submit"><?= proma_icon('trash') ?><span>حذف قطعی قرارداد</span></button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>

@@ -132,6 +132,11 @@ class ScriptUpdateService
         foreach ($files as $fileSpec) {
             $source = self::safePackagePath($fileSpec['source']);
             $target = self::safeTargetPath($fileSpec['target']);
+            $expectedPrevious = strtolower(trim((string) ($fileSpec['expected_previous_sha256'] ?? '')));
+            $targetPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $target);
+            if ($expectedPrevious !== '' && is_file($targetPath) && !hash_equals($expectedPrevious, hash_file('sha256', $targetPath))) {
+                throw new RuntimeException('نسخه فایل فعلی با مبنای این بروزرسانی یکسان نیست: ' . $target . '. ابتدا بسته سازگار با نسخه نصب‌شده را انتخاب کنید.');
+            }
             $content = self::zipContent($zip, $source);
             if ($content === false) {
                 throw new RuntimeException('فایل ' . $source . ' داخل بسته پیدا نشد.');
@@ -414,6 +419,7 @@ class ScriptUpdateService
                         'source' => (string) $source,
                         'target' => (string) $target,
                         'sha256' => $file['sha256'] ?? null,
+                        'expected_previous_sha256' => $file['expected_previous_sha256'] ?? null,
                     ];
                 }
             }

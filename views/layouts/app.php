@@ -70,6 +70,13 @@ $renderCompactLogo = static function () use ($compactLogoPath, $logoText, $logoI
 };
 $footerText = $settings['footer_text'] ?? 'پروما پی سامانه جامع پرداخت';
 $sprite = template_asset_url('svg/icon-sprite.svg');
+$needsContractTemplateEditor = $route === 'settings/contracts/template';
+$needsCharts = in_array($route, ['dashboard', 'customers', 'contracts'], true)
+    || str_starts_with($route, 'plugin/accounting');
+$needsRichEditor = str_starts_with($route, 'contracts/show/')
+    || $needsContractTemplateEditor
+    || $route === 'ecommerce/addProduct'
+    || ($route === 'settings' && (($_GET['tab'] ?? '') === 'contracts'));
 $userInitial = mb_substr($user['full_name'] ?? 'ک', 0, 1, 'UTF-8');
 $userAvatarKey = avatar_key_for($user['avatar_key'] ?? null, $user['id'] ?? ($user['full_name'] ?? ''));
 $canViewUsers = Auth::canViewUsers();
@@ -77,27 +84,27 @@ $nav = [];
 if (Auth::role() === 'admin') {
     $nav = [
         ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
-        ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
-        ['users', 'کاربران', 'stroke-user', 'fill-user'],
-        ['profile-reviews', 'تأیید اصلاح مشخصات', 'stroke-task', 'fill-task'],
         ['customers', 'مشتریان', 'stroke-user', 'fill-user'],
         ['contracts', 'قراردادها', 'stroke-project', 'fill-project'],
         ['installments', 'اقساط', 'stroke-file', 'fill-file'],
         ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
         ['payments', 'پرداخت‌ها', 'stroke-ecommerce', 'fill-ecommerce'],
+        ['legal', 'حقوقی و شکایت‌ها', 'stroke-file', 'fill-file'],
+        ['review', 'بررسی موارد ارسالی', 'stroke-task', 'fill-task'],
+        ['profile-reviews', 'تأیید اصلاح مشخصات', 'stroke-task', 'fill-task'],
+        ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
+        ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
+        ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
         ['ecommerce', 'تجارت الکترونیک', 'stroke-ecommerce', 'fill-ecommerce', [
             ['ecommerce/landing', 'صفحه لندینگ'],
             ['ecommerce/addProduct', 'افزودن محصول'],
             ['ecommerce/products', 'فهرست محصولات'],
             ['ecommerce/orders', 'فهرست سفارشات'],
         ]],
-        ['review', 'بررسی موارد ارسالی', 'stroke-task', 'fill-task'],
-        ['legal', 'حقوقی و شکایت‌ها', 'stroke-file', 'fill-file'],
-        ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
-        ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
+        ['users', 'کاربران', 'stroke-user', 'fill-user'],
+        ['medals', 'مدیریت مدال‌ها', 'stroke-award', 'fill-award'],
         ['ai', 'تحلیل هوشمند', 'stroke-learning', 'fill-learning'],
         ['file-manager', 'مدیریت فایل', 'stroke-file', 'fill-file'],
-        ['medals', 'مدیریت مدال‌ها', 'stroke-award', 'fill-award'],
         ['system-health', 'سلامت سامانه', 'stroke-board', 'fill-board'],
         ['plugins', 'پلاگین‌ها', 'stroke-others', 'fill-others'],
         ['settings', 'تنظیمات', 'stroke-others', 'fill-others', [
@@ -107,21 +114,21 @@ if (Auth::role() === 'admin') {
     ];
 } elseif (Auth::role() === 'operator') {
     $nav = [
-        ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
-        ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
         ['contracts', 'قراردادها', 'stroke-project', 'fill-project'],
-        ['ecommerce/landing', 'فروشگاه', 'stroke-ecommerce', 'fill-ecommerce'],
+        ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
+        ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
+        ['ecommerce/landing', 'فروشگاه', 'stroke-ecommerce', 'fill-ecommerce'],
     ];
 } elseif (Auth::role() === 'lawyer') {
     $nav = [
-        ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
         ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
-        ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['lawyer', 'پرونده‌ها', 'stroke-file', 'fill-file'],
-        ['ecommerce/landing', 'فروشگاه', 'stroke-ecommerce', 'fill-ecommerce'],
+        ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
+        ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
+        ['ecommerce/landing', 'فروشگاه', 'stroke-ecommerce', 'fill-ecommerce'],
     ];
     if ($canViewUsers) {
         array_splice($nav, 2, 0, [['users', 'کاربران', 'stroke-user', 'fill-user']]);
@@ -129,14 +136,14 @@ if (Auth::role() === 'admin') {
 } else {
     $nav = [
         ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
-        ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['portal/contracts', 'قراردادها', 'stroke-project', 'fill-project'],
         ['installments/panel', 'اقساط', 'stroke-file', 'fill-file'],
+        ['portal/history', 'سوابق خرید', 'stroke-ecommerce', 'fill-ecommerce'],
+        ['portal/guaranteed', 'ضمانت‌ها', 'stroke-board', 'fill-board'],
         ['ecommerce/landing', 'فروشگاه', 'stroke-ecommerce', 'fill-ecommerce'],
         ['ecommerce/cart', 'سبد خرید', 'stroke-board', 'fill-board'],
         ['ecommerce/myOrders', 'سفارش‌های من', 'stroke-ecommerce', 'fill-ecommerce'],
-        ['portal/guaranteed', 'ضمانت‌ها', 'stroke-board', 'fill-board'],
-        ['portal/history', 'سوابق خرید', 'stroke-ecommerce', 'fill-ecommerce'],
+        ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['calendar', 'تقویم', 'stroke-task', 'fill-task'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
     ];
@@ -183,7 +190,7 @@ if (class_exists('PluginManager')) {
 }
 $sidebarIcon = static function (array $item, string $sprite, bool $filled = false): string {
     if (($item[0] ?? '') === 'medals') {
-        return $filled ? '' : '<i class="proma-sidebar-nav-icon icofont icofont-award" aria-hidden="true"></i>';
+        return $filled ? '' : proma_icon('award', '', 'proma-sidebar-nav-icon');
     }
     $icon = $filled ? ($item[3] ?? '') : ($item[2] ?? '');
     return '<svg class="' . ($filled ? 'fill-icon' : 'stroke-icon') . '" aria-hidden="true"><use href="' . e($sprite) . '#' . e($icon) . '"></use></svg>';
@@ -200,15 +207,13 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <link rel="icon" href="<?= e($faviconPath ? asset_url($faviconPath) : template_asset_url('images/favicon.png')) ?>">
   <link rel="apple-touch-icon" href="<?= e($appIconPath ? asset_url($appIconPath) : template_asset_url('images/favicon.png')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/font-awesome.css')) ?>">
-  <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/icofont.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/themify.css')) ?>">
-  <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/flag-icon.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/feather-icon.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/slick.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/slick-theme.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/scrollbar.css')) ?>">
-  <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/quill.snow.css')) ?>">
-  <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/quill.bubble.css')) ?>">
+  <?php if ($needsRichEditor): ?><link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/quill.snow.css')) ?>">
+  <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/quill.bubble.css')) ?>"><?php endif; ?>
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/animate.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/bootstrap.rtl.min.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/style.css')) ?>">
@@ -220,10 +225,11 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/forms.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/layout.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/responsive.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/panels.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/contract-settings.css')) ?>">
-  <script src="<?= e(asset_url('assets/vendor/chart.umd.min.js')) ?>" defer></script>
+  <?php if ($needsCharts): ?><script src="<?= e(asset_url('assets/vendor/chart.umd.min.js')) ?>" defer></script><?php endif; ?>
 </head>
-<body onload="if (window.startTime) startTime()" data-user-id="<?= (int) Auth::id() ?>" data-notification-sound="<?= $notificationSoundEnabled ? '1' : '0' ?>" data-notification-volume="<?= e($notificationSoundVolume) ?>">
+<body data-user-id="<?= (int) Auth::id() ?>" data-notification-sound="<?= $notificationSoundEnabled ? '1' : '0' ?>" data-notification-volume="<?= e($notificationSoundVolume) ?>">
   <div class="loader-wrapper">
     <div class="loader-index"><span></span></div>
     <svg><defs></defs><filter id="goo"><feGaussianBlur in="SourceGraphic" stdDeviation="11" result="blur"></feGaussianBlur><feColorMatrix in="blur" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo"></feColorMatrix></filter></svg>
@@ -450,7 +456,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
                         <?= $sidebarIcon($item, $sprite, true) ?>
                         <span><?= e($item[1]) ?></span>
                       </a>
-                      <ul class="sidebar-submenu" style="<?= $active ? 'display:block;' : '' ?>">
+                      <ul class="sidebar-submenu<?= $active ? ' is-open' : '' ?>">
                         <?php foreach ($children as $child): ?>
                           <?php $childActive = strpos($route, $child[0]) === 0; ?>
                           <li><a class="<?= $childActive ? 'active' : '' ?>" href="<?= e(url($child[0])) ?>"><?= e($child[1]) ?></a></li>
@@ -545,6 +551,20 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
     </div>
   </div>
 
+  <div class="modal" id="contact-directory" aria-describedby="contact-directory-help">
+    <div class="modal-content proma-contact-modal">
+      <div class="modal-header">
+        <h3 data-contact-directory-title>فهرست تماس قرارداد</h3>
+        <button class="icon-btn" type="button" data-close-modal aria-label="بستن">×</button>
+      </div>
+      <div class="modal-body">
+        <p id="contact-directory-help" class="proma-form-help">برای تماس مستقیم از دکمهٔ «تماس» و برای کپی شماره از آیکن کپی استفاده کنید.</p>
+        <div class="proma-contact-directory" data-contact-directory-body></div>
+      </div>
+      <div class="modal-footer"><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
+    </div>
+  </div>
+
   <script src="<?= e(template_asset_url('js/jquery.min.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/bootstrap/bootstrap.bundle.min.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/icons/feather-icon/feather.min.js')) ?>"></script>
@@ -560,9 +580,9 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <script src="<?= e(template_asset_url('js/header-slick.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/height-equal.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/script.js')) ?>"></script>
-  <script src="<?= e(template_asset_url('js/editors/quill.js')) ?>"></script>
+  <?php if ($needsRichEditor): ?><script src="<?= e(template_asset_url('js/editors/quill.js')) ?>"></script><?php endif; ?>
   <script src="<?= e(asset_url('assets/js/app.js')) ?>"></script>
-  <script src="<?= e(asset_url('assets/js/contract-template-editor.js')) ?>"></script>
+  <?php if ($needsContractTemplateEditor): ?><script src="<?= e(asset_url('assets/js/contract-template-editor.js')) ?>"></script><?php endif; ?>
   <?php foreach ($pluginPageAssets as $pluginAsset): ?><?php if (($pluginAsset['type'] ?? '') === 'js'): ?><script src="<?= e(asset_url($pluginAsset['path'])) ?>"></script><?php endif; ?><?php endforeach; ?>
 </body>
 </html>

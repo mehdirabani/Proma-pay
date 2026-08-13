@@ -137,7 +137,7 @@ class PaymentReceipt extends Model
         try {
             if ($status === 'approved') {
                 $paymentDate = date('Y-m-d');
-                $installment = Installment::find((int) $receipt['installment_id']);
+                $installment = Installment::findRaw((int) $receipt['installment_id']);
                 if (!$installment) {
                     throw new InvalidArgumentException('قسط مرتبط با رسید پیدا نشد.');
                 }
@@ -147,24 +147,25 @@ class PaymentReceipt extends Model
                 if ($actualAmount <= 0) {
                     throw new InvalidArgumentException('مبلغ تأییدشده باید بیشتر از صفر باشد.');
                 }
-                $preview = InstallmentSettlementService::assertPayable($installment, $actualAmount, $paymentDate);
-                $payable = normalize_money($installment['payable'] ?? $installment['remaining_amount'] ?? $installment['base_amount'] ?? 0);
-                if ($payable > 0 && $actualAmount > $payable) {
-                    throw new InvalidArgumentException('مبلغ تأییدشده نمی‌تواند بیشتر از بدهی قابل پرداخت قسط باشد.');
-                }
+                $plan = PaymentAllocationService::plan([$installment], $actualAmount, $paymentDate, Settings::allKeyed());
+                $allocation = $plan['allocations'][0] ?? [];
                 self::execute(
                     "UPDATE payments
-                     SET amount = ?, status = 'paid', payment_date = ?, calculated_penalty = ?, calculated_reward = ?,
-                         remaining_before_payment = ?, remaining_after_payment = ?, paid_at = NOW(),
+                     SET amount = ?, status = 'paid', payment_date = ?, calculated_penalty = ?, calculated_reward = ?, principal_applied = ?, normal_penalty_applied = ?, legal_penalty_applied = ?, reward_applied = ?,
+                          remaining_before_payment = ?, remaining_after_payment = ?, paid_at = NOW(),
                          description = ?
                      WHERE id = ?",
                     [
                         $actualAmount,
                         $paymentDate,
-                        $preview['calculated_penalty'],
-                        $preview['calculated_reward'],
-                        $preview['remaining_before_payment'],
-                        $preview['remaining_after_payment'],
+                        normalize_money($allocation['normal_penalty_before'] ?? 0) + normalize_money($allocation['legal_penalty_before'] ?? 0),
+                        normalize_money($allocation['reward_applied'] ?? 0),
+                        normalize_money($allocation['principal_applied'] ?? 0),
+                        normalize_money($allocation['normal_penalty_applied'] ?? 0),
+                        normalize_money($allocation['legal_penalty_applied'] ?? 0),
+                        normalize_money($allocation['reward_applied'] ?? 0),
+                        normalize_money($allocation['remaining_before'] ?? 0),
+                        normalize_money($allocation['remaining_after'] ?? 0),
                         'رسید کارت به کارت تأیید شد',
                         (int) $receipt['payment_id'],
                     ]

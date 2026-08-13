@@ -8,8 +8,15 @@ $ecommerceOrders = $ecommerceOrders ?? [];
 $givenGuarantees = $givenGuarantees ?? [];
 $receivedGuarantees = $receivedGuarantees ?? [];
 $ecommerceEnabled = ecommerce_is_enabled();
+$projectedPenaltyMessage = '';
+foreach ($installments as $installment) {
+  if (!empty($installment['show_projected_legal_penalty'])) {
+    $projectedPenaltyMessage = (string) ($installment['projected_legal_penalty_customer_message'] ?? '');
+    break;
+  }
+}
 ?>
-<div class="row widget-grid proma-role-dashboard proma-role-dashboard--customer" style="--role-accent:#188b83;--role-accent-soft:#e8f8f5">
+<div class="row widget-grid proma-role-dashboard proma-role-dashboard--customer">
   <div class="col-12">
     <section class="card proma-role-hero">
       <div class="card-body">
@@ -66,6 +73,7 @@ $ecommerceEnabled = ecommerce_is_enabled();
     <section class="card proma-role-panel">
       <div class="card-header card-no-border"><div class="header-top"><h5>قراردادهای من</h5><a class="link-only" href="<?= e(url('portal/contracts')) ?>">مشاهده همه</a></div></div>
       <div class="card-body pt-0">
+        <?php if ($projectedPenaltyMessage !== ''): ?><div class="notice info mb-3"><strong>راهنمای جریمه حقوقی:</strong> <?= e($projectedPenaltyMessage) ?></div><?php endif; ?>
         <div class="table-responsive">
           <table class="table table-bordernone">
             <thead><tr><th>شماره قرارداد</th><th>قابل تقسیط</th><th>تعداد قسط</th><th>شروع</th><th>وضعیت</th><th>عملیات</th></tr></thead>

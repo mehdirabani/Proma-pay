@@ -92,7 +92,7 @@ $assert(!preg_match('/\b(drop\s+table|truncate\s+table)\b/i', $migration), 'V1.4
 $assert(strpos($installSql, 'CREATE TABLE `auth_login_attempts`') !== false && strpos($installSql, 'CREATE TABLE `contract_requests`') !== false, 'Clean-install SQL omits V1.4.0 tables.');
 $assert(strpos($installSql, '`template_version_id` bigint(20) unsigned DEFAULT NULL') !== false, 'Clean-install SQL omits the contract document template version column.');
 $assert(strpos($migration, 'document_template_version_sql') !== false, 'V1.4.0 migration does not repair the contract document template version column.');
-foreach (['--diff-filter=ACMRT', 'database/proma-pay-install.sql', '2026_07_21_v1_4_1_interaction_state.sql', 'tools/release-gate.php', 'PromaPay-Update-v', 'SHA256SUMS.txt'] as $needle) {
+foreach (['PROMA_UPDATE_BASELINE_ARCHIVE', 'release-manifest.json', '$baselineFiles', 'tools/release-gate.php', 'PromaPay-Update-v', 'SHA256SUMS.txt'] as $needle) {
     $assert(strpos($releaseBuilder, $needle) !== false, 'Release builder omits required differential release behavior: ' . $needle . '.');
 }
 

@@ -73,7 +73,8 @@ class ZarinpalRequestService
                     (int) ($context['customer_id'] ?? 0),
                     $localOrderId,
                     $idempotencyKey,
-                    'zarinpal'
+                    'zarinpal',
+                    (string) ($context['quote_uuid'] ?? '')
                 );
                 $groupId = (int) $group['id'];
             } else {
@@ -83,7 +84,8 @@ class ZarinpalRequestService
                     (int) ($context['contract_id'] ?? 0),
                     (int) ($context['customer_id'] ?? 0),
                     $amountToman,
-                    $localOrderId
+                    $localOrderId,
+                    (string) ($context['quote_uuid'] ?? '')
                 );
             }
             $transaction = $this->transactions->create([

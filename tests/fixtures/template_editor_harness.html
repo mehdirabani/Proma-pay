@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proma template editor browser harness</title>
+  <link rel="stylesheet" href="/html/RTL/assets/css/vendors/quill.snow.css">
+  <style>
+    body { margin: 0; background: #f5f6fa; color: #17233f; font-family: Tahoma, sans-serif; }
+    .card { max-width: 920px; margin: 24px auto; padding: 24px; background: #fff; border-radius: 16px; }
+    .toolbar, .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    button, select, input, textarea { font: inherit; padding: 9px 12px; border: 1px solid #cfd4e0; border-radius: 9px; }
+    button.active, button:not(.secondary) { background: #6d4aff; color: #fff; border-color: #6d4aff; }
+    button:disabled { opacity: .6; cursor: wait; }
+    textarea { display: block; width: 100%; min-height: 360px; margin-top: 12px; box-sizing: border-box; }
+    .notice { margin: 12px 0; padding: 12px; border-radius: 8px; background: #eef4ff; }
+    .warning { background: #fff3db; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.55); align-items: center; justify-content: center; }
+    .modal.open { display: flex; }
+    .modal-content { width: min(540px, calc(100% - 32px)); background: #fff; border-radius: 16px; padding: 20px; }
+    .modal-footer { display: flex; gap: 8px; justify-content: flex-start; margin-top: 16px; }
+    [hidden] { display: none !important; }
+    .proma-rich-editor { min-height: 360px; }
+  </style>
+</head>
+<body>
+  <section class="card proma-template-editor-card" data-contract-template-workspace data-quill-src="/html/RTL/assets/js/editors/quill.js" data-request-id="browser-harness" data-template-editor-lifecycle="booting">
+    <div class="toolbar" role="tablist">
+      <button type="button" data-template-mode="simple" role="tab" aria-selected="false" disabled aria-disabled="true">ویرایش ساده</button>
+      <button class="active" type="button" data-template-mode="source" role="tab" aria-selected="true">کد قالب</button>
+    </div>
+    <form data-contract-template-form>
+      <div class="toolbar" style="margin-top: 12px">
+        <button class="secondary" type="button" data-contract-copy-source="editor-template-source">کپی متن</button>
+        <button class="secondary" type="button" data-open-modal="template-find-replace">یافتن و جایگزینی</button>
+        <button class="secondary" type="button" data-insert-important-clause>درج بند مهم</button>
+        <select data-contract-variable-select><option value="">درج متغیر</option><option value="{{customer_full_name}}">نام مشتری</option></select>
+        <span data-template-count></span>
+      </div>
+      <div class="notice" data-template-editor-status role="status" aria-live="polite">حالت امن «کد قالب» فعال است.</div>
+      <div class="actions"><button class="secondary" type="button" data-template-retry-assets hidden>تلاش دوباره برای ویرایش ساده</button></div>
+      <div class="notice warning" data-template-editor-recovery hidden><button type="button" data-template-restore-recovery>بازیابی</button><button type="button" data-template-dismiss-recovery>نادیده گرفتن</button></div>
+      <textarea id="editor-template-source" name="body_source" data-contract-template-editor required>بند اول قرارداد برای {{customer_full_name}}
+**بند مهم**</textarea>
+      <select name="body_format"><option value="plain_text_v1" selected>متن ساده</option><option value="structured_html_v1">HTML</option></select>
+      <input name="change_reason" value="تست مرورگر ویرایشگر" required>
+      <input type="hidden" name="editor_original_format" value="plain_text_v1">
+      <input type="hidden" name="editor_conversion_source" value="">
+      <span data-unsaved-indicator hidden>تغییرات ذخیره‌نشده دارید.</span>
+      <button type="submit">ذخیره پیش‌نویس</button>
+    </form>
+  </section>
+
+  <div class="modal" id="template-find-replace"><div class="modal-content"><form data-template-find-form><input name="find" required><input name="replace"><div class="modal-footer"><button type="submit">جایگزینی</button><button class="secondary" type="button" data-close-modal>انصراف</button></div></form></div></div>
+  <div class="modal" id="template-replace-source"><div class="modal-content"><button type="button" data-template-apply-pending-source>تأیید</button><button type="button" data-close-modal>انصراف</button></div></div>
+  <div class="modal" id="template-convert-visual"><div class="modal-content"><p>تبدیل آگاهانه به HTML ساختاریافته</p><div class="modal-footer"><button type="button" data-template-confirm-visual-conversion>تأیید و ورود به ویرایش ساده</button><button class="secondary" type="button" data-close-modal>انصراف</button></div></div></div>
+  <script>document.addEventListener('click', function (event) { const opener = event.target.closest('[data-open-modal]'); if (opener) { const modal = document.getElementById(opener.getAttribute('data-open-modal')); if (modal) modal.classList.add('open'); } const closer = event.target.closest('[data-close-modal]'); if (closer) { const modal = closer.closest('.modal'); if (modal) modal.classList.remove('open'); } });</script>
+  <script src="/assets/js/contract-template-editor.js"></script>
+</body>
+</html>
