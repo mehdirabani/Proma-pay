@@ -1,4 +1,5 @@
 :root {
+  /* Semantic palette: components consume these aliases rather than literal colors. */
   --proma-brand-900: #4a148c;
   --proma-brand-700: #6a1b9a;
   --proma-brand-600: #8e24aa;
@@ -15,6 +16,36 @@
   --proma-control-focus: var(--proma-brand-700);
   /* Shared UI scale. Keep these values as the single source for page forms,
      dialogs and compact table controls. */
+  --color-primary: var(--proma-brand-700);
+  --color-primary-hover: var(--proma-brand-900);
+  --color-primary-subtle: #f3e8ff;
+  --color-text-primary: var(--proma-ink);
+  --color-text-secondary: #475467;
+  --color-text-muted: var(--proma-muted);
+  --color-surface: var(--proma-surface);
+  --color-surface-secondary: var(--ui-surface-subtle);
+  --color-surface-elevated: #ffffff;
+  --color-border: var(--proma-line);
+  --color-border-strong: #cbd5e1;
+  --color-success: var(--proma-positive);
+  --color-warning: #b54708;
+  --color-danger: var(--proma-danger);
+  --color-info: #175cd3;
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --page-padding-x: var(--space-6);
+  --page-padding-y: var(--space-6);
+  --section-gap: var(--space-6);
+  --card-padding: var(--space-5);
+  --card-gap: var(--space-4);
   --ui-control-height: 48px;
   --ui-compact-control-height: 42px;
   --ui-control-radius: 12px;
@@ -171,6 +202,12 @@ body.dark-only,
 }
 
 @media (max-width: 767.98px) {
+  :root {
+    --page-padding-x: var(--space-3);
+    --page-padding-y: var(--space-4);
+    --section-gap: var(--space-4);
+    --card-padding: var(--space-4);
+  }
   :where(.form-group, .form-field) {
     margin-block-end: 16px;
   }
