@@ -45,6 +45,9 @@ $existingNames = array_column($existingOnly, 'full_name');
 $assert($existingNames === ['ضامن موجود الف', 'ضامن موجود ب'], 'Existing guarantors are not returned in contract order.');
 $renderedExisting = ContractDocument::document($existingOnlyContract);
 $assert(strpos((string) ($renderedExisting['rendered_body'] ?? ''), 'ضامن موجود الف') !== false && strpos((string) ($renderedExisting['rendered_body'] ?? ''), 'ضامن موجود ب') !== false, 'Print document omits existing guarantors.');
+$existingView = ContractDocument::viewModel($existingOnlyContract);
+$assert($existingView['guarantors'] === $existingOnly, 'Preview and print do not share the guarantor document view-model.');
+$assert((string) $existingView['body'] === (string) ($renderedExisting['rendered_body'] ?? ''), 'Preview and print do not share the same rendered contract body.');
 
 Model::execute('UPDATE users SET full_name = ? WHERE id = ?', ['نام تغییرکرده پس از قرارداد', $guarantorA]);
 $snapshotNames = array_column(ContractDocument::guarantorsForDocument($existingOnlyContract), 'full_name');
@@ -57,5 +60,7 @@ $mixedNames = array_column(ContractDocument::guarantorsForDocument($mixedContrac
 $assert($mixedNames === ['ضامن موجود الف', 'ضامن جدید ج'], 'Mixed existing/new guarantors are not resolved by one document model.');
 $renderedMixed = ContractDocument::document($mixedContract);
 $assert(strpos((string) ($renderedMixed['rendered_body'] ?? ''), 'ضامن موجود الف') !== false && strpos((string) ($renderedMixed['rendered_body'] ?? ''), 'ضامن جدید ج') !== false, 'Mixed guarantors are not printed together.');
+$mixedView = ContractDocument::viewModel($mixedContract);
+$assert(array_column($mixedView['guarantors'], 'full_name') === $mixedNames, 'Mixed-guarantor preview differs from print data.');
 
 echo "INTEGRATION_GUARANTOR_DOCUMENT_V159_OK\n";

@@ -273,6 +273,30 @@ TEXT;
         return self::fetch('SELECT * FROM generated_contract_documents WHERE contract_id = ?', [(int) $contractId]);
     }
 
+    /**
+     * The canonical, immutable-at-read-time representation used by both the
+     * on-screen contract preview and the printable document. Keeping this
+     * assembly in one place prevents a future view change from reintroducing
+     * divergent guarantor, title or fallback-rendering queries.
+     *
+     * This method deliberately does not regenerate persisted documents. A
+     * finalized legal document must only change through its explicit version
+     * workflow, never because somebody opened a preview or print route.
+     */
+    public static function viewModel($contractId)
+    {
+        $contractId = (int) $contractId;
+        $document = self::document($contractId);
+
+        return [
+            'document' => $document,
+            'title' => trim((string) ($document['rendered_title'] ?? '')) ?: self::renderTitle($contractId),
+            'header' => trim((string) ($document['rendered_header'] ?? '')) ?: self::renderHeader($contractId),
+            'body' => (string) ($document['rendered_body'] ?? self::render($contractId)),
+            'guarantors' => self::guarantorsForDocument($contractId),
+        ];
+    }
+
     public static function versions($contractId)
     {
         self::ensureSchema();

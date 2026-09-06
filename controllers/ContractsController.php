@@ -192,6 +192,7 @@ class ContractsController extends Controller
 
         $contract = Contract::find($contractId);
         $this->authorizeContractAccess($contract);
+        $contractDocument = ContractDocument::viewModel($contractId);
 
         $user = Auth::user();
         $isCustomer = (Auth::role() ?? '') === 'customer';
@@ -240,13 +241,13 @@ class ContractsController extends Controller
         $this->render('contracts/show', [
             'title' => 'جزئیات قرارداد',
             'contract' => $contract,
-            'document' => ContractDocument::document($contractId),
+            'document' => $contractDocument['document'],
             'documentVersions' => ContractDocument::versions($contractId),
-            'documentTitle' => ContractDocument::renderTitle($contractId),
-            'documentHeader' => ContractDocument::renderHeader($contractId),
+            'documentTitle' => $contractDocument['title'],
+            'documentHeader' => $contractDocument['header'],
             'items' => ContractDocument::items($contractId),
             'guarantees' => ContractDocument::guarantees($contractId),
-            'guarantors' => ContractDocument::guarantorsForDocument($contractId),
+            'guarantors' => $contractDocument['guarantors'],
             'installments' => $installments,
             'installmentBatch' => $installmentBatch,
             'settlementPreview' => $settlementPreview,
@@ -653,16 +654,16 @@ class ContractsController extends Controller
         Auth::requireLogin();
         $contract = Contract::find((int) $id);
         $this->authorizeContractAccess($contract);
-        $document = ContractDocument::document((int) $id);
+        $contractDocument = ContractDocument::viewModel((int) $id);
         $settings = Settings::allKeyed();
         $this->render('contracts/print', [
             'title' => 'چاپ قرارداد',
             'contract' => $contract,
             'settings' => $settings,
             'printProfile' => ContractPrintProfile::load($settings),
-            'documentTitle' => trim((string) ($document['rendered_title'] ?? '')) ?: ContractDocument::renderTitle((int) $id),
-            'documentHeader' => trim((string) ($document['rendered_header'] ?? '')) ?: ContractDocument::renderHeader((int) $id),
-            'body' => $document['rendered_body'] ?? ContractDocument::render((int) $id),
+            'documentTitle' => $contractDocument['title'],
+            'documentHeader' => $contractDocument['header'],
+            'body' => $contractDocument['body'],
         ], null);
     }
 
