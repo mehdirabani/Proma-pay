@@ -63,12 +63,15 @@ function setting_enabled($key, $default = true)
 
 function ecommerce_is_enabled()
 {
-    return setting_enabled('ecommerce_enabled', true);
+    // فروشگاه داخلی از نسخه 1.5.9 بازنشسته است. داده‌های `ecommerce_*`
+    // صرفاً برای بایگانی خواندنی حفظ می‌شوند و فروش جدید فقط از اتصال خارجی
+    // (مانند WooCommerce) وارد سامانه خواهد شد.
+    return false;
 }
 
 function landing_is_enabled()
 {
-    return ecommerce_is_enabled() && setting_enabled('landing_enabled', true);
+    return false;
 }
 
 function app_version_label()

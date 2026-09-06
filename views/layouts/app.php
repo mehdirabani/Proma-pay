@@ -75,7 +75,6 @@ $needsCharts = in_array($route, ['dashboard', 'customers', 'contracts'], true)
     || str_starts_with($route, 'plugin/accounting');
 $needsRichEditor = str_starts_with($route, 'contracts/show/')
     || $needsContractTemplateEditor
-    || $route === 'ecommerce/addProduct'
     || ($route === 'settings' && (($_GET['tab'] ?? '') === 'contracts'));
 $userInitial = mb_substr($user['full_name'] ?? 'ک', 0, 1, 'UTF-8');
 $userAvatarKey = avatar_key_for($user['avatar_key'] ?? null, $user['id'] ?? ($user['full_name'] ?? ''));
@@ -290,7 +289,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
                 </a>
               </li>
             <?php endif; ?>
-            <?php if (($user['role'] ?? '') === 'customer'): ?>
+            <?php if ($ecommerceEnabled && ($user['role'] ?? '') === 'customer'): ?>
               <li class="onhover-dropdown proma-floating-cart" data-floating-cart>
                 <a class="notification-box proma-header-link proma-cart-trigger" href="<?= e(url('ecommerce/cart')) ?>" aria-label="سبد خرید">
                   <svg><use href="<?= e($sprite) ?>#stroke-ecommerce"></use></svg>

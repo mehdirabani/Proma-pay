@@ -97,9 +97,6 @@ class AuthController extends Controller
                 if ($duplicate = User::findDuplicateCustomer($payload)) {
                     if (($duplicate['status'] ?? '') === 'active' && Auth::unifiedLogin($nationalId, $password)) {
                         set_flash('success', 'حساب مشتری قبلاً وجود داشت و شما وارد سامانه شدید.');
-                        if (!empty($_SESSION['proma_ecommerce_cart'])) {
-                            redirect('ecommerce/checkout');
-                        }
                         redirect('dashboard');
                     }
                     set_flash('error', 'حساب مشتری با این مشخصات قبلاً برای «' . ($duplicate['full_name'] ?? 'مشتری') . '» ثبت شده است. از صفحه ورود یا بازیابی رمز استفاده کنید.');
@@ -108,9 +105,6 @@ class AuthController extends Controller
                 User::create($payload);
                 Auth::unifiedLogin($nationalId, $password);
                 set_flash('success', 'ثبت‌نام شما انجام شد. خوش آمدید.');
-                if (!empty($_SESSION['proma_ecommerce_cart'])) {
-                    redirect('ecommerce/checkout');
-                }
                 redirect('dashboard');
             } catch (Throwable $e) {
                 set_flash('error', $e->getMessage());

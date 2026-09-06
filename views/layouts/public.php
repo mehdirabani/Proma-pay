@@ -7,14 +7,7 @@ $logoIconPath = trim((string) ($layoutSettings['logo_icon_path'] ?? ''));
 $faviconPath = trim((string) ($layoutSettings['favicon_path'] ?? ''));
 $appIconPath = $logoIconPath ?: $faviconPath;
 $footerText = $layoutSettings['footer_text'] ?? 'پروما پی سامانه جامع پرداخت';
-$landingEnabled = landing_is_enabled();
-$publicHomeRoute = $landingEnabled ? 'ecommerce/landing' : 'ecommerce/shop';
-$publicCartSummary = ['quantity' => 0, 'total' => 0];
-try {
-    $publicCartSummary = Ecommerce::cartSummary();
-} catch (Throwable $e) {
-    $publicCartSummary = ['quantity' => 0, 'total' => 0];
-}
+$publicHomeRoute = 'auth/login';
 ?>
 <!doctype html>
 <html lang="fa" dir="rtl">
@@ -45,9 +38,6 @@ try {
       <?php if ($logoPath): ?><img class="proma-uploaded-logo" src="<?= e(asset_url($logoPath)) ?>" alt="<?= e($logoText) ?>"><?php else: ?><span><?= e($logoText) ?></span><?php endif; ?>
     </a>
     <nav>
-      <?php if ($landingEnabled): ?><a href="<?= e(url('ecommerce/landing')) ?>">صفحه نخست</a><?php endif; ?>
-      <a href="<?= e(url('ecommerce/shop')) ?>">فروشگاه</a>
-      <a href="<?= e(url('ecommerce/cart')) ?>">سبد خرید <strong><?= to_persian_digits($publicCartSummary['quantity'] ?? 0) ?></strong></a>
       <a href="<?= e(url('auth/login')) ?>">ورود</a>
       <a class="proma-public-register" href="<?= e(url('auth/register')) ?>">ثبت‌نام مشتری</a>
     </nav>

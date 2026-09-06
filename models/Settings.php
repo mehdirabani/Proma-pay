@@ -136,8 +136,9 @@ class Settings extends Model
             'social_youtube_url' => '',
             'social_linkedin_url' => '',
             'social_website_url' => '',
-            'ecommerce_enabled' => '1',
-            'landing_enabled' => '1',
+            // کلیدهای تاریخی حفظ شده‌اند تا upgrade نصب‌های قبلی بدون حذف داده انجام شود.
+            'ecommerce_enabled' => '0',
+            'landing_enabled' => '0',
             'landing_kicker' => 'فروشگاه {{system_name}}',
             'landing_title' => 'خرید نقدی و اقساطی با {{system_name}}',
             'landing_subtitle' => 'محصولات منتخب را ببینید، سفارش نقدی ثبت کنید یا درخواست خرید اقساطی بفرستید.',

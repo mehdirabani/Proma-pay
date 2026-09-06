@@ -7,9 +7,13 @@ class Router
         $requestStartedAt = microtime(true);
         $route = trim($_GET['route'] ?? '', '/');
         if ($route === '') {
-            $route = Auth::check() ? 'dashboard' : (ecommerce_is_enabled() ? 'ecommerce/landing' : 'auth/login');
+            $route = Auth::check() ? 'dashboard' : 'auth/login';
         }
         $route = $this->resolveSafeActionAlias($route);
+        if ($route === 'ecommerce' || strpos($route, 'ecommerce/') === 0) {
+            set_flash('info', 'فروشگاه داخلی بازنشسته شده است. سوابق پیشین حفظ شده و فروش جدید از فروشگاه متصل انجام می‌شود.');
+            redirect(Auth::check() ? 'dashboard' : 'auth/login');
+        }
         RequestTelemetry::setRoute($route);
         if ($route === 'health/live' || $route === 'health/ready') {
             RequestTelemetry::recordSpan('route.health', $requestStartedAt, ['route' => $route]);
