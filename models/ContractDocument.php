@@ -143,6 +143,81 @@ TEXT;
         return self::fetchAll('SELECT * FROM contract_guarantor_people WHERE contract_id = ? ORDER BY id', [(int) $contractId]);
     }
 
+    /**
+     * Canonical document guarantors. Existing customer guarantors are attached
+     * through contract_guarantors, while the legacy "new guarantor" form
+     * creates a contract-bound person. Both render identically in the document.
+     */
+    public static function guarantorsForDocument($contractId)
+    {
+        self::ensureSchema();
+        $contractId = (int) $contractId;
+        $linked = [];
+        try {
+            $linked = self::fetchAll(
+                'SELECT cg.guarantor_id, COALESCE(s.full_name, u.full_name) AS full_name,
+                        COALESCE(s.father_name, u.father_name) AS father_name,
+                        COALESCE(s.national_id, u.national_id) AS national_id,
+                        COALESCE(s.mobile, u.mobile) AS mobile,
+                        COALESCE(s.address, u.address) AS address,
+                        COALESCE(s.relationship, \'ضامن قرارداد\') AS relationship,
+                        COALESCE(s.description, \'\') AS description,
+                        CASE WHEN s.id IS NULL THEN \'live_fallback\' ELSE \'linked_snapshot\' END AS source_type
+                 FROM contract_guarantors cg
+                 JOIN users u ON u.id = cg.guarantor_id
+                 LEFT JOIN contract_guarantor_snapshots s
+                    ON s.contract_id = cg.contract_id AND s.guarantor_id = cg.guarantor_id
+                 WHERE cg.contract_id = ?
+                 ORDER BY cg.guarantor_id ASC',
+                [$contractId]
+            );
+        } catch (Throwable $e) {
+            if (!self::missingGuarantorSnapshotTable($e)) {
+                throw $e;
+            }
+            $linked = self::fetchAll(
+                'SELECT cg.guarantor_id, u.full_name, u.father_name, u.national_id, u.mobile, u.address,
+                        \'ضامن قرارداد\' AS relationship, \'\' AS description, \'live_fallback\' AS source_type
+                 FROM contract_guarantors cg
+                 JOIN users u ON u.id = cg.guarantor_id
+                 WHERE cg.contract_id = ?
+                 ORDER BY cg.guarantor_id ASC',
+                [$contractId]
+            );
+        }
+
+        $manual = self::guarantorPeople($contractId);
+        foreach ($manual as &$person) {
+            $person['guarantor_id'] = null;
+            $person['source_type'] = 'contract_person';
+        }
+        unset($person);
+
+        return array_merge($linked, $manual);
+    }
+
+    /** Captures linked profile data when it first becomes part of a contract. */
+    public static function snapshotLinkedGuarantors($contractId, $actorId = null)
+    {
+        self::ensureSchema();
+        try {
+            self::execute(
+                'INSERT IGNORE INTO contract_guarantor_snapshots
+                    (contract_id, guarantor_id, full_name, father_name, national_id, mobile, address, relationship, description, created_by, created_at)
+                 SELECT cg.contract_id, u.id, u.full_name, u.father_name, u.national_id, u.mobile, u.address,
+                        \'ضامن قرارداد\', NULL, ?, NOW()
+                 FROM contract_guarantors cg
+                 JOIN users u ON u.id = cg.guarantor_id
+                 WHERE cg.contract_id = ?',
+                [$actorId ? (int) $actorId : null, (int) $contractId]
+            );
+        } catch (Throwable $e) {
+            if (!self::missingGuarantorSnapshotTable($e)) {
+                throw $e;
+            }
+        }
+    }
+
     public static function guarantorPeopleForContracts(array $contractIds)
     {
         return self::groupedByContract('contract_guarantor_people', $contractIds);
@@ -441,6 +516,11 @@ TEXT;
         return $e instanceof PDOException && (int) ($e->errorInfo[1] ?? 0) === 1146;
     }
 
+    protected static function missingGuarantorSnapshotTable(Throwable $e)
+    {
+        return $e instanceof PDOException && (int) ($e->errorInfo[1] ?? 0) === 1146;
+    }
+
     public static function renderTitle($contractId)
     {
         return self::renderPlainTemplate((int) $contractId, 'contract_document_title', 'قرارداد اجاره به شرط تملیک / امانت‌داری');
@@ -483,7 +563,7 @@ TEXT;
         $templateFormat = (string) ($effectiveTemplate['body_format'] ?? ContractTemplateRenderer::FORMAT_PLAIN);
         $items = self::items((int) $contractId);
         $guarantees = self::guarantees((int) $contractId);
-        $guarantorPeople = self::guarantorPeople((int) $contractId);
+        $guarantors = self::guarantorsForDocument((int) $contractId);
         $installments = Installment::all(['contract_id' => (int) $contractId]);
         $firstGuarantee = $guarantees[0] ?? [];
         $lastInstallment = $installments ? end($installments) : null;
@@ -510,7 +590,7 @@ TEXT;
             '{{customer_address}}' => e($contract['customer_address'] ?? ''),
             '{{items_table}}' => self::itemsTable($items),
             '{{installments_guarantees_table}}' => self::installmentsGuaranteesTable($installments, $firstGuarantee),
-            '{{guarantors_section}}' => self::guarantorsSection($guarantorPeople),
+            '{{guarantors_section}}' => self::guarantorsSection($guarantors),
             '{{guarantee_type}}' => e($firstGuarantee['guarantee_type'] ?? ''),
             '{{guarantee_count}}' => e(to_persian_digits($firstGuarantee['guarantee_count'] ?? 0)),
             '{{guarantee_serial}}' => e(to_persian_digits($firstGuarantee['guarantee_serial'] ?? '')),
@@ -525,7 +605,7 @@ TEXT;
             '{{legal_penalty_clause}}' => e($legalPenaltyClause),
             '{{first_due_date}}' => e(jdate($contract['first_due_date'])),
             '{{last_due_date}}' => e($lastInstallment ? jdate($lastInstallment['due_date']) : ''),
-            '{{signature_section}}' => self::signatureSection($guarantorPeople),
+            '{{signature_section}}' => self::signatureSection($guarantors),
         ];
         $html = ContractTemplateRenderer::render($template, $templateFormat, $replace);
         if (!self::templateContainsLegalPenalty($template)) {

@@ -246,7 +246,7 @@ class ContractsController extends Controller
             'documentHeader' => ContractDocument::renderHeader($contractId),
             'items' => ContractDocument::items($contractId),
             'guarantees' => ContractDocument::guarantees($contractId),
-            'guarantorPeople' => ContractDocument::guarantorPeople($contractId),
+            'guarantors' => ContractDocument::guarantorsForDocument($contractId),
             'installments' => $installments,
             'installmentBatch' => $installmentBatch,
             'settlementPreview' => $settlementPreview,

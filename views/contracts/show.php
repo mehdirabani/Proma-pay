@@ -19,6 +19,7 @@ $canPermanentlyDelete = !empty($deletionPreview['eligible_for_permanent_delete']
 $isInternalViewer = Auth::role() !== 'customer';
 $isCancelledContract = ($contract['status'] ?? '') === 'cancelled';
 $canManageActiveContract = $canManageDocument && !in_array(($contract['status'] ?? ''), ['cancelled', 'completed', 'closed'], true);
+$guarantors = $guarantors ?? [];
 $renderedDocumentTitle = trim((string) ($document['rendered_title'] ?? '')) ?: ($documentTitle ?? '');
 $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?: ($documentHeader ?? '');
 ?>
@@ -191,7 +192,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
 <?php endif; ?>
 
 <div class="proma-contract-workspace" data-contract-tab-panel="installments" hidden>
-  <?php if ($guarantorPeople): ?>
+  <?php if ($guarantors): ?>
   <section class="card proma-contract-sidebar">
     <div class="card-header card-no-border"><div class="header-top"><h2>متن قرارداد</h2><?php if ($document): ?><button class="btn secondary small" type="button" data-contract-copy-textarea="resolved-contract-text"><i data-feather="copy"></i> کپی متن قرارداد تولیدشده</button><?php endif; ?></div></div>
     <div class="card-body">
@@ -268,7 +269,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
       <table>
         <thead><tr><th>نام</th><th>کد ملی</th><th>تماس</th><th>نسبت</th></tr></thead>
         <tbody>
-        <?php foreach ($guarantorPeople as $person): ?>
+        <?php foreach ($guarantors as $person): ?>
           <tr>
             <td><?= e($person['full_name']) ?><br><small><?= e($person['father_name'] ?? '') ?></small></td>
             <td><?= to_persian_digits($person['national_id'] ?? '') ?></td>

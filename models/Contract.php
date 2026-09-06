@@ -440,6 +440,7 @@ class Contract extends Model
             );
             $contractId = (int) self::lastInsertId();
             self::syncGuarantors($contractId, $guarantorIds, (int) $data['customer_id']);
+            ContractDocument::snapshotLinkedGuarantors($contractId, $data['created_by'] ?? null);
             ContractDocument::saveItems($contractId, $items);
             ContractDocument::saveGuarantee($contractId, $guarantee);
             ContractDocument::saveGuarantorPeople($contractId, $guarantorPeople);
@@ -520,6 +521,7 @@ class Contract extends Model
                 ]
             );
             self::syncGuarantors($id, $guarantorIds, (int) $data['customer_id']);
+            ContractDocument::snapshotLinkedGuarantors((int) $id, $data['updated_by'] ?? null);
             ContractDocument::saveItems((int) $id, $items);
             ContractDocument::saveGuarantee((int) $id, $guarantee);
             ContractDocument::saveGuarantorPeople((int) $id, $guarantorPeople);
