@@ -38,6 +38,8 @@ $pluginPath = '';
 $checksumPath = $root . '/dist/core/SHA256SUMS.txt';
 $releaseNotesPath = $root . '/dist/core/RELEASE_NOTES-v' . $version . '.md';
 $testReportPath = $root . '/dist/core/TEST_REPORT-v' . $version . '.md';
+$uiUxReportPath = $root . '/dist/core/UI_UX_REDESIGN_REPORT-v' . $version . '.md';
+$guarantorReportPath = $root . '/dist/core/GUARANTOR_FIX_REPORT-v' . $version . '.md';
 
 $core = $open($corePath);
 $assertSafeNames($core, 'Core archive');
@@ -157,6 +159,8 @@ foreach ($checksumLines as $line) {
 $assert($targets === [], 'One or more release archives are absent from SHA256SUMS.txt.');
 $assert(is_file($releaseNotesPath) && filesize($releaseNotesPath) > 300, 'Release notes are missing or incomplete.');
 $assert(is_file($testReportPath) && filesize($testReportPath) > 1000, 'Final test report is missing or incomplete.');
+$assert(is_file($uiUxReportPath) && filesize($uiUxReportPath) > 500, 'UI/UX report is missing or incomplete.');
+$assert(is_file($guarantorReportPath) && filesize($guarantorReportPath) > 500, 'Guarantor fix report is missing or incomplete.');
 
 foreach ([
     $root . '/dist/core/proma-pay_v*.zip',

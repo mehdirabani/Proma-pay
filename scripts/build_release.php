@@ -355,13 +355,21 @@ if (!is_array($builtPluginManifest) || (string) ($builtPluginManifest['version']
 
 $releaseNotesSource = $root . '/docs/releases/V' . $version . '.md';
 $testReportSource = $root . '/docs/qa/V' . str_replace('.', '_', $version) . '_TEST_RESULTS.md';
-if (!is_file($releaseNotesSource) || !is_file($testReportSource)) {
-    throw new RuntimeException('Release notes and final QA report must exist before packaging.');
+$uiUxReportSource = $root . '/docs/releases/UI_UX_REDESIGN_REPORT-v' . $version . '.md';
+$guarantorReportSource = $root . '/docs/releases/GUARANTOR_FIX_REPORT-v' . $version . '.md';
+foreach ([$releaseNotesSource, $testReportSource, $uiUxReportSource, $guarantorReportSource] as $reportSource) {
+    if (!is_file($reportSource)) {
+        throw new RuntimeException('Release notes and final QA reports must exist before packaging: ' . $reportSource);
+    }
 }
 $releaseNotesPath = $distCore . '/RELEASE_NOTES-v' . $version . '.md';
 $testReportPath = $distCore . '/FULL_TEST_REPORT-v' . $version . '.md';
+$uiUxReportPath = $distCore . '/UI_UX_REDESIGN_REPORT-v' . $version . '.md';
+$guarantorReportPath = $distCore . '/GUARANTOR_FIX_REPORT-v' . $version . '.md';
 copy($releaseNotesSource, $releaseNotesPath);
 copy($testReportSource, $testReportPath);
+copy($uiUxReportSource, $uiUxReportPath);
+copy($guarantorReportSource, $guarantorReportPath);
 
 $archives = [$corePath, $updatePath, $pluginPath];
 foreach ($archives as $archivePath) {
@@ -385,5 +393,7 @@ echo json_encode([
     'checksums' => $checksumPath,
     'release_notes' => $releaseNotesPath,
     'test_report' => $testReportPath,
+    'ui_ux_report' => $uiUxReportPath,
+    'guarantor_report' => $guarantorReportPath,
     'update_files' => count($updateFiles),
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;

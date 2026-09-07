@@ -1,6 +1,6 @@
 {
   "name": "proma-pay",
-  "version": "1.5.8",
+  "version": "1.5.9",
   "private": true,
   "main": "electron/main.js",
   "scripts": {

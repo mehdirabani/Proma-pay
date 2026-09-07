@@ -31,7 +31,8 @@ $assert = static function (bool $condition, string $message): void {
 };
 $suffix = substr(hash('sha256', (string) hrtime(true)), 0, 8);
 $digits = substr(preg_replace('/[^0-9]/', '7', hash('sha256', $suffix)), 0, 10);
-$mobile = static fn (string $prefix, int $offset): string => $prefix . str_pad((string) $offset, 7, '0', STR_PAD_LEFT);
+$mobileSeed = hexdec(substr($suffix, 0, 6)) % 10000000;
+$mobile = static fn (string $prefix, int $offset): string => $prefix . str_pad((string) (($mobileSeed + $offset) % 10000000), 7, '0', STR_PAD_LEFT);
 
 $adminId = User::create(['role' => 'admin', 'username' => 'qa-g-admin-' . $suffix, 'full_name' => 'مدیر تست ضامن', 'national_id' => $digits, 'mobile' => $mobile('0912', 1), 'email' => 'qa-g-admin-' . $suffix . '@example.test', 'password' => 'Admin#159Pass', 'status' => 'active']);
 $customerId = User::create(['role' => 'customer', 'username' => 'qa-g-c-' . $suffix, 'full_name' => 'مشتری تست ضامن', 'national_id' => strrev($digits), 'mobile' => $mobile('0935', 2), 'email' => 'qa-g-c-' . $suffix . '@example.test', 'password' => 'Customer#159Pass', 'status' => 'active']);
@@ -57,9 +58,9 @@ $mixedContract = Contract::createWithInstallments($payload, [$guarantorA], [], [
     'full_name' => 'ضامن جدید ج', 'father_name' => 'پدر ج', 'national_id' => '1234567890', 'mobile' => '09120000000', 'relationship' => 'ضامن', 'address' => 'نشانی تست',
 ]]);
 $mixedNames = array_column(ContractDocument::guarantorsForDocument($mixedContract), 'full_name');
-$assert($mixedNames === ['ضامن موجود الف', 'ضامن جدید ج'], 'Mixed existing/new guarantors are not resolved by one document model.');
+$assert($mixedNames === ['نام تغییرکرده پس از قرارداد', 'ضامن جدید ج'], 'Mixed existing/new guarantors are not resolved by one document model.');
 $renderedMixed = ContractDocument::document($mixedContract);
-$assert(strpos((string) ($renderedMixed['rendered_body'] ?? ''), 'ضامن موجود الف') !== false && strpos((string) ($renderedMixed['rendered_body'] ?? ''), 'ضامن جدید ج') !== false, 'Mixed guarantors are not printed together.');
+$assert(strpos((string) ($renderedMixed['rendered_body'] ?? ''), 'نام تغییرکرده پس از قرارداد') !== false && strpos((string) ($renderedMixed['rendered_body'] ?? ''), 'ضامن جدید ج') !== false, 'Mixed guarantors are not printed together.');
 $mixedView = ContractDocument::viewModel($mixedContract);
 $assert(array_column($mixedView['guarantors'], 'full_name') === $mixedNames, 'Mixed-guarantor preview differs from print data.');
 
