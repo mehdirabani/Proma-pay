@@ -37,7 +37,7 @@ $updateManifestPath = $root . '/dist/updates/PromaPay-Update-v' . $version . '-m
 $pluginPath = '';
 $checksumPath = $root . '/dist/core/SHA256SUMS.txt';
 $releaseNotesPath = $root . '/dist/core/RELEASE_NOTES-v' . $version . '.md';
-$testReportPath = $root . '/dist/core/TEST_REPORT-v' . $version . '.md';
+$testReportPath = $root . '/dist/core/FULL_TEST_REPORT-v' . $version . '.md';
 $uiUxReportPath = $root . '/dist/core/UI_UX_REDESIGN_REPORT-v' . $version . '.md';
 $guarantorReportPath = $root . '/dist/core/GUARANTOR_FIX_REPORT-v' . $version . '.md';
 
