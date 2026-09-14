@@ -49,6 +49,7 @@ $staticTests = [
     'tests/static_v157.php',
     'tests/static_v158.php',
     'tests/static_v159_guarantor_document.php',
+    'tests/static_v1510_template_editor.php',
     'tests/static_accounting_update_2014.php',
     'plugins/PromaAccounting/tests/static.php',
     'plugins/PromaAccounting/tests/v110.php',
