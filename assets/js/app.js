@@ -2818,16 +2818,38 @@
   };
 
   const initContractDetailWorkspace = function () {
-    const workspace = document.querySelector('[data-contract-tabs]');
-    if (!workspace) return;
+    document.querySelectorAll('[data-contract-tabs]').forEach(function (workspace, workspaceIndex) {
+    if (workspace.dataset.contractTabsBound === '1') return;
+    workspace.dataset.contractTabsBound = '1';
+    const root = workspace.closest('[data-contract-tabs-root]') || workspace.parentElement;
     const buttons = Array.from(workspace.querySelectorAll('[data-contract-tab-open]'));
-    const panels = Array.from(document.querySelectorAll('[data-contract-tab-panel]'));
+    const panels = Array.from(root.querySelectorAll('[data-contract-tab-panel]'));
+    const instanceId = workspace.getAttribute('data-tabs-id') || ('contract-main-tabs-' + workspaceIndex);
+    workspace.setAttribute('data-tabs-id', instanceId);
+    workspace.setAttribute('role', 'tablist');
+    buttons.forEach(function (button, index) {
+      const name = button.getAttribute('data-contract-tab-open');
+      const firstPanel = panels.find(function (panel) { return panel.getAttribute('data-contract-tab-panel') === name; });
+      button.id = instanceId + '-tab-' + name;
+      button.setAttribute('role', 'tab');
+      button.setAttribute('tabindex', index === 0 ? '0' : '-1');
+      if (firstPanel) button.setAttribute('aria-controls', firstPanel.id || (firstPanel.id = instanceId + '-panel-' + name));
+    });
+    panels.forEach(function (panel) {
+      const name = panel.getAttribute('data-contract-tab-panel');
+      if (!panel.id) panel.id = instanceId + '-panel-' + name;
+      panel.setAttribute('role', 'tabpanel');
+      const button = buttons.find(function (item) { return item.getAttribute('data-contract-tab-open') === name; });
+      if (button) panel.setAttribute('aria-labelledby', button.id);
+    });
     const activate = function (name) {
       const target = String(name || 'summary');
+      if (!buttons.some(function (button) { return button.getAttribute('data-contract-tab-open') === target; })) return;
       buttons.forEach(function (button) {
         const active = button.getAttribute('data-contract-tab-open') === target;
         button.classList.toggle('active', active);
         button.setAttribute('aria-selected', active ? 'true' : 'false');
+        button.setAttribute('tabindex', active ? '0' : '-1');
       });
       panels.forEach(function (panel) {
         panel.hidden = panel.getAttribute('data-contract-tab-panel') !== target;
@@ -2835,11 +2857,23 @@
       try { window.history.replaceState(null, '', '#contract-' + encodeURIComponent(target)); } catch (error) {}
     };
     buttons.forEach(function (button) {
-      button.setAttribute('role', 'tab');
       button.addEventListener('click', function () { activate(button.getAttribute('data-contract-tab-open')); });
+      button.addEventListener('keydown', function (event) {
+        if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const current = buttons.indexOf(button);
+        const next = event.key === 'Home' ? 0 : (event.key === 'End' ? buttons.length - 1 : (current + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length);
+        buttons[next].focus();
+        activate(buttons[next].getAttribute('data-contract-tab-open'));
+      });
     });
     const hash = (window.location.hash || '').replace(/^#contract-/, '');
     activate(buttons.some(function (button) { return button.getAttribute('data-contract-tab-open') === hash; }) ? hash : 'summary');
+    window.addEventListener('hashchange', function () {
+      const requested = (window.location.hash || '').replace(/^#contract-/, '');
+      activate(requested);
+    });
+    });
   };
 
   const initContractSettlement = function () {

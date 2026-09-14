@@ -34,8 +34,8 @@ $assert(strpos($adapter, 'Rehydrate Quill immediately before revealing it') !== 
 foreach (['window.alert', 'window.prompt', 'window.confirm'] as $forbidden) {
     $assert(strpos($adapter, $forbidden) === false, 'Native browser dialog remains in template editor adapter: ' . $forbidden);
 }
-$assert(strpos($templateView, 'data-template-mode="simple" role="tab" aria-selected="false"') !== false, 'Visual template tab must not be server-rendered as active.');
-$assert(strpos($templateView, 'data-template-mode="source" role="tab" aria-selected="true"') !== false, 'Source template tab must be the safe initial state.');
+$assert(strpos($templateView, 'data-template-mode="visual" role="tab" aria-selected="true"') !== false, 'Visual template tab must be the default workspace.');
+$assert(strpos($templateView, 'data-template-mode="source" role="tab" aria-selected="false"') !== false, 'HTML advanced mode must not be the initial state.');
 $assert(strpos($templateView, 'data-template-find-form') !== false, 'Find/replace does not use a core modal form.');
 $assert(strpos($templateView, 'data-template-confirm-visual-conversion') !== false, 'Plain-text conversion has no explicit visual-editor confirmation.');
 $assert(strpos($templateView, 'editor_conversion_source') !== false, 'Template conversion source is not submitted for audit.');

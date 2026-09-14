@@ -80,7 +80,11 @@
 
     const formatField = form.querySelector('[name="body_format"]');
     const sourceButton = workspace.querySelector('[data-template-mode="source"]');
-    const visualButton = workspace.querySelector('[data-template-mode="simple"]');
+    const visualButton = workspace.querySelector('[data-template-mode="visual"]');
+    const previewButtons = Array.from(workspace.querySelectorAll('[data-template-mode="preview"]'));
+    const previewPanel = workspace.querySelector('[data-template-preview]');
+    const previewFrame = workspace.querySelector('[data-template-preview-frame]');
+    const sourceField = workspace.querySelector('.proma-template-source-field');
     const counter = workspace.querySelector('[data-template-count]');
     const unsaved = form.querySelector('[data-unsaved-indicator]');
     const statusBox = workspace.querySelector('[data-template-editor-status]');
@@ -93,13 +97,75 @@
     const recoveryKey = 'proma-template-recovery-v2:' + window.location.pathname + window.location.search;
     const originalSource = editor.value;
     const originalFormat = formatField ? formatField.value : 'plain_text_v1';
-    let mode = SOURCE_MODE;
+    let variableLabels = {};
+    try { variableLabels = JSON.parse(workspace.getAttribute('data-template-variables') || '{}') || {}; } catch (error) {}
+    let mode = VISUAL_MODE;
     let quill = null;
     let visualShell = null;
     let dirty = false;
     let pendingSource = null;
     let recoveryTimer = null;
     let assetLoadInFlight = false;
+    let variableBlotRegistered = false;
+
+    const registerVariableBlot = function () {
+      if (variableBlotRegistered || !window.Quill || typeof window.Quill.import !== 'function') return;
+      try {
+        const Embed = window.Quill.import('blots/embed');
+        class ContractVariableBlot extends Embed {
+          static create(value) {
+            const node = super.create();
+            const code = typeof value === 'string' ? value : String((value || {}).code || '');
+            const label = typeof value === 'object' && value && value.label ? value.label : (variableLabels[code] || code);
+            node.setAttribute('data-contract-variable', code);
+            node.setAttribute('contenteditable', 'false');
+            node.setAttribute('aria-label', 'متغیر قرارداد: ' + label);
+            node.textContent = label;
+            return node;
+          }
+          static value(node) { return node.getAttribute('data-contract-variable') || ''; }
+        }
+        ContractVariableBlot.blotName = 'contractVariable';
+        ContractVariableBlot.tagName = 'SPAN';
+        ContractVariableBlot.className = 'proma-contract-variable-token';
+        window.Quill.register(ContractVariableBlot, true);
+        variableBlotRegistered = true;
+      } catch (error) {
+        // A missing optional blot API must never prevent source-mode recovery.
+      }
+    };
+
+    const decorateVariableTokens = function (html) {
+      const holder = document.createElement('div');
+      holder.innerHTML = String(html || '');
+      const walker = document.createTreeWalker(holder, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      nodes.forEach(function (node) {
+        const text = node.nodeValue || '';
+        if (!/\{\{[a-z0-9_]+\}\}/i.test(text)) return;
+        const fragment = document.createDocumentFragment();
+        let cursor = 0;
+        text.replace(/\{\{[a-z0-9_]+\}\}/ig, function (code, index) {
+          if (index > cursor) fragment.appendChild(document.createTextNode(text.slice(cursor, index)));
+          if (variableLabels[code]) {
+            const token = document.createElement('span');
+            token.className = 'proma-contract-variable-token';
+            token.setAttribute('data-contract-variable', code);
+            token.setAttribute('contenteditable', 'false');
+            token.textContent = variableLabels[code];
+            fragment.appendChild(token);
+          } else {
+            fragment.appendChild(document.createTextNode(code));
+          }
+          cursor = index + code.length;
+          return code;
+        });
+        if (cursor < text.length) fragment.appendChild(document.createTextNode(text.slice(cursor)));
+        node.parentNode.replaceChild(fragment, node);
+      });
+      return holder.innerHTML;
+    };
 
     const setLifecycleState = function (state) {
       workspace.dataset.templateEditorLifecycle = state;
@@ -125,9 +191,20 @@
       if (unsaved) unsaved.hidden = !dirty;
     };
 
+    const serializeVisualHtml = function () {
+      if (!quill) return editor.value || '';
+      const holder = document.createElement('div');
+      holder.innerHTML = String(quill.root.innerHTML || '');
+      holder.querySelectorAll('[data-contract-variable]').forEach(function (token) {
+        const code = token.getAttribute('data-contract-variable') || '';
+        token.replaceWith(document.createTextNode(code));
+      });
+      return holder.innerHTML;
+    };
+
     const currentValue = function () {
       if (mode === VISUAL_MODE && quill) {
-        const html = String(quill.root.innerHTML || '').trim();
+        const html = serializeVisualHtml().trim();
         return html === '<p><br></p>' ? '' : html;
       }
       return editor.value || '';
@@ -161,7 +238,7 @@
 
     const setQuillHtml = function (value) {
       if (!quill) return;
-      const html = String(value || '');
+      const html = decorateVariableTokens(String(value || ''));
       if (typeof window.PromaQuillHtml === 'function') {
         window.PromaQuillHtml(quill, html);
         return;
@@ -176,17 +253,41 @@
 
     const syncVisualToSource = function (changeFormat) {
       if (!quill) return;
-      editor.value = currentValue();
+      editor.value = serializeVisualHtml();
       if (changeFormat && formatField) formatField.value = 'structured_html_v1';
+    };
+
+    const cleanPreviewMarkup = function (value) {
+      const documentFragment = document.implementation.createHTMLDocument('preview');
+      const container = documentFragment.createElement('div');
+      container.innerHTML = String(value || '');
+      container.querySelectorAll('script,style,iframe,object,embed,form,input,button,link,meta').forEach(function (node) { node.remove(); });
+      container.querySelectorAll('*').forEach(function (node) {
+        Array.from(node.attributes).forEach(function (attribute) {
+          if (/^on/i.test(attribute.name) || attribute.name === 'style' || /^javascript:/i.test(attribute.value)) node.removeAttribute(attribute.name);
+        });
+      });
+      return container.innerHTML;
+    };
+
+    const updatePreview = function () {
+      if (!previewFrame) return;
+      const body = cleanPreviewMarkup(mode === VISUAL_MODE ? serializeVisualHtml() : editor.value);
+      previewFrame.srcdoc = '<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><style>'
+        + '@page{size:A4;margin:16mm}html,body{margin:0;background:#fff;color:#1f2937;font-family:Tahoma,Arial,sans-serif;font-size:12px;line-height:2;text-align:justify}.contract-document-body{width:100%}p{margin:0 0 8px}h2,h3,h4{margin:16px 0 8px;text-align:right}table{width:100%;border-collapse:collapse;margin:10px 0}th,td{border:1px solid #cbd5e1;padding:6px;text-align:right;vertical-align:top}ul,ol{padding-right:22px}.contract-signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px}.contract-signature-box{min-height:60px;border:1px dashed #94a3b8;padding:8px}.contract-important-clause{font-weight:700}</style></head><body><main class="contract-document-body">'
+        + body + '</main></body></html>';
     };
 
     const showMode = function (nextMode) {
       mode = nextMode;
       const visual = mode === VISUAL_MODE && !!quill;
+      const preview = mode === 'preview';
       workspace.dataset.templateEditorState = visual ? VISUAL_MODE : SOURCE_MODE;
-      setLifecycleState(visual ? 'visual_ready' : 'source_ready');
-      editor.hidden = visual;
+      setLifecycleState(preview ? 'preview_ready' : (visual ? 'visual_ready' : 'source_ready'));
+      editor.hidden = visual || preview;
+      if (sourceField) sourceField.hidden = visual || preview;
       if (visualShell) visualShell.hidden = !visual;
+      if (previewPanel) previewPanel.hidden = !preview;
       if (sourceButton) {
         sourceButton.classList.toggle('active', !visual);
         sourceButton.setAttribute('aria-selected', visual ? 'false' : 'true');
@@ -195,6 +296,11 @@
         visualButton.classList.toggle('active', visual);
         visualButton.setAttribute('aria-selected', visual ? 'true' : 'false');
       }
+      previewButtons.forEach(function (button) {
+        button.classList.toggle('active', preview);
+        button.setAttribute('aria-selected', preview ? 'true' : 'false');
+      });
+      if (preview) updatePreview();
       updateCounter();
     };
 
@@ -212,6 +318,7 @@
       if (quill) return true;
       if (!window.Quill) return false;
       try {
+        registerVariableBlot();
         visualShell = document.createElement('div');
         visualShell.className = 'proma-rich-editor-shell proma-template-visual-editor';
         visualShell.id = 'editor-template-visual';
@@ -240,7 +347,7 @@
         quill.root.classList.add('proma-quill-rtl');
         try { quill.format('direction', 'rtl'); quill.format('align', 'right'); } catch (error) {}
         quill.on('text-change', function (delta, oldDelta, source) {
-          if (mode !== VISUAL_MODE || source === 'silent') return;
+          if (source === 'silent') return;
           syncVisualToSource(true);
           markDirty();
         });
@@ -250,7 +357,7 @@
           visualButton.removeAttribute('title');
         }
         if (retryAssetsButton) retryAssetsButton.hidden = true;
-        report('ویرایش ساده آماده است. با انتخاب آن، قالب به HTML ساختاریافته امن تبدیل می‌شود.', 'success');
+        report('ویرایش بصری آماده است. قالب فعلی بدون نمایش HTML خام قابل ویرایش است.', 'success');
         return true;
       } catch (error) {
         if (visualShell) visualShell.remove();
@@ -258,7 +365,7 @@
         quill = null;
         setLifecycleState('asset_error');
         if (retryAssetsButton) retryAssetsButton.hidden = false;
-        report('ویرایش ساده آماده نشد؛ متن اصلی بدون تغییر در حالت کد قالب محفوظ است. دوباره تلاش کنید.', 'warning');
+        report('ویرایش بصری آماده نشد؛ متن اصلی بدون تغییر در حالت HTML پیشرفته محفوظ است. دوباره تلاش کنید.', 'warning');
         return false;
       }
     };
@@ -271,7 +378,7 @@
       if (!source || assetLoadInFlight || (!forceRetry && document.querySelector('script[data-template-quill-retry]'))) {
         setLifecycleState('degraded_source_only');
         if (retryAssetsButton) retryAssetsButton.hidden = false;
-        report('ابزار ویرایش ساده در دسترس نیست. حالت کد قالب بدون خطر قابل استفاده است.', 'warning');
+        report('ابزار ویرایش بصری در دسترس نیست. حالت HTML پیشرفته بدون خطر قابل استفاده است.', 'warning');
         return;
       }
       assetLoadInFlight = true;
@@ -315,6 +422,21 @@
       markDirty();
     };
 
+    const insertVariable = function (value) {
+      if (!value) return;
+      if (mode === VISUAL_MODE && quill && variableBlotRegistered) {
+        const range = quill.getSelection(true);
+        const index = range ? range.index : Math.max(0, quill.getLength() - 1);
+        quill.insertEmbed(index, 'contractVariable', { code: value, label: variableLabels[value] || value }, 'user');
+        quill.insertText(index + 1, ' ', 'silent');
+        quill.setSelection(index + 2, 0, 'silent');
+        syncVisualToSource(true);
+        markDirty();
+        return;
+      }
+      insertText(value);
+    };
+
     document.querySelectorAll('[data-contract-copy-source], [data-contract-copy-textarea]').forEach(function (button) {
       button.addEventListener('click', function () {
         const id = button.getAttribute('data-contract-copy-source') || button.getAttribute('data-contract-copy-textarea');
@@ -346,7 +468,7 @@
       closeModal(replaceModal);
     });
 
-    const activateVisualMode = function () {
+    const activateVisualMode = function (markAsConversion) {
       if (!initializeVisualEditor()) {
         loadVisualAssets();
         return;
@@ -354,20 +476,28 @@
       // The source textarea remains authoritative while source mode is active.
       // Rehydrate Quill immediately before revealing it so edits cannot be
       // replaced by the stale visual document created during boot.
-      if (mode === SOURCE_MODE) {
+      if (mode === SOURCE_MODE || mode === 'preview') {
         setQuillHtml(hasHtml(editor.value) ? editor.value : sourceToHtml(editor.value));
       }
       showMode(VISUAL_MODE);
-      syncVisualToSource(true);
-      if (conversionSourceField) conversionSourceField.value = 'visual_editor';
-      markDirty();
-      report('ویرایش ساده فعال شد؛ قالب اکنون به HTML ساختاریافته امن تبدیل شده است.', 'info');
+      if (markAsConversion) {
+        syncVisualToSource(true);
+        if (conversionSourceField) conversionSourceField.value = 'visual_editor';
+        markDirty();
+      }
+      report('ویرایش بصری فعال است؛ HTML فقط در حالت پیشرفته نمایش داده می‌شود.', 'info');
     };
 
-    [sourceButton, visualButton].filter(Boolean).forEach(function (button) {
+    [sourceButton, visualButton].concat(previewButtons).filter(Boolean).forEach(function (button) {
       button.addEventListener('click', function () {
         if (button.disabled) return;
-        if (button.getAttribute('data-template-mode') === 'simple') {
+        if (button.getAttribute('data-template-mode') === 'preview') {
+          if (mode === VISUAL_MODE) syncVisualToSource(true);
+          showMode('preview');
+          report('پیش‌نمایش محلی A4 به‌روزرسانی شد. این نما فقط ظاهر را نشان می‌دهد و انتشار یا ذخیره انجام نمی‌دهد.', 'info');
+          return;
+        }
+        if (button.getAttribute('data-template-mode') === 'visual') {
           if (!initializeVisualEditor()) {
             loadVisualAssets();
             return;
@@ -376,19 +506,19 @@
             openModal(conversionModal, button);
             return;
           }
-          activateVisualMode();
+          activateVisualMode(false);
           return;
         }
         if (mode === VISUAL_MODE) syncVisualToSource(true);
         showMode(SOURCE_MODE);
-        report('کد قالب فعال است؛ متن دقیق و قابل‌حفاظت نمایش داده می‌شود.', 'info');
+        report('HTML پیشرفته فعال است؛ این حالت برای اصلاح ساختار قالب توسط کاربر آگاه است.', 'info');
       });
     });
 
     const confirmVisualConversion = document.querySelector('[data-template-confirm-visual-conversion]');
     if (confirmVisualConversion) confirmVisualConversion.addEventListener('click', function () {
       closeModal(conversionModal);
-      activateVisualMode();
+      activateVisualMode(true);
     });
     if (retryAssetsButton) retryAssetsButton.addEventListener('click', function () {
       retryAssetsButton.hidden = true;
@@ -396,11 +526,11 @@
     });
 
     document.querySelectorAll('[data-insert-contract-variable]').forEach(function (button) {
-      button.addEventListener('click', function () { insertText(button.getAttribute('data-insert-contract-variable') || ''); });
+      button.addEventListener('click', function () { insertVariable(button.getAttribute('data-insert-contract-variable') || ''); });
     });
     const variableSelect = workspace.querySelector('[data-contract-variable-select]');
     if (variableSelect) variableSelect.addEventListener('change', function () {
-      insertText(variableSelect.value || '');
+      insertVariable(variableSelect.value || '');
       variableSelect.value = '';
     });
     const important = workspace.querySelector('[data-insert-important-clause]');
@@ -455,10 +585,26 @@
       if (recoveryBox) recoveryBox.hidden = true;
     });
 
+    const variableSearch = workspace.querySelector('[data-contract-variable-search]');
+    if (variableSearch) variableSearch.addEventListener('input', function () {
+      const needle = String(variableSearch.value || '').trim().toLocaleLowerCase('fa-IR');
+      workspace.querySelectorAll('[data-insert-contract-variable]').forEach(function (button) {
+        const matches = !needle || String(button.getAttribute('data-variable-search') || '').toLocaleLowerCase('fa-IR').indexOf(needle) !== -1;
+        button.hidden = !matches;
+      });
+      workspace.querySelectorAll('[data-contract-variable-group]').forEach(function (group) {
+        group.hidden = !Array.from(group.querySelectorAll('[data-insert-contract-variable]')).some(function (button) { return !button.hidden; });
+      });
+    });
+
     setLifecycleState('booting');
-    showMode(SOURCE_MODE);
     updateCounter();
-    if (!initializeVisualEditor()) loadVisualAssets();
+    if (initializeVisualEditor()) {
+      activateVisualMode(false);
+    } else {
+      showMode(SOURCE_MODE);
+      loadVisualAssets();
+    }
     window.addEventListener('beforeunload', function (event) {
       if (!dirty) return;
       event.preventDefault();

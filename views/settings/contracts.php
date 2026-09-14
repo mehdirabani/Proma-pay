@@ -4,6 +4,12 @@ $effectiveVersion = (int) ($effectiveTemplate['version_number'] ?? 0);
 $draftVersion = (int) ($draftTemplate['version_number'] ?? 0);
 $editorSource = (string) ($editorTemplate['body_source'] ?? ContractDocument::defaultTemplate());
 $editorFormat = (string) ($editorTemplate['body_format'] ?? ContractTemplateRenderer::FORMAT_PLAIN);
+$templateVariableMap = [];
+foreach (($variableCatalog ?? []) as $variableGroup) {
+    foreach ((array) $variableGroup as $variable) {
+        $templateVariableMap[(string) ($variable['code'] ?? '')] = (string) ($variable['title'] ?? 'متغیر قرارداد');
+    }
+}
 $statusLabels = ['draft' => 'پیش‌نویس', 'published' => 'منتشرشده', 'superseded' => 'جایگزین‌شده', 'archived' => 'بایگانی'];
 $contractPreviewUrl = $contractPreviewUrl ?? url('settings/contractsPreview');
 $tabs = [
@@ -71,14 +77,14 @@ $tabs = [
 
 <?php if ($section === 'template'): ?>
   <section class="card"><div class="card-header card-no-border"><h3>عنوان و سربرگ قرارداد</h3></div><form method="post" action="<?= e(url('settings/saveContractHeader')) ?>"><?= csrf_field() ?><div class="card-body form-grid"><label class="full required-field">عنوان چاپی<input name="contract_document_title" value="<?= e($settings['contract_document_title'] ?? '') ?>" required></label><label class="full">متن زیر عنوان<textarea name="contract_document_header" rows="3"><?= e($settings['contract_document_header'] ?? '') ?></textarea></label><label class="full">دلیل تغییر<input name="change_reason" value="ویرایش عنوان و سربرگ قرارداد"></label></div><div class="card-footer"><button class="btn" type="submit"><i data-feather="save"></i> ذخیره سربرگ</button></div></form></section>
-  <section class="card proma-template-editor-card" data-contract-template-workspace data-quill-src="<?= e(template_asset_url('js/editors/quill.js')) ?>" data-request-id="<?= e(ErrorHandler::requestId()) ?>" data-template-editor-lifecycle="booting">
+  <section class="card proma-template-editor-card" data-contract-template-workspace data-quill-src="<?= e(template_asset_url('js/editors/quill.js')) ?>" data-template-variables="<?= e(json_encode($templateVariableMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?>" data-request-id="<?= e(ErrorHandler::requestId()) ?>" data-template-editor-lifecycle="booting">
     <div class="card-header card-no-border">
       <div class="header-top">
         <div><h3>ویرایشگر قالب قرارداد</h3><p>نسخه فعال: <?= $effectiveVersion ? 'V' . to_persian_digits($effectiveVersion) : 'قالب سیستمی' ?><?php if ($draftVersion): ?>، پیش‌نویس: V<?= to_persian_digits($draftVersion) ?><?php endif; ?></p></div>
         <div class="proma-editor-mode-switch" role="tablist" aria-label="حالت ویرایش قالب">
-          <button type="button" data-template-mode="simple" role="tab" aria-selected="false" aria-controls="editor-template-visual" disabled aria-disabled="true" title="در حال آماده‌سازی ویرایشگر ساده">ویرایش ساده</button>
-          <button class="active" type="button" data-template-mode="source" role="tab" aria-selected="true" aria-controls="editor-template-source">کد قالب</button>
-          <a href="<?= e(url('settings/contracts/preview')) ?>">پیش‌نمایش</a>
+          <button class="active" type="button" data-template-mode="visual" role="tab" aria-selected="true" aria-controls="editor-template-visual">ویرایش بصری</button>
+          <button type="button" data-template-mode="preview" role="tab" aria-selected="false" aria-controls="editor-template-preview">پیش‌نمایش A4</button>
+          <button type="button" data-template-mode="source" role="tab" aria-selected="false" aria-controls="editor-template-source">HTML پیشرفته</button>
         </div>
       </div>
     </div>
@@ -91,27 +97,40 @@ $tabs = [
           <button class="btn secondary small" type="button" data-load-contract-source="default-template-source"><i data-feather="file-plus"></i> بارگذاری پیش‌فرض</button>
           <button class="btn secondary small" type="button" data-open-modal="template-find-replace"><i data-feather="search"></i> یافتن و جایگزینی</button>
           <button class="btn secondary small" type="button" data-insert-important-clause><i data-feather="alert-circle"></i> درج بند مهم</button>
-          <select data-contract-variable-select aria-label="درج متغیر"><option value="">درج متغیر...</option><?php foreach ($variableCatalog as $group => $variables): ?><optgroup label="<?= e($group) ?>"><?php foreach ($variables as $variable): ?><option value="<?= e($variable['code']) ?>"><?= e($variable['title']) ?></option><?php endforeach; ?></optgroup><?php endforeach; ?></select>
+          <button class="btn secondary small" type="button" data-template-mode="preview"><i data-feather="eye"></i> بازخوانی پیش‌نمایش</button>
           <span data-template-count>۰ واژه، ۰ نویسه</span>
         </div>
-        <div class="notice info proma-template-editor-status" data-template-editor-status role="status" aria-live="polite">حالت امن «کد قالب» فعال است. ویرایش ساده پس از بارگذاری کامل ابزار ویرایش در دسترس قرار می‌گیرد.</div>
-        <div class="actions mt-2"><button class="btn secondary small" type="button" data-template-retry-assets hidden>تلاش دوباره برای ویرایش ساده</button></div>
+        <div class="notice info proma-template-editor-status" data-template-editor-status role="status" aria-live="polite">ویرایش بصری فعال است؛ متغیرها به‌صورت نشانه‌های محافظت‌شده درج می‌شوند. HTML فقط برای کاربران آگاه در حالت پیشرفته نمایش داده می‌شود.</div>
+        <div class="actions mt-2"><button class="btn secondary small" type="button" data-template-retry-assets hidden>تلاش دوباره برای ویرایش بصری</button></div>
         <div class="notice warning proma-template-editor-recovery" data-template-editor-recovery hidden>
           <span>یک نسخه ذخیره‌نشده از این مرورگر پیدا شد.</span>
           <button class="btn secondary small" type="button" data-template-restore-recovery>بازیابی</button>
           <button class="btn secondary small" type="button" data-template-dismiss-recovery>نادیده‌گرفتن</button>
         </div>
-        <div class="notice info mt-3">
-          <strong>راهنمای برجسته‌کردن بند مهم</strong><br>
-          برای نمایش یک بند مهم به‌صورت بولد و یک پیکسل بزرگ‌تر، متن را بین دو علامت <code>**</code> قرار دهید.<br>
-          <code>**این بند در نسخه چاپی با فونت ۷ پیکسل و به‌صورت بولد نمایش داده می‌شود.**</code>
+        <div class="proma-template-workbench">
+          <div class="proma-template-canvas">
+            <div class="notice info proma-template-editor-help" id="template-editor-help">در متن قرارداد کار کنید؛ برای درج مقدارهای پویا از ستون «متغیرها» استفاده کنید. نشانه‌های بنفش متغیر قابل ویرایش مستقیم نیستند تا از آسیب ناخواسته به قالب جلوگیری شود.</div>
+            <label class="proma-template-source-field" hidden>HTML پیشرفته
+              <textarea id="editor-template-source" name="body_source" rows="24" data-rich-editor-height="620" data-contract-template-editor aria-describedby="template-editor-help" required><?= e($editorSource) ?></textarea>
+            </label>
+            <section class="proma-template-a4-preview" id="editor-template-preview" data-template-preview hidden aria-label="پیش‌نمایش A4 قالب">
+              <div class="proma-template-preview-actions"><span>پیش‌نمایش محلی A4 — برای داده‌های نمونه کامل از «پیش‌نمایش جداگانه» استفاده کنید.</span><a class="btn secondary small" href="<?= e(url('settings/contracts/preview')) ?>" target="_blank" rel="noopener">پیش‌نمایش با داده نمونه</a></div>
+              <div class="proma-template-preview-paper"><iframe title="پیش‌نمایش A4 قرارداد" data-template-preview-frame sandbox=""></iframe></div>
+            </section>
+          </div>
+          <aside class="proma-template-variable-browser" aria-label="متغیرهای قرارداد">
+            <div><h4>متغیرهای قرارداد</h4><p>روی هر مورد بزنید تا در مکان نشانگر درج شود.</p></div>
+            <label class="proma-template-variable-search"><span class="sr-only">جستجوی متغیر</span><input type="search" data-contract-variable-search placeholder="جستجو: مشتری، ضامن، مبلغ…" autocomplete="off"></label>
+            <div class="proma-template-variable-list" data-contract-variable-list>
+              <?php foreach ($variableCatalog as $group => $variables): ?>
+                <section data-contract-variable-group><h5><?= e($group) ?></h5><?php foreach ($variables as $variable): ?><button type="button" data-insert-contract-variable="<?= e($variable['code']) ?>" data-variable-search="<?= e(($variable['title'] ?? '') . ' ' . ($variable['code'] ?? '') . ' ' . ($variable['description'] ?? '')) ?>"><strong><?= e($variable['title']) ?></strong><code><?= e($variable['code']) ?></code><small><?= e($variable['example'] ?? '') ?></small></button><?php endforeach; ?></section>
+              <?php endforeach; ?>
+            </div>
+            <a class="proma-template-variable-help" href="<?= e(url('settings/contracts/variables')) ?>">راهنمای کامل متغیرها</a>
+          </aside>
         </div>
-        <label class="proma-template-source-field">متن قالب
-          <textarea id="editor-template-source" name="body_source" rows="24" data-rich-editor-height="620" data-contract-template-editor aria-describedby="template-editor-help" required><?= e($editorSource) ?></textarea>
-        </label>
-        <p id="template-editor-help" class="proma-form-help">در حالت «کد قالب»، متن بدون تبدیل پنهان نمایش داده می‌شود. ورود آگاهانه به «ویرایش ساده» قالب را به HTML ساختاریافته تبدیل می‌کند.</p>
         <div class="form-grid two mt-3">
-          <label>فرمت محتوا
+          <label class="proma-template-format-field">فرمت محتوا
             <select name="body_format">
               <option value="plain_text_v1" <?= $editorFormat === 'plain_text_v1' ? 'selected' : '' ?>>متن ساده سازگار</option>
               <option value="structured_html_v1" <?= $editorFormat === 'structured_html_v1' ? 'selected' : '' ?>>HTML ساختاریافته امن</option>
@@ -124,7 +143,7 @@ $tabs = [
       </div>
       <div class="card-footer proma-template-editor-footer">
         <span data-unsaved-indicator hidden>تغییرات ذخیره‌نشده دارید.</span>
-        <div class="actions"><button class="btn" type="submit"><i data-feather="save"></i> ذخیره پیش‌نویس</button><a class="btn secondary" href="<?= e(url('settings/contracts/preview')) ?>"><i data-feather="eye"></i> پیش‌نمایش</a></div>
+        <div class="actions"><button class="btn" type="submit"><i data-feather="save"></i> ذخیره پیش‌نویس</button><a class="btn secondary" href="<?= e(url('settings/contracts/preview')) ?>" target="_blank" rel="noopener"><i data-feather="eye"></i> پیش‌نمایش داده نمونه</a></div>
       </div>
     </form>
   </section>
@@ -150,12 +169,12 @@ $tabs = [
   </div>
   <div class="modal" id="template-convert-visual" aria-describedby="template-convert-visual-help">
     <div class="modal-content">
-      <div class="modal-header"><h3>تبدیل آگاهانه به ویرایش ساده</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن">×</button></div>
+      <div class="modal-header"><h3>تبدیل آگاهانه به ویرایش بصری</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن">×</button></div>
       <div class="modal-body">
         <p id="template-convert-visual-help">متن ساده پس از تأیید شما به HTML ساختاریافته امن تبدیل می‌شود. متن، متغیرها و نسخه قبلی حذف نمی‌شوند؛ بااین‌حال برای ثبت تبدیل باید پیش‌نویس را ذخیره کنید.</p>
         <div class="notice info">منبع تبدیل، زمان، کاربر و هش محتوای نسخه ذخیره‌شده در سوابق حسابرسی ثبت خواهد شد.</div>
       </div>
-      <div class="modal-footer"><button class="btn" type="button" data-template-confirm-visual-conversion>تأیید و ورود به ویرایش ساده</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
+      <div class="modal-footer"><button class="btn" type="button" data-template-confirm-visual-conversion>تأیید و ورود به ویرایش بصری</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
     </div>
   </div>
 

@@ -23,7 +23,6 @@ $guarantors = $guarantors ?? [];
 $renderedDocumentTitle = trim((string) ($document['rendered_title'] ?? '')) ?: ($documentTitle ?? '');
 $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?: ($documentHeader ?? '');
 ?>
-
 <section class="card proma-contract-header" data-contract-tab-panel="summary">
   <div class="card-header card-no-border">
     <div class="header-top">
@@ -490,6 +489,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
     <?php endif; ?>
   <?php endforeach; ?>
 <?php endif; ?>
+</div>
 
 <section class="card" data-contract-tab-panel="payments" hidden>
   <div class="card-header card-no-border"><h2>تایم‌لاین پرداخت قرارداد</h2></div>
