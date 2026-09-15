@@ -4,6 +4,12 @@ $effectiveVersion = (int) ($effectiveTemplate['version_number'] ?? 0);
 $draftVersion = (int) ($draftTemplate['version_number'] ?? 0);
 $editorSource = (string) ($editorTemplate['body_source'] ?? ContractDocument::defaultTemplate());
 $editorFormat = (string) ($editorTemplate['body_format'] ?? ContractTemplateRenderer::FORMAT_PLAIN);
+$editorPreviewHtml = '';
+try {
+    $editorPreviewHtml = ContractTemplateRenderer::render($editorSource, $editorFormat);
+} catch (Throwable $e) {
+    $editorPreviewHtml = '<p class="contract-paragraph">' . nl2br(e(strip_tags($editorSource)), false) . '</p>';
+}
 $templateVariableMap = [];
 foreach (($variableCatalog ?? []) as $variableGroup) {
     foreach ((array) $variableGroup as $variable) {
@@ -111,9 +117,9 @@ $tabs = [
           <div class="proma-template-canvas">
             <div class="notice info proma-template-editor-help" id="template-editor-help">در متن قرارداد کار کنید؛ برای درج مقدارهای پویا از ستون «متغیرها» استفاده کنید.</div>
             <div class="proma-rich-editor-shell proma-template-visual-editor" id="editor-template-visual" data-template-visual-shell dir="rtl">
-              <div class="proma-rich-editor" data-template-visual-target></div>
+              <div class="proma-rich-editor proma-template-server-preview" data-template-visual-target data-template-server-preview><?= $editorPreviewHtml ?></div>
             </div>
-            <label class="proma-template-source-field" hidden>HTML پیشرفته
+            <label class="proma-template-source-field" data-template-source-field>HTML پیشرفته
               <textarea id="editor-template-source" name="body_source" rows="24" data-rich-editor-height="620" data-contract-template-editor aria-describedby="template-editor-help" required><?= e($editorSource) ?></textarea>
             </label>
             <section class="proma-template-a4-preview" id="editor-template-preview" data-template-preview hidden aria-label="پیش‌نمایش A4 قالب">

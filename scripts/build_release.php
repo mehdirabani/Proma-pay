@@ -127,80 +127,14 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
 $coreFiles = $walk($root, static function (string $relativePath) use ($coreExcluded): bool {
     return !$coreExcluded($relativePath);
 });
-$templateRequiredFiles = [
-    'css/font-awesome.css',
-    'css/vendors/themify.css',
-    'css/vendors/feather-icon.css',
-    'css/vendors/slick.css',
-    'css/vendors/slick-theme.css',
-    'css/vendors/scrollbar.css',
-    'css/vendors/quill.snow.css',
-    'css/vendors/quill.bubble.css',
-    'css/vendors/animate.css',
-    'css/vendors/bootstrap.rtl.min.css',
-    'css/style.css',
-    'css/color-1.css',
-    'css/responsive.css',
-    'css/vendors/slick/ajax-loader.gif',
-    'css/vendors/slick/fonts/slick.woff',
-    'fonts/font-awesome/fontawesome-webfont.woff2',
-    'fonts/font-awesome/fontawesome-webfont.woff',
-    'fonts/themify/themify.woff',
-    'fonts/slick/slick.woff',
-    'images/ajax-loader.gif',
-    'images/favicon.png',
-    'images/giftools.gif',
-    'images/blog/4.jpg',
-    'images/blog/comment.jpg',
-    'images/dashboard-2/balance-bg.png',
-    'images/dashboard-2/discover.png',
-    'images/dashboard-3/bg.jpg',
-    'images/dashboard-4/bg-balance.png',
-    'images/dashboard-5/profile-bg.png',
-    'images/dashboard-6/bg-1.png',
-    'images/dashboard-6/bg-2.png',
-    'images/dashboard-6/bg-3.png',
-    'images/dashboard/widget-bg.png',
-    'images/details_close.png',
-    'images/details_open.png',
-    'images/forms/flags.png',
-    'images/forms/user.png',
-    'images/landing/footer.jpg',
-    'images/landing/home-bg.jpg',
-    'images/landing/icon/minus.svg',
-    'images/landing/icon/plus.svg',
-    'images/login/login_bg.jpg',
-    'images/other-images/bg-profile.png',
-    'images/other-images/boxbg.jpg',
-    'images/other-images/coming-soon-bg.jpg',
-    'images/other-images/maintenance-bg.jpg',
-    'images/social-app/social-image.png',
-    'images/switch/square-gray.png',
-    'images/switch/square.svg',
-    'js/jquery.min.js',
-    'js/bootstrap/bootstrap.bundle.min.js',
-    'js/icons/feather-icon/feather.min.js',
-    'js/icons/feather-icon/feather-icon.js',
-    'js/scrollbar/simplebar.js',
-    'js/scrollbar/custom.js',
-    'js/config.js',
-    'js/sidebar-menu.js',
-    'js/sidebar-pin.js',
-    'js/clock.js',
-    'js/slick/slick.min.js',
-    'js/slick/slick.js',
-    'js/header-slick.js',
-    'js/height-equal.js',
-    'js/script.js',
-    'js/editors/quill.js',
-    'js/login.js',
-    'svg/icon-sprite.svg',
-];
-$templateRequiredFiles = array_fill_keys($templateRequiredFiles, true);
 $templateRuntimeFiles = $walk(
     $root . '/html/RTL/assets',
-    static function (string $relativePath) use ($templateRequiredFiles): bool {
-        return isset($templateRequiredFiles[ltrim($relativePath, '/')]);
+    static function (string $relativePath): bool {
+        $path = strtolower(ltrim(str_replace('\\', '/', $relativePath), '/'));
+        if ($path === '' || str_ends_with($path, '.map')) {
+            return false;
+        }
+        return true;
     },
     'html/RTL/assets'
 );

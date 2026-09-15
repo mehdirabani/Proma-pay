@@ -24,6 +24,8 @@ $assert(strpos($view, 'data-template-mode="visual"') !== false, 'Visual contract
 $assert(strpos($view, 'ویرایش بصری') !== false, 'Visual editor is not presented as the primary mode.');
 $assert(strpos($view, 'data-template-mode="preview"') !== false && strpos($view, 'data-template-preview-frame') !== false, 'Local A4 preview is missing.');
 $assert(strpos($view, 'data-contract-variable-search') !== false && strpos($view, 'data-contract-variable-list') !== false, 'Variable browser/search is missing.');
+$assert(strpos($view, '$editorPreviewHtml') !== false && strpos($view, 'data-template-server-preview') !== false, 'Server-rendered editor fallback preview is missing.');
+$assert(strpos($view, 'data-template-source-field>HTML پیشرفته') !== false || strpos($view, 'data-template-source-field') !== false, 'Advanced source textarea fallback is missing.');
 $assert(strpos($editor, "let mode = VISUAL_MODE") !== false, 'Editor does not start in visual mode.');
 $assert(strpos($editor, 'registerVariableBlot') !== false && strpos($editor, 'data-contract-variable') !== false, 'Protected variable token handling is missing.');
 $assert(strpos($editor, 'cleanPreviewMarkup') !== false && strpos($editor, 'sandbox') === false, 'Preview sanitizer is missing or server markup is incorrectly coupled.');

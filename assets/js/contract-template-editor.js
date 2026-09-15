@@ -102,7 +102,7 @@
     try { variableLabels = JSON.parse(workspace.getAttribute('data-template-variables') || '{}') || {}; } catch (error) {}
     let mode = VISUAL_MODE;
     let quill = null;
-    let visualShell = null;
+    let visualShell = workspace.querySelector('[data-template-visual-shell]');
     let dirty = false;
     let pendingSource = null;
     let recoveryTimer = null;
@@ -320,7 +320,6 @@
       if (!window.Quill) return false;
       try {
         registerVariableBlot();
-        visualShell = workspace.querySelector('[data-template-visual-shell]');
         const target = visualTarget || (visualShell ? visualShell.querySelector('.proma-rich-editor') : null);
         if (!visualShell || !target) return false;
         visualShell.hidden = true;

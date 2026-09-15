@@ -39,6 +39,8 @@ foreach (['window.alert', 'window.prompt', 'window.confirm'] as $forbidden) {
 $assert(strpos($templateView, 'data-template-mode="visual" role="tab" aria-selected="true"') !== false, 'Visual template tab must be the default workspace.');
 $assert(strpos($templateView, 'data-template-mode="source" role="tab" aria-selected="false"') !== false, 'HTML advanced mode must not be the initial state.');
 $assert(strpos($templateView, 'data-template-visual-shell') !== false && strpos($templateView, 'data-template-visual-target') !== false, 'Visual editor shell must be server-rendered to avoid exposing raw HTML during boot.');
+$assert(strpos($templateView, '$editorPreviewHtml') !== false && strpos($templateView, 'data-template-server-preview') !== false, 'Template editor must render a server-side preview fallback.');
+$assert(strpos($templateView, '<label class="proma-template-source-field" data-template-source-field>HTML پیشرفته') !== false, 'Advanced source fallback must remain accessible when JavaScript fails.');
 $assert(strpos($templateView, 'data-template-find-form') !== false, 'Find/replace does not use a core modal form.');
 $assert(strpos($templateView, 'data-template-confirm-visual-conversion') !== false, 'Plain-text conversion has no explicit visual-editor confirmation.');
 $assert(strpos($templateView, 'editor_conversion_source') !== false, 'Template conversion source is not submitted for audit.');
@@ -54,5 +56,8 @@ foreach (['CREATE TABLE', 'ALTER TABLE', 'DROP TABLE'] as $ddl) {
 }
 $assert(strpos($templateRenderer, 'sanitizeFallback') === false, 'Structured HTML must not fall back to regex-only sanitization.');
 $assert(strpos($templateService, "format === ContractTemplateRenderer::FORMAT_HTML && !class_exists('DOMDocument')") !== false, 'HTML validation must reject environments without DOM sanitization.');
+
+$builder = (string) file_get_contents($root . '/scripts/build_release.php');
+$assert(strpos($builder, "\$root . '/html/RTL/assets'") !== false && strpos($builder, "str_ends_with(\$path, '.map')") !== false, 'Core release builder must include full template runtime assets while excluding source maps.');
 
 echo "STATIC_TEMPLATE_EDITOR_RELIABILITY_V158_OK\n";
