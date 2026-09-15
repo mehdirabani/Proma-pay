@@ -85,6 +85,7 @@
     const previewPanel = workspace.querySelector('[data-template-preview]');
     const previewFrame = workspace.querySelector('[data-template-preview-frame]');
     const sourceField = workspace.querySelector('.proma-template-source-field');
+    const visualTarget = workspace.querySelector('[data-template-visual-target]');
     const counter = workspace.querySelector('[data-template-count]');
     const unsaved = form.querySelector('[data-unsaved-indicator]');
     const statusBox = workspace.querySelector('[data-template-editor-status]');
@@ -289,8 +290,8 @@
       if (visualShell) visualShell.hidden = !visual;
       if (previewPanel) previewPanel.hidden = !preview;
       if (sourceButton) {
-        sourceButton.classList.toggle('active', !visual);
-        sourceButton.setAttribute('aria-selected', visual ? 'false' : 'true');
+        sourceButton.classList.toggle('active', mode === SOURCE_MODE);
+        sourceButton.setAttribute('aria-selected', mode === SOURCE_MODE ? 'true' : 'false');
       }
       if (visualButton) {
         visualButton.classList.toggle('active', visual);
@@ -319,15 +320,10 @@
       if (!window.Quill) return false;
       try {
         registerVariableBlot();
-        visualShell = document.createElement('div');
-        visualShell.className = 'proma-rich-editor-shell proma-template-visual-editor';
-        visualShell.id = 'editor-template-visual';
-        visualShell.setAttribute('dir', 'rtl');
+        visualShell = workspace.querySelector('[data-template-visual-shell]');
+        const target = visualTarget || (visualShell ? visualShell.querySelector('.proma-rich-editor') : null);
+        if (!visualShell || !target) return false;
         visualShell.hidden = true;
-        const target = document.createElement('div');
-        target.className = 'proma-rich-editor';
-        visualShell.appendChild(target);
-        editor.parentNode.insertBefore(visualShell, editor);
         quill = new window.Quill(target, {
           theme: 'snow',
           placeholder: editor.getAttribute('placeholder') || 'متن قرارداد را وارد کنید...',

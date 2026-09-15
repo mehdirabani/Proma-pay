@@ -100,7 +100,7 @@ $tabs = [
           <button class="btn secondary small" type="button" data-template-mode="preview"><i data-feather="eye"></i> بازخوانی پیش‌نمایش</button>
           <span data-template-count>۰ واژه، ۰ نویسه</span>
         </div>
-        <div class="notice info proma-template-editor-status" data-template-editor-status role="status" aria-live="polite">ویرایش بصری فعال است؛ متغیرها به‌صورت نشانه‌های محافظت‌شده درج می‌شوند. HTML فقط برای کاربران آگاه در حالت پیشرفته نمایش داده می‌شود.</div>
+        <div class="notice info proma-template-editor-status" data-template-editor-status role="status" aria-live="polite">ویرایش بصری آماده‌سازی می‌شود. متن خام HTML فقط در حالت پیشرفته نمایش داده می‌شود.</div>
         <div class="actions mt-2"><button class="btn secondary small" type="button" data-template-retry-assets hidden>تلاش دوباره برای ویرایش بصری</button></div>
         <div class="notice warning proma-template-editor-recovery" data-template-editor-recovery hidden>
           <span>یک نسخه ذخیره‌نشده از این مرورگر پیدا شد.</span>
@@ -109,7 +109,10 @@ $tabs = [
         </div>
         <div class="proma-template-workbench">
           <div class="proma-template-canvas">
-            <div class="notice info proma-template-editor-help" id="template-editor-help">در متن قرارداد کار کنید؛ برای درج مقدارهای پویا از ستون «متغیرها» استفاده کنید. نشانه‌های بنفش متغیر قابل ویرایش مستقیم نیستند تا از آسیب ناخواسته به قالب جلوگیری شود.</div>
+            <div class="notice info proma-template-editor-help" id="template-editor-help">در متن قرارداد کار کنید؛ برای درج مقدارهای پویا از ستون «متغیرها» استفاده کنید.</div>
+            <div class="proma-rich-editor-shell proma-template-visual-editor" id="editor-template-visual" data-template-visual-shell dir="rtl">
+              <div class="proma-rich-editor" data-template-visual-target></div>
+            </div>
             <label class="proma-template-source-field" hidden>HTML پیشرفته
               <textarea id="editor-template-source" name="body_source" rows="24" data-rich-editor-height="620" data-contract-template-editor aria-describedby="template-editor-help" required><?= e($editorSource) ?></textarea>
             </label>

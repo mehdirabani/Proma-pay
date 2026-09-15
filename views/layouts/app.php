@@ -2,7 +2,7 @@
 $user = Auth::user();
 $settings = Settings::allKeyed();
 $ecommerceEnabled = ecommerce_is_enabled();
-$route = trim($_GET['route'] ?? 'dashboard', '/');
+$route = trim(urldecode((string) ($_GET['route'] ?? 'dashboard')), '/');
 $unreadNotifications = Notification::unreadCount(Auth::id());
 $unreadMessages = Chat::unreadCount(Auth::id());
 $pendingIdentityReviews = 0;
@@ -70,7 +70,8 @@ $renderCompactLogo = static function () use ($compactLogoPath, $logoText, $logoI
 };
 $footerText = $settings['footer_text'] ?? 'پروما پی سامانه جامع پرداخت';
 $sprite = template_asset_url('svg/icon-sprite.svg');
-$needsContractTemplateEditor = $route === 'settings/contracts/template';
+$needsContractTemplateEditor = $route === 'settings/contracts/template'
+    || (str_starts_with($route, 'settings/contracts') && (($section ?? '') === 'template'));
 $needsCharts = in_array($route, ['dashboard', 'customers', 'contracts'], true)
     || str_starts_with($route, 'plugin/accounting');
 $needsRichEditor = str_starts_with($route, 'contracts/show/')

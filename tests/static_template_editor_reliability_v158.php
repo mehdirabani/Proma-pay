@@ -18,9 +18,11 @@ $templateService = (string) file_get_contents($root . '/models/ContractTemplateS
 $templateRenderer = (string) file_get_contents($root . '/models/ContractTemplateRenderer.php');
 $settingsController = (string) file_get_contents($root . '/controllers/SettingsController.php');
 
-$routeScope = '$needsContractTemplateEditor = $route === \'settings/contracts/template\';';
+$routeScope = '$route = trim(urldecode((string) ($_GET[\'route\'] ?? \'dashboard\')), \'/\');';
+$templateRouteScope = '$needsContractTemplateEditor = $route === \'settings/contracts/template\'';
 $adapterScript = '<?php if ($needsContractTemplateEditor): ?><script src="<?= e(asset_url(\'assets/js/contract-template-editor.js\')) ?>"></script><?php endif; ?>';
-$assert(strpos($layout, $routeScope) !== false, 'Contract-template route is not explicitly identified in the layout.');
+$assert(strpos($layout, $routeScope) !== false, 'Layout route is not URL-decoded before route-scoped assets are selected.');
+$assert(strpos($layout, $templateRouteScope) !== false, 'Contract-template route is not explicitly identified in the layout.');
 $assert(strpos($layout, $adapterScript) !== false, 'Contract-template adapter is still loaded globally.');
 $assert(strpos($layout, '$needsContractTemplateEditor') < strpos($layout, "asset_url('assets/js/contract-template-editor.js')"), 'Route-scoped adapter declaration must precede its script tag.');
 $assert(strpos($layout, '$needsCharts = in_array($route') !== false, 'Chart loading must be route-scoped.');
@@ -36,6 +38,7 @@ foreach (['window.alert', 'window.prompt', 'window.confirm'] as $forbidden) {
 }
 $assert(strpos($templateView, 'data-template-mode="visual" role="tab" aria-selected="true"') !== false, 'Visual template tab must be the default workspace.');
 $assert(strpos($templateView, 'data-template-mode="source" role="tab" aria-selected="false"') !== false, 'HTML advanced mode must not be the initial state.');
+$assert(strpos($templateView, 'data-template-visual-shell') !== false && strpos($templateView, 'data-template-visual-target') !== false, 'Visual editor shell must be server-rendered to avoid exposing raw HTML during boot.');
 $assert(strpos($templateView, 'data-template-find-form') !== false, 'Find/replace does not use a core modal form.');
 $assert(strpos($templateView, 'data-template-confirm-visual-conversion') !== false, 'Plain-text conversion has no explicit visual-editor confirmation.');
 $assert(strpos($templateView, 'editor_conversion_source') !== false, 'Template conversion source is not submitted for audit.');
