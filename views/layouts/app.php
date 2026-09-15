@@ -227,6 +227,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/responsive.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/panels.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/contract-settings.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/role-redesign.css')) ?>">
   <?php if ($needsCharts): ?><script src="<?= e(asset_url('assets/vendor/chart.umd.min.js')) ?>" defer></script><?php endif; ?>
 </head>
 <body data-user-id="<?= (int) Auth::id() ?>" data-notification-sound="<?= $notificationSoundEnabled ? '1' : '0' ?>" data-notification-volume="<?= e($notificationSoundVolume) ?>">

@@ -1,0 +1,369 @@
+/*
+ * Proma Pay role experience redesign
+ * A shared, RTL-first polish layer for admin, operator, lawyer and customer
+ * workspaces. It intentionally builds on existing components instead of
+ * replacing the lightweight MVC/template structure.
+ */
+
+:root {
+  --proma-shell-max: 1580px;
+  --proma-page-bg:
+    radial-gradient(circle at 84% 0%, rgba(124, 58, 237, .08), transparent 31rem),
+    linear-gradient(180deg, #fbfbff 0%, #f5f7fb 46%, #f3f5f8 100%);
+  --proma-card-bg: rgba(255, 255, 255, .94);
+  --proma-card-border: rgba(15, 23, 42, .08);
+  --proma-soft-border: rgba(106, 27, 154, .12);
+  --proma-card-shadow: 0 18px 46px rgba(15, 23, 42, .055);
+  --proma-card-shadow-hover: 0 22px 54px rgba(15, 23, 42, .09);
+  --proma-radius-sm: 10px;
+  --proma-radius-md: 14px;
+  --proma-radius-lg: 18px;
+  --proma-radius-xl: 24px;
+  --proma-control-height: 48px;
+}
+
+body:not(.dark-only) .page-wrapper.compact-wrapper,
+body:not(.dark-only) .page-wrapper.compact-wrapper .page-body-wrapper,
+body:not(.dark-only) .page-wrapper.compact-wrapper .page-body-wrapper .page-body {
+  background: var(--proma-page-bg);
+}
+
+.page-wrapper.compact-wrapper .page-body-wrapper .page-body {
+  padding-inline: clamp(14px, 1.55vw, 28px);
+}
+
+.proma-page-content,
+.page-body .container-fluid {
+  max-width: var(--proma-shell-max);
+  margin-inline: auto;
+}
+
+.proma-page-content {
+  gap: clamp(16px, 1.65vw, 28px);
+}
+
+.page-title,
+.proma-page-title,
+.proma-page-content :where(h1, h2):first-child {
+  letter-spacing: -.035em;
+}
+
+.proma-page-content > :where(.card, .notice, .alert, .table-wrap),
+.proma-page-content .card,
+.proma-role-dashboard .card,
+.proma-admin-dashboard .card,
+.modal-content {
+  border: 1px solid var(--proma-card-border);
+  border-radius: var(--proma-radius-lg);
+  background: var(--proma-card-bg);
+  box-shadow: var(--proma-card-shadow);
+}
+
+.proma-page-content > .card,
+.proma-role-dashboard .card,
+.proma-admin-dashboard .card,
+.proma-customer-card,
+.proma-contract-card,
+.proma-purchase-contract-card,
+.proma-overdue-mobile-card {
+  overflow: hidden;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+@media (hover: hover) {
+  .proma-customer-card:hover,
+  .proma-contract-card:hover,
+  .proma-purchase-contract-card:hover,
+  .proma-overdue-mobile-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--proma-soft-border);
+    box-shadow: var(--proma-card-shadow-hover);
+  }
+}
+
+.proma-page-content .card > .card-header,
+.proma-page-content .card > .card-body,
+.proma-page-content .card > .card-footer {
+  padding-inline: clamp(16px, 1.4vw, 24px);
+}
+
+.proma-role-hero,
+.proma-admin-hero,
+.proma-page-content > .card:first-child {
+  position: relative;
+}
+
+.proma-role-hero::before,
+.proma-admin-hero::before,
+.proma-page-content > .card:first-child::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #7c3aed, #22d3ee, #16a34a);
+  opacity: .85;
+}
+
+.proma-role-hero .card-body,
+.proma-admin-hero .card-body {
+  display: grid;
+  gap: var(--space-4);
+  min-height: 148px;
+}
+
+.proma-role-kpi .card-body,
+.proma-admin-kpi .card-body,
+.proma-stat-card,
+.proma-history-kpis > *,
+.proma-summary-card {
+  display: grid;
+  align-content: center;
+  gap: var(--space-2);
+  min-height: 112px;
+  border-radius: var(--proma-radius-md);
+}
+
+.proma-role-kpi :where(strong, b),
+.proma-admin-kpi :where(strong, b),
+.proma-stat-card :where(strong, b),
+.proma-summary-card :where(strong, b) {
+  color: #101828;
+  font-size: clamp(22px, 2vw, 32px);
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.proma-filter-toolbar,
+.proma-page-content form:has(input, select):not(.proma-template-form):not(.inline-form) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: end;
+  gap: var(--space-4);
+}
+
+.proma-filter-toolbar .actions,
+.proma-page-content form:has(input, select):not(.proma-template-form):not(.inline-form) .actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.proma-page-content :where(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.proma-page-content .input-group,
+.proma-page-content .proma-input-group {
+  min-height: var(--proma-control-height);
+  border-radius: var(--proma-radius-md);
+}
+
+.proma-page-content :where(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+  background: #f8f8fb;
+  border: 1px solid #edf0f5;
+  box-shadow: none;
+}
+
+.proma-page-content :where(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):focus {
+  background: #fff;
+  border-color: rgba(124, 58, 237, .38);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, .12);
+}
+
+.proma-page-content :where(.btn, button.btn, .proma-button, .icon-btn, .proma-icon-button) {
+  min-height: 42px;
+  border-radius: var(--proma-radius-md);
+  font-weight: 800;
+}
+
+.proma-page-content :where(.btn:not(.btn-xs):not(.btn-sm), button.btn:not(.btn-xs):not(.btn-sm), .proma-button) {
+  min-height: var(--proma-control-height);
+  padding-inline: 18px;
+}
+
+.proma-table-actions,
+.proma-card-actions,
+.proma-role-actions,
+.proma-role-hero-actions,
+.actions {
+  gap: var(--space-2);
+}
+
+.proma-page-content .table-responsive,
+.proma-page-content .table-wrap {
+  border-radius: var(--proma-radius-lg);
+  border: 1px solid #edf0f5;
+  background: #fff;
+}
+
+.proma-page-content table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.proma-page-content table thead th {
+  background: #fafbff;
+  color: #667085;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.proma-page-content table tbody td {
+  border-block-start: 1px solid #eef2f7;
+}
+
+.proma-page-content table tbody tr {
+  transition: background-color .16s ease;
+}
+
+.proma-page-content table tbody tr:hover {
+  background: #fbfaff;
+}
+
+.proma-customer-card,
+.proma-contract-card,
+.proma-overdue-mobile-card,
+.proma-purchase-contract-card {
+  border-radius: var(--proma-radius-lg);
+}
+
+.proma-customer-card .actions,
+.proma-contract-card .actions,
+.proma-purchase-contract-card .actions {
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid #f0f2f6;
+}
+
+.proma-contract-card .proma-card-metrics,
+.proma-customer-card .proma-card-metrics,
+.proma-purchase-contract-card .proma-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+  gap: var(--space-2);
+}
+
+.badge,
+.proma-badge,
+.status-pill {
+  border-radius: 999px;
+  font-weight: 800;
+  padding: 5px 10px;
+}
+
+.modal.open,
+.modal.show {
+  backdrop-filter: blur(4px);
+}
+
+.modal.open .modal-content,
+.modal.show .modal-content {
+  width: min(94vw, 820px);
+  max-height: min(88dvh, 920px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal.open .modal-body,
+.modal.show .modal-body {
+  overflow: auto;
+  padding: clamp(16px, 1.5vw, 24px);
+}
+
+.modal.open .modal-footer,
+.modal.show .modal-footer {
+  position: sticky;
+  inset-block-end: 0;
+  background: rgba(255, 255, 255, .96);
+  border-block-start: 1px solid #eef2f7;
+  padding: var(--space-4);
+}
+
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper {
+  box-shadow: -12px 0 34px rgba(15, 23, 42, .04);
+}
+
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-link {
+  border-radius: 14px;
+  margin-inline: 12px;
+  min-height: 44px;
+  color: #5f6678;
+}
+
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-link:hover,
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-link.active {
+  background: linear-gradient(90deg, rgba(124, 58, 237, .12), rgba(124, 58, 237, .04));
+  color: #5b21b6;
+}
+
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-list + .sidebar-list {
+  margin-block-start: 2px;
+}
+
+.proma-template-workspace,
+.proma-contract-workspace,
+.proma-payment-workspace {
+  gap: clamp(16px, 1.6vw, 24px);
+}
+
+.proma-rich-editor,
+.proma-template-server-preview {
+  border-radius: var(--proma-radius-lg);
+}
+
+body.dark-only {
+  --proma-page-bg: #111827;
+  --proma-card-bg: rgba(31, 41, 55, .94);
+  --proma-card-border: rgba(255, 255, 255, .09);
+  --proma-card-shadow: none;
+  --proma-card-shadow-hover: none;
+}
+
+body.dark-only .proma-page-content :where(.card, .table-wrap, .modal-content),
+body.dark-only .proma-role-dashboard .card,
+body.dark-only .proma-admin-dashboard .card {
+  background: var(--proma-card-bg);
+  border-color: var(--proma-card-border);
+}
+
+body.dark-only .proma-page-content :where(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+body.dark-only .proma-page-content table thead th {
+  background: rgba(255, 255, 255, .045);
+}
+
+body.dark-only .modal.open .modal-footer,
+body.dark-only .modal.show .modal-footer {
+  background: rgba(31, 41, 55, .96);
+}
+
+@media (max-width: 1199.98px) {
+  .proma-page-content,
+  .page-body .container-fluid {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .page-wrapper.compact-wrapper .page-body-wrapper .page-body {
+    padding-inline: 10px;
+  }
+
+  .proma-page-content > :where(.card, .notice, .alert, .table-wrap),
+  .proma-page-content .card,
+  .proma-role-dashboard .card,
+  .proma-admin-dashboard .card {
+    border-radius: 16px;
+  }
+
+  .proma-filter-toolbar,
+  .proma-page-content form:has(input, select):not(.proma-template-form):not(.inline-form) {
+    grid-template-columns: 1fr;
+  }
+
+  .proma-page-content :where(.btn:not(.btn-xs):not(.btn-sm), button.btn:not(.btn-xs):not(.btn-sm), .proma-button) {
+    width: 100%;
+  }
+
+  .proma-page-content .actions :where(.btn, button.btn, .proma-button) {
+    flex: 1 1 150px;
+  }
+}
