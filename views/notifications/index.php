@@ -6,6 +6,12 @@
         <?php if ((int) ($unreadCount ?? 0) > 0): ?>
           <span class="badge warning"><?= to_persian_digits($unreadCount) ?> خوانده‌نشده</span>
         <?php endif; ?>
+        <?php if (!empty($notifications)): ?>
+          <form id="notifications-bulk-delete" method="post" action="<?= e(url('notifications/bulkDelete')) ?>">
+            <?= csrf_field() ?>
+            <button class="btn small danger" type="submit">حذف انتخاب‌شده‌ها</button>
+          </form>
+        <?php endif; ?>
         <form method="post" action="<?= e(url('notifications/read')) ?>">
           <?= csrf_field() ?>
           <button class="btn small secondary" type="submit">خواندن همه</button>
@@ -17,6 +23,9 @@
     <div class="proma-notification-list">
       <?php foreach (($notifications ?? []) as $item): ?>
         <article class="proma-notification-item <?= empty($item['is_read']) ? 'unread' : '' ?>">
+          <label class="proma-notification-select" aria-label="انتخاب اعلان">
+            <input type="checkbox" name="notification_ids[]" value="<?= (int) $item['id'] ?>" form="notifications-bulk-delete">
+          </label>
           <div>
             <strong><?= e($item['title'] ?? '') ?></strong>
             <p><?= e($item['body'] ?? '') ?></p>

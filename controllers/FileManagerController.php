@@ -74,6 +74,47 @@ class FileManagerController extends Controller
         exit;
     }
 
+    public function view($uuid)
+    {
+        $this->requireRole('admin');
+        $file = FileRecord::findByUuid((string) $uuid);
+        if (!$file || ($file['status'] ?? '') === 'deleted') {
+            http_response_code(404);
+            echo 'فایل پیدا نشد.';
+            return;
+        }
+
+        $path = FileRecord::absoluteStoragePath($file['storage_path'] ?? '');
+        if (!$path || !is_file($path)) {
+            http_response_code(404);
+            echo 'محتوای فایل در فضای ذخیره‌سازی پیدا نشد.';
+            return;
+        }
+
+        $mime = trim((string) ($file['mime_type'] ?? '')) ?: 'application/octet-stream';
+        $name = trim(preg_replace('/[\r\n"]+/', '', (string) ($file['original_name'] ?: $file['display_name'])));
+        $name = $name ?: 'document';
+        $inlinePrefixes = ['image/', 'text/'];
+        $inlineMimes = [
+            'application/pdf',
+            'application/json',
+        ];
+        $inline = in_array($mime, $inlineMimes, true);
+        foreach ($inlinePrefixes as $prefix) {
+            if (strpos($mime, $prefix) === 0) {
+                $inline = true;
+                break;
+            }
+        }
+
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Type: ' . $mime);
+        header('Content-Disposition: ' . ($inline ? 'inline' : 'attachment') . '; filename="document"; filename*=UTF-8\'\'' . rawurlencode($name));
+        header('Content-Length: ' . (string) filesize($path));
+        readfile($path);
+        exit;
+    }
+
     public function update($uuid)
     {
         $this->requireRole('admin');

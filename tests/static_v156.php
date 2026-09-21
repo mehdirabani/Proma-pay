@@ -26,7 +26,7 @@ $migration = (string) file_get_contents($root . '/database/migrations/2026_07_29
 $settingsView = (string) file_get_contents($root . '/views/settings/index.php');
 $serviceWorker = (string) file_get_contents($root . '/service-worker.js');
 
-$assert(strpos($engine, "installment-financial-state-v3") !== false, 'Financial engine version was not advanced.');
+$assert(strpos($engine, "installment-financial-state-v4-due-date-legal") !== false, 'Financial engine version was not advanced for the due-date legal policy.');
 $assert(strpos($engine, "'effective_penalty_payable'") !== false && strpos($engine, "'projected_legal_penalty'") !== false, 'Canonical penalty fields are missing from the engine.');
 $assert(strpos($comparison, 'projectedLegalPenalty') !== false && strpos($presentation, 'show_projected_legal_penalty') !== false, 'Projection/presentation services are missing.');
 $assert(

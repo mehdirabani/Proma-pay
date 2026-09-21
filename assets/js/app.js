@@ -420,6 +420,31 @@
       if (modal && modal.getAttribute('data-modal-static') !== 'true') hideModal(modal);
     };
 
+    if (document.documentElement.dataset.modalDelegatedBound !== '1') {
+      document.documentElement.dataset.modalDelegatedBound = '1';
+      document.addEventListener('click', function (event) {
+        const closeButton = event.target.closest('[data-close-modal]');
+        if (closeButton) {
+          const modal = closeButton.closest('.modal');
+          if (modal) {
+            event.preventDefault();
+            event.stopPropagation();
+            hideModal(modal);
+          }
+          return;
+        }
+
+        const openButton = event.target.closest('[data-open-modal]');
+        if (!openButton) return;
+        const modalId = openButton.getAttribute('data-open-modal');
+        const modal = modalId ? document.getElementById(modalId) : null;
+        if (!modal) return;
+        event.preventDefault();
+        event.stopPropagation();
+        showModal(modal, openButton);
+      });
+    }
+
     document.querySelectorAll('.modal').forEach(function (modal) {
       if (!modal.hasAttribute('role')) modal.setAttribute('role', 'dialog');
       if (!modal.hasAttribute('tabindex')) modal.setAttribute('tabindex', '-1');
@@ -713,7 +738,8 @@
       form.dataset.ajaxFilterBound = '1';
       const targetSelector = form.getAttribute('data-ajax-target');
       const status = form.querySelector('[data-ajax-status]');
-      const delay = parseInt(form.getAttribute('data-ajax-delay') || '650', 10);
+      const delay = parseInt(form.getAttribute('data-ajax-delay') || '1200', 10);
+      const liveFilter = form.getAttribute('data-live-filter') === '1';
       let timer = null;
       let controller = null;
 
@@ -741,7 +767,7 @@
         return url;
       };
 
-      const load = function () {
+      const load = function (fallbackToNavigation) {
         const target = targetSelector ? document.querySelector(targetSelector) : null;
         if (!target) return;
         if (controller) controller.abort();
@@ -773,6 +799,12 @@
           if (error.name === 'AbortError') return;
           target.classList.remove('proma-ajax-loading');
           setStatus('خطا در دریافت نتیجه. اتصال یا فیلترها را بررسی کنید.', 'error');
+          if (fallbackToNavigation) {
+            const cleanUrl = new URL(requestUrl.toString());
+            cleanUrl.searchParams.delete('ajax');
+            window.location.assign(cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+            return;
+          }
           showToast('جستجو انجام نشد. چند لحظه بعد دوباره تلاش کنید.', 'error');
         });
       };
@@ -799,15 +831,17 @@
         event.preventDefault();
         window.clearTimeout(timer);
         resetFilterPage();
-        load();
+        load(true);
       });
-      form.querySelectorAll('input, select').forEach(function (field) {
-        if (field.type === 'hidden' || field.type === 'file') return;
-        field.addEventListener(field.tagName === 'SELECT' ? 'change' : 'input', function () {
-          resetFilterPage();
-          schedule();
+      if (liveFilter) {
+        form.querySelectorAll('input, select').forEach(function (field) {
+          if (field.type === 'hidden' || field.type === 'file') return;
+          field.addEventListener(field.tagName === 'SELECT' ? 'change' : 'input', function () {
+            resetFilterPage();
+            schedule();
+          });
         });
-      });
+      }
     });
   };
 

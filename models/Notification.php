@@ -164,4 +164,20 @@ class Notification extends Model
             [(int) $id, (int) $userId]
         );
     }
+
+    public static function deleteManyForUser(array $ids, $userId)
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        if (!$ids || !$userId) {
+            return 0;
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $params = array_merge([(int) $userId], $ids);
+        return self::execute(
+            "UPDATE notifications
+             SET deleted_at = NOW(), is_read = 1, read_at = COALESCE(read_at, NOW())
+             WHERE user_id = ? AND deleted_at IS NULL AND id IN ({$placeholders})",
+            $params
+        );
+    }
 }

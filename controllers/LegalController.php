@@ -16,6 +16,8 @@ class LegalController extends Controller
             'title' => 'حقوقی و شکایت‌ها',
             'cases' => $result['items'],
             'pagination' => $result,
+            'legalStageOptions' => LegalCaseLog::stageOptions(),
+            'legalCostTypeOptions' => LegalCaseLog::costTypeOptions(),
         ], is_ajax_request() ? null : 'app');
     }
 
@@ -30,6 +32,65 @@ class LegalController extends Controller
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت پرونده انجام نشد.');
         }
         redirect('legal');
+    }
+
+    public function costs()
+    {
+        $this->requireRole('admin');
+        $status = in_array($_GET['status'] ?? '', ['pending_approval', 'approved', 'reversed'], true) ? $_GET['status'] : 'pending_approval';
+        $search = trim((string) ($_GET['q'] ?? ''));
+        $params = [$status];
+        $where = "WHERE c.approval_status = ?";
+        if ($search !== '') {
+            $where .= " AND (co.contract_number LIKE ? OR cu.full_name LIKE ? OR c.title LIKE ? OR c.category LIKE ?)";
+            $needle = '%' . $search . '%';
+            array_push($params, $needle, $needle, $needle, $needle);
+        }
+        $costs = LegalCaseCostService::tableAvailable() ? Model::fetchAll(
+            "SELECT c.*, co.contract_number, cu.full_name AS customer_name, u.full_name AS created_by_name, a.full_name AS approved_by_name
+             FROM legal_case_costs c
+             LEFT JOIN contracts co ON co.id = c.contract_id
+             LEFT JOIN users cu ON cu.id = co.customer_id
+             LEFT JOIN users u ON u.id = c.created_by
+             LEFT JOIN users a ON a.id = c.approved_by
+             {$where}
+             ORDER BY c.cost_date DESC, c.id DESC
+             LIMIT 200",
+            $params
+        ) : [];
+        $this->render('legal/costs', [
+            'title' => 'تأیید هزینه‌های حقوقی',
+            'costs' => $costs,
+            'status' => $status,
+            'search' => $search,
+            'registryReady' => LegalCaseCostService::tableAvailable(),
+        ], is_ajax_request() ? null : 'app');
+    }
+
+    public function approveCost($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            LegalCaseCostService::approve((int) $id, (int) Auth::id());
+            set_flash('success', 'هزینه حقوقی تأیید شد و در محاسبات قابل مطالبه وارد شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'تأیید هزینه حقوقی انجام نشد.');
+        }
+        redirect('legal/costs');
+    }
+
+    public function reverseCost($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            LegalCaseCostService::reverse((int) $id, (string) ($_POST['reason'] ?? ''), (int) Auth::id());
+            set_flash('success', 'هزینه حقوقی با حفظ تاریخچه برگشت داده شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'برگشت هزینه حقوقی انجام نشد.');
+        }
+        redirect('legal/costs');
     }
 
     public function show($id)
@@ -147,6 +208,36 @@ class LegalController extends Controller
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت هزینه حقوقی انجام نشد.');
         }
         redirect('legal/show/' . (int) $id);
+    }
+
+    public function storeProgress($id)
+    {
+        Auth::requireLogin();
+        $this->onlyPost();
+        $case = LegalCase::find((int) $id);
+        if (!$case || !LegalCase::canAccess($case, Auth::user())) {
+            ErrorHandler::abort(403);
+        }
+        try {
+            LegalCaseLog::createLog([
+                'contract_id' => (int) $case['contract_id'],
+                'legal_case_id' => (int) $case['id'],
+                'action_stage' => $_POST['action_stage'] ?? ($case['stage'] ?? 'سایر'),
+                'action_title' => trim((string) ($_POST['action_title'] ?? '')) ?: 'ثبت روند پرونده',
+                'description' => $_POST['description'] ?? '',
+                'action_date' => $_POST['action_date'] ?? date('Y-m-d'),
+                'action_time' => $_POST['action_time'] ?? date('H:i'),
+                'registered_by' => Auth::id(),
+                'assigned_lawyer_id' => $case['lawyer_id'] ?? null,
+                'next_status' => $_POST['next_status'] ?? ($case['status'] ?? 'referred'),
+                'cost_amount' => 0,
+                'cost_type' => '',
+            ]);
+            set_flash('success', 'روند/مرحله پرونده حقوقی ثبت شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت روند پرونده انجام نشد.');
+        }
+        redirect(Auth::role() === 'admin' ? 'legal' : 'legal/show/' . (int) $id);
     }
 
     public function update($id)

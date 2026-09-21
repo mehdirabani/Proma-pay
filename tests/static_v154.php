@@ -39,7 +39,7 @@ $assert(strpos($overdueView, 'exclude_legal_cases') !== false, 'Overdue UI must 
 $assert(strpos($installmentModel, "NOT EXISTS (SELECT 1 FROM legal_cases") !== false, 'Installment legal-case exclusion must be evaluated server-side.');
 $assert(strpos($overdueService, "COALESCE(lc.legal_case_count, 0) = 0") !== false, 'Overdue legal-case exclusion must be evaluated server-side.');
 $assert(strpos($panels, '.proma-filter-check') !== false, 'Filter checkbox alignment styles are missing.');
-$assert(strpos($builder, '$templateRequiredFiles') !== false && strpos($builder, "'html/RTL/assets'") !== false, 'Required template runtime assets must be included explicitly.');
+$assert(strpos($builder, '$templateRuntimeFiles') !== false && strpos($builder, "'html/RTL/assets'") !== false, 'Required template runtime assets must be included explicitly.');
 $assert(strpos($builder, "#^(?:css|fonts|images|js|json|svg)/#i") === false, 'The complete legacy template asset tree must not be included in release packages.');
 $assert(strpos($serviceWorker, 'proma-pay-v' . str_replace('.', '-', $applicationVersion) . '-') !== false, 'Service-worker cache version must be synchronized.');
 $assert(strpos($adminDashboard, 'style="width:') === false && strpos($adminDashboard, '<progress') !== false, 'Dashboard progress must not violate the CSP.');

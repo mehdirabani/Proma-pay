@@ -20,6 +20,10 @@ $isInternalViewer = Auth::role() !== 'customer';
 $isCancelledContract = ($contract['status'] ?? '') === 'cancelled';
 $canManageActiveContract = $canManageDocument && !in_array(($contract['status'] ?? ''), ['cancelled', 'completed', 'closed'], true);
 $guarantors = $guarantors ?? [];
+$items = $items ?? [];
+$guarantees = $guarantees ?? [];
+$firstItem = $items[0] ?? [];
+$firstGuarantee = $guarantees[0] ?? [];
 $renderedDocumentTitle = trim((string) ($document['rendered_title'] ?? '')) ?: ($documentTitle ?? '');
 $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?: ($documentHeader ?? '');
 ?>
@@ -55,7 +59,27 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
       <span><small>مانده قابل تقسیط</small><strong><?= money_toman(max(0, normalize_money($contract['principal_amount'] ?? 0) - normalize_money($contract['down_payment_amount'] ?? 0))) ?></strong></span>
       <span><small>تعداد اقساط</small><strong><?= to_persian_digits($contract['months']) ?></strong></span>
       <span><small>تاریخ قرارداد</small><strong><?= e(jdate($contract['start_date'])) ?></strong></span>
+      <span><small>مدل کالای خریداری‌شده</small><strong><?= e($firstItem['product_model'] ?? 'ثبت نشده') ?></strong></span>
+      <span><small>نوع ضمانت</small><strong><?= e($firstGuarantee['guarantee_type'] ?? 'ثبت نشده') ?></strong></span>
+      <span><small>سریال ضمانت</small><strong dir="ltr"><?= e(to_persian_digits($firstGuarantee['guarantee_serial'] ?? 'ثبت نشده')) ?></strong></span>
+      <span><small>تعداد ضامن‌ها</small><strong><?= to_persian_digits(count($guarantors)) ?></strong></span>
     </div>
+    <?php if ($items || $guarantees): ?>
+      <div class="proma-contract-summary-strip">
+        <?php if ($items): ?>
+          <article>
+            <strong>کالاهای قرارداد</strong>
+            <p><?= e(implode('، ', array_filter(array_map(static fn ($item) => (string) ($item['product_model'] ?? ''), $items)))) ?></p>
+          </article>
+        <?php endif; ?>
+        <?php if ($guarantees): ?>
+          <article>
+            <strong>ضمانت‌ها</strong>
+            <p><?= e(implode('، ', array_filter(array_map(static fn ($guarantee) => trim((string) ($guarantee['guarantee_type'] ?? '') . ' ' . (string) ($guarantee['guarantee_serial'] ?? '')), $guarantees)))) ?></p>
+          </article>
+        <?php endif; ?>
+      </div>
+    <?php endif; ?>
   </div>
 </section>
 
@@ -492,7 +516,15 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
 </div>
 
 <section class="card" data-contract-tab-panel="payments" hidden>
-  <div class="card-header card-no-border"><h2>تایم‌لاین پرداخت قرارداد</h2></div>
+  <div class="card-header card-no-border">
+    <div class="header-top">
+      <div>
+        <h2>لاگ پرداخت‌های مشتری</h2>
+        <p>پرداخت‌های ثبت‌شده همین قرارداد با جزئیات قسط، روش پرداخت و زمان ثبت.</p>
+      </div>
+      <span class="badge info"><?= to_persian_digits(count($paymentTimeline ?? [])) ?> رکورد</span>
+    </div>
+  </div>
   <div class="card-body">
     <div class="proma-payment-timeline compact">
       <?php foreach (($paymentTimeline ?? []) as $payment): ?>
@@ -507,6 +539,27 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
       <?php endforeach; ?>
       <?php if (empty($paymentTimeline)): ?><div class="empty">پرداخت موفقی ثبت نشده است.</div><?php endif; ?>
     </div>
+    <?php if (!empty($paymentTimeline)): ?>
+      <div class="table-wrap proma-payment-log-table">
+        <table>
+          <thead><tr><th>تاریخ و ساعت</th><th>قسط</th><th>نوع</th><th>روش</th><th>مبلغ</th><th>وضعیت</th><th>شناسه</th></tr></thead>
+          <tbody>
+          <?php foreach ($paymentTimeline as $payment): ?>
+            <?php $paymentMoment = $payment['paid_at'] ?? $payment['payment_date'] ?? $payment['created_at'] ?? ''; ?>
+            <tr>
+              <td><?= e(jdatetime($paymentMoment)) ?></td>
+              <td><?= !empty($payment['installment_number']) ? 'قسط ' . to_persian_digits($payment['installment_number']) : '—' ?></td>
+              <td><?= e(payment_type_label($payment['payment_type'] ?? 'installment')) ?></td>
+              <td><?= e(payment_method_label($payment['method'] ?? $payment['payment_method'] ?? 'manual')) ?></td>
+              <td><strong><?= money_toman($payment['amount'] ?? 0) ?></strong></td>
+              <td><span class="badge <?= e(badge_class($payment['status'] ?? 'paid')) ?>"><?= e(status_label($payment['status'] ?? 'paid')) ?></span></td>
+              <td class="ltr"><?= e($payment['tracking_code'] ?? $payment['gateway_reference'] ?? ('#' . (int) ($payment['id'] ?? 0))) ?></td>
+            </tr>
+          <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    <?php endif; ?>
   </div>
 </section>
 

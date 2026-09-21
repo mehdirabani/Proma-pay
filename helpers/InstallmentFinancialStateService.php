@@ -13,7 +13,7 @@ require_once __DIR__ . '/PenaltyComparisonService.php';
  */
 final class InstallmentFinancialStateService
 {
-    public const CALCULATION_VERSION = 'installment-financial-state-v3';
+    public const CALCULATION_VERSION = 'installment-financial-state-v4-due-date-legal';
 
     public static function state(array $installment, ?array $payments = null, ?array $settings = null, $asOf = null)
     {
@@ -294,16 +294,17 @@ final class InstallmentFinancialStateService
         if ($target <= $from) {
             return;
         }
-        if (!$legalStart || $target <= $legalStart) {
+        if (!$legalStart || $target < $legalStart) {
             $normal += MoneyMath::rateForDays($principal, $normalRate, self::daysBetween($from, $target));
             return;
         }
-        if ($from >= $legalStart) {
-            $legal += MoneyMath::rateForDays($principal, $legalRate, self::daysBetween($from, $target));
-            return;
-        }
-        $normal += MoneyMath::rateForDays($principal, $normalRate, self::daysBetween($from, $legalStart));
-        $legal += MoneyMath::rateForDays($principal, $legalRate, self::daysBetween($legalStart, $target));
+        // Referral activates the legal tariff, but the contractual origin of
+        // that tariff is the installment due date (subject to the configured
+        // grace rule).  It is therefore intentionally not segmented at the
+        // notice/referral date. Historical payments made before activation
+        // keep their persisted allocations; the outstanding period replayed
+        // after activation uses the legal tariff from its due-date cursor.
+        $legal += MoneyMath::rateForDays($principal, $legalRate, self::daysBetween($from, $target));
     }
 
     private static function eligibleReward(array $installment, $remainingPrincipal, array $settings, $asOf)

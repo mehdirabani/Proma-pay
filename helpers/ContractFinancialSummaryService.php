@@ -24,7 +24,9 @@ class ContractFinancialSummaryService
             $contractInstallments += $base;
             $paidInstallments += normalize_money($installment['effective_paid_principal'] ?? $installment['paid_amount'] ?? 0);
             $projectedLegalPenalty += normalize_money($installment['projected_legal_penalty'] ?? 0);
-            $projectedLegalPenaltyVisible = $projectedLegalPenaltyVisible || !empty($installment['show_projected_legal_penalty']);
+            $projectedLegalPenaltyVisible = $projectedLegalPenaltyVisible
+                || !empty($installment['show_projected_legal_penalty'])
+                || (!empty($installment['projected_legal_penalty_available']) && empty($installment['canonical_legal_referral_at']));
             $actualLegalReferral = $actualLegalReferral || !empty($installment['canonical_legal_referral_at']);
             if (!in_array((string) ($installment['calculation_status'] ?? 'calculated'), ['calculated', 'not_applicable'], true)) {
                 $calculationWarnings[] = [

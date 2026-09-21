@@ -89,7 +89,10 @@ if (Auth::role() === 'admin') {
         ['installments', 'اقساط', 'stroke-file', 'fill-file'],
         ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
         ['payments', 'پرداخت‌ها', 'stroke-ecommerce', 'fill-ecommerce'],
-        ['legal', 'حقوقی و شکایت‌ها', 'stroke-file', 'fill-file'],
+        ['legal', 'حقوقی و شکایت‌ها', 'stroke-file', 'fill-file', [
+            ['legal', 'پرونده‌های حقوقی'],
+            ['legal/costs', 'تأیید هزینه‌های حقوقی'],
+        ]],
         ['review', 'بررسی موارد ارسالی', 'stroke-task', 'fill-task'],
         ['profile-reviews', 'تأیید اصلاح مشخصات', 'stroke-task', 'fill-task'],
         ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],

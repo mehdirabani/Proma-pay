@@ -61,16 +61,16 @@ Model::execute("UPDATE legal_cases SET legal_referred_at = '2026-01-16 10:00:00'
 $afterRaw = Installment::findRaw($installmentId);
 $assert(substr((string) $afterRaw['legal_started_at'], 0, 10) === '2026-01-16', 'Canonical referral timestamp was not loaded into the installment.');
 $after = InstallmentFinancialStateService::state($afterRaw, [], Settings::allKeyed(), '2026-01-31');
-$assert($after['normal_penalty_accrued'] === 30000 && $after['legal_penalty_accrued'] === 75000, 'Actual referral did not split rate accrual at the canonical timestamp.');
-$assert($after['final_payable'] === 1105000 && $after['projected_legal_penalty'] === 0, 'Actual legal debt was duplicated by a projection.');
+$assert($after['normal_penalty_accrued'] === 0 && $after['legal_penalty_accrued'] === 150000, 'Actual legal penalty did not use the installment due date as its origin.');
+$assert($after['final_payable'] === 1150000 && $after['projected_legal_penalty'] === 0, 'Actual due-date-based legal debt was duplicated by a projection.');
 $afterQuote = PaymentAllocationService::quote([$afterRaw], '2026-01-31', Settings::allKeyed());
-$assert($afterQuote['full_settlement_total'] === 1105000 && !array_key_exists('projected_legal_penalty_total', $afterQuote), 'Payment quote included an analytical projection.');
+$assert($afterQuote['full_settlement_total'] === 1150000 && !array_key_exists('projected_legal_penalty_total', $afterQuote), 'Payment quote included an analytical projection.');
 
 // Archive preserves the canonical timestamp; a case lifecycle transition must
 // not silently remove actual accrued legal debt.
 LegalCase::deleteCase($caseId);
 $archivedRaw = Installment::findRaw($installmentId);
 $archived = InstallmentFinancialStateService::state($archivedRaw, [], Settings::allKeyed(), '2026-01-31');
-$assert($archived['legal_penalty_accrued'] === 75000 && $archived['final_payable'] === 1105000, 'Archiving erased actual legal penalty without an authorized correction.');
+$assert($archived['legal_penalty_accrued'] === 150000 && $archived['final_payable'] === 1150000, 'Archiving erased actual legal penalty without an authorized correction.');
 
 echo "INTEGRATION_LEGAL_PENALTY_PROJECTION_V156_OK\n";

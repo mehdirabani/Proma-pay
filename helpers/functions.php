@@ -409,8 +409,8 @@ function penalty_display_html(array $item)
     if ($mode === 'legal' || $legal > 0) {
         return '<span class="proma-penalty-display proma-penalty-display--legal">'
             . '<strong>' . money_toman($current) . '</strong>'
-            . '<small>جریمه عادی تا تاریخ ارجاع: ' . money_toman($normal) . '</small>'
-            . '<small>جریمه حقوقی پس از ارجاع: ' . money_toman($legal) . '</small>'
+            . '<small>جریمه عادی تسویه‌نشده پیشین: ' . money_toman($normal) . '</small>'
+            . '<small>جریمه حقوقی از سررسید قسط: ' . money_toman($legal) . '</small>'
             . '</span>';
     }
 

@@ -65,4 +65,19 @@ class NotificationsController extends Controller
         set_flash('success', 'اعلان از فهرست شما حذف شد.');
         redirect('notifications');
     }
+
+    public function bulkDelete()
+    {
+        Auth::requireLogin();
+        $this->onlyPost();
+        $ids = $_POST['notification_ids'] ?? [];
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+        $affected = Notification::deleteManyForUser($ids, Auth::id());
+        set_flash($affected > 0 ? 'success' : 'warning', $affected > 0
+            ? to_persian_digits($affected) . ' اعلان از فهرست شما حذف شد.'
+            : 'اعلانی برای حذف انتخاب نشده بود.');
+        redirect('notifications');
+    }
 }

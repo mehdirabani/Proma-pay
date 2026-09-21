@@ -39,6 +39,7 @@ foreach ($payments as $payment) {
       <div class="actions">
         <?php if (Auth::role() === 'admin'): ?><a class="btn secondary" href="<?= e(url('legal')) ?>">بازگشت به حقوقی</a><?php endif; ?>
         <?php if (Auth::role() === 'lawyer'): ?><a class="btn secondary" href="<?= e(url('lawyer')) ?>">بازگشت به پنل حقوقی</a><?php endif; ?>
+        <?php if ($canAttachLegalFile || $canRegisterLegalCost): ?><button class="btn" type="button" data-open-modal="legal-quick-update">بروزرسانی سریع</button><?php endif; ?>
         <?php if ($canAttachLegalFile): ?><button class="btn secondary" type="button" data-open-modal="legal-attachment-upload">ارسال ضمیمه</button><?php endif; ?>
         <?php if ($canRegisterLegalCost): ?><button class="btn warning" type="button" data-open-modal="legal-cost-create">ثبت هزینه</button><?php endif; ?>
         <?php if ($canDeleteCase): ?><button class="btn danger icon-only" type="button" data-open-modal="delete-legal-case" title="بایگانی پرونده" aria-label="بایگانی پرونده"><i data-feather="archive"></i></button><?php endif; ?>
@@ -57,6 +58,42 @@ foreach ($payments as $payment) {
     </div>
   </div>
 </section>
+
+<?php if ($canAttachLegalFile || $canRegisterLegalCost): ?>
+  <div class="modal" id="legal-quick-update">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>بروزرسانی سریع پرونده</h3>
+        <button class="icon-btn" type="button" data-close-modal aria-label="بستن"><?= proma_icon('close') ?></button>
+      </div>
+      <div class="modal-body">
+        <div class="proma-quick-action-grid">
+          <?php if ($canRegisterLegalCost): ?>
+            <button class="proma-quick-action-card" type="button" data-open-modal="legal-cost-create">
+              <strong>ثبت هزینه حقوقی</strong>
+              <span>هزینه به وضعیت در انتظار تأیید مدیریت می‌رود.</span>
+            </button>
+          <?php endif; ?>
+          <?php if ($canAttachLegalFile): ?>
+            <button class="proma-quick-action-card" type="button" data-open-modal="legal-attachment-upload">
+              <strong>ارسال فایل ضمیمه</strong>
+              <span>فایل، عنوان و شرح مرحله حقوقی ثبت می‌شود.</span>
+            </button>
+          <?php endif; ?>
+          <?php if ($canAttachLegalFile): ?>
+            <a class="proma-quick-action-card" href="#legal-document-contractual_warning" data-open-modal="legal-document-contractual_warning">
+              <strong>ثبت مرحله/سند حقوقی</strong>
+              <span>برای اخطار، دادخواست یا شکواییه داخلی اقدام کنید.</span>
+            </a>
+          <?php endif; ?>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn secondary" type="button" data-close-modal>بستن</button>
+      </div>
+    </div>
+  </div>
+<?php endif; ?>
 
 <section class="card">
   <div class="card-header card-no-border"><div><h2>خلاصه مالی مرجع پرونده</h2><p>همه مبالغ از موتور محاسبات قرارداد در همین لحظه خوانده شده‌اند؛ هزینهٔ ثبت‌شده تا تأیید مدیر وارد مبلغ قابل مطالبه نمی‌شود.</p></div></div>
@@ -187,7 +224,7 @@ foreach ($payments as $payment) {
         <div><small>شماره پیگیری/مرجع بیرونی</small><strong><?= e(to_persian_digits($case['complaint_number'] ?: 'ثبت نشده')) ?></strong></div>
         <div><small>وضعیت قرارداد</small><strong><?= e(status_label($contract['status'] ?? '')) ?></strong></div>
         <div><small>تاریخ ثبت/پیگیری بیرونی</small><strong><?= !empty($case['notice_date']) ? e(jdate($case['notice_date'])) : '-' ?></strong></div>
-        <div><small>ارجاع رسمی مبنای جریمه حقوقی</small><strong><?= !empty($case['legal_referred_at']) ? e(jdatetime($case['legal_referred_at'])) : 'ثبت نشده' ?></strong></div>
+        <div><small>تاریخ فعال‌سازی نرخ حقوقی</small><strong><?= !empty($case['legal_referred_at']) ? e(jdatetime($case['legal_referred_at'])) : 'ثبت نشده' ?></strong><small>مبنای محاسبه: سررسید هر قسط</small></div>
         <div><small>تاریخ دادگاه</small><strong><?= !empty($case['court_date']) ? e(jdate($case['court_date'])) : '-' ?></strong></div>
       </div>
       <?php if (!empty($case['notes'])): ?>

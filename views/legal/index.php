@@ -1,5 +1,7 @@
 <?php
 $legalStages = app_config('legal_stages', []);
+$legalStageOptions = $legalStageOptions ?? $legalStages;
+$legalCostTypeOptions = $legalCostTypeOptions ?? [];
 $pagination = $pagination ?? ['total' => count($cases ?? []), 'page' => 1, 'pages' => 1, 'per_page' => count($cases ?? []) ?: 30];
 $pageUrl = function ($page) {
     $params = [
@@ -51,7 +53,8 @@ $pageUrl = function ($page) {
               <td><span class="badge <?= e(badge_class($case['status'])) ?>"><?= e(status_label($case['status'])) ?></span></td>
               <td class="actions">
                 <a class="btn small info" href="<?= e(url('legal/show/' . (int) $case['id'])) ?>">جزئیات و تاریخچه</a>
-                <button class="btn small secondary" type="button" data-open-modal="legal-case-<?= (int) $case['id'] ?>">به‌روزرسانی</button>
+                <button class="btn small" type="button" data-open-modal="legal-quick-update-<?= (int) $case['id'] ?>">اقدام سریع</button>
+                <button class="btn small secondary" type="button" data-open-modal="legal-case-<?= (int) $case['id'] ?>">ویرایش پرونده</button>
                 <button class="btn small danger icon-only" type="button" data-open-modal="delete-legal-case-<?= (int) $case['id'] ?>" title="حذف پرونده" aria-label="حذف پرونده"><i data-feather="trash-2"></i></button>
               </td>
             </tr>
@@ -66,6 +69,71 @@ $pageUrl = function ($page) {
 </div>
 
 <?php foreach ($cases as $case): ?>
+  <div class="modal" id="legal-quick-update-<?= (int) $case['id'] ?>">
+    <div class="modal-content proma-modal-lg">
+      <div class="modal-header"><h3>اقدام سریع پرونده <?= e($case['contract_number']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+      <div class="modal-body">
+        <div class="proma-quick-action-grid proma-quick-action-grid--legal-list">
+          <form class="proma-quick-action-card proma-quick-action-card--form" method="post" action="<?= e(url('legal/storeProgress/' . (int) $case['id'])) ?>">
+            <?= csrf_field() ?>
+            <strong>ثبت روند / مرحله</strong>
+            <span>بدون ورود به صفحه جزئیات، مرحله جدید پرونده را ثبت کنید.</span>
+            <label>مرحله
+              <select name="action_stage" required>
+                <?php foreach ($legalStageOptions as $stage): ?><option value="<?= e($stage) ?>"<?= selected($case['stage'], $stage) ?>><?= e($stage) ?></option><?php endforeach; ?>
+              </select>
+            </label>
+            <label>عنوان<input name="action_title" required value="<?= e($case['stage'] ?: 'ثبت روند پرونده') ?>"></label>
+            <label>وضعیت
+              <select name="next_status">
+                <option value="open"<?= selected($case['status'], 'open') ?>>باز</option>
+                <option value="referred"<?= selected($case['status'], 'referred') ?>>ارجاع شده</option>
+                <option value="closed"<?= selected($case['status'], 'closed') ?>>بسته</option>
+              </select>
+            </label>
+            <label>تاریخ<input name="action_date" data-jalali-input required value="<?= e(jdate(date('Y-m-d'))) ?>"></label>
+            <label class="full">شرح کوتاه<textarea name="description" rows="3" placeholder="توضیح روند، پاسخ مشتری یا اقدام انجام‌شده"></textarea></label>
+            <button class="btn" type="submit">ثبت روند</button>
+          </form>
+
+          <form class="proma-quick-action-card proma-quick-action-card--form" method="post" action="<?= e(url('legal/storeCost/' . (int) $case['id'])) ?>" enctype="multipart/form-data">
+            <?= csrf_field() ?>
+            <strong>ثبت هزینه حقوقی</strong>
+            <span>هزینه در انتظار تأیید مدیریت ثبت می‌شود و سابقه آن حفظ می‌ماند.</span>
+            <input type="hidden" name="action_stage" value="<?= e($case['stage'] ?: 'سایر') ?>">
+            <label>نوع هزینه
+              <select name="cost_type" required>
+                <option value="">انتخاب کنید</option>
+                <?php foreach ($legalCostTypeOptions as $costType): ?><option value="<?= e($costType) ?>"><?= e($costType) ?></option><?php endforeach; ?>
+              </select>
+            </label>
+            <label>مبلغ<input name="cost_amount" data-money inputmode="numeric" required></label>
+            <label>عنوان<input name="action_title" required value="ثبت هزینه حقوقی"></label>
+            <label>پیوست اختیاری<input type="file" name="attachment" accept=".jpg,.jpeg,.png,.webp,.pdf"></label>
+            <label class="full">شرح هزینه<textarea name="description" rows="3" required></textarea></label>
+            <button class="btn warning" type="submit">ثبت هزینه</button>
+          </form>
+
+          <form class="proma-quick-action-card proma-quick-action-card--form" method="post" action="<?= e(url('legal/storeAttachment/' . (int) $case['id'])) ?>" enctype="multipart/form-data">
+            <?= csrf_field() ?>
+            <strong>ارسال ضمیمه</strong>
+            <span>فایل ضمیمه مستقیماً به پرونده، قرارداد و لاگ حقوقی مرتبط می‌شود.</span>
+            <label>مرحله
+              <select name="action_stage" required>
+                <?php foreach ($legalStageOptions as $stage): ?><option value="<?= e($stage) ?>"<?= selected($case['stage'], $stage) ?>><?= e($stage) ?></option><?php endforeach; ?>
+              </select>
+            </label>
+            <label>عنوان فایل<input name="action_title" required value="ارسال فایل ضمیمه پرونده"></label>
+            <label>فایل<input type="file" name="attachment" accept=".jpg,.jpeg,.png,.webp,.pdf" required></label>
+            <label class="full">توضیحات<textarea name="description" rows="3"></textarea></label>
+            <button class="btn success" type="submit">ثبت ضمیمه</button>
+          </form>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
+    </div>
+  </div>
+
   <div class="modal" id="legal-details-<?= (int) $case['id'] ?>">
     <div class="modal-content">
       <div class="modal-header"><h3>جزئیات پرونده حقوقی</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>

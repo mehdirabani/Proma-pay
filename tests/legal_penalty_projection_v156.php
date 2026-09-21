@@ -54,11 +54,11 @@ $assert(!array_key_exists('projected_legal_penalty_total', $quote), 'Payment all
 $afterRow = $row;
 $afterRow['legal_started_at'] = '2026-01-16 09:30:00';
 $after = InstallmentFinancialStateService::state($afterRow, [], $settings, '2026-01-31');
-$assert($after['normal_penalty_accrued'] === 30000 && $after['legal_penalty_accrued'] === 75000, 'Actual referral did not segment normal/legal penalties at the referral date.');
-$assert($after['effective_penalty_payable'] === 105000 && $after['final_payable'] === 1105000, 'Actual legal penalty was not included exactly once after referral.');
+$assert($after['normal_penalty_accrued'] === 0 && $after['legal_penalty_accrued'] === 150000, 'Actual legal penalty did not start from the installment due date.');
+$assert($after['effective_penalty_payable'] === 150000 && $after['final_payable'] === 1150000, 'Actual due-date-based legal penalty was not included exactly once.');
 $assert($after['projected_legal_penalty'] === 0 && empty(CustomerPenaltyPresentationService::forState($after, $settings)['show_projected_legal_penalty']), 'Projection remained visible after actual legal referral.');
 $afterHtml = penalty_display_html(CustomerPenaltyPresentationService::forState($after, $settings));
-$assert(strpos($afterHtml, 'جریمه حقوقی پس از ارجاع') !== false && strpos($afterHtml, 'فعلاً اعمال نشده') === false, 'Actual legal display must use the canonical legal breakdown without the comparison badge.');
+$assert(strpos($afterHtml, 'جریمه حقوقی از سررسید قسط') !== false && strpos($afterHtml, 'فعلاً اعمال نشده') === false, 'Actual legal display must disclose the due-date basis without the comparison badge.');
 
 $partialPayment = [[
     'id' => 1, 'status' => 'paid', 'payment_type' => 'installment', 'payment_date' => '2026-01-16',

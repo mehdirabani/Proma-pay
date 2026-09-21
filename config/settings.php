@@ -3,7 +3,7 @@
 return [
     'app_name' => 'پروما',
     'version' => (require __DIR__ . '/version.php')['application'],
-    'asset_version' => '1.5.9',
+    'asset_version' => '1.5.14',
     'timezone' => 'Asia/Tehran',
     'base_url' => '',
     'session_name' => 'proma_pay_session',
