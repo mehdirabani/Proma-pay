@@ -31,7 +31,7 @@ $notifications = $read('views/notifications/index.php');
 $notificationController = $read('controllers/NotificationsController.php');
 $summary = $read('helpers/ContractFinancialSummaryService.php');
 
-$assert(($version['application'] ?? '') === '1.5.14', 'version must be bumped to 1.5.14');
+$assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.5.14', '>='), 'version must retain V1.5.14 operations');
 $assert(strpos($css, '.page-body .container-fluid') !== false && strpos($css, 'max-width: none;') !== false, 'global shell must not narrow all pages');
 $assert(strpos($css, 'form:has(input, select)') === false, 'role redesign must not use broad form:has grid compression');
 $assert(strpos($css, '.proma-medal-grid') !== false && strpos($css, 'writing-mode: horizontal-tb') !== false, 'medal card layout fix missing');

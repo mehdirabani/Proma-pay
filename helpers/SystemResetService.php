@@ -21,6 +21,7 @@ class SystemResetService
             'audit_logs',
             'users',
             'chat_channels',
+            'portal_banners',
         ];
         $cleared = [];
 
@@ -79,7 +80,7 @@ class SystemResetService
             'storage/private' => [],
             'storage/public' => [],
             'storage/cache' => [],
-            'storage/uploads' => ['logos'],
+            'storage/uploads' => ['logos', 'portal-banners'],
         ];
         foreach ($targets as $relative => $keepNames) {
             $path = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);

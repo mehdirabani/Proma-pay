@@ -32,10 +32,9 @@ $assertContains($css, '.modal.open .modal-content', 'Modal redesign selector is 
 $assertContains($css, 'sidebar-wrapper', 'Sidebar redesign selector is missing.');
 $assertContains($css, '@media (max-width: 767.98px)', 'Mobile responsive redesign rules are missing.');
 
-if (($version['application'] ?? '') !== '1.5.13') {
-    fwrite(STDERR, "Expected application version 1.5.13\n");
+if (version_compare((string) ($version['application'] ?? '0.0.0'), '1.5.13', '<')) {
+    fwrite(STDERR, "Expected application version 1.5.13 or newer\n");
     exit(1);
 }
 
 echo "v1.5.13 role redesign static checks passed\n";
-

@@ -90,6 +90,10 @@ if (!isset($tabs[$activeTab])) {
           <span><img src="<?= e(asset_url($settings['favicon_path'])) ?>" alt="فاوآیکن"><label><input type="checkbox" name="delete_favicon_path" value="1"> حذف فاوآیکن</label></span>
         <?php endif; ?>
       </div>
+      <div class="full proma-settings-feature-link">
+        <div><strong>بنرهای پنل مشتری</strong><small>تصویر دسکتاپ و موبایل، متن، دکمه، زمان‌بندی و اولویت نمایش را مدیریت کنید.</small></div>
+        <a class="btn secondary" href="<?= e(url('portal-banners')) ?>"><i data-feather="image"></i> مدیریت بنرها</a>
+      </div>
       <div class="full actions"><button class="btn" type="submit">ذخیره تنظیمات عمومی</button></div>
     </div>
   </section>

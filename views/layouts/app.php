@@ -113,6 +113,7 @@ if (Auth::role() === 'admin') {
         ['settings', 'تنظیمات', 'stroke-others', 'fill-others', [
             ['settings', 'تنظیمات عمومی'],
             ['settings/contracts', 'تنظیمات قراردادها'],
+            ['portal-banners', 'بنرهای پنل مشتری'],
         ]],
     ];
 } elseif (Auth::role() === 'operator') {
@@ -156,6 +157,36 @@ if (!$ecommerceEnabled) {
         return strpos((string) ($item[0] ?? ''), 'ecommerce') !== 0;
     }));
 }
+$mobileNav = [
+    'admin' => [
+        ['dashboard', 'خانه', 'home'],
+        ['contracts', 'قراردادها', 'file-text'],
+        ['overdue', 'پیگیری', 'clock'],
+        ['legal', 'حقوقی', 'briefcase'],
+        ['settings', 'تنظیمات', 'settings'],
+    ],
+    'operator' => [
+        ['dashboard', 'خانه', 'home'],
+        ['overdue', 'صف تماس', 'phone-call'],
+        ['contracts', 'قراردادها', 'file-text'],
+        ['calendar', 'تقویم', 'calendar'],
+        ['chat', 'گفت‌وگو', 'message-circle'],
+    ],
+    'lawyer' => [
+        ['dashboard', 'خانه', 'home'],
+        ['lawyer', 'پرونده‌ها', 'briefcase'],
+        ['calendar', 'جلسات', 'calendar'],
+        ['notifications', 'اعلان‌ها', 'bell'],
+        ['profile', 'پروفایل', 'user'],
+    ],
+    'customer' => [
+        ['dashboard', 'خانه', 'home'],
+        ['portal/contracts', 'قراردادها', 'file-text'],
+        ['installments/panel', 'اقساط', 'credit-card'],
+        ['portal/history', 'سوابق', 'clock'],
+        ['profile', 'حساب من', 'user'],
+    ],
+][Auth::role()] ?? [];
 $pluginMenus = [];
 $pluginPageAssets = [];
 if (Auth::role() === 'admin' && class_exists('PluginManager')) {
@@ -231,16 +262,17 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/panels.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/contract-settings.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/role-redesign.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/v2-system.css')) ?>">
   <?php if ($needsCharts): ?><script src="<?= e(asset_url('assets/vendor/chart.umd.min.js')) ?>" defer></script><?php endif; ?>
 </head>
-<body data-user-id="<?= (int) Auth::id() ?>" data-notification-sound="<?= $notificationSoundEnabled ? '1' : '0' ?>" data-notification-volume="<?= e($notificationSoundVolume) ?>">
+<body class="proma-v2 proma-v2-role-<?= e(Auth::role()) ?>" data-user-id="<?= (int) Auth::id() ?>" data-notification-sound="<?= $notificationSoundEnabled ? '1' : '0' ?>" data-notification-volume="<?= e($notificationSoundVolume) ?>">
   <div class="loader-wrapper">
     <div class="loader-index"><span></span></div>
     <svg><defs></defs><filter id="goo"><feGaussianBlur in="SourceGraphic" stdDeviation="11" result="blur"></feGaussianBlur><feColorMatrix in="blur" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo"></feColorMatrix></filter></svg>
   </div>
   <div class="tap-top"><i data-feather="chevrons-up"></i></div>
 
-  <div class="page-wrapper compact-wrapper" id="pageWrapper">
+  <div class="page-wrapper compact-wrapper proma-v2-shell" id="pageWrapper">
     <div class="page-header">
       <div class="header-wrapper row m-0">
         <form class="form-inline search-full col" method="get" action="<?= e(url($route)) ?>">
@@ -500,7 +532,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
           </div>
         </div>
         <div class="container-fluid">
-          <main class="proma-page-content" data-role="<?= e(Auth::role()) ?>">
+          <main class="proma-page-content" data-role="<?= e(Auth::role()) ?>" data-route="<?= e($route) ?>">
             <?php if ($success = flash('success')): ?><div class="alert alert-light-success" role="alert"><?= e($success) ?></div><?php endif; ?>
             <?php if ($error = flash('error')): ?><div class="alert alert-light-danger" role="alert"><?= e($error) ?></div><?php endif; ?>
             <?= $content ?>
@@ -555,6 +587,15 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
     </div>
   </div>
 
+  <nav class="proma-v2-mobile-nav" aria-label="ناوبری سریع موبایل">
+    <?php foreach ($mobileNav as $mobileItem): ?>
+      <?php $mobileActive = $route === $mobileItem[0] || str_starts_with($route, $mobileItem[0] . '/'); ?>
+      <a class="<?= $mobileActive ? 'active' : '' ?>" href="<?= e(url($mobileItem[0])) ?>"<?= $mobileActive ? ' aria-current="page"' : '' ?>>
+        <i data-feather="<?= e($mobileItem[2]) ?>"></i><span><?= e($mobileItem[1]) ?></span>
+      </a>
+    <?php endforeach; ?>
+  </nav>
+
   <div class="modal" id="contact-directory" aria-describedby="contact-directory-help">
     <div class="modal-content proma-contact-modal">
       <div class="modal-header">
@@ -586,6 +627,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <script src="<?= e(template_asset_url('js/script.js')) ?>"></script>
   <?php if ($needsRichEditor): ?><script src="<?= e(template_asset_url('js/editors/quill.js')) ?>"></script><?php endif; ?>
   <script src="<?= e(asset_url('assets/js/app.js')) ?>"></script>
+  <script src="<?= e(asset_url('assets/js/v2-system.js')) ?>"></script>
   <?php if ($needsContractTemplateEditor): ?><script src="<?= e(asset_url('assets/js/contract-template-editor.js')) ?>"></script><?php endif; ?>
   <?php foreach ($pluginPageAssets as $pluginAsset): ?><?php if (($pluginAsset['type'] ?? '') === 'js'): ?><script src="<?= e(asset_url($pluginAsset['path'])) ?>"></script><?php endif; ?><?php endforeach; ?>
 </body>

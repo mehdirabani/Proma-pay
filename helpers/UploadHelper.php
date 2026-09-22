@@ -147,6 +147,37 @@ class UploadHelper
         return $relativePath;
     }
 
+    public static function storePortalBannerImage(array $upload, $subdir)
+    {
+        if (empty($upload['tmp_name']) || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+        $size = (int) ($upload['size'] ?? 0);
+        if ($size <= 0 || $size > 3145728) {
+            throw new InvalidArgumentException('حجم تصویر بنر باید حداکثر ۳ مگابایت باشد.');
+        }
+        $image = @getimagesize($upload['tmp_name']);
+        if (!$image || empty($image[0]) || empty($image[1])) {
+            throw new InvalidArgumentException('فایل بنر یک تصویر معتبر نیست.');
+        }
+        $width = (int) $image[0];
+        $height = (int) $image[1];
+        $mime = (string) ($image['mime'] ?? '');
+        if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+            throw new InvalidArgumentException('تصویر بنر فقط با فرمت JPEG، PNG یا WebP مجاز است.');
+        }
+        if ($width < 320 || $height < 120 || $width > 4096 || $height > 4096 || ($width * $height) > 16777216) {
+            throw new InvalidArgumentException('ابعاد تصویر بنر باید بین ۳۲۰×۱۲۰ و ۴۰۹۶×۴۰۹۶ پیکسل باشد.');
+        }
+        return self::storePublicImage($upload, $subdir, self::IMAGE_EXTENSIONS, [
+            'category' => 'portal_banner',
+            'visibility' => 'public',
+            'related_entity_type' => 'portal_banner',
+            'relation_type' => 'creative',
+            'description' => 'تصویر بنر قابل مدیریت پنل مشتری',
+        ]);
+    }
+
     public static function absolutePath($relativePath)
     {
         $relativePath = ltrim(str_replace(['..', '\\'], ['', '/'], (string) $relativePath), '/');

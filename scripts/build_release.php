@@ -113,7 +113,7 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
         return true;
     }
     foreach ([
-        '.git/', '.github/', '.agents/', '.codex/', '.playwright-cli/',
+        '.git/', '.github/', '.agents/', '.codex/', '.playwright-cli/', '.project-graph/', 'skill/',
         'dist/', 'storage/', 'tmp/', 'output/', 'plugins/', 'plugin-packages/', 'node_modules/',
         'docs/', 'electron/', 'html/', 'scripts/', 'tests/', 'tools/',
     ] as $prefix) {

@@ -41,6 +41,19 @@ $manager->rescan((int) ($admin['id'] ?? 0));
 // leave an update candidate or inactive state behind for HTTP smoke tests.
 $accountingRoot = dirname(__DIR__) . '/plugins/PromaAccounting';
 $accountingManifest = json_decode((string) file_get_contents($accountingRoot . '/plugin.json'), true, 512, JSON_THROW_ON_ERROR);
+$needsInstall = false;
+foreach ($accountingManifest['migrations'] ?? [] as $migration) {
+    if (!PluginRegistry::migrationDone('proma-accounting', basename($migration))) {
+        $needsInstall = true;
+        break;
+    }
+}
+// Fresh isolated databases have no plugin migrations. Install the real schema
+// before marking the fixture installed; an upsert alone is not installation.
+if ($needsInstall) {
+    PluginRegistry::setStatus('proma-accounting', PluginStatus::DISCOVERED);
+    $manager->install('proma-accounting', (int) ($admin['id'] ?? 0));
+}
 PluginRegistry::upsert(
     $accountingManifest,
     $accountingRoot,

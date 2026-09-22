@@ -6,6 +6,8 @@ DirectoryIndex index.php
 
     # Internal records and update archives are never public download targets.
     RewriteRule ^storage/(?:logs|backups|updates|releases)/ - [F,L,NC]
+    # Public media is image-only. Never allow executable payloads below uploads.
+    RewriteRule ^storage/uploads/.*\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh)$ - [F,L,NC]
 
     # Health endpoints bypass the generic rewrite so uptime monitors can call
     # /health/live and /health/ready without an application-specific query string.

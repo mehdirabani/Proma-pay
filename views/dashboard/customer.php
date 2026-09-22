@@ -7,6 +7,7 @@ $socialLinks = $socialLinks ?? [];
 $ecommerceOrders = $ecommerceOrders ?? [];
 $givenGuarantees = $givenGuarantees ?? [];
 $receivedGuarantees = $receivedGuarantees ?? [];
+$banners = $banners ?? [];
 $ecommerceEnabled = ecommerce_is_enabled();
 $projectedPenaltyMessage = '';
 foreach ($installments as $installment) {
@@ -17,6 +18,9 @@ foreach ($installments as $installment) {
 }
 ?>
 <div class="row widget-grid proma-role-dashboard proma-role-dashboard--customer">
+  <?php if ($banners): ?>
+    <div class="col-12"><?php require __DIR__ . '/partials/customer-banners.php'; ?></div>
+  <?php endif; ?>
   <div class="col-12">
     <section class="card proma-role-hero">
       <div class="card-body">

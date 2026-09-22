@@ -50,6 +50,9 @@ $staticTests = [
     'tests/static_v158.php',
     'tests/static_v159_guarantor_document.php',
     'tests/static_v1510_template_editor.php',
+    'tests/static_v1513_role_redesign.php',
+    'tests/static_v1514_ui_operations.php',
+    'tests/static_v200_ui_redesign.php',
     'tests/static_accounting_update_2014.php',
     'plugins/PromaAccounting/tests/static.php',
     'plugins/PromaAccounting/tests/v110.php',
@@ -116,7 +119,7 @@ foreach ($iterator as $file) {
         continue;
     }
     $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
-    if (preg_match('#^(?:\.git|dist|html|storage|tmp)/#', $relative)) {
+    if (preg_match('#^(?:\.git|dist|html|storage|tmp|skill)/#', $relative)) {
         continue;
     }
     exec(escapeshellarg(PHP_BINARY) . ' -l ' . escapeshellarg($file->getPathname()) . ' 2>&1', $output, $code);

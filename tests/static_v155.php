@@ -43,6 +43,6 @@ $assert(strpos($booklet, 'booklet-print.css') !== false && strpos($booklet, 'boo
 $assert(strpos($bookletCss, '@media print') !== false && strpos($bookletCss, '@page') !== false, 'Booklet print stylesheet is incomplete.');
 $assert(strpos($bookletJs, 'window.print') !== false, 'Booklet print action is missing.');
 $assert(strpos($medals, 'style="--medal-color') === false, 'Medal cards must not emit CSP-blocked inline variables.');
-$assert(strpos($serviceWorker, 'proma-pay-v1-5-') !== false, 'Service-worker cache must retain the V1.5 cache namespace.');
+$assert(strpos($serviceWorker, 'proma-pay-v' . str_replace('.', '-', $applicationVersion) . '-') !== false, 'Service-worker cache must match the installed Core version.');
 
 echo "STATIC_V155_OK\n";

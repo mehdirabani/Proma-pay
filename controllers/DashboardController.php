@@ -318,6 +318,7 @@ class DashboardController extends Controller
         $activeInstallments = array_filter($installments, static fn ($item) => !in_array(($item['status'] ?? ''), ['paid', 'cancelled'], true));
         $this->render('dashboard/customer', [
             'title' => 'داشبورد مشتری',
+            'banners' => PortalBanner::activeForCustomer(),
             'contracts' => $contracts,
             'installments' => $installments,
             'payments' => Payment::recentForCustomer($customerId, 9),

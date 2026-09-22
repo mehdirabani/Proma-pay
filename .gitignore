@@ -9,6 +9,10 @@
 /storage/uploads/
 /vendor/
 /node_modules/
+/.project-graph/
+/.playwright-cli/
+/output/
+/storage/testing/
 /dist/
 /html/RTL/node_modules/
 /.env
