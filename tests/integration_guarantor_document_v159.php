@@ -30,14 +30,22 @@ $assert = static function (bool $condition, string $message): void {
     if (!$condition) throw new RuntimeException($message);
 };
 $suffix = substr(hash('sha256', (string) hrtime(true)), 0, 8);
-$digits = substr(preg_replace('/[^0-9]/', '7', hash('sha256', $suffix)), 0, 10);
+$nationalId = static function () use ($pdo): string {
+    // Fixture identities must be distinct both within this run and from prior runs.
+    do {
+        $candidate = (string) random_int(1000000000, 9999999999);
+        $query = $pdo->prepare('SELECT 1 FROM users WHERE national_id = ? LIMIT 1');
+        $query->execute([$candidate]);
+    } while ($query->fetchColumn());
+    return $candidate;
+};
 $mobileSeed = hexdec(substr($suffix, 0, 6)) % 10000000;
 $mobile = static fn (string $prefix, int $offset): string => $prefix . str_pad((string) (($mobileSeed + $offset) % 10000000), 7, '0', STR_PAD_LEFT);
 
-$adminId = User::create(['role' => 'admin', 'username' => 'qa-g-admin-' . $suffix, 'full_name' => 'مدیر تست ضامن', 'national_id' => $digits, 'mobile' => $mobile('0912', 1), 'email' => 'qa-g-admin-' . $suffix . '@example.test', 'password' => 'Admin#159Pass', 'status' => 'active']);
-$customerId = User::create(['role' => 'customer', 'username' => 'qa-g-c-' . $suffix, 'full_name' => 'مشتری تست ضامن', 'national_id' => strrev($digits), 'mobile' => $mobile('0935', 2), 'email' => 'qa-g-c-' . $suffix . '@example.test', 'password' => 'Customer#159Pass', 'status' => 'active']);
-$guarantorA = User::create(['role' => 'customer', 'username' => 'qa-g-a-' . $suffix, 'full_name' => 'ضامن موجود الف', 'national_id' => substr($digits, 0, 9) . '1', 'mobile' => $mobile('0901', 3), 'email' => 'qa-g-a-' . $suffix . '@example.test', 'password' => 'Customer#159Pass', 'status' => 'active']);
-$guarantorB = User::create(['role' => 'customer', 'username' => 'qa-g-b-' . $suffix, 'full_name' => 'ضامن موجود ب', 'national_id' => substr($digits, 0, 9) . '2', 'mobile' => $mobile('0901', 4), 'email' => 'qa-g-b-' . $suffix . '@example.test', 'password' => 'Customer#159Pass', 'status' => 'active']);
+$adminId = User::create(['role' => 'admin', 'username' => 'qa-g-admin-' . $suffix, 'full_name' => 'مدیر تست ضامن', 'national_id' => $nationalId(), 'mobile' => $mobile('0912', 1), 'email' => 'qa-g-admin-' . $suffix . '@example.test', 'password' => 'Admin#159Pass', 'status' => 'active']);
+$customerId = User::create(['role' => 'customer', 'username' => 'qa-g-c-' . $suffix, 'full_name' => 'مشتری تست ضامن', 'national_id' => $nationalId(), 'mobile' => $mobile('0935', 2), 'email' => 'qa-g-c-' . $suffix . '@example.test', 'password' => 'Customer#159Pass', 'status' => 'active']);
+$guarantorA = User::create(['role' => 'customer', 'username' => 'qa-g-a-' . $suffix, 'full_name' => 'ضامن موجود الف', 'national_id' => $nationalId(), 'mobile' => $mobile('0901', 3), 'email' => 'qa-g-a-' . $suffix . '@example.test', 'password' => 'Customer#159Pass', 'status' => 'active']);
+$guarantorB = User::create(['role' => 'customer', 'username' => 'qa-g-b-' . $suffix, 'full_name' => 'ضامن موجود ب', 'national_id' => $nationalId(), 'mobile' => $mobile('0901', 4), 'email' => 'qa-g-b-' . $suffix . '@example.test', 'password' => 'Customer#159Pass', 'status' => 'active']);
 
 $payload = ['customer_id' => $customerId, 'principal_amount' => 1000000, 'down_payment_amount' => 0, 'monthly_interest_rate' => 0, 'interest_type' => 'simple', 'months' => 1, 'start_date' => '2026-01-01', 'first_due_date' => '2026-02-01', 'created_by' => $adminId];
 $existingOnlyContract = Contract::createWithInstallments($payload, [$guarantorA, $guarantorB]);

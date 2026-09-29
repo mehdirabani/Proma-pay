@@ -70,7 +70,7 @@ for ($i = 0; $i < 6; $i++) {
             <article class="proma-contract-card" data-contract-card data-card-href="<?= e(url('contracts/show/' . $cardContract['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده جزئیات قرارداد <?= e($cardContract['contract_number']) ?>">
               <header class="proma-contract-card__header">
                 <div class="proma-contract-card-main proma-contract-card__identity">
-                  <span class="proma-progress-avatar <?= $progress >= 100 ? 'is-complete' : '' ?>" style="--progress: <?= $progress ?>" title="<?= to_persian_digits($progress) ?> درصد تسویه" aria-label="<?= to_persian_digits($progress) ?> درصد تسویه">
+                  <span class="proma-progress-avatar <?= $progress >= 100 ? 'is-complete' : '' ?>" data-progress="<?= $progress ?>" title="<?= to_persian_digits($progress) ?> درصد تسویه" aria-label="<?= to_persian_digits($progress) ?> درصد تسویه">
                     <?php $cardAvatar = avatar_key_for($cardContract['avatar_key'] ?? null, $cardContract['customer_id'] ?? $cardContract['id']); ?>
                     <span class="proma-avatar-choice <?= e($cardAvatar) ?>" aria-label="<?= e($cardContract['customer_name']) ?>"><img data-avatar-image src="<?= e(user_avatar_asset_url(['id' => $cardContract['customer_id'], 'full_name' => $cardContract['customer_name'], 'avatar_key' => $cardContract['avatar_key'] ?? null, 'avatar_path' => $cardContract['avatar_path'] ?? null, 'avatar_version' => $cardContract['avatar_version'] ?? 0])) ?>" alt="آواتار <?= e($cardContract['customer_name']) ?>" loading="lazy"></span>
                     <small class="proma-progress-avatar__value"><?= to_persian_digits($progress) ?>٪</small>

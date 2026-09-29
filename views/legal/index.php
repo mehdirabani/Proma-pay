@@ -150,7 +150,7 @@ $pageUrl = function ($page) {
           <div><strong>تاریخ جلسه رسیدگی:</strong> <?= !empty($case['hearing_date']) ? e(jdate($case['hearing_date'])) : '-' ?></div>
           <div><strong>علت هزینه:</strong> <?= e($case['expense_reason'] ?: '-') ?></div>
         </div>
-        <div class="proma-payment-timeline compact" style="margin-top:16px">
+        <div class="proma-payment-timeline compact mt-3">
           <div class="proma-timeline-item">
             <span class="proma-timeline-dot"></span>
             <div><strong>ثبت پرونده</strong><p><?= e($case['notes'] ?: 'بدون یادداشت') ?></p></div>

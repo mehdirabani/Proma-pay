@@ -245,7 +245,6 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/feather-icon.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/slick.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/slick-theme.css')) ?>">
-  <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/scrollbar.css')) ?>">
   <?php if ($needsRichEditor): ?><link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/quill.snow.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/quill.bubble.css')) ?>"><?php endif; ?>
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/animate.css')) ?>">
@@ -295,7 +294,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
               <?= $renderFullLogo() ?>
             </a>
           </div>
-          <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="align-center"></i></div>
+          <button type="button" class="toggle-sidebar" aria-label="باز و بسته کردن منو" aria-controls="proma-navigation" aria-expanded="false"><i data-feather="menu"></i></button>
         </div>
 
         <div class="left-header col-xxl-5 col-xl-6 col-lg-5 col-md-4 col-sm-3 p-0">
@@ -445,10 +444,10 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
     </div>
 
     <div class="page-body-wrapper">
-      <div class="sidebar-wrapper" sidebar-layout="stroke-svg">
+      <div class="sidebar-wrapper" id="proma-navigation" sidebar-layout="stroke-svg">
         <div>
           <div class="logo-wrapper">
-            <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="grid"></i></div>
+            <button type="button" class="toggle-sidebar" aria-label="بستن منو" aria-controls="proma-navigation"><i data-feather="x"></i></button>
             <a class="proma-template-logo proma-sidebar-brand" href="<?= e(url('dashboard')) ?>">
               <span class="proma-logo-full"><?= $renderFullLogo() ?></span>
               <span class="proma-logo-compact"><?= $renderCompactLogo() ?></span>
@@ -487,11 +486,11 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
                     <?php if ($item[0] === 'notifications' && $unreadNotifications): ?><label class="badge badge-light-primary"><?= to_persian_digits($unreadNotifications) ?></label><?php endif; ?>
                     <?php if ($item[0] === 'review' && $pendingReviewCount): ?><label class="badge badge-light-danger"><?= to_persian_digits($pendingReviewCount) ?></label><?php endif; ?>
                     <?php if ($children): ?>
-                      <a class="sidebar-link sidebar-title <?= $active ? 'active' : '' ?>" href="javascript:void(0)">
+                      <button type="button" class="sidebar-link sidebar-title <?= $active ? 'active' : '' ?>" data-navigation-group aria-expanded="<?= $active ? 'true' : 'false' ?>">
                         <?= $sidebarIcon($item, $sprite) ?>
                         <?= $sidebarIcon($item, $sprite, true) ?>
                         <span><?= e($item[1]) ?></span>
-                      </a>
+                      </button>
                       <ul class="sidebar-submenu<?= $active ? ' is-open' : '' ?>">
                         <?php foreach ($children as $child): ?>
                           <?php $childActive = strpos($route, $child[0]) === 0; ?>
@@ -532,7 +531,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
           </div>
         </div>
         <div class="container-fluid">
-          <main class="proma-page-content" data-role="<?= e(Auth::role()) ?>" data-route="<?= e($route) ?>">
+          <main class="proma-page-content" id="main-content" tabindex="-1" data-role="<?= e(Auth::role()) ?>" data-route="<?= e($route) ?>">
             <?php if ($success = flash('success')): ?><div class="alert alert-light-success" role="alert"><?= e($success) ?></div><?php endif; ?>
             <?php if ($error = flash('error')): ?><div class="alert alert-light-danger" role="alert"><?= e($error) ?></div><?php endif; ?>
             <?= $content ?>
@@ -614,11 +613,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <script src="<?= e(template_asset_url('js/bootstrap/bootstrap.bundle.min.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/icons/feather-icon/feather.min.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/icons/feather-icon/feather-icon.js')) ?>"></script>
-  <script src="<?= e(template_asset_url('js/scrollbar/simplebar.js')) ?>"></script>
-  <script src="<?= e(template_asset_url('js/scrollbar/custom.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/config.js')) ?>"></script>
-  <script src="<?= e(template_asset_url('js/sidebar-menu.js')) ?>"></script>
-  <script src="<?= e(template_asset_url('js/sidebar-pin.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/clock.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/slick/slick.min.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/slick/slick.js')) ?>"></script>

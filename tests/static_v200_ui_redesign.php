@@ -31,9 +31,9 @@ $migration = $read('database/migrations/2026_09_21_customer_portal_banners_v200.
 $install = $read('database/proma-pay-install.sql');
 $upload = $read('helpers/UploadHelper.php');
 
-$assert(($version['application'] ?? '') === '2.0.0', 'Core release must be exactly 2.0.0.');
-$assert(($version['display'] ?? '') === 'V2.0.0', 'Display version must be V2.0.0.');
-$assert(($settings['asset_version'] ?? '') === '2.0.0', 'Asset version must invalidate all pre-V2 UI caches.');
+$assert(version_compare($version['application'] ?? '0', '2.0.0', '>='), 'Core release must retain V2 features.');
+$assert(($version['display'] ?? '') === 'V' . $version['application'], 'Display version must match Core.');
+$assert(($settings['asset_version'] ?? '') === $version['application'], 'Asset version must invalidate old UI caches.');
 $assert(strpos($layout, 'proma-v2 proma-v2-role-') !== false, 'V2 shell role class is not mounted.');
 $assert(strpos($layout, 'assets/css/components/v2-system.css') !== false && strpos($layout, 'assets/js/v2-system.js') !== false, 'V2 product assets are not loaded.');
 $assert(strpos($layout, 'proma-v2-mobile-nav') !== false, 'Responsive role navigation is missing.');
@@ -41,7 +41,9 @@ $assert(strpos($css, '--pp-primary-500') !== false && strpos($css, '--pp-sidebar
 $assert(strpos($css, '@media (max-width: 1399px)') !== false && strpos($css, '@media (max-width: 991px)') !== false && strpos($css, '@media (max-width: 767px)') !== false && strpos($css, '@media (max-width: 430px)') !== false, 'Required responsive breakpoints are incomplete.');
 $assert(strpos($css, '.proma-medal-grid') !== false && strpos($css, '.proma-contract-card-grid') !== false && strpos($css, '.proma-settings-shell') !== false, 'Core business page redesign coverage is incomplete.');
 $assert(strpos($js, 'enhanceTables') !== false && strpos($js, 'dataset.label') !== false, 'Mobile table-to-card enhancement is missing.');
-$assert(strpos($js, 'modalSafetyNet') !== false, 'Shared modal close safety net is missing.');
+$assert(strpos($js, 'modalSafetyNet') === false, 'V2 must not bypass the canonical modal lifecycle.');
+$assert(strpos($layout, "js/sidebar-menu.js") === false, 'Template navigation must not erase V2 shell classes.');
+$assert(strpos($js, 'function navigation()') !== false, 'V2 navigation controller is missing.');
 $assert(strpos($model, 'CREATE TABLE') === false && strpos($model, 'activeForCustomer') !== false && strpos($model, 'LIMIT {$limit}') !== false, 'Portal banner model is unbounded or performs runtime schema operations.');
 $assert(strpos($controller, "requireRole('admin')") !== false && substr_count($controller, '$this->onlyPost();') >= 3, 'Portal banner mutations are not protected by backend authorization and CSRF.');
 $assert(strpos($controller, 'storePortalBannerImage') !== false && strpos($upload, 'function storePortalBannerImage') !== false, 'Secure dedicated banner upload path is missing.');

@@ -2166,6 +2166,7 @@
   const initSidebarCollapse = function () {
     const wrapper = document.getElementById('pageWrapper');
     if (!wrapper) return;
+    if (wrapper.classList.contains('proma-v2-shell')) return;
     const sidebar = document.querySelector('.sidebar-wrapper');
     const header = document.querySelector('.page-header');
     const syncState = function () {
