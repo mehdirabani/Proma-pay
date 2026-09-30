@@ -18,16 +18,14 @@ foreach ($installments as $installment) {
 }
 ?>
 <div class="row widget-grid proma-role-dashboard proma-role-dashboard--customer">
-  <?php if ($banners): ?>
-    <div class="col-12"><?php require __DIR__ . '/partials/customer-banners.php'; ?></div>
-  <?php endif; ?>
   <div class="col-12">
-    <section class="card proma-role-hero">
+    <section class="card proma-role-hero proma-customer-balance">
       <div class="card-body">
         <div>
-          <span class="badge badge-light-success">پیشخوان مشتری</span>
-          <h4>سلام، <?= e(Auth::user()['full_name'] ?? 'مشتری') ?></h4>
-          <p>قراردادها، برنامه اقساط، پرداخت‌ها و سوابق خرید شما در یک نمای مرتب و قابل پیگیری قرار دارد.</p>
+          <span class="proma-eyebrow">سلام، <?= e(Auth::user()['full_name'] ?? 'مشتری') ?></span>
+          <h4>اقساط من، در یک نگاه</h4>
+          <p>مانده قابل پرداخت اقساط باز</p>
+          <strong class="proma-balance-amount"><?= money_toman($metrics['payable'] ?? 0) ?></strong>
         </div>
         <div class="proma-role-hero-actions">
           <a class="btn success" href="<?= e(url('installments/panel')) ?>"><i data-feather="credit-card"></i> پرداخت اقساط</a>
@@ -44,7 +42,7 @@ foreach ($installments as $installment) {
       ['اقساط معوق', $metrics['overdue'] ?? 0, 'نیازمند توجه', 'alert-triangle'],
       ['قابل پرداخت', money_toman($metrics['payable'] ?? 0), 'جمع اقساط باز', 'credit-card'],
   ] as $item): ?>
-    <div class="col-xxl-3 col-md-6">
+    <div class="col-xxl-3 col-md-6 proma-dashboard-metric">
       <article class="card proma-role-kpi">
         <div class="card-body">
           <span class="proma-role-kpi-icon"><i data-feather="<?= e($item[3]) ?>"></i></span>
@@ -53,6 +51,10 @@ foreach ($installments as $installment) {
       </article>
     </div>
   <?php endforeach; ?>
+
+  <?php if ($banners): ?>
+    <div class="col-12"><?php require __DIR__ . '/partials/customer-banners.php'; ?></div>
+  <?php endif; ?>
 
   <?php if ($socialLinks): ?>
     <div class="col-12">

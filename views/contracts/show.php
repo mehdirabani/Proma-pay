@@ -27,7 +27,8 @@ $firstGuarantee = $guarantees[0] ?? [];
 $renderedDocumentTitle = trim((string) ($document['rendered_title'] ?? '')) ?: ($documentTitle ?? '');
 $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?: ($documentHeader ?? '');
 ?>
-<section class="card proma-contract-header" data-contract-tab-panel="summary">
+<div class="proma-contract-detail" data-contract-tabs-root>
+<section class="card proma-contract-header">
   <div class="card-header card-no-border">
     <div class="header-top">
       <div>
@@ -35,9 +36,14 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
         <p><?= e($contract['customer_name']) ?> - <?= to_persian_digits($contract['mobile'] ?? '') ?></p>
       </div>
       <div class="actions">
-        <a class="btn secondary" href="<?= e(url('contracts')) ?>">بازگشت</a>
-        <a class="btn success" href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank">چاپ دفترچه</a>
-        <a class="btn success" href="<?= e(url('contracts/printDocument/' . $contract['id'])) ?>" target="_blank">چاپ قرارداد</a>
+        <a class="btn" href="#contract-installments" data-contract-tab-link="installments"><i data-feather="credit-card"></i> اقساط و پرداخت</a>
+        <a class="btn secondary" href="#contract-settlement" data-contract-tab-link="settlement">تسویه قرارداد</a>
+        <details class="proma-contract-action-menu">
+          <summary class="btn secondary"><i data-feather="more-horizontal"></i> بیشتر</summary>
+          <div class="actions">
+        <a class="btn secondary" href="<?= e(url('contracts')) ?>">بازگشت به قراردادها</a>
+        <a class="btn secondary" href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank" rel="noopener">چاپ دفترچه</a>
+        <a class="btn secondary" href="<?= e(url('contracts/printDocument/' . $contract['id'])) ?>" target="_blank" rel="noopener">چاپ قرارداد</a>
         <?php if ($canManageDocument): ?>
           <?php if ($canManageActiveContract): ?>
             <a class="btn secondary icon-only" href="<?= e(url('contracts', ['open' => 'edit-contract-' . (int) $contract['id']])) ?>" title="ویرایش" aria-label="ویرایش"><i data-feather="edit-2"></i></a>
@@ -49,10 +55,12 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
               <button class="btn" type="submit"><?= $document ? 'تولید مجدد قرارداد' : 'تولید قرارداد' ?></button>
             </form><?php endif; ?>
         <?php endif; ?>
+          </div>
+        </details>
       </div>
     </div>
   </div>
-  <div class="card-body">
+  <div class="card-body" data-contract-tab-panel="summary">
     <div class="proma-preview-grid">
       <span><small>مبلغ اصل قرارداد</small><strong><?= money_toman($contract['principal_amount']) ?></strong></span>
       <span><small>پیش‌پرداخت</small><strong><?= money_toman($contract['down_payment_amount'] ?? 0) ?></strong></span>
@@ -100,7 +108,7 @@ $settlementPreview = $settlementPreview ?? ['selected_count' => 0, 'principal_to
 $settlementPreview['legal_cost_total'] = $combinedLegalCost;
 $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview['full_settlement_total'] ?? 0) + $combinedLegalCost;
 ?>
-<section class="card proma-contract-settlement-card" data-contract-tab-panel="settlement" hidden>
+<section class="card proma-contract-settlement-card" id="contract-settlement" data-contract-tab-panel="settlement" hidden>
   <div class="card-header card-no-border"><div class="header-top"><div><h2>تسویه کامل قرارداد</h2><p>محاسبهٔ سروری در تاریخ <?= e(jdate(date('Y-m-d'))) ?>؛ پیش از ثبت پرداخت دوباره قفل و محاسبه می‌شود.</p></div><strong class="proma-settlement-total"><?= money_toman($settlementPreview['full_settlement_total'] ?? 0) ?></strong></div></div>
   <div class="card-body">
     <div class="proma-preview-grid">
@@ -214,9 +222,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
   </section>
 <?php endif; ?>
 
-<div class="proma-contract-workspace" data-contract-tab-panel="installments" hidden>
-  <?php if ($guarantors): ?>
-  <section class="card proma-contract-sidebar">
+  <section class="card proma-contract-document" data-contract-tab-panel="files" hidden>
     <div class="card-header card-no-border"><div class="header-top"><h2>متن قرارداد</h2><?php if ($document): ?><button class="btn secondary small" type="button" data-contract-copy-textarea="resolved-contract-text"><i data-feather="copy"></i> کپی متن قرارداد تولیدشده</button><?php endif; ?></div></div>
     <div class="card-body">
       <?php if ($document): ?>
@@ -251,7 +257,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
     <?php endif; ?>
   </section>
 
-  <section class="card">
+  <section class="card" data-contract-tab-panel="summary">
     <div class="card-header card-no-border"><h2>کالاهای قرارداد</h2></div>
     <div class="table-wrap">
       <table>
@@ -283,10 +289,8 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
       </table>
     </div>
   </section>
-</div>
-
-<div class="grid cols-2" data-contract-tab-panel="files" hidden>
-  <section class="card">
+  <?php if ($guarantors): ?>
+  <section class="card" data-contract-tab-panel="summary">
     <div class="card-header card-no-border"><h2>ضامن‌ها</h2></div>
     <div class="table-wrap">
       <table>
@@ -306,6 +310,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
   </section>
   <?php endif; ?>
 
+<div class="proma-contract-workspace" id="contract-installments" data-contract-tab-panel="installments" hidden>
   <section class="card proma-contract-installments-card">
     <div class="card-header card-no-border">
       <div class="header-top">
@@ -315,7 +320,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
     </div>
     <?php if ($canManageActiveContract): ?><form method="post" action="<?= e(url('contracts/bulkInstallmentAction/' . (int) $contract['id'])) ?>" id="installment-bulk-form"><?= csrf_field() ?><?php endif; ?>
     <div class="table-wrap">
-      <table>
+      <table class="proma-contract-installments-table">
         <thead><tr><?php if ($canManageActiveContract): ?><th><input type="checkbox" data-check-all="installment_ids" aria-label="انتخاب همه اقساط"></th><?php endif; ?><th>قسط</th><th>سررسید</th><th>جزئیات مالی امروز</th><th>وضعیت</th><?php if ($canManageActiveContract): ?><th>عملیات</th><?php endif; ?></tr></thead>
         <tbody>
         <?php foreach ($installments as $installment): ?>
@@ -331,7 +336,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
               <?php endif; ?>
             </td>
             <td><?= e(jdate($installment['due_date'])) ?></td>
-            <td>
+            <td class="proma-installment-financial-cell">
               <div class="proma-installment-financials">
                 <span><small>مبلغ پایه</small><strong><?= money_toman($installment['base_amount']) ?></strong></span>
                 <span><small>پرداخت‌شده</small><strong><?= money_toman($installment['effective_paid_principal'] ?? 0) ?></strong></span>
@@ -513,7 +518,6 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
     <?php endif; ?>
   <?php endforeach; ?>
 <?php endif; ?>
-</div>
 
 <section class="card" data-contract-tab-panel="payments" hidden>
   <div class="card-header card-no-border">
@@ -605,6 +609,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
   </section>
 <?php endif; ?>
 
+</div><!-- contract tabs root: modals remain outside the panel tree -->
 <?php if ($canManageActiveContract): ?>
   <div class="modal" id="add-contract-installment">
     <div class="modal-content">

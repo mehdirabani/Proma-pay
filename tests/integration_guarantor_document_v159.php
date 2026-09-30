@@ -62,14 +62,50 @@ Model::execute('UPDATE users SET full_name = ? WHERE id = ?', ['نام تغیی�
 $snapshotNames = array_column(ContractDocument::guarantorsForDocument($existingOnlyContract), 'full_name');
 $assert($snapshotNames[0] === 'ضامن موجود الف', 'Contract guarantor snapshot was overwritten by a profile change.');
 
-$mixedContract = Contract::createWithInstallments($payload, [$guarantorA], [], [], [[
-    'full_name' => 'ضامن جدید ج', 'father_name' => 'پدر ج', 'national_id' => '1234567890', 'mobile' => '09120000000', 'relationship' => 'ضامن', 'address' => 'نشانی تست',
-]]);
+$newPerson = ['full_name' => 'ضامن جدید ج', 'father_name' => 'پدر ج', 'national_id' => $nationalId(), 'mobile' => $mobile('0919', 5), 'relationship' => 'ضامن', 'address' => 'نشانی تست'];
+$mixedContract = Contract::createWithInstallments($payload, [$guarantorA], [], [], [$newPerson]);
 $mixedNames = array_column(ContractDocument::guarantorsForDocument($mixedContract), 'full_name');
 $assert($mixedNames === ['نام تغییرکرده پس از قرارداد', 'ضامن جدید ج'], 'Mixed existing/new guarantors are not resolved by one document model.');
 $renderedMixed = ContractDocument::document($mixedContract);
 $assert(strpos((string) ($renderedMixed['rendered_body'] ?? ''), 'نام تغییرکرده پس از قرارداد') !== false && strpos((string) ($renderedMixed['rendered_body'] ?? ''), 'ضامن جدید ج') !== false, 'Mixed guarantors are not printed together.');
 $mixedView = ContractDocument::viewModel($mixedContract);
 $assert(array_column($mixedView['guarantors'], 'full_name') === $mixedNames, 'Mixed-guarantor preview differs from print data.');
+
+$createdCustomer = Model::fetch('SELECT * FROM users WHERE national_id = ?', [$newPerson['national_id']]);
+$assert($createdCustomer && $createdCustomer['role'] === 'customer' && $createdCustomer['status'] === 'active', 'New guarantor has no active customer account.');
+$assert(password_verify(substr($newPerson['mobile'], -4), $createdCustomer['password_hash']), 'New guarantor default login must use last four mobile digits.');
+$assert($createdCustomer['username'] === $newPerson['national_id'], 'New guarantor cannot sign in by national ID.');
+$assert((int) Model::fetch('SELECT COUNT(*) AS n FROM contract_guarantors WHERE contract_id = ? AND guarantor_id = ?', [$mixedContract, $createdCustomer['id']])['n'] === 1, 'New guarantor account not linked to contract.');
+$originalHash = $createdCustomer['password_hash'];
+$reuseContract = Contract::createWithInstallments($payload, [], [], [], [$newPerson]);
+$assert((int) Model::fetch('SELECT COUNT(*) AS n FROM users WHERE national_id = ?', [$newPerson['national_id']])['n'] === 1, 'Reusing a guarantor created duplicate customers.');
+$assert(User::find($createdCustomer['id'])['password_hash'] === $originalHash, 'Reusing a guarantor reset the existing password.');
+$assert(count(ContractDocument::guarantorsForDocument($reuseContract)) === 1, 'Account link duplicated printed guarantor.');
+
+$emptyContract = Contract::createWithInstallments($payload);
+Contract::updateContract($emptyContract, $payload + ['updated_by' => $adminId], [], [], [], [$newPerson]);
+$assert(count(ContractDocument::guarantorsForDocument($emptyContract)) === 1, 'Editing contract did not create guarantor link.');
+
+$secondPerson = $newPerson;
+$secondPerson['national_id'] = $nationalId();
+$secondPerson['mobile'] = $mobile('0919', 6);
+$conflict = $newPerson;
+$conflict['mobile'] = User::find($guarantorB)['mobile'];
+$beforeContracts = (int) Model::fetch('SELECT COUNT(*) AS n FROM contracts')['n'];
+try {
+    Contract::createWithInstallments($payload, [], [], [], [$secondPerson, $conflict]);
+    throw new RuntimeException('Conflicting identities accepted.');
+} catch (InvalidArgumentException $expected) {
+    $assert(strpos($expected->getMessage(), 'دو حساب') !== false, 'Unexpected conflict rejection.');
+}
+$assert(!Model::fetch('SELECT id FROM users WHERE national_id = ?', [$secondPerson['national_id']]), 'Failed contract left an orphan customer.');
+$assert((int) Model::fetch('SELECT COUNT(*) AS n FROM contracts')['n'] === $beforeContracts, 'Failed contract was not rolled back.');
+foreach ([['national_id' => 'bad'], ['mobile' => '123'], ['national_id' => User::find($customerId)['national_id'], 'mobile' => User::find($customerId)['mobile']]] as $invalid) {
+    try {
+        Contract::createWithInstallments($payload, [], [], [], [array_replace($newPerson, $invalid)]);
+        throw new RuntimeException('Invalid/self guarantor accepted.');
+    } catch (InvalidArgumentException $expected) {}
+}
+echo 'GUARANTOR_ACCOUNT_V202_OK contract=' . $mixedContract . ' no_guarantor=' . Contract::createWithInstallments($payload) . "\n";
 
 echo "INTEGRATION_GUARANTOR_DOCUMENT_V159_OK\n";

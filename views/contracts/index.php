@@ -344,6 +344,7 @@ for ($i = 0; $i < 6; $i++) {
         </section>
 
         <section class="proma-form-section" data-repeater="guarantor_people">
+          <p class="proma-form-help">ضامن جدید با کد ملی و موبایل معتبر به فهرست مشتریان هم اضافه می‌شود. حساب موجود تکرار نمی‌شود؛ رمز اولیه مشتری جدید چهار رقم آخر موبایل است.</p>
           <div class="proma-section-title">
             <h4>مشخصات ضامن‌ها</h4>
             <button class="btn small secondary" type="button" data-repeater-add>افزودن ضامن</button>
@@ -511,6 +512,7 @@ for ($i = 0; $i < 6; $i++) {
           </section>
 
           <section class="proma-form-section" data-repeater="guarantor_people">
+            <p class="proma-form-help">با ثبت ضامن جدید، حساب مشتری او هم ایجاد می‌شود. کد ملی و موبایل باید متعلق به یک نفر باشند.</p>
             <div class="proma-section-title">
               <h4>مشخصات ضامن‌ها</h4>
               <button class="btn small secondary" type="button" data-repeater-add>افزودن ضامن</button>

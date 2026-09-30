@@ -439,6 +439,7 @@ class Contract extends Model
                 ]
             );
             $contractId = (int) self::lastInsertId();
+            $guarantorIds = array_merge($guarantorIds, ContractGuarantorService::customerIds($guarantorPeople, (int) $data['customer_id']));
             self::syncGuarantors($contractId, $guarantorIds, (int) $data['customer_id']);
             ContractDocument::snapshotLinkedGuarantors($contractId, $data['created_by'] ?? null);
             ContractDocument::saveItems($contractId, $items);
@@ -520,6 +521,7 @@ class Contract extends Model
                     'notes' => $data['notes'] ?? '',
                 ]
             );
+            $guarantorIds = array_merge($guarantorIds, ContractGuarantorService::customerIds($guarantorPeople, (int) $data['customer_id'], $old['guarantor_people']));
             self::syncGuarantors($id, $guarantorIds, (int) $data['customer_id']);
             ContractDocument::snapshotLinkedGuarantors((int) $id, $data['updated_by'] ?? null);
             ContractDocument::saveItems((int) $id, $items);

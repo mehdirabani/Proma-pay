@@ -28,7 +28,7 @@ $overdue = $overdue ?? [];
       ['اقساط معوق', $metrics['overdue'] ?? 0, 'نیازمند تماس', 'alert-triangle'],
       ['پیگیری‌های آینده', $metrics['followups'] ?? 0, 'تماس زمان‌بندی‌شده', 'phone-call'],
   ] as $item): ?>
-    <div class="col-xxl-3 col-md-6">
+    <div class="col-xxl-3 col-md-6 proma-dashboard-metric">
       <article class="card proma-role-kpi">
         <div class="card-body">
           <span class="proma-role-kpi-icon"><i data-feather="<?= e($item[3]) ?>"></i></span>

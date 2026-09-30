@@ -2864,11 +2864,13 @@
     workspace.setAttribute('role', 'tablist');
     buttons.forEach(function (button, index) {
       const name = button.getAttribute('data-contract-tab-open');
-      const firstPanel = panels.find(function (panel) { return panel.getAttribute('data-contract-tab-panel') === name; });
+      const matchingPanels = panels.filter(function (panel) { return panel.getAttribute('data-contract-tab-panel') === name; });
       button.id = instanceId + '-tab-' + name;
       button.setAttribute('role', 'tab');
       button.setAttribute('tabindex', index === 0 ? '0' : '-1');
-      if (firstPanel) button.setAttribute('aria-controls', firstPanel.id || (firstPanel.id = instanceId + '-panel-' + name));
+      button.setAttribute('aria-controls', matchingPanels.map(function (panel, panelIndex) {
+        return panel.id || (panel.id = instanceId + '-panel-' + name + '-' + panelIndex);
+      }).join(' '));
     });
     panels.forEach(function (panel) {
       const name = panel.getAttribute('data-contract-tab-panel');
@@ -2900,6 +2902,16 @@
         const next = event.key === 'Home' ? 0 : (event.key === 'End' ? buttons.length - 1 : (current + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length);
         buttons[next].focus();
         activate(buttons[next].getAttribute('data-contract-tab-open'));
+      });
+    });
+    root.querySelectorAll('[data-contract-tab-link]').forEach(function (link) {
+      link.addEventListener('click', function (event) {
+        const name = link.getAttribute('data-contract-tab-link');
+        if (!buttons.some(function (button) { return button.getAttribute('data-contract-tab-open') === name; })) return;
+        event.preventDefault();
+        activate(name);
+        const panel = panels.find(function (item) { return item.getAttribute('data-contract-tab-panel') === name; });
+        if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     });
     const hash = (window.location.hash || '').replace(/^#contract-/, '');

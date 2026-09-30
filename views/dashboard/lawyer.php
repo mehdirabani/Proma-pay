@@ -27,7 +27,7 @@ $eligible = $eligible ?? [];
       ['آماده شکایت', $metrics['eligible'] ?? 0, 'قرارداد واجد شرایط', 'alert-octagon'],
       ['هزینه ثبت‌شده', money_toman($metrics['expenses'] ?? 0), 'جمع هزینه پرونده‌ها', 'credit-card'],
   ] as $item): ?>
-    <div class="col-xxl-3 col-md-6">
+    <div class="col-xxl-3 col-md-6 proma-dashboard-metric">
       <article class="card proma-role-kpi">
         <div class="card-body">
           <span class="proma-role-kpi-icon"><i data-feather="<?= e($item[3]) ?>"></i></span>

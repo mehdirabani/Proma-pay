@@ -223,11 +223,16 @@ if (class_exists('PluginManager')) {
     }
 }
 $sidebarIcon = static function (array $item, string $sprite, bool $filled = false): string {
-    if (($item[0] ?? '') === 'medals') {
-        return $filled ? '' : proma_icon('award', '', 'proma-sidebar-nav-icon');
-    }
-    $icon = $filled ? ($item[3] ?? '') : ($item[2] ?? '');
-    return '<svg class="' . ($filled ? 'fill-icon' : 'stroke-icon') . '" aria-hidden="true"><use href="' . e($sprite) . '#' . e($icon) . '"></use></svg>';
+    if ($filled) return '';
+    $icons = ['dashboard' => 'grid', 'customers' => 'users', 'contracts' => 'file-text',
+        'installments' => 'calendar', 'payments' => 'credit-card', 'overdue' => 'clock',
+        'legal' => 'briefcase', 'lawyer' => 'briefcase', 'review' => 'check-square',
+        'notifications' => 'bell', 'chat' => 'message-circle', 'calendar' => 'calendar',
+        'users' => 'users', 'medals' => 'award', 'settings' => 'settings', 'ai' => 'activity',
+        'file-manager' => 'folder', 'system-health' => 'activity', 'plugins' => 'package',
+        'ecommerce' => 'shopping-bag', 'portal' => 'user', 'profile-reviews' => 'user-check'];
+    $routeKey = explode('/', (string) ($item[0] ?? ''))[0];
+    return '<i data-feather="' . e($icons[$routeKey] ?? 'layers') . '" aria-hidden="true"></i>';
 };
 ?>
 <!doctype html>
@@ -294,20 +299,13 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
               <?= $renderFullLogo() ?>
             </a>
           </div>
-          <button type="button" class="toggle-sidebar" aria-label="باز و بسته کردن منو" aria-controls="proma-navigation" aria-expanded="false"><i data-feather="menu"></i></button>
+          <button type="button" class="proma-nav-toggle" data-navigation-toggle aria-label="باز کردن منو" aria-controls="proma-navigation" aria-expanded="false"><i data-feather="menu"></i></button>
         </div>
 
         <div class="left-header col-xxl-5 col-xl-6 col-lg-5 col-md-4 col-sm-3 p-0">
-          <div class="notification-slider">
-            <div class="d-flex h-100 align-items-center">
-              <img src="<?= e(template_asset_url('images/giftools.gif')) ?>" alt="">
-              <h6 class="mb-0 f-w-400"><span class="font-primary">وضعیت امروز </span><span class="f-light">مدیریت اقساط، قراردادها و پیگیری‌ها آماده است.</span></h6>
-              <i class="icon-arrow-top-right f-light"></i>
-            </div>
-            <div class="d-flex h-100 align-items-center">
-              <img src="<?= e(template_asset_url('images/giftools.gif')) ?>" alt="">
-              <h6 class="mb-0 f-w-400"><span class="font-primary"><?= e(role_label(Auth::role())) ?> </span><span class="f-light">به <?= e($systemName) ?> خوش آمدید.</span></h6>
-            </div>
+          <div class="proma-header-context">
+            <strong><?= e($systemName) ?><span> / <?= e(role_label(Auth::role())) ?></span></strong>
+            <time datetime="<?= e(date('Y-m-d')) ?>"><?= e(jdate(date('Y-m-d'))) ?></time>
           </div>
         </div>
 
@@ -446,27 +444,17 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
     <div class="page-body-wrapper">
       <div class="sidebar-wrapper" id="proma-navigation" sidebar-layout="stroke-svg">
         <div>
-          <div class="logo-wrapper">
-            <button type="button" class="toggle-sidebar" aria-label="بستن منو" aria-controls="proma-navigation"><i data-feather="x"></i></button>
+          <div class="proma-navigation-brand">
             <a class="proma-template-logo proma-sidebar-brand" href="<?= e(url('dashboard')) ?>">
               <span class="proma-logo-full"><?= $renderFullLogo() ?></span>
               <span class="proma-logo-compact"><?= $renderCompactLogo() ?></span>
             </a>
-            <div class="back-btn"><i class="fa fa-angle-left"></i></div>
+            <button type="button" class="proma-nav-toggle" data-navigation-toggle aria-label="بستن منو" aria-controls="proma-navigation"><?= proma_icon('close') ?></button>
           </div>
-          <div class="logo-icon-wrapper">
-            <a href="<?= e(url('dashboard')) ?>"><?= $renderCompactLogo() ?></a>
-          </div>
-          <nav class="sidebar-main">
-            <div class="left-arrow" id="left-arrow"><i data-feather="arrow-left"></i></div>
+          <div class="proma-navigation-role"><span class="proma-navigation-dot"></span> پنل <?= e(role_label(Auth::role())) ?></div>
+          <nav class="proma-navigation-menu" aria-label="منوی اصلی">
             <div id="sidebar-menu">
-              <ul class="sidebar-links" id="simple-bar">
-                <li class="back-btn">
-                  <a href="<?= e(url('dashboard')) ?>"><?= $renderCompactLogo() ?></a>
-                  <div class="mobile-back text-end"><span>برگشت</span><i class="fa fa-angle-right ps-2" aria-hidden="true"></i></div>
-                </li>
-                <li class="pin-title sidebar-main-title"><div><h6>پین شده</h6></div></li>
-                <li class="sidebar-main-title"><div><h6>منوی سامانه</h6></div></li>
+              <ul class="proma-navigation-list">
                 <?php foreach ($nav as $item): ?>
                   <?php
                     $children = $item[4] ?? [];
@@ -480,25 +468,24 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
                         }
                     }
                   ?>
-                  <li class="sidebar-list">
-                    <i class="fa fa-thumb-tack"></i>
+                  <li class="proma-navigation-item">
                     <?php if ($item[0] === 'chat' && $unreadMessages): ?><label class="badge badge-light-primary"><?= to_persian_digits($unreadMessages) ?></label><?php endif; ?>
                     <?php if ($item[0] === 'notifications' && $unreadNotifications): ?><label class="badge badge-light-primary"><?= to_persian_digits($unreadNotifications) ?></label><?php endif; ?>
                     <?php if ($item[0] === 'review' && $pendingReviewCount): ?><label class="badge badge-light-danger"><?= to_persian_digits($pendingReviewCount) ?></label><?php endif; ?>
                     <?php if ($children): ?>
-                      <button type="button" class="sidebar-link sidebar-title <?= $active ? 'active' : '' ?>" data-navigation-group aria-expanded="<?= $active ? 'true' : 'false' ?>">
+                      <button type="button" class="proma-navigation-link <?= $active ? 'active' : '' ?>" data-navigation-group aria-expanded="<?= $active ? 'true' : 'false' ?>">
                         <?= $sidebarIcon($item, $sprite) ?>
                         <?= $sidebarIcon($item, $sprite, true) ?>
                         <span><?= e($item[1]) ?></span>
                       </button>
-                      <ul class="sidebar-submenu<?= $active ? ' is-open' : '' ?>">
+                      <ul class="proma-navigation-submenu"<?= $active ? '' : ' hidden' ?>>
                         <?php foreach ($children as $child): ?>
                           <?php $childActive = strpos($route, $child[0]) === 0; ?>
                           <li><a class="<?= $childActive ? 'active' : '' ?>" href="<?= e(url($child[0])) ?>"><?= e($child[1]) ?></a></li>
                         <?php endforeach; ?>
                       </ul>
                     <?php else: ?>
-                      <a class="sidebar-link sidebar-title link-nav <?= $active ? 'active' : '' ?>" href="<?= e(url($item[0])) ?>">
+                      <a class="proma-navigation-link <?= $active ? 'active' : '' ?>"<?= $active ? ' aria-current="page"' : '' ?> href="<?= e(url($item[0])) ?>">
                         <?= $sidebarIcon($item, $sprite) ?>
                         <?= $sidebarIcon($item, $sprite, true) ?>
                         <span><?= e($item[1]) ?></span>
@@ -508,7 +495,6 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
                 <?php endforeach; ?>
               </ul>
             </div>
-            <div class="right-arrow" id="right-arrow"><i data-feather="arrow-right"></i></div>
           </nav>
         </div>
       </div>

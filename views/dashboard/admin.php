@@ -3,7 +3,7 @@ $adminName = Auth::user()['full_name'] ?? 'مدیر';
 $todayLabel = jdate(date('Y-m-d'));
 $reviewCount = (int) ($kpis['pending_reviews'] ?? 0);
 $quickActions = [
-    ['label' => 'ثبت قرارداد', 'url' => url('contracts'), 'icon' => 'file-plus', 'tone' => 'primary'],
+    ['label' => 'ثبت قرارداد', 'url' => url('contracts', ['open' => 'create-contract']), 'icon' => 'file-plus', 'tone' => 'primary'],
     ['label' => 'پیگیری معوقات', 'url' => url('overdue'), 'icon' => 'phone-call', 'tone' => 'danger'],
     ['label' => 'بررسی رسیدها', 'url' => url('review', ['tab' => 'receipts']), 'icon' => 'check-square', 'tone' => 'success'],
     ['label' => 'تنظیمات', 'url' => url('settings'), 'icon' => 'settings', 'tone' => 'muted'],
@@ -22,27 +22,18 @@ $healthCards = [
 
 <div class="row widget-grid proma-dashboard proma-admin-dashboard">
   <div class="col-12">
-    <section class="card proma-admin-hero">
-      <div class="card-body">
-        <div class="proma-admin-hero-main">
-          <span class="badge badge-light-primary"><?= e($todayLabel) ?></span>
-          <h4>سلام، <?= e($adminName) ?></h4>
-          <p>نمای خلاصه مدیریت برای تصمیم‌گیری سریع درباره وصول، معوقات، رسیدهای در انتظار بررسی و پرونده‌های پرریسک.</p>
-        </div>
-        <div class="proma-admin-actions">
-          <?php foreach ($quickActions as $action): ?>
-            <a class="proma-admin-action proma-admin-action--<?= e($action['tone']) ?>" href="<?= e($action['url']) ?>">
-              <i data-feather="<?= e($action['icon']) ?>"></i>
-              <span><?= e($action['label']) ?></span>
-            </a>
-          <?php endforeach; ?>
-        </div>
+    <section class="proma-workspace-intro">
+      <div>
+        <span class="proma-eyebrow">نمای کلی کسب‌وکار · <?= e($todayLabel) ?></span>
+        <h2>سلام، <?= e($adminName) ?></h2>
+        <p>امروز روی وصول و پرونده‌های نیازمند اقدام تمرکز کنید.</p>
       </div>
+      <a class="btn" href="<?= e($quickActions[0]['url']) ?>"><i data-feather="plus"></i> قرارداد جدید</a>
     </section>
   </div>
 
   <?php foreach ($mainKpis as $card): ?>
-    <div class="col-xxl-3 col-md-6">
+    <div class="col-xxl-3 col-md-6 proma-dashboard-metric">
       <article class="card proma-admin-kpi proma-admin-kpi--<?= e($card['tone']) ?>">
         <div class="card-body">
           <span class="proma-admin-kpi-icon"><i data-feather="<?= e($card['icon']) ?>"></i></span>
@@ -55,6 +46,14 @@ $healthCards = [
       </article>
     </div>
   <?php endforeach; ?>
+
+  <div class="col-12">
+    <nav class="proma-workspace-shortcuts" aria-label="دسترسی سریع مدیریت">
+      <?php foreach (array_slice($quickActions, 1) as $action): ?>
+        <a href="<?= e($action['url']) ?>"><i data-feather="<?= e($action['icon']) ?>"></i><span><?= e($action['label']) ?></span><i data-feather="arrow-left"></i></a>
+      <?php endforeach; ?>
+    </nav>
+  </div>
 
   <div class="col-xxl-8 col-xl-12">
     <section class="card proma-admin-panel">

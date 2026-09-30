@@ -190,6 +190,15 @@ TEXT;
         foreach ($manual as &$person) {
             $person['guarantor_id'] = null;
             $person['source_type'] = 'contract_person';
+            // A new guarantor now also has a customer account. Keep the contract
+            // snapshot (including relationship/address), but render that person once.
+            foreach ($linked as $key => $account) {
+                $identity = trim(to_english_digits($person['national_id'] ?? ''));
+                if ($identity !== '' && $identity === trim(to_english_digits($account['national_id'] ?? ''))) {
+                    $person['guarantor_id'] = (int) $account['guarantor_id'];
+                    unset($linked[$key]);
+                }
+            }
         }
         unset($person);
 

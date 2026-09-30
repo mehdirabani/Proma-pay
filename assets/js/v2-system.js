@@ -57,7 +57,7 @@
     var sidebar = document.getElementById('proma-navigation');
     if (!sidebar) return;
     var mobile = window.matchMedia('(max-width: 991px)');
-    var buttons = Array.from(document.querySelectorAll('.toggle-sidebar'));
+    var buttons = Array.from(document.querySelectorAll('[data-navigation-toggle]'));
     var opener = null;
     var backdrop = document.createElement('button');
     backdrop.type = 'button';
