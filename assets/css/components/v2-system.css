@@ -68,6 +68,22 @@ body.proma-v2 .sidebar-wrapper .sidebar-submenu:not([hidden]) { display: block; 
 body.proma-v2 .sidebar-wrapper :is(.fa-thumb-tack, .pin-title, .left-arrow, .right-arrow) { display: none; }
 body.proma-v2 .sidebar-wrapper { overflow-y: auto; }
 body.proma-v2 .sidebar-wrapper .sidebar-links { height: auto; }
+/* The legacy shell clips the sidebar itself; keep scrolling on the owned menu region. */
+body.proma-v2 #proma-navigation { overflow: hidden; }
+body.proma-v2 #proma-navigation > div { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+body.proma-v2 #proma-navigation .proma-navigation-brand,
+body.proma-v2 #proma-navigation .proma-navigation-role { flex: 0 0 auto; }
+body.proma-v2 #proma-navigation .proma-navigation-menu {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  scroll-padding-block: 16px 96px;
+}
+body.proma-v2 #proma-navigation .proma-navigation-list { min-height: 0; padding-block-end: calc(var(--pp-space-8) + env(safe-area-inset-bottom)); }
 body.proma-v2 .proma-navigation-backdrop { position: fixed; inset: 0; z-index: 1040; background: rgb(23 26 43 / 40%); border: 0; }
 body.proma-v2 .proma-navigation-backdrop[hidden] { display: none; }
 body.proma-v2.proma-navigation-open { overflow: hidden; }
@@ -624,15 +640,20 @@ body.proma-v2 .proma-v2-mobile-nav { display: none; }
 
   body.proma-v2 table.proma-v2-data-table { display: block; border: 0; min-width: 0; table-layout: auto; }
   body.proma-v2 table.proma-v2-data-table thead { display: none; }
-  body.proma-v2 table.proma-v2-data-table tbody { display: grid; gap: 12px; padding: 10px; }
-  body.proma-v2 table.proma-v2-data-table tbody tr { display: block; padding: 8px 13px; border: 1px solid var(--pp-line); border-radius: 14px; background: #fff; box-shadow: var(--pp-shadow-sm); }
-  body.proma-v2 table.proma-v2-data-table tbody td { min-height: 38px; padding: 8px 0; display: grid; grid-template-columns: minmax(98px, 38%) minmax(0, 1fr); gap: 12px; align-items: center; border-bottom: 1px dashed #e8e9ef; text-align: left; overflow-wrap: anywhere; }
+  body.proma-v2 table.proma-v2-data-table tbody { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; padding: 10px; }
+  body.proma-v2 table.proma-v2-data-table tbody tr { display: block; width: 100%; min-width: 0; box-sizing: border-box; padding: 8px 13px; border: 1px solid var(--pp-line); border-radius: 14px; background: #fff; box-shadow: var(--pp-shadow-sm); }
+  body.proma-v2 table.proma-v2-data-table tbody td { width: 100%; min-width: 0; box-sizing: border-box; min-height: 38px; padding: 8px 0; display: grid; grid-template-columns: minmax(98px, 38%) minmax(0, 1fr); gap: 12px; align-items: center; border-bottom: 1px dashed #e8e9ef; text-align: left; overflow-wrap: break-word; word-break: normal; }
+  body.proma-v2 table.proma-v2-data-table tbody td > * { min-width: 0; max-width: 100%; }
   body.proma-v2 table.proma-v2-data-table tbody td:last-child { border-bottom: 0; }
   body.proma-v2 table.proma-v2-data-table tbody td::before { content: attr(data-label); color: var(--pp-muted); font-size: 11px; font-weight: 800; text-align: right; }
   body.proma-v2 table.proma-v2-data-table tbody td[colspan] { display: block; text-align: center; }
   body.proma-v2 table.proma-v2-data-table tbody td[colspan]::before { display: none; }
   body.proma-v2 table.proma-v2-data-table tbody td.proma-installment-financial-cell { display: block; text-align: start; }
   body.proma-v2 table.proma-v2-data-table tbody td.proma-installment-financial-cell::before { display: block; margin-bottom: var(--pp-space-2); }
+  body.proma-v2 .proma-penalty-display { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
+  body.proma-v2 .proma-penalty-display small,
+  body.proma-v2 .proma-penalty-display del { white-space: normal; overflow-wrap: anywhere; word-break: normal; }
+  body.proma-v2 .proma-penalty-display .badge { white-space: normal; }
   body.proma-v2 .proma-contract-installments-table .proma-installment-financials { grid-template-columns: repeat(2,minmax(0,1fr)); }
   body.proma-v2 table.proma-contract-installments-table tbody td.actions { display: flex; flex-wrap: wrap; justify-content: flex-start; }
   body.proma-v2 table.proma-v2-data-table .actions, body.proma-v2 table.proma-v2-data-table .proma-table-actions { justify-content: flex-start; }

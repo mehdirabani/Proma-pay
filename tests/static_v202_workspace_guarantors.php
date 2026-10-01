@@ -34,9 +34,10 @@ $documentModel = $read('models/ContractDocument.php');
 $guarantorService = $read('models/ContractGuarantorService.php');
 $integration = $read('tests/integration_guarantor_document_v159.php');
 
-$assert(($version['application'] ?? '') === '2.0.2' && ($version['display'] ?? '') === 'V2.0.2', 'Core version metadata is inconsistent.');
-$assert(($settings['asset_version'] ?? '') === '2.0.2' && ($manifest['version'] ?? '') === 'v2.0.2' && ($package['version'] ?? '') === '2.0.2', 'V2.0.2 asset or package cache metadata is inconsistent.');
-$assert(strpos($worker, 'proma-pay-v2-0-2-') !== false, 'Service worker cache prefix was not invalidated.');
+$applicationVersion = (string) ($version['application'] ?? '');
+$assert(preg_match('/^\d+\.\d+\.\d+$/', $applicationVersion) === 1 && ($version['display'] ?? '') === 'V' . $applicationVersion, 'Core version metadata is inconsistent.');
+$assert(($settings['asset_version'] ?? '') === $applicationVersion && ($manifest['version'] ?? '') === 'v' . $applicationVersion && ($package['version'] ?? '') === $applicationVersion, 'Asset or package cache metadata is inconsistent.');
+$assert(strpos($worker, 'proma-pay-v' . str_replace('.', '-', $applicationVersion) . '-') !== false, 'Service worker cache prefix was not invalidated.');
 $assert(strpos($layout, 'proma-v2 proma-v2-role-') !== false && strpos($layout, 'data-navigation-toggle') !== false, 'Role-aware responsive shell is missing.');
 $assert(strpos($layout, 'class="proma-nav-toggle" data-navigation-toggle aria-label="بستن منو"') !== false && strpos($layout, 'proma_icon(\'close\')') !== false && strpos($styles, 'body.proma-v2 .proma-nav-toggle { display: none; }') !== false, 'The desktop close-X regression returned.');
 $assert(strpos($navigationJs, "querySelectorAll('[data-navigation-toggle]')") !== false, 'Responsive navigation toggle is not bound.');
@@ -49,5 +50,7 @@ $assert(strpos($guarantorService, 'FOR UPDATE') !== false && strpos($userModel, 
 $assert(strpos($documentModel, 'to_english_digits($person[\'national_id\']') !== false && strpos($documentModel, 'to_english_digits($account[\'national_id\']') !== false, 'Guarantor documents do not deduplicate linked and historical snapshots.');
 $assert(strpos($integration, 'GUARANTOR_ACCOUNT_V202_OK') !== false && strpos($integration, 'orphan customer') !== false, 'Guarantor account integration coverage is missing.');
 $assert(strpos($quill, 'ql-white-space-normal') !== false && strpos($quill, 'style="white-space: normal;"') === false && strpos($quillCss, '.ql-editor.ql-white-space-normal') !== false, 'Quill uses CSP-blocked inline styles.');
+$assert(strpos($styles, '#proma-navigation .proma-navigation-menu') !== false && strpos($styles, 'overflow-y: auto') !== false, 'The V2 navigation menu must own its scrollable region.');
+$assert(strpos($styles, 'tbody tr { display: block; width: 100%; min-width: 0;') !== false && strpos($styles, '.proma-penalty-display small') !== false, 'Mobile data cards must constrain rows and wrap long penalty descriptions.');
 
 echo "STATIC_V202_WORKSPACE_GUARANTORS_OK\n";
