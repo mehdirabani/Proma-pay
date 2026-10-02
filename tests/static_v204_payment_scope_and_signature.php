@@ -37,6 +37,8 @@ $assert(strpos($group, 'allocation_scope') !== false && strpos($group, "verifyLo
 $assert(strpos($gateway, "(\$context['settlement_scope'] ?? 'selected')") !== false, 'Gateway provider does not persist the payment allocation scope.');
 $assert(strpos($payments, "\$_POST['selected_installment_ids']") !== false && strpos($payments, 'statesForRows($installments)') !== false, 'Group payment does not batch-check selected installments.');
 $assert(strpos($view, "name=\"selected_installment_ids[]\"") !== false && strpos($view, "fetchQuote('schedule'") !== false, 'Customer payment UI does not explicitly expand overflow to the contract schedule.');
+$assert(strpos($view, 'data-group-refresh') !== false && strpos($view, 'quoteActive = false') !== false && strpos($view, 'if (!quoteActive)') !== false, 'Customer multi-payment quote still starts requests before user interaction.');
+$assert(strpos($view, 'requestRevision !== revision') !== false, 'Stale multi-payment quote responses are not discarded.');
 $assert(strpos($view, 'proma-v2-data-table proma-installment-list-table') !== false && strpos($view, 'data-label="قابل پرداخت"') !== false, 'Installment list is missing labeled responsive card markup.');
 $assert(strpos($contractView, 'proma-v2-data-table proma-contract-installments-table') !== false && strpos($contractView, 'data-label="جزئیات مالی امروز"') !== false, 'Contract installment rows do not expose mobile-friendly labels.');
 $assert(strpos($styles, '.proma-installment-group-items { grid-template-columns: minmax(0, 1fr); }') !== false, 'Customer multi-payment selection has no single-column mobile layout.');

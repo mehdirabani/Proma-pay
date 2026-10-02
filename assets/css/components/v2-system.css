@@ -469,6 +469,7 @@ body.proma-v2 .proma-group-check input { width: 20px; height: 20px; margin: 0; a
 body.proma-v2 .proma-group-check span { min-width: 0; line-height: 1.6; }
 body.proma-v2 .proma-group-check strong { color: var(--pp-ink); font-size: 13px; text-align: left; font-variant-numeric: tabular-nums; }
 body.proma-v2 .proma-installment-group-form [data-group-submit] { min-height: 48px; justify-self: start; }
+body.proma-v2 .proma-installment-group-form [data-group-refresh] { min-height: 48px; justify-self: start; }
 body.proma-v2 .proma-installment-list-table { min-width: 980px; }
 body.proma-v2 .proma-customer-installment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--pp-space-4); min-width: 0; padding: 0 var(--pp-space-5) var(--pp-space-5); }
 body.proma-v2 .proma-customer-installment-card { display: grid; align-content: start; gap: var(--pp-space-4); min-width: 0; padding: var(--pp-space-4); border: 1px solid var(--pp-line); border-radius: var(--pp-radius); background: var(--pp-surface); box-shadow: var(--pp-shadow-sm); }
@@ -675,6 +676,7 @@ body.proma-v2 .proma-v2-mobile-nav { display: none; }
   body.proma-v2 .proma-installment-group-items { grid-template-columns: minmax(0, 1fr); }
   body.proma-v2 .proma-installment-group-head { align-items: flex-start; flex-direction: column; }
   body.proma-v2 .proma-installment-group-form [data-group-submit] { width: 100%; }
+  body.proma-v2 .proma-installment-group-form [data-group-refresh] { width: 100%; }
   body.proma-v2 .proma-customer-installment-grid { grid-template-columns: minmax(0, 1fr); padding-inline: var(--pp-space-3); }
   body.proma-v2 .proma-customer-installment-card { padding: var(--pp-space-3); }
   body.proma-v2 #installment-bulk-form { padding-inline: var(--pp-space-3); }

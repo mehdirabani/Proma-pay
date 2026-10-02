@@ -28,6 +28,7 @@ Capture at least 30 warm requests per route at desktop and mobile viewport, with
 
 - `InstallmentFinancialStateService::statesForRows()` batches payment and legal-fact reads by row/contract sets, avoiding one payment query per installment for callers that use the batch method.
 - Some detail/list controllers still assemble related data with separate model calls; validate query count using telemetry before changing them.
+- Customer multi-installment quote creation is now explicitly started by the user; rendering the payment panel no longer calls `contracts/settlementQuote` for every contract. Edits after activation are debounced and stale responses are discarded. This is a source-level request-count reduction, not a measured browser/network result.
 - `RequestTelemetry` keeps only the slowest query fingerprint per request; use aggregate log analysis or a dedicated profiler for endpoint-level query fingerprints if optimization decisions require ranking repeated queries.
 - The baseline is intentionally incomplete until the matrix has real p50/p95/p99 observations. Attachment 2's performance gate remains open.
 

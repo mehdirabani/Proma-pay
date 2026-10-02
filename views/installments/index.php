@@ -151,8 +151,9 @@ $installmentTabUrl = static function (string $tab) use ($filters): string {
           <?php foreach ($group['items'] as $groupItem): ?><label class="proma-group-check"><input type="checkbox" name="selected_installment_ids[]" value="<?= (int) $groupItem['id'] ?>" data-group-item data-payable="<?= (int) normalize_money($groupItem['payable']) ?>" checked><span>قسط <?= to_persian_digits($groupItem['installment_number']) ?> - <?= e(jdate($groupItem['due_date'])) ?></span><strong><?= money_toman($groupItem['payable']) ?></strong></label><?php endforeach; ?>
         </div>
         <div class="proma-preview-grid" data-group-breakdown aria-live="polite"><span><small>مبلغ تسویه اقساط انتخاب‌شده</small><strong data-group-total><?= money_toman($group['total']) ?></strong></span><span><small>سیاست اضافه‌پرداخت</small><strong data-group-overflow-note>مازاد فقط در همین قرارداد و به ترتیب سررسید تخصیص می‌یابد</strong></span></div>
-        <div data-group-allocation-inputs hidden></div><p class="text-muted" data-group-quote-status aria-live="polite">در حال آماده‌سازی محاسبه امن...</p>
-        <label class="proma-group-amount">مبلغ پرداخت<input name="amount" data-group-amount value="<?= e((string) normalize_money($group['total'])) ?>" inputmode="numeric" required aria-describedby="group-payment-help"></label><small id="group-payment-help">پیش از انتقال به درگاه، مبلغ و اقساط روی سرور دوباره بررسی می‌شوند.</small>
+        <div data-group-allocation-inputs hidden></div><p class="text-muted" data-group-quote-status aria-live="polite">برای دریافت پیش‌فاکتور معتبر، محاسبه مبلغ را بزنید.</p>
+        <label class="proma-group-amount">مبلغ پرداخت<input name="amount" data-group-amount value="<?= e((string) normalize_money($group['total'])) ?>" inputmode="numeric" required aria-describedby="group-payment-help-<?= (int) $group['contract_id'] ?>"></label><small id="group-payment-help-<?= (int) $group['contract_id'] ?>">پیش از انتقال به درگاه، مبلغ و اقساط روی سرور دوباره بررسی می‌شوند.</small>
+        <button class="btn secondary" type="button" data-group-refresh>محاسبه مبلغ و نحوه تخصیص</button>
         <?php if ($groupGatewayReady): ?>
           <div class="proma-gateway-choice" role="radiogroup" aria-label="انتخاب درگاه پرداخت گروهی">
             <?php foreach ($groupGatewayOptions as $gatewayOption): ?>
@@ -164,7 +165,7 @@ $installmentTabUrl = static function (string $tab) use ($filters): string {
             <?php endforeach; ?>
           </div>
         <?php endif; ?>
-        <button class="btn success" type="submit"<?= !$groupGatewayReady ? ' disabled' : '' ?> data-submit-label="در حال اتصال به درگاه..." data-group-submit><i data-feather="credit-card"></i> پرداخت انتخاب‌شده‌ها</button>
+        <button class="btn success" type="submit" disabled data-submit-label="در حال اتصال به درگاه..." data-group-submit><i data-feather="credit-card"></i> پرداخت انتخاب‌شده‌ها</button>
       </form>
     <?php endforeach; ?>
   </div>
@@ -178,7 +179,7 @@ $installmentTabUrl = static function (string $tab) use ($filters): string {
     var scopeInput = form.querySelector('[data-group-scope]');
     var status = form.querySelector('[data-group-quote-status]');
     var submit = form.querySelector('[data-group-submit]');
-    var timer = null, controller = null, customAmount = false, selectedQuote = null, selectedKey = '', lastAppliedQuote = null;
+    var timer = null, controller = null, customAmount = false, selectedQuote = null, selectedKey = '', lastAppliedQuote = null, quoteActive = false, revision = 0;
     var amountValue = function () {
       var digits = '۰۱۲۳۴۵۶۷۸۹';
       var value = String(amount.value || '').replace(/[۰-۹]/g, function (char) { return String(digits.indexOf(char)); }).replace(/[٠-٩]/g, function (char) { return String('٠١٢٣٤٥٦٧٨٩'.indexOf(char)); });
@@ -210,37 +211,45 @@ $installmentTabUrl = static function (string $tab) use ($filters): string {
         .then(function (data) { if (!data.ok) throw new Error(data.message || 'محاسبه مبلغ انجام نشد.'); return data.quote || {}; });
     };
     var refresh = function () {
+      var requestRevision = ++revision;
+      if (controller) controller.abort();
+      quoteInput.value = '';
+      lastAppliedQuote = null;
+      if (submit) submit.disabled = true;
+      if (!quoteActive) { if (status) status.textContent = 'برای دریافت پیش‌فاکتور معتبر، محاسبه مبلغ را بزنید.'; return; }
       clearTimeout(timer);
       timer = setTimeout(function () {
         var selected = selectedItems();
         var ids = selected.map(function (item) { return item.value; });
         if (!ids.length) { quoteInput.value = ''; setAllocationIds([]); total.textContent = 'قسطی انتخاب نشده است'; if (status) status.textContent = 'برای پرداخت، حداقل یک قسط انتخاب کنید.'; if (submit) submit.disabled = true; return; }
-        if (controller) controller.abort();
         controller = new AbortController();
         var signature = ids.slice().sort().join(',');
         if (status) status.textContent = 'در حال محاسبه مبلغ و محدوده تخصیص...';
         if (submit) submit.disabled = true;
-        var selectedPromise = selectedQuote && selectedKey === signature ? Promise.resolve(selectedQuote) : fetchQuote('selected', ids, controller.signal).then(function (quote) { selectedQuote = quote; selectedKey = signature; return quote; });
+        var selectedPromise = selectedQuote && selectedKey === signature ? Promise.resolve(selectedQuote) : fetchQuote('selected', ids, controller.signal).then(function (quote) { if (requestRevision === revision) { selectedQuote = quote; selectedKey = signature; } return quote; });
         selectedPromise.then(function (quote) {
+          if (requestRevision !== revision) return;
           if (!customAmount) amount.value = String(quote.full_settlement_total || quote.final_payable || 0);
           var overflow = amountValue() > Number(quote.full_settlement_total || quote.final_payable || 0);
           if (!overflow) return applyQuote(quote, 'selected');
           return fetchQuote('schedule', [], controller.signal).then(function (scheduleQuote) {
+            if (requestRevision !== revision) return;
             if (amountValue() > Number(scheduleQuote.full_settlement_total || scheduleQuote.final_payable || 0)) throw new Error('مبلغ واردشده از کل بدهی قابل پرداخت این قرارداد بیشتر است.');
             applyQuote(scheduleQuote, 'schedule');
           });
         }).catch(function (error) {
+          if (requestRevision !== revision) return;
           if (error.name !== 'AbortError') { quoteInput.value = ''; setAllocationIds([]); scopeInput.value = 'selected'; if (status) status.textContent = error.message || 'محاسبه ناموفق بود؛ دوباره تلاش کنید.'; if (submit) submit.disabled = true; }
         });
       }, 650);
     };
     amount.addEventListener('input', function () { customAmount = true; refresh(); });
     form.querySelectorAll('[data-group-item]').forEach(function (item) { item.addEventListener('change', function () { selectedQuote = null; refresh(); }); });
+    form.querySelector('[data-group-refresh]').addEventListener('click', function () { selectedQuote = null; quoteActive = true; refresh(); });
     form.addEventListener('submit', function (event) {
       var current = lastAppliedQuote;
       if (!current || current.uuid !== quoteInput.value || current.scope !== scopeInput.value || !current.ids) { event.preventDefault(); refresh(); if (status) status.textContent = 'محاسبه هنوز به‌روز نیست؛ چند لحظه صبر کنید.'; }
     });
-    refresh();
   });
   </script>
 <?php endif; ?>
