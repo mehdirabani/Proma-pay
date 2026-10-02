@@ -67,6 +67,8 @@ class FileManagerController extends Controller
         $name = trim(preg_replace('/[\r\n"]+/', '', (string) ($file['original_name'] ?: $file['display_name'])));
         $name = $name ?: 'download';
         header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: private, no-store, max-age=0');
+        header('Pragma: no-cache');
         header('Content-Type: ' . ($file['mime_type'] ?: 'application/octet-stream'));
         header('Content-Disposition: attachment; filename="download"; filename*=UTF-8\'\'' . rawurlencode($name));
         header('Content-Length: ' . (string) filesize($path));
@@ -108,6 +110,8 @@ class FileManagerController extends Controller
         }
 
         header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: private, no-store, max-age=0');
+        header('Pragma: no-cache');
         header('Content-Type: ' . $mime);
         header('Content-Disposition: ' . ($inline ? 'inline' : 'attachment') . '; filename="document"; filename*=UTF-8\'\'' . rawurlencode($name));
         header('Content-Length: ' . (string) filesize($path));

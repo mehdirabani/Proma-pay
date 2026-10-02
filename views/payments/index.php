@@ -18,6 +18,21 @@
 </section>
 
 <div data-ajax-results="payments">
+<?php if (!empty($gatewayReviewGroups)): ?>
+<section class="card proma-list-section" aria-labelledby="gateway-review-title">
+  <div class="card-header card-no-border"><div class="header-top"><h2 id="gateway-review-title">پرداخت‌های درگاه نیازمند تطبیق</h2><span class="badge warning"><?= to_persian_digits(count($gatewayReviewGroups)) ?> مورد</span></div></div>
+  <div class="card-body"><p class="notice warning">وجه این پرداخت‌ها توسط درگاه تأیید شده ولی هنوز به اقساط تخصیص نیافته است. پیش از هر اصلاحیه، نتیجه را با گزارش درگاه و سابقهٔ قرارداد تطبیق دهید.</p></div>
+  <div class="table-wrap"><table class="proma-v2-data-table"><thead><tr><th>قرارداد</th><th>مشتری</th><th>مبلغ تأییدشده</th><th>شناسه درگاه</th><th>دلیل بررسی</th><th>ثبت درخواست</th><th>عملیات</th></tr></thead><tbody>
+  <?php foreach ($gatewayReviewGroups as $review): ?><tr>
+    <td data-label="قرارداد"><?= e($review['contract_number']) ?></td><td data-label="مشتری"><?= e($review['customer_name']) ?></td>
+    <td data-label="مبلغ تأییدشده"><?= $review['gateway_verified_amount'] === null ? 'نیاز به استعلام درگاه' : money_toman($review['gateway_verified_amount']) ?></td>
+    <td data-label="شناسه درگاه"><small dir="ltr"><?= e($review['gateway_track_id'] ?? '') ?></small><br><small dir="ltr"><?= e($review['gateway_ref_id'] ?? '') ?></small></td>
+    <td data-label="دلیل بررسی"><?= e($review['reconciliation_reason'] ?? '') ?></td><td data-label="ثبت درخواست"><?= e(jdatetime($review['created_at'])) ?></td>
+    <td data-label="عملیات"><a class="btn small secondary" href="<?= e(url('contracts/show/' . (int) $review['contract_id'])) ?>">بررسی قرارداد</a></td>
+  </tr><?php endforeach; ?>
+  </tbody></table></div>
+</section>
+<?php endif; ?>
 <section class="card proma-list-section">
   <div class="card-header card-no-border">
     <div class="header-top">

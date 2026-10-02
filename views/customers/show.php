@@ -13,7 +13,8 @@ $medalDefinitions = $medalDefinitions ?? [];
       <?php $customerAvatar = avatar_key_for($customer['avatar_key'] ?? null, $customer['id'] ?? $customer['full_name']); ?>
       <div class="proma-customer-avatar <?= e($customerAvatar) ?>" aria-label="<?= e($customer['full_name']) ?>"><img data-avatar-image src="<?= e(user_avatar_asset_url($customer)) ?>" alt="آواتار <?= e($customer['full_name']) ?>"></div>
       <h4><?= e($customer['full_name']) ?></h4>
-      <p><?= to_persian_digits($customer['mobile']) ?> · <?= to_persian_digits($customer['national_id']) ?></p>
+      <?php $customerPhone = normalize_iran_phone($customer['mobile'] ?? ''); ?>
+      <p><?php if ($customerPhone !== ''): ?><a class="btn small secondary" href="tel:<?= e($customerPhone) ?>" aria-label="تماس با <?= e($customer['full_name']) ?>"><?= proma_icon('phone') ?> <?= to_persian_digits(format_iran_phone($customer['mobile'] ?? '')) ?></a> <button class="proma-icon-button secondary" type="button" data-copy-phone="<?= e($customerPhone) ?>" title="کپی شماره مشتری" aria-label="کپی شماره مشتری"><?= proma_icon('copy') ?></button><?php else: ?><?= to_persian_digits($customer['mobile'] ?? '') ?><?php endif; ?> · <?= to_persian_digits($customer['national_id']) ?></p>
       <div class="proma-medal-row proma-medal-center">
         <?php foreach (array_slice($medals, 0, 4) as $medal): ?><span class="badge badge-light-warning" title="<?= e($medal['how_to_earn'] ?? $medal['description'] ?? '') ?>"><i data-feather="<?= e($medal['icon_key'] ?? 'award') ?>"></i><?= e($medal['title']) ?></span><?php endforeach; ?>
         <?php if (!$medals): ?><span class="badge muted">بدون مدال</span><?php endif; ?>
@@ -36,6 +37,39 @@ $medalDefinitions = $medalDefinitions ?? [];
     </div>
   </section>
 </div>
+
+<?php $identityDocuments = array_values(array_filter($identityDocuments ?? [], static function ($document) { return trim((string) ($document['file_path'] ?? '')) !== ''; })); ?>
+<section class="card">
+  <div class="card-header card-no-border"><div><h2>مدارک مشتری</h2><p class="text-muted">مدارک هویتی و فایل‌های متصل به قراردادها از مسیر امن نمایش داده می‌شوند.</p></div><span class="badge badge-light-info"><?= to_persian_digits(count($identityDocuments) + count($customerFiles ?? [])) ?> مدرک</span></div>
+  <div class="card-body">
+    <?php if ($identityDocuments): ?><div class="proma-preview-grid">
+      <?php foreach ($identityDocuments as $identityDocument): ?>
+        <?php $documentUrl = url('customers/identityDocument/' . (int) $identityDocument['id']); ?>
+        <?php $documentStatus = ['pending' => 'در انتظار بررسی', 'approved' => 'تأیید شده', 'rejected' => 'رد شده'][$identityDocument['status'] ?? 'pending'] ?? 'وضعیت نامشخص'; ?>
+        <?php $extension = strtolower(pathinfo((string) ($identityDocument['file_path'] ?? ''), PATHINFO_EXTENSION)); $previewableIdentity = in_array($extension, ['pdf', 'jpg', 'jpeg', 'png', 'webp'], true); ?>
+        <article class="proma-customer-document-card"><small><?= e(IdentityDocument::typeLabel($identityDocument['document_type'] ?? '')) ?></small><strong><?= e($documentStatus) ?></strong><span><?= !empty($identityDocument['uploaded_at']) ? e(jdatetime($identityDocument['uploaded_at'])) : 'تاریخ ثبت نامشخص' ?></span><div class="actions"><?php if ($previewableIdentity): ?><details class="proma-customer-document-preview"><summary class="btn small secondary">پیش‌نمایش در همین صفحه</summary><iframe data-preview-src="<?= e($documentUrl) ?>" loading="lazy" title="پیش‌نمایش <?= e(IdentityDocument::typeLabel($identityDocument['document_type'] ?? 'مدرک هویتی')) ?>"></iframe></details><?php endif; ?><a class="btn small" href="<?= e(url('customers/identityDocument/' . (int) $identityDocument['id'], ['download' => 1])) ?>">دانلود</a></div></article>
+      <?php endforeach; ?>
+    </div><?php endif; ?>
+    <?php $customerFiles = array_values($customerFiles ?? []); ?>
+    <?php if ($customerFiles): ?><h3 class="mt-3">فایل‌های متصل به مشتری و قراردادها</h3><div class="proma-preview-grid">
+      <?php foreach ($customerFiles as $customerFile): ?>
+        <?php $viewUrl = url('file-manager/view/' . (string) $customerFile['file_uuid']); $downloadUrl = url('file-manager/download/' . (string) $customerFile['file_uuid']); $previewable = in_array(strtolower((string) ($customerFile['mime_type'] ?? '')), ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'], true); ?>
+        <article class="proma-customer-document-card"><small><?= e($customerFile['category'] ?? 'مدرک') ?></small><strong><?= e($customerFile['display_name'] ?: $customerFile['original_name']) ?></strong><span><?= !empty($customerFile['uploader_name']) ? 'بارگذاری توسط ' . e($customerFile['uploader_name']) : 'بارگذار نامشخص' ?> · <?= !empty($customerFile['created_at']) ? e(jdatetime($customerFile['created_at'])) : 'تاریخ نامشخص' ?></span><div class="actions"><?php if ($previewable): ?><details class="proma-customer-document-preview"><summary class="btn small secondary">پیش‌نمایش در همین صفحه</summary><iframe data-preview-src="<?= e($viewUrl) ?>" loading="lazy" title="پیش‌نمایش <?= e($customerFile['display_name'] ?: $customerFile['original_name']) ?>"></iframe></details><?php endif; ?><a class="btn small" href="<?= e($downloadUrl) ?>">دانلود</a></div></article>
+      <?php endforeach; ?>
+    </div><?php elseif (!$identityDocuments): ?><div class="proma-empty-state"><i data-feather="file-text"></i><h3>مدرکی ثبت نشده است</h3><p>مدارک هویتی و فایل‌های قرارداد پس از ثبت، با مجوز دسترسی در همین صفحه نمایش داده می‌شوند.</p></div><?php endif; ?>
+  </div>
+</section>
+<script>
+document.querySelectorAll('.proma-customer-document-preview').forEach(function (preview) {
+  preview.addEventListener('toggle', function () {
+    if (!preview.open) return;
+    var frame = preview.querySelector('iframe[data-preview-src]');
+    if (!frame) return;
+    frame.src = frame.dataset.previewSrc;
+    frame.removeAttribute('data-preview-src');
+  });
+});
+</script>
 
 <?php if ($medalDefinitions): ?>
 <section class="card" style="margin-top:16px">

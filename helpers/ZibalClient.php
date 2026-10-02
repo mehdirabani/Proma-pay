@@ -17,9 +17,13 @@ class ZibalClient
         if ($merchant === '') {
             return ['ok' => false, 'message' => 'مرچنت درگاه پرداخت تنظیم نشده است.'];
         }
+        $amountToman = normalize_money($amountToman);
+        if ($amountToman <= 0 || $amountToman > min(intdiv(PHP_INT_MAX, 10), 9999999999999999)) {
+            return ['ok' => false, 'message' => 'مبلغ پرداخت برای درگاه معتبر نیست.'];
+        }
         $payload = [
             'merchant' => $merchant,
-            'amount' => (int) round($amountToman * 10),
+            'amount' => $amountToman * 10,
             'callbackUrl' => $callbackUrl,
             'description' => $description,
         ];
@@ -28,13 +32,16 @@ class ZibalClient
             return $result;
         }
         $body = $result['body'];
-        if (($body['result'] ?? 0) !== 100) {
+        if ((int) ($body['result'] ?? 0) !== 100) {
             $code = (int) ($body['result'] ?? 0);
             return [
                 'ok' => false,
                 'message' => self::resultMessage($code, $body['message'] ?? ''),
                 'gateway_code' => $code,
             ];
+        }
+        if (!isset($body['trackId']) || self::positiveIntegerString($body['trackId']) === null) {
+            return ['ok' => false, 'message' => 'شناسه پیگیری معتبر از درگاه دریافت نشد.'];
         }
         return ['ok' => true, 'track_id' => $body['trackId'], 'start_url' => 'https://gateway.zibal.ir/start/' . $body['trackId']];
     }
@@ -45,6 +52,10 @@ class ZibalClient
         if ($merchant === '') {
             return ['ok' => false, 'message' => 'مرچنت درگاه پرداخت تنظیم نشده است.'];
         }
+        $trackId = self::positiveIntegerString($trackId);
+        if ($trackId === null) {
+            return ['ok' => false, 'message' => 'شناسه پیگیری درگاه معتبر نیست.'];
+        }
         $result = $this->postJson('https://gateway.zibal.ir/v1/verify', [
             'merchant' => $merchant,
             'trackId' => (int) $trackId,
@@ -54,13 +65,51 @@ class ZibalClient
         }
         $body = $result['body'];
         $code = (int) ($body['result'] ?? 0);
+        $amountToman = $code === 100 ? self::verifiedAmountToman($body['amount'] ?? null) : null;
+        if ($code === 100 && $amountToman === null) {
+            return [
+                'ok' => false,
+                'gateway_verified' => true,
+                'message' => 'مبلغ تأییدشدهٔ درگاه معتبر نیست و برای بررسی نیاز به پیگیری دارد.',
+                'ref_id' => $body['refNumber'] ?? null,
+                'gateway_code' => $code,
+            ];
+        }
+        if ($code === 100 && trim((string) ($body['refNumber'] ?? '')) === '') {
+            return ['ok' => false, 'gateway_verified' => true, 'amount_toman' => $amountToman,
+                'message' => 'شناسه مرجع پرداخت از درگاه دریافت نشد و به بررسی مالی نیاز دارد.', 'gateway_code' => $code];
+        }
         return [
             'ok' => $code === 100,
             'message' => $code === 100 ? 'پرداخت تأیید شد.' : self::resultMessage($code, $body['message'] ?? ''),
             'ref_id' => $body['refNumber'] ?? null,
-            'amount_toman' => isset($body['amount']) ? ((float) $body['amount'] / 10) : null,
+            'amount_toman' => $amountToman,
             'gateway_code' => $code,
         ];
+    }
+
+    private static function verifiedAmountToman($amountRial)
+    {
+        $amountRial = to_english_digits((string) $amountRial);
+        if (!preg_match('/^[0-9]+$/', $amountRial)) return null;
+        $digits = ltrim($amountRial, '0');
+        if ($digits === '' || strlen($digits) > strlen((string) PHP_INT_MAX)
+            || (strlen($digits) === strlen((string) PHP_INT_MAX) && strcmp($digits, (string) PHP_INT_MAX) > 0)) {
+            return null;
+        }
+        $rials = (int) $digits;
+        return $rials % 10 === 0 ? intdiv($rials, 10) : null;
+    }
+
+    private static function positiveIntegerString($value)
+    {
+        $digits = ltrim(to_english_digits((string) $value), '0');
+        if ($digits === '' || !preg_match('/^[0-9]+$/', $digits)
+            || strlen($digits) > strlen((string) PHP_INT_MAX)
+            || (strlen($digits) === strlen((string) PHP_INT_MAX) && strcmp($digits, (string) PHP_INT_MAX) > 0)) {
+            return null;
+        }
+        return $digits;
     }
 
     protected function effectiveMerchant()
@@ -104,7 +153,7 @@ class ZibalClient
             }
             return ['ok' => false, 'message' => $message];
         }
-        $body = json_decode($response, true);
+        $body = json_decode($response, true, 512, JSON_BIGINT_AS_STRING);
         if (!is_array($body)) {
             return ['ok' => false, 'message' => 'پاسخ درگاه پرداخت قابل خواندن نیست.'];
         }

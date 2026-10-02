@@ -39,6 +39,8 @@ class CustomersController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
+        $wantsJson = stripos((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json') !== false
+            || strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
         $validator = (new Validator($_POST))
             ->required('full_name', 'نام کامل')
             ->required('national_id', 'کد ملی')
@@ -46,11 +48,14 @@ class CustomersController extends Controller
             ->nationalId('national_id', 'کد ملی')
             ->mobile('mobile', 'موبایل');
         if (!$validator->passes()) {
+            if ($wantsJson) {
+                $this->json(['ok' => false, 'message' => implode(' ', $validator->errors())], 422);
+            }
             set_flash('error', implode(' ', $validator->errors()));
             redirect('customers');
         }
         try {
-            User::create([
+            $customerId = User::create([
                 'role' => 'customer',
                 'username' => null,
                 'full_name' => $_POST['full_name'] ?? '',
@@ -64,8 +69,21 @@ class CustomersController extends Controller
                 'status' => $_POST['status'] ?? 'active',
                 'address' => $_POST['address'] ?? '',
             ]);
+            if ($wantsJson) {
+                $customer = User::find((int) $customerId);
+                $this->json(['ok' => true, 'customer' => [
+                    'id' => (int) $customerId,
+                    'full_name' => (string) ($customer['full_name'] ?? $_POST['full_name'] ?? ''),
+                    'mobile' => (string) ($customer['mobile'] ?? $_POST['mobile'] ?? ''),
+                    'national_id' => (string) ($customer['national_id'] ?? $_POST['national_id'] ?? ''),
+                    'status' => (string) ($customer['status'] ?? 'active'),
+                ]]);
+            }
             set_flash('success', 'مشتری با موفقیت ثبت شد.');
         } catch (Throwable $e) {
+            if ($wantsJson) {
+                $this->json(['ok' => false, 'message' => $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت مشتری انجام نشد. کد ملی یا موبایل را بررسی کنید.'], 422);
+            }
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت مشتری انجام نشد. کد ملی یا موبایل را بررسی کنید.');
         }
         redirect('customers');
@@ -146,9 +164,47 @@ class CustomersController extends Controller
             'installments' => Installment::all(['customer_id' => $id]),
             'payments' => Payment::logs(['customer' => $customer['national_id']]),
             'paymentTimeline' => Payment::recentForCustomer((int) $id),
+            'identityDocuments' => IdentityDocument::forUser((int) $id),
+            'customerFiles' => FileRecord::forCustomer((int) $id),
             'medals' => User::medalsForUsers([(int) $id])[(int) $id] ?? [],
             'medalDefinitions' => class_exists('Medal') ? Medal::definitions() : [],
         ]);
+    }
+
+    public function identityDocument($id)
+    {
+        $this->requireRole('admin');
+        $document = IdentityDocument::find((int) $id);
+        $customer = $document ? User::find((int) ($document['user_id'] ?? 0)) : null;
+        if (!$document || !$customer || ($customer['role'] ?? '') !== 'customer' || trim((string) ($document['file_path'] ?? '')) === '') {
+            http_response_code(404);
+            echo 'مدرک پیدا نشد.';
+            return;
+        }
+
+        $path = UploadHelper::absolutePath((string) $document['file_path']);
+        if (!$path || !is_file($path)) {
+            http_response_code(404);
+            echo 'محتوای مدرک در فضای امن پیدا نشد.';
+            return;
+        }
+
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mimeByExtension = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'pdf' => 'application/pdf'];
+        $mime = $mimeByExtension[$extension] ?? 'application/octet-stream';
+        $download = !empty($_GET['download']);
+        $inline = !$download && in_array($mime, ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'], true);
+        $name = IdentityDocument::typeLabel((string) ($document['document_type'] ?? '')) . '.' . ($extension ?: 'bin');
+        $name = trim(preg_replace('/[\r\n"]+/', '', $name));
+
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: private, no-store, max-age=0');
+        header('Pragma: no-cache');
+        header('Content-Type: ' . $mime);
+        header('Content-Disposition: ' . ($inline ? 'inline' : 'attachment') . '; filename="document"; filename*=UTF-8\'\'' . rawurlencode($name));
+        header('Content-Length: ' . (string) filesize($path));
+        readfile($path);
+        exit;
     }
 
     public function medalStore($id)

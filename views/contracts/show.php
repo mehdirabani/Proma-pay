@@ -33,7 +33,8 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
     <div class="header-top">
       <div>
          <h2>جزئیات قرارداد <?= e($contract['contract_number']) ?> <span class="badge <?= e(badge_class($contract['status'] ?? '')) ?>"><?= e(status_label($contract['status'] ?? '')) ?></span></h2>
-        <p><?= e($contract['customer_name']) ?> - <?= to_persian_digits($contract['mobile'] ?? '') ?></p>
+        <?php $contractCustomerPhone = normalize_iran_phone($contract['mobile'] ?? ''); ?>
+        <p><?= e($contract['customer_name']) ?> - <?php if ($contractCustomerPhone !== ''): ?><a href="tel:<?= e($contractCustomerPhone) ?>"><?= to_persian_digits(format_iran_phone($contract['mobile'] ?? '')) ?></a> <button class="proma-icon-button secondary" type="button" data-copy-phone="<?= e($contractCustomerPhone) ?>" title="کپی شماره مشتری" aria-label="کپی شماره مشتری"><?= proma_icon('copy') ?></button><?php else: ?><?= to_persian_digits($contract['mobile'] ?? '') ?><?php endif; ?></p>
       </div>
       <div class="actions">
         <a class="btn" href="#contract-installments" data-contract-tab-link="installments"><i data-feather="credit-card"></i> اقساط و پرداخت</a>
@@ -300,7 +301,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
           <tr>
             <td><?= e($person['full_name']) ?><br><small><?= e($person['father_name'] ?? '') ?></small></td>
             <td><?= to_persian_digits($person['national_id'] ?? '') ?></td>
-            <td><?= to_persian_digits($person['mobile'] ?? '') ?></td>
+            <?php $guarantorPhone = normalize_iran_phone($person['mobile'] ?? ''); ?><td><?php if ($guarantorPhone !== ''): ?><a href="tel:<?= e($guarantorPhone) ?>"><?= to_persian_digits(format_iran_phone($person['mobile'] ?? '')) ?></a> <button class="proma-icon-button secondary" type="button" data-copy-phone="<?= e($guarantorPhone) ?>" title="کپی شماره ضامن" aria-label="کپی شماره ضامن <?= e($person['full_name']) ?>"><?= proma_icon('copy') ?></button><?php else: ?><?= to_persian_digits($person['mobile'] ?? '') ?><?php endif; ?></td>
             <td><?= e($person['relationship'] ?? '') ?></td>
           </tr>
         <?php endforeach; ?>
@@ -318,15 +319,15 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
         <?php if ($canManageActiveContract): ?><button class="btn small" type="button" data-open-modal="add-contract-installment">افزودن قسط</button><?php endif; ?>
       </div>
     </div>
-    <?php if ($canManageActiveContract): ?><form method="post" action="<?= e(url('contracts/bulkInstallmentAction/' . (int) $contract['id'])) ?>" id="installment-bulk-form"><?= csrf_field() ?><?php endif; ?>
+    <?php if ($canManageActiveContract): ?><form method="post" action="<?= e(url('contracts/bulkInstallmentAction/' . (int) $contract['id'])) ?>" id="installment-bulk-form"><?= csrf_field() ?><input type="hidden" name="settlement_scope" value="selected" data-installment-payment-scope><?php endif; ?>
     <div class="table-wrap">
-      <table class="proma-contract-installments-table">
+      <table class="proma-v2-data-table proma-contract-installments-table">
         <thead><tr><?php if ($canManageActiveContract): ?><th><input type="checkbox" data-check-all="installment_ids" aria-label="انتخاب همه اقساط"></th><?php endif; ?><th>قسط</th><th>سررسید</th><th>جزئیات مالی امروز</th><th>وضعیت</th><?php if ($canManageActiveContract): ?><th>عملیات</th><?php endif; ?></tr></thead>
         <tbody>
         <?php foreach ($installments as $installment): ?>
           <tr>
-            <?php if ($canManageActiveContract): ?><td><?php if (!empty($installment['payment_allowed'])): ?><input type="checkbox" name="installment_ids[]" value="<?= (int) $installment['id'] ?>" data-check-item="installment_ids" aria-label="انتخاب قسط <?= e($installment['installment_number']) ?>"><?php else: ?><span aria-label="قسط قابل پرداخت نیست">—</span><?php endif; ?></td><?php endif; ?>
-            <td>
+            <?php if ($canManageActiveContract): ?><td data-label="انتخاب"><?php if (!empty($installment['payment_allowed'])): ?><input type="checkbox" name="installment_ids[]" value="<?= (int) $installment['id'] ?>" data-check-item="installment_ids" data-installment-payable="<?= (int) normalize_money($installment['final_payable'] ?? 0) ?>" aria-label="انتخاب قسط <?= e($installment['installment_number']) ?>"><?php else: ?><span aria-label="قسط قابل پرداخت نیست">—</span><?php endif; ?></td><?php endif; ?>
+            <td data-label="قسط">
               <?= to_persian_digits($installment['installment_number']) ?>
               <?php if (!empty($installment['is_custom'])): ?>
                 <span class="badge info">قسط دلخواه</span>
@@ -335,8 +336,8 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
                 <?php if ($canManageActiveContract && !empty($installment['internal_note'])): ?><small class="proma-custom-installment-description muted">یادداشت داخلی: <?= e($installment['internal_note']) ?></small><?php endif; ?>
               <?php endif; ?>
             </td>
-            <td><?= e(jdate($installment['due_date'])) ?></td>
-            <td class="proma-installment-financial-cell">
+            <td data-label="سررسید"><?= e(jdate($installment['due_date'])) ?></td>
+            <td class="proma-installment-financial-cell" data-label="جزئیات مالی امروز">
               <div class="proma-installment-financials">
                 <span><small>مبلغ پایه</small><strong><?= money_toman($installment['base_amount']) ?></strong></span>
                 <span><small>پرداخت‌شده</small><strong><?= money_toman($installment['effective_paid_principal'] ?? 0) ?></strong></span>
@@ -347,9 +348,9 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
               </div>
               <?php if (!in_array((string) ($installment['calculation_status'] ?? 'calculated'), ['calculated', 'not_applicable'], true)): ?><small class="text-danger">نیازمند بررسی محاسبه حقوقی</small><?php endif; ?>
             </td>
-            <td><span class="badge <?= e(badge_class($installment['status'])) ?>"><?= e(status_label($installment['status'])) ?></span></td>
+            <td data-label="وضعیت"><span class="badge <?= e(badge_class($installment['status'])) ?>"><?= e(status_label($installment['status'])) ?></span></td>
             <?php if ($canManageActiveContract): ?>
-              <td class="actions">
+              <td class="actions" data-label="عملیات">
                 <?php if (!empty($installment['payment_allowed'])): ?><button class="btn small success" type="button" data-open-modal="pay-installment-<?= (int) $installment['id'] ?>">پرداخت</button><?php endif; ?>
                 <button class="btn small secondary" type="button" data-open-modal="edit-installment-<?= (int) $installment['id'] ?>">ویرایش قسط</button>
                 <button class="btn small danger" type="button" data-open-modal="void-installment-<?= (int) $installment['id'] ?>">ابطال</button>
@@ -361,7 +362,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
         </tbody>
       </table>
     </div>
-    <?php if ($canManageActiveContract): ?><div class="proma-payment-workspace mt-3"><div class="proma-payment-workspace__summary"><strong>پرداخت انتخاب‌شده‌ها</strong><span>قسط‌ها را انتخاب کنید؛ مبلغ قطعی فقط در سرور محاسبه و ثبت می‌شود.</span></div><div class="form-grid three"><input type="hidden" name="payment_request_uuid" value="<?= e(bin2hex(random_bytes(16))) ?>"><input type="hidden" name="quote_uuid" value=""><label>علت عملیات<input name="bulk_reason" required placeholder="علت ثبت پرداخت"></label><label>مبلغ پرداخت گروهی<input name="group_amount" data-money inputmode="numeric" placeholder="برای پرداخت گروهی"></label><label>روش پرداخت<select name="payment_method"><option value="manual">دستی</option><option value="card_transfer">کارت به کارت</option><option value="cash">نقدی</option><option value="pos">دستگاه کارت‌خوان</option><option value="bank_transfer">واریز بانکی</option><option value="check">چک</option></select></label><label>تاریخ پرداخت<input name="payment_date" value="<?= e(jdate(date('Y-m-d'))) ?>"></label><label>ساعت پرداخت<input name="payment_time" type="time" value="<?= e(date('H:i')) ?>"></label></div><div class="notice info">اولویت تخصیص: جریمه حقوقی، جریمه عادی و سپس اصل. ابطال هر قسط فقط از منوی امن همان قسط انجام می‌شود.</div><div class="actions"><button class="btn success" type="submit" name="bulk_action" value="payment_group">ثبت پرداخت انتخاب‌شده‌ها</button><button class="btn secondary" type="submit" name="bulk_action" value="recalculate">محاسبه مجدد وضعیت</button></div></div></form><?php endif; ?>
+    <?php if ($canManageActiveContract): ?><div class="proma-payment-workspace mt-3"><div class="proma-payment-workspace__summary"><strong>پرداخت انتخاب‌شده‌ها</strong><span>اگر مبلغ از جمع اقساط انتخاب‌شده بیشتر باشد، مازاد خودکار به اقساط باز بعدی همین قرارداد تخصیص می‌یابد.</span></div><div class="form-grid three"><input type="hidden" name="payment_request_uuid" value="<?= e(bin2hex(random_bytes(16))) ?>"><input type="hidden" name="quote_uuid" value=""><label>علت عملیات<input name="bulk_reason" required placeholder="علت ثبت پرداخت"></label><label>مبلغ پرداخت گروهی<input name="group_amount" data-installment-group-amount data-money inputmode="numeric" placeholder="مبلغ دریافت‌شده"></label><label>روش پرداخت<select name="payment_method"><option value="manual">دستی</option><option value="card_transfer">کارت به کارت</option><option value="cash">نقدی</option><option value="pos">دستگاه کارت‌خوان</option><option value="bank_transfer">واریز بانکی</option><option value="check">چک</option></select></label><label>تاریخ پرداخت<input name="payment_date" value="<?= e(jdate(date('Y-m-d'))) ?>"></label><label>ساعت پرداخت<input name="payment_time" type="time" value="<?= e(date('H:i')) ?>"></label></div><div class="notice info" data-installment-overflow-hint role="status">اقساط انتخاب‌شده مبنای تخصیص هستند؛ مازاد به‌ترتیب سررسید به اقساط بعدی می‌رود.</div><div class="notice info">اولویت تخصیص در هر قسط: جریمه حقوقی، جریمه عادی و سپس اصل. ابطال هر قسط فقط از منوی امن همان قسط انجام می‌شود.</div><div class="actions"><button class="btn success" type="submit" name="bulk_action" value="payment_group">ثبت پرداخت</button><button class="btn secondary" type="submit" name="bulk_action" value="recalculate">محاسبه مجدد وضعیت</button></div></div></form><?php endif; ?>
   </section>
 </div>
 

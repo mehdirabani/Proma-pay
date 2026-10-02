@@ -34,7 +34,7 @@ final class SettlementQuoteService
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
             [
                 $quoteUuid, $actorId ? (int) $actorId : null, (int) $contract['customer_id'], (int) $contract['id'],
-                $scope === 'contract' ? 'contract' : 'selected', json_encode($ids), date('Y-m-d'), $calculatedAt,
+                self::normalizeScope($scope), json_encode($ids), date('Y-m-d'), $calculatedAt,
                 self::decimal($plan['principal_total']), self::decimal($plan['normal_penalty_total']), self::decimal($plan['legal_penalty_total']),
                 self::decimal($plan['reward_total']), self::decimal($plan['full_settlement_total']), $snapshot,
                 InstallmentFinancialStateService::CALCULATION_VERSION . '+' . PaymentAllocationService::ALLOCATION_VERSION . '+legal-cost-v1',
@@ -60,7 +60,7 @@ final class SettlementQuoteService
         sort($expectedIds);
         $actualIds = array_values(array_unique(array_map('intval', $requestedIds)));
         sort($actualIds);
-        if ($expectedIds !== $actualIds || ($quote['scope'] ?? 'selected') !== ($scope === 'contract' ? 'contract' : 'selected')) {
+        if ($expectedIds !== $actualIds || ($quote['scope'] ?? 'selected') !== self::normalizeScope($scope)) {
             throw new InvalidArgumentException('دامنهٔ اقساط با پیش‌فاکتور تسویه یکسان نیست. محاسبه را تازه کنید.', 409);
         }
         $snapshot = self::snapshotHash($plan, $actualIds);
@@ -146,7 +146,7 @@ final class SettlementQuoteService
      */
     private static function planForScope(array $contract, array $rows, $amount, $scope, $asOf, bool $forUpdate): array
     {
-        $scope = $scope === 'contract' ? 'contract' : 'selected';
+        $scope = self::normalizeScope($scope);
         $baseQuote = PaymentAllocationService::quote($rows, $asOf);
         $baseTotal = normalize_money($baseQuote['full_settlement_total'] ?? 0);
         if ($baseTotal <= 0) throw new InvalidArgumentException('قسط قابل پرداختی برای محاسبه وجود ندارد.', 409);
@@ -189,5 +189,11 @@ final class SettlementQuoteService
         $plan['unused_amount'] = 0;
         $plan['calculation_version'] = (string) ($plan['calculation_version'] ?? PaymentAllocationService::ALLOCATION_VERSION) . '+legal-cost-v1';
         return $plan;
+    }
+
+    private static function normalizeScope($scope)
+    {
+        $scope = strtolower(trim((string) $scope));
+        return in_array($scope, ['selected', 'contract', 'schedule'], true) ? $scope : 'selected';
     }
 }

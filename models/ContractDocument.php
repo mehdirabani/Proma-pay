@@ -818,7 +818,9 @@ TEXT;
 
     protected static function signatureSection(array $people)
     {
-        $labels = ['امضای موبایل پروما', 'امضای امانت‌دار'];
+        // The buyer is named «امانت‌دار» in parts of the legal body, but the
+        // signature block must identify the contracting customer explicitly.
+        $labels = ['امضای موبایل پروما', 'امضای مشتری'];
         foreach ($people as $index => $person) {
             $labels[] = count($people) === 1 ? 'امضای ضامن' : 'امضای ضامن ' . to_persian_digits($index + 1);
         }

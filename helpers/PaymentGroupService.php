@@ -2,7 +2,8 @@
 
 /**
  * Commits a quoted payment as one parent payment_group and immutable child
- * allocations.  It never spills money to installments outside the selection.
+ * allocations. Selected scope stays within the selected rows; schedule scope
+ * explicitly expands to all eligible installments in the same contract.
  */
 class PaymentGroupService
 {
@@ -25,11 +26,12 @@ class PaymentGroupService
         );
     }
 
-    public static function createPendingGateway($contractId, array $installmentIds, $amount, $userId, $trackId, $idempotencyKey = null, $gatewayId = 'zibal', $quoteUuid = null)
+    public static function createPendingGateway($contractId, array $installmentIds, $amount, $userId, $trackId, $idempotencyKey = null, $gatewayId = 'zibal', $quoteUuid = null, $scope = 'selected')
     {
         $contractId = (int) $contractId;
         $amount = self::moneyInteger($amount);
         $ids = self::ids($installmentIds);
+        $scope = self::allocationScope($scope);
         if ($contractId <= 0 || !$ids || $amount <= 0) throw new InvalidArgumentException('اطلاعات پرداخت آنلاین چندقسطی معتبر نیست.');
         $started = !Model::db()->inTransaction();
         if ($started) Model::begin();
@@ -40,12 +42,12 @@ class PaymentGroupService
             }
             $contract = self::lockedContract($contractId, $userId, true);
             $rows = SettlementQuoteService::loadInstallments($contractId, $ids, true);
-            $verified = SettlementQuoteService::verifyLocked($quoteUuid, $contract, $rows, $ids, $amount, $userId, 'selected');
+            $verified = SettlementQuoteService::verifyLocked($quoteUuid, $contract, $rows, $ids, $amount, $userId, $scope);
             $groupNumber = self::number('PG-' . strtoupper(substr((string) $gatewayId, 0, 3)));
             Model::execute(
-                'INSERT INTO payment_groups (group_number, contract_id, customer_id, created_by, requested_amount, method, status, gateway_track_id, idempotency_key, quote_uuid, description, selection_json, allocation_json, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
-                [$groupNumber, $contractId, (int) $contract['customer_id'], (int) $userId, self::moneyDecimal($amount), self::method($gatewayId), 'pending', trim((string) $trackId), $idempotencyKey, trim((string) $quoteUuid) ?: null, 'پرداخت آنلاین چندقسطی', json_encode($ids), json_encode($verified['plan']['allocations'], JSON_UNESCAPED_UNICODE)]
+                'INSERT INTO payment_groups (group_number, contract_id, customer_id, created_by, requested_amount, method, status, gateway_track_id, idempotency_key, quote_uuid, allocation_scope, description, selection_json, allocation_json, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+                [$groupNumber, $contractId, (int) $contract['customer_id'], (int) $userId, self::moneyDecimal($amount), self::method($gatewayId), 'pending', trim((string) $trackId), $idempotencyKey, trim((string) $quoteUuid) ?: null, $scope, 'پرداخت آنلاین چندقسطی', json_encode($ids), json_encode($verified['plan']['allocations'], JSON_UNESCAPED_UNICODE)]
             );
             $groupId = (int) Model::lastInsertId();
             if ($started) Model::commit();
@@ -60,11 +62,23 @@ class PaymentGroupService
     {
         $groupId = (int) $groupId;
         $started = !Model::db()->inTransaction();
+        $group = null;
         if ($started) Model::begin();
         try {
             $group = Model::fetch('SELECT * FROM payment_groups WHERE id = ? FOR UPDATE', [$groupId]);
             if (!$group) throw new InvalidArgumentException('پرداخت گروهی درگاه پیدا نشد.');
             if (($group['status'] ?? '') === 'completed') {
+                if (!empty($group['gateway_ref_id']) && (string) $group['gateway_ref_id'] !== (string) $refId) {
+                    throw new InvalidArgumentException('شناسه تأیید درگاه با پرداخت ثبت‌شده یکسان نیست.', 409);
+                }
+                if ($started) Model::commit();
+                return $group;
+            }
+            if (($group['status'] ?? '') === 'review_required') {
+                if (normalize_money($group['gateway_verified_amount'] ?? 0) !== self::moneyInteger($amount)
+                    || (string) ($group['gateway_ref_id'] ?? '') !== (string) $refId) {
+                    throw new InvalidArgumentException('اطلاعات تأیید درگاه با پرداخت در انتظار بررسی یکسان نیست.', 409);
+                }
                 if ($started) Model::commit();
                 return $group;
             }
@@ -74,12 +88,70 @@ class PaymentGroupService
             $ids = self::ids(json_decode((string) ($group['selection_json'] ?? '[]'), true) ?: []);
             $contract = self::lockedContract((int) $group['contract_id'], (int) $group['customer_id'], true);
             $rows = SettlementQuoteService::loadInstallments((int) $group['contract_id'], $ids, true);
-            $verified = SettlementQuoteService::verifyLocked((string) ($group['quote_uuid'] ?? ''), $contract, $rows, $ids, $amount, (int) $group['customer_id'], 'selected');
+            $scope = self::allocationScope($group['allocation_scope'] ?? 'selected');
+            $verified = SettlementQuoteService::verifyLocked((string) ($group['quote_uuid'] ?? ''), $contract, $rows, $ids, $amount, (int) $group['customer_id'], $scope);
             $result = self::writeAllocations($group, $verified['plan'], date('Y-m-d'), date('H:i'), $refId, $actorId ?: (int) $group['customer_id']);
+            Model::execute('UPDATE payment_groups SET gateway_verified_amount = ?, gateway_ref_id = ? WHERE id = ?', [self::moneyInteger($amount), substr((string) $refId, 0, 100), $groupId]);
             SettlementQuoteService::markUsed((string) ($group['quote_uuid'] ?? ''), (int) $group['id']);
             if ($started) Model::commit();
             if ($started) self::afterCommit($result, $actorId ?: (int) $group['customer_id']);
+            $result['gateway_verified_amount'] = self::moneyInteger($amount);
+            $result['gateway_ref_id'] = substr((string) $refId, 0, 100);
             return $result;
+        } catch (Throwable $e) {
+            if ($started) Model::rollBack();
+            if ($started && ($group['status'] ?? '') === 'pending') {
+                return self::recordGatewayReview(
+                    $groupId,
+                    $amount,
+                    $refId,
+                    $e instanceof InvalidArgumentException ? 'مبلغ یا پیش‌فاکتور پس از تأیید درگاه نیاز به بررسی دارد.' : 'تخصیص وجه تأییدشده در سامانه انجام نشد.'
+                );
+            }
+            throw $e;
+        }
+    }
+
+    /** Preserve verified gateway money until an authorized reconciliation is completed. */
+    public static function recordGatewayReview($groupId, $amount, $refId, $reason)
+    {
+        $groupId = (int) $groupId;
+        $started = !Model::db()->inTransaction();
+        if ($started) Model::begin();
+        try {
+            $group = Model::fetch('SELECT * FROM payment_groups WHERE id = ? FOR UPDATE', [$groupId]);
+            if (!$group) throw new InvalidArgumentException('پرداخت گروهی درگاه پیدا نشد.', 404);
+            if (($group['status'] ?? '') === 'completed') {
+                if ($started) Model::commit();
+                return $group;
+            }
+            if (($group['status'] ?? '') === 'review_required') {
+                if ((string) ($group['gateway_ref_id'] ?? '') !== (string) $refId
+                    || normalize_money($group['gateway_verified_amount'] ?? 0) !== self::moneyInteger($amount)) {
+                    throw new InvalidArgumentException('دو تأیید متفاوت برای یک پرداخت گروهی ثبت شده است.', 409);
+                }
+                if ($started) Model::commit();
+                return $group;
+            }
+            if (($group['status'] ?? '') !== 'pending') throw new InvalidArgumentException('وضعیت پرداخت گروهی برای بررسی معتبر نیست.', 409);
+            Model::execute(
+                "UPDATE payment_groups SET status = 'review_required', gateway_verified_amount = ?, gateway_ref_id = ?, reconciliation_reason = ? WHERE id = ?",
+                [$amount === null ? null : self::moneyInteger($amount), substr((string) $refId, 0, 100) ?: null, substr(trim((string) $reason), 0, 255), $groupId]
+            );
+            $review = Model::fetch('SELECT * FROM payment_groups WHERE id = ?', [$groupId]);
+            if ($started) Model::commit();
+            if ($started) {
+                try {
+                    if (class_exists('AuditLog')) AuditLog::record('payment_gateway', 'reconciliation_required', 'payment_group', $groupId, [
+                        'actor_type' => 'gateway', 'contract_id' => (int) $group['contract_id'],
+                        'new_values' => ['status' => 'review_required', 'gateway_verified_amount' => $review['gateway_verified_amount'], 'gateway_ref_id' => $review['gateway_ref_id']],
+                    ]);
+                    if (class_exists('SystemOutbox')) SystemOutbox::safeEnqueuePluginHook('payment.group.reconciliation_required', ['payment_group_id' => $groupId, 'contract_id' => (int) $group['contract_id']], 'payment_group', $groupId);
+                } catch (Throwable $auditError) {
+                    if (class_exists('PluginRegistry')) PluginRegistry::logRuntimeError('payment_group.reconciliation_audit', $auditError);
+                }
+            }
+            return $review;
         } catch (Throwable $e) {
             if ($started) Model::rollBack();
             throw $e;
@@ -95,11 +167,12 @@ class PaymentGroupService
     {
         $ids = self::ids($installmentIds);
         $amount = self::moneyInteger($amount);
+        $scope = self::allocationScope($scope);
         if ($contractId <= 0 || !$ids || $amount <= 0) throw new InvalidArgumentException('قرارداد، اقساط و مبلغ پرداخت را کامل کنید.');
         $requestUuid = PaymentRequest::normalizeUuid($requestUuid ?: '');
         $requestHash = PaymentRequest::hash([
             'contract_id' => (int) $contractId, 'installment_ids' => $ids, 'amount' => $amount,
-            'method' => self::method($method), 'quote_uuid' => trim((string) $quoteUuid), 'payment_date' => $paymentDate,
+            'method' => self::method($method), 'quote_uuid' => trim((string) $quoteUuid), 'payment_date' => $paymentDate, 'scope' => $scope,
         ]);
         $request = PaymentRequest::beginSettlement($requestUuid, $userId, $contractId, $ids, $quoteUuid, $requestHash);
         if (($request['status'] ?? '') === 'completed') {
@@ -108,18 +181,39 @@ class PaymentGroupService
         Model::begin();
         try {
             $contract = self::lockedContract($contractId, $userId, false);
+            $submittedIds = $ids;
+            if ($scope === 'schedule') {
+                // Overflow is a contract-schedule policy, not an instruction to
+                // trust client-supplied future rows. Expand while holding the
+                // contract lock, then persist the exact eligible row set in the
+                // quote and payment group.
+                $allRows = SettlementQuoteService::loadInstallments($contractId, [], true);
+                $allIds = array_map(static function ($row) { return (int) $row['id']; }, $allRows);
+                if (array_diff($submittedIds, $allIds)) {
+                    throw new InvalidArgumentException('یکی از اقساط انتخاب‌شده به این قرارداد تعلق ندارد.', 409);
+                }
+                if (trim((string) $quoteUuid) === '') {
+                    $generatedQuote = SettlementQuoteService::persistQuote($contract, $allRows, $userId, $scope, $paymentDate);
+                    $quoteUuid = (string) ($generatedQuote['quote_uuid'] ?? '');
+                    $ids = array_values(array_unique(array_map('intval', json_decode((string) ($generatedQuote['selected_installment_ids_json'] ?? '[]'), true) ?: [])));
+                    if (!array_intersect($submittedIds, $ids)) {
+                        throw new InvalidArgumentException('از اقساط انتخاب‌شده مورد قابل پرداختی باقی نمانده است.', 409);
+                    }
+                }
+            }
             $rows = SettlementQuoteService::loadInstallments($contractId, $ids, true);
             if (trim((string) $quoteUuid) === '') {
-                $generatedQuote = SettlementQuoteService::persistQuote($contract, $rows, $userId, 'selected', $paymentDate);
+                $generatedQuote = SettlementQuoteService::persistQuote($contract, $rows, $userId, $scope, $paymentDate);
                 $quoteUuid = (string) ($generatedQuote['quote_uuid'] ?? '');
+                $ids = array_values(array_unique(array_map('intval', json_decode((string) ($generatedQuote['selected_installment_ids_json'] ?? '[]'), true) ?: [])));
+                $rows = SettlementQuoteService::loadInstallments($contractId, $ids, true);
             }
-            $scope = $scope === 'contract' ? 'contract' : 'selected';
             $verified = SettlementQuoteService::verifyLocked($quoteUuid, $contract, $rows, $ids, $amount, $userId, $scope, $paymentDate);
             $groupNumber = self::number('PG');
             Model::execute(
-                'INSERT INTO payment_groups (group_number, contract_id, customer_id, created_by, requested_amount, method, status, idempotency_key, quote_uuid, payment_request_uuid, description, selection_json, allocation_json, created_at, completed_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
-                [$groupNumber, $contractId, (int) $contract['customer_id'], $userId ? (int) $userId : null, self::moneyDecimal($amount), self::method($method), 'completed', $requestUuid, trim((string) $quoteUuid) ?: null, $requestUuid, trim((string) $description) ?: 'پرداخت گروهی اقساط', json_encode($ids), json_encode($verified['plan']['allocations'], JSON_UNESCAPED_UNICODE)]
+                'INSERT INTO payment_groups (group_number, contract_id, customer_id, created_by, requested_amount, method, status, idempotency_key, quote_uuid, payment_request_uuid, allocation_scope, description, selection_json, allocation_json, created_at, completed_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+                [$groupNumber, $contractId, (int) $contract['customer_id'], $userId ? (int) $userId : null, self::moneyDecimal($amount), self::method($method), 'completed', $requestUuid, trim((string) $quoteUuid) ?: null, $requestUuid, $scope, trim((string) $description) ?: 'پرداخت گروهی اقساط', json_encode($ids), json_encode($verified['plan']['allocations'], JSON_UNESCAPED_UNICODE)]
             );
             $group = Model::fetch('SELECT * FROM payment_groups WHERE id = ?', [(int) Model::lastInsertId()]);
             $result = self::writeAllocations($group, $verified['plan'], $paymentDate, $paymentTime, $gatewayRefId, $userId);
@@ -231,6 +325,12 @@ class PaymentGroupService
     {
         $method = strtolower(trim((string) $method));
         return preg_match('/^[a-z][a-z0-9_-]{1,29}$/', $method) ? $method : 'manual';
+    }
+
+    private static function allocationScope($scope)
+    {
+        $scope = strtolower(trim((string) $scope));
+        return in_array($scope, ['selected', 'contract', 'schedule'], true) ? $scope : 'selected';
     }
 
     private static function number($prefix)

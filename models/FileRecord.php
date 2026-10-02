@@ -346,6 +346,35 @@ class FileRecord extends Model
         return self::fetchAll('SELECT * FROM file_relations WHERE file_id = ? ORDER BY id ASC', [(int) $fileId]);
     }
 
+    /**
+     * Active/archived documents attached to a customer or one of their
+     * contracts. Storage paths are intentionally not exposed in the read model.
+     */
+    public static function forCustomer(int $customerId, int $limit = 100): array
+    {
+        if ($customerId <= 0 || !self::isAvailable()) {
+            return [];
+        }
+        $limit = max(1, min(200, $limit));
+        return self::fetchAll(
+            "SELECT DISTINCT f.id, f.file_uuid, f.original_name, f.display_name, f.extension, f.mime_type,
+                    f.size_bytes, f.category, f.status, f.visibility, f.uploader_user_id, f.uploader_role,
+                    f.description, f.created_at, u.full_name AS uploader_name
+             FROM files f
+             JOIN file_relations fr ON fr.file_id = f.id
+             LEFT JOIN contracts c ON fr.entity_type = 'contract' AND c.id = fr.entity_id
+             LEFT JOIN users u ON u.id = f.uploader_user_id
+             WHERE f.status IN ('active', 'archived')
+               AND f.category <> 'avatar'
+               AND fr.relation_type NOT IN ('avatar', 'identity_document')
+               AND ((fr.entity_type = 'user' AND fr.entity_id = ?)
+                    OR (fr.entity_type = 'contract' AND c.customer_id = ?))
+             ORDER BY f.created_at DESC, f.id DESC
+             LIMIT {$limit}",
+            [$customerId, $customerId]
+        );
+    }
+
     public static function backfillStorage($limit = 200)
     {
         if (!self::isAvailable()) {

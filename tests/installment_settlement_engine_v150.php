@@ -31,6 +31,14 @@ $assert($plan['full_settlement_total'] === 5000000, 'Selected settlement total i
 $assert(array_column($plan['allocations'], 'allocated_amount') === [1500000, 1500000, 1000000], 'Allocation order or partial allocation is not deterministic.');
 $assert($plan['allocations'][2]['remaining_after'] === 1000000 && $plan['allocations'][2]['reward_applied'] === 0, 'Partial third installment incorrectly settled or rewarded.');
 
+$overflowRows = [];
+foreach ([[21, 1000000], [22, 2000000], [23, 4000000]] as $pair) {
+    $overflowRows[] = ['id' => $pair[0], 'contract_id' => 88, 'installment_number' => $pair[0] - 20, 'due_date' => '2026-11-01', 'base_amount' => $pair[1], 'paid_amount' => 0, 'remaining_amount' => $pair[1], 'status' => 'pending', 'contract_status' => 'active'];
+}
+$overflowPlan = PaymentAllocationService::plan($overflowRows, 4000000, '2026-10-01', $settings);
+$assert(array_map(static function ($allocation) { return $allocation['allocated_amount']; }, $overflowPlan['allocations']) === [1000000, 2000000, 1000000], 'Schedule overflow must settle later eligible installments in deterministic order.');
+$assert($overflowPlan['received_amount'] === 4000000 && $overflowPlan['unused_amount'] === 0, 'Schedule overflow lost or left received money unapplied.');
+
 $late = ['id' => 11, 'contract_id' => 77, 'installment_number' => 1, 'due_date' => '2026-07-01', 'base_amount' => 1000000, 'paid_amount' => 0, 'remaining_amount' => 1000000, 'status' => 'overdue', 'contract_status' => 'active'];
 $latePlan = PaymentAllocationService::plan([$late], 100000, '2026-07-26', ['monthly_penalty_rate' => '3', 'legal_monthly_penalty_rate' => '6', 'monthly_reward_rate' => '1', 'late_penalty_grace_days' => '0']);
 $lateAllocation = $latePlan['allocations'][0];

@@ -22,6 +22,8 @@ $assert(strpos($document, 'FROM contract_guarantors cg') !== false, 'Existing co
 $assert(strpos($document, 'contract_guarantor_people') !== false, 'New contract-bound guarantors are absent from the document read-model.');
 $assert(strpos($document, "'{{guarantors_section}}' => self::guarantorsSection(\$guarantors)") !== false, 'Document rendering still bypasses the canonical guarantor read-model.');
 $assert(strpos($document, "'{{signature_section}}' => self::signatureSection(\$guarantors)") !== false, 'Signature rendering still bypasses the canonical guarantor read-model.');
+$assert(strpos($document, "'امضای مشتری'") !== false, 'Generated contract signature must be explicitly labeled as the customer signature.');
+$assert(strpos($document, "'امضای امانت‌دار'") === false, 'Generated contract signature still mislabels the customer as trustee.');
 $assert(strpos($document, 'function viewModel') !== false, 'Shared preview/print document view-model is missing.');
 $assert(strpos($contract, 'ContractDocument::snapshotLinkedGuarantors') !== false, 'Linked guarantor snapshot is not captured during contract save.');
 $assert(strpos($controller, 'ContractDocument::viewModel') !== false, 'Preview/print routes do not use the shared document view-model.');

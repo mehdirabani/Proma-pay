@@ -15,6 +15,14 @@ class PaymentsController extends Controller
         $this->render('payments/index', [
             'title' => 'گزارش پرداخت‌ها',
             'payments' => Payment::logs($filters),
+            'gatewayReviewGroups' => Model::fetchAll(
+                "SELECT pg.*, c.contract_number, u.full_name AS customer_name
+                 FROM payment_groups pg
+                 JOIN contracts c ON c.id = pg.contract_id
+                 JOIN users u ON u.id = pg.customer_id
+                 WHERE pg.status = 'review_required'
+                 ORDER BY pg.created_at ASC, pg.id ASC LIMIT 50"
+            ),
         ], is_ajax_request() ? null : 'app');
     }
 
@@ -86,7 +94,9 @@ class PaymentsController extends Controller
         $this->onlyPost();
         $contractId = (int) ($_POST['contract_id'] ?? 0);
         $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['installment_ids'] ?? [])))));
+        $selectedIds = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['selected_installment_ids'] ?? [])))));
         $amount = normalize_money($_POST['amount'] ?? 0);
+        $scope = in_array(($_POST['settlement_scope'] ?? 'selected'), ['contract', 'schedule'], true) ? (string) $_POST['settlement_scope'] : 'selected';
         if (!$ids || $amount <= 0) {
             set_flash('error', 'حداقل یک قسط و مبلغ معتبر انتخاب کنید.');
             redirect('installments/panel');
@@ -94,13 +104,19 @@ class PaymentsController extends Controller
         try {
             $contract = Contract::find($contractId);
             if (!$contract || (int) ($contract['customer_id'] ?? 0) !== (int) Auth::id()) throw new InvalidArgumentException('قرارداد برای پرداخت پیدا نشد.', 403);
-            $installments = SettlementQuoteService::loadInstallments($contractId, $ids);
+            $installments = SettlementQuoteService::loadInstallments($contractId, $scope === 'schedule' ? $selectedIds : $ids);
+            $states = InstallmentFinancialStateService::statesForRows($installments);
             foreach ($installments as $installment) {
-                $state = InstallmentFinancialStateService::state($installment);
+                $state = $states[(int) $installment['id']] ?? [];
                 if (empty($state['payment_allowed'])) throw new InvalidArgumentException(InstallmentSettlementService::SETTLED_MESSAGE, 409);
             }
-            $quote = SettlementQuoteService::create($contractId, $ids, Auth::id(), 'selected');
-            if ($amount > normalize_money($quote['full_settlement_total'] ?? 0)) throw new InvalidArgumentException('مبلغ پرداخت از مبلغ تسویهٔ اقساط انتخاب‌شده بیشتر است.', 422);
+            if ($scope === 'schedule' && (!$selectedIds || !$ids)) throw new InvalidArgumentException('یک قسط برای شروع تخصیص انتخاب کنید.', 422);
+            $quote = SettlementQuoteService::create($contractId, in_array($scope, ['contract', 'schedule'], true) ? [] : $ids, Auth::id(), $scope);
+            $quotedIds = array_values(array_unique(array_map('intval', json_decode((string) ($quote['selected_installment_ids_json'] ?? '[]'), true) ?: [])));
+            if ($scope === 'schedule' && (array_diff($ids, $quotedIds) || array_diff($selectedIds, $quotedIds))) {
+                throw new InvalidArgumentException('پیش‌فاکتور تخصیص اقساط تغییر کرده است؛ صفحه را تازه‌سازی کنید.', 409);
+            }
+            if ($amount > normalize_money($quote['full_settlement_total'] ?? 0)) throw new InvalidArgumentException('مبلغ از مجموع بدهی قابل پرداخت این قرارداد بیشتر است.', 422);
             $registry = PaymentGatewayRegistry::boot();
             $gateway = ($_POST['_legacy_gateway'] ?? '') === 'zibal'
                 ? $registry->get('zibal')
@@ -120,6 +136,7 @@ class PaymentsController extends Controller
                 'customer_email' => (string) ($user['email'] ?? ''),
                 'amount_toman' => (int) $amount,
                 'quote_uuid' => (string) ($quote['quote_uuid'] ?? ''),
+                'settlement_scope' => $scope,
                 'description' => 'پرداخت چندقسطی قرارداد ' . ($installments[0]['contract_number'] ?? $contractId),
                 'idempotency_key' => $this->paymentIdempotencyKey($_POST['idempotency_key'] ?? '', 'group', $contractId),
             ]);
@@ -250,16 +267,27 @@ class PaymentsController extends Controller
         $settings = Settings::allKeyed();
         $client = new ZibalClient($settings['zibal_merchant'], (string) ($settings['zibal_test_mode'] ?? '0') === '1');
         $verify = $client->verify($trackId);
+        $group = Model::fetch('SELECT * FROM payment_groups WHERE gateway_track_id = ? LIMIT 1', [$trackId]);
         if (!$verify['ok']) {
+            if ($group && !empty($verify['gateway_verified'])) {
+                try {
+                    PaymentGroupService::recordGatewayReview((int) $group['id'], $verify['amount_toman'] ?? null, $verify['ref_id'] ?? null, 'پاسخ تأییدشدهٔ درگاه ناقص یا نامعتبر است.');
+                } catch (Throwable $reviewError) {
+                    if (class_exists('PluginRegistry')) PluginRegistry::logRuntimeError('payment_gateway.review_record', $reviewError);
+                }
+            }
             set_flash('error', $verify['message']);
             redirect('installments/panel');
         }
-        $group = Model::fetch('SELECT * FROM payment_groups WHERE gateway_track_id = ? LIMIT 1', [$trackId]);
         try {
             $completed = false;
             $paymentRecordId = 0;
             if ($group) {
                 $completedGroup = PaymentGroupService::completeGateway((int) $group['id'], $verify['amount_toman'], $verify['ref_id'], (int) $group['customer_id']);
+                if (($completedGroup['status'] ?? '') === 'review_required') {
+                    set_flash('error', 'پرداخت درگاه تأیید شده، اما تخصیص آن نیازمند بررسی واحد مالی است. شناسه پیگیری را نگه دارید.');
+                    redirect('installments/panel');
+                }
                 if (class_exists('SystemOutbox')) {
                     SystemOutbox::safeEnqueueNotification((int) $group['customer_id'], 'پرداخت چندقسطی موفق شد', 'پرداخت آنلاین گروهی شما با موفقیت ثبت شد.', 'payment', url('installments/panel'), 'payment_group', (int) ($completedGroup['id'] ?? $group['id']));
                     SystemOutbox::processPending(10, 'payment_group', (int) ($completedGroup['id'] ?? $group['id']));

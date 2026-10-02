@@ -448,6 +448,8 @@ body.proma-v2 .proma-contract-action-menu summary::-webkit-details-marker { disp
 body.proma-v2 .proma-contract-action-menu > .actions { position: absolute; left: 0; top: calc(100% + var(--pp-space-2)); z-index: 8; display: grid; gap: var(--pp-space-2); width: 240px; padding: var(--pp-space-3); border: 1px solid var(--pp-line); border-radius: var(--pp-radius); background: var(--pp-surface); box-shadow: var(--pp-shadow); }
 body.proma-v2 .proma-contract-action-menu > .actions .btn { width: 100%; justify-content: flex-start; }
 body.proma-v2 .proma-contract-action-menu:not([open]) > .actions { display: none; }
+body.proma-v2 .proma-contract-action-menu__portal { position: fixed !important; z-index: 1400; display: grid; gap: var(--pp-space-2); width: min(280px, calc(100vw - 16px)); max-height: min(70dvh, 520px); overflow: auto; overscroll-behavior: contain; padding: var(--pp-space-3); border: 1px solid var(--pp-line); border-radius: var(--pp-radius); background: var(--pp-surface); box-shadow: var(--pp-shadow); }
+body.proma-v2 .proma-contract-action-menu__portal .btn { width: 100%; justify-content: flex-start; }
 body.proma-v2 #installment-bulk-form { display: block; padding: 0 var(--pp-space-5) var(--pp-space-5); }
 body.proma-v2 .proma-contract-installments-card .table-wrap { scrollbar-gutter: auto; }
 body.proma-v2 .proma-contract-installments-card table { min-width: 0; }
@@ -457,6 +459,44 @@ body.proma-v2 .proma-contract-installments-table td.actions .btn { margin: var(-
 body.proma-v2 .proma-contract-installments-table .proma-installment-financials { grid-template-columns: repeat(3,minmax(0,1fr)); }
 body.proma-v2 .proma-contract-installments-table .proma-installment-financials strong { font-size: 12px; }
 body.proma-v2 .proma-payment-workspace { display: grid; grid-template-columns: 1fr; padding: var(--pp-space-5); margin-top: var(--pp-space-6); border: 1px solid var(--pp-line); border-radius: var(--pp-radius); background: var(--pp-canvas); }
+body.proma-v2 .proma-installment-group-form { display: grid; gap: var(--pp-space-4); min-width: 0; }
+body.proma-v2 .proma-installment-group-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--pp-space-3); padding: var(--pp-space-4); border: 1px solid var(--pp-line); border-radius: var(--pp-radius); background: var(--pp-surface); }
+body.proma-v2 .proma-installment-group-head > span { color: var(--pp-primary-700); font-weight: 900; font-variant-numeric: tabular-nums; }
+body.proma-v2 .proma-installment-group-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--pp-space-3); }
+body.proma-v2 .proma-group-check { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--pp-space-3); min-width: 0; min-height: 60px; padding: var(--pp-space-3) var(--pp-space-4); border: 1px solid var(--pp-line); border-radius: var(--pp-radius); background: var(--pp-surface); cursor: pointer; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
+body.proma-v2 .proma-group-check:has(input:checked), body.proma-v2 .proma-group-check:focus-within { border-color: var(--pp-primary-500); background: var(--pp-primary-50); box-shadow: 0 0 0 2px rgba(99, 60, 255, .08); }
+body.proma-v2 .proma-group-check input { width: 20px; height: 20px; margin: 0; accent-color: var(--pp-primary-600); }
+body.proma-v2 .proma-group-check span { min-width: 0; line-height: 1.6; }
+body.proma-v2 .proma-group-check strong { color: var(--pp-ink); font-size: 13px; text-align: left; font-variant-numeric: tabular-nums; }
+body.proma-v2 .proma-installment-group-form [data-group-submit] { min-height: 48px; justify-self: start; }
+body.proma-v2 .proma-installment-list-table { min-width: 980px; }
+body.proma-v2 .proma-customer-installment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--pp-space-4); min-width: 0; padding: 0 var(--pp-space-5) var(--pp-space-5); }
+body.proma-v2 .proma-customer-installment-card { display: grid; align-content: start; gap: var(--pp-space-4); min-width: 0; padding: var(--pp-space-4); border: 1px solid var(--pp-line); border-radius: var(--pp-radius); background: var(--pp-surface); box-shadow: var(--pp-shadow-sm); }
+body.proma-v2 .proma-customer-installment-card__header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--pp-space-3); min-width: 0; padding-bottom: var(--pp-space-3); border-bottom: 1px solid var(--pp-line); }
+body.proma-v2 .proma-customer-installment-card__header > div { display: grid; gap: 2px; min-width: 0; }
+body.proma-v2 .proma-customer-installment-card__header small,
+body.proma-v2 .proma-customer-installment-card__details dt,
+body.proma-v2 .proma-customer-installment-card__payable > span { color: var(--pp-muted); font-size: 12px; font-weight: 700; }
+body.proma-v2 .proma-customer-installment-card__header strong { overflow-wrap: anywhere; }
+body.proma-v2 .proma-customer-installment-card__identity { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--pp-space-2) var(--pp-space-4); }
+body.proma-v2 .proma-customer-installment-card__identity > strong { color: var(--pp-navy); font-size: 17px; }
+body.proma-v2 .proma-customer-installment-card__identity > span { color: var(--pp-muted); font-size: 13px; }
+body.proma-v2 .proma-customer-installment-card__custom { display: flex; align-items: center; flex-wrap: wrap; gap: var(--pp-space-2); min-width: 0; }
+body.proma-v2 .proma-customer-installment-card__custom small { color: var(--pp-muted); overflow-wrap: anywhere; }
+body.proma-v2 .proma-customer-installment-card__details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--pp-space-2); margin: 0; }
+body.proma-v2 .proma-customer-installment-card__details > div { display: grid; align-content: start; gap: 4px; min-width: 0; padding: var(--pp-space-3); border-radius: var(--pp-radius-sm); background: var(--pp-canvas); }
+body.proma-v2 .proma-customer-installment-card__details dt { margin: 0; }
+body.proma-v2 .proma-customer-installment-card__details dd { min-width: 0; margin: 0; font-size: 13px; font-weight: 800; overflow-wrap: anywhere; }
+body.proma-v2 .proma-customer-installment-card__details .proma-customer-installment-card__penalty { grid-column: 1 / -1; }
+body.proma-v2 .proma-customer-installment-card__payable { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--pp-space-2); min-width: 0; padding: var(--pp-space-3) var(--pp-space-4); border: 1px solid var(--pp-primary-100); border-radius: var(--pp-radius-sm); background: var(--pp-primary-50); }
+body.proma-v2 .proma-customer-installment-card__payable strong { color: var(--pp-primary-700); font-size: 16px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+body.proma-v2 .proma-customer-installment-card__pay { width: 100%; min-height: var(--pp-control); justify-content: center; }
+body.proma-v2 .proma-customer-document-card { display: grid; align-content: start; gap: var(--pp-space-3); min-width: 0; padding: var(--pp-space-4); border: 1px solid var(--pp-line); border-radius: var(--pp-radius); background: var(--pp-surface); }
+body.proma-v2 .proma-customer-document-card > strong { overflow-wrap: anywhere; }
+body.proma-v2 .proma-customer-document-preview { width: 100%; }
+body.proma-v2 .proma-customer-document-preview summary { list-style: none; cursor: pointer; }
+body.proma-v2 .proma-customer-document-preview summary::-webkit-details-marker { display: none; }
+body.proma-v2 .proma-customer-document-preview iframe { display: block; width: min(100%, 720px); height: min(70dvh, 680px); margin-top: var(--pp-space-3); border: 1px solid var(--pp-line); border-radius: var(--pp-radius-sm); background: var(--pp-canvas); }
 body.proma-v2 .proma-contract-summary-strip, body.proma-v2 .proma-kpi-grid { gap: 14px; }
 body.proma-v2 .proma-overdue-page { display: grid; gap: 22px; }
 body.proma-v2 .proma-overdue-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -632,6 +672,12 @@ body.proma-v2 .proma-v2-mobile-nav { display: none; }
   body.proma-v2 .proma-overdue-kpis { grid-template-columns: 1fr 1fr; gap: 10px; }
   body.proma-v2 .proma-settings-tabs { margin-inline: -2px; }
   body.proma-v2 .proma-settings-version { min-width: 190px; }
+  body.proma-v2 .proma-installment-group-items { grid-template-columns: minmax(0, 1fr); }
+  body.proma-v2 .proma-installment-group-head { align-items: flex-start; flex-direction: column; }
+  body.proma-v2 .proma-installment-group-form [data-group-submit] { width: 100%; }
+  body.proma-v2 .proma-customer-installment-grid { grid-template-columns: minmax(0, 1fr); padding-inline: var(--pp-space-3); }
+  body.proma-v2 .proma-customer-installment-card { padding: var(--pp-space-3); }
+  body.proma-v2 #installment-bulk-form { padding-inline: var(--pp-space-3); }
   body.proma-v2 .proma-settings-tab-group { min-width: 175px; }
   body.proma-v2 .proma-settings-tab-group > div { grid-template-columns: 1fr; }
   body.proma-v2 .proma-medal-card { min-height: 0; }
@@ -642,7 +688,7 @@ body.proma-v2 .proma-v2-mobile-nav { display: none; }
   body.proma-v2 table.proma-v2-data-table thead { display: none; }
   body.proma-v2 table.proma-v2-data-table tbody { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; padding: 10px; }
   body.proma-v2 table.proma-v2-data-table tbody tr { display: block; width: 100%; min-width: 0; box-sizing: border-box; padding: 8px 13px; border: 1px solid var(--pp-line); border-radius: 14px; background: #fff; box-shadow: var(--pp-shadow-sm); }
-  body.proma-v2 table.proma-v2-data-table tbody td { width: 100%; min-width: 0; box-sizing: border-box; min-height: 38px; padding: 8px 0; display: grid; grid-template-columns: minmax(98px, 38%) minmax(0, 1fr); gap: 12px; align-items: center; border-bottom: 1px dashed #e8e9ef; text-align: left; overflow-wrap: break-word; word-break: normal; }
+  body.proma-v2 table.proma-v2-data-table tbody td { width: 100%; min-width: 0; box-sizing: border-box; min-height: 38px; padding: 8px 0; display: grid; grid-template-columns: minmax(86px, 34%) minmax(0, 1fr); gap: 10px; align-items: center; border-bottom: 1px dashed #e8e9ef; text-align: left; white-space: normal; overflow-wrap: anywhere; word-break: normal; writing-mode: horizontal-tb; }
   body.proma-v2 table.proma-v2-data-table tbody td > * { min-width: 0; max-width: 100%; }
   body.proma-v2 table.proma-v2-data-table tbody td:last-child { border-bottom: 0; }
   body.proma-v2 table.proma-v2-data-table tbody td::before { content: attr(data-label); color: var(--pp-muted); font-size: 11px; font-weight: 800; text-align: right; }
@@ -651,6 +697,7 @@ body.proma-v2 .proma-v2-mobile-nav { display: none; }
   body.proma-v2 table.proma-v2-data-table tbody td.proma-installment-financial-cell { display: block; text-align: start; }
   body.proma-v2 table.proma-v2-data-table tbody td.proma-installment-financial-cell::before { display: block; margin-bottom: var(--pp-space-2); }
   body.proma-v2 .proma-penalty-display { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
+  body.proma-v2 .proma-penalty-display strong,
   body.proma-v2 .proma-penalty-display small,
   body.proma-v2 .proma-penalty-display del { white-space: normal; overflow-wrap: anywhere; word-break: normal; }
   body.proma-v2 .proma-penalty-display .badge { white-space: normal; }

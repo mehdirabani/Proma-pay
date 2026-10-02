@@ -712,6 +712,7 @@
     initModals();
     initFilters();
     initCustomerLiveSearch();
+    initCustomerCreateForms();
     initGuarantorLiveSearch();
     initUserLiveSearch();
     initRepeaters();
@@ -908,6 +909,7 @@
         box.dispatchEvent(new CustomEvent('proma:customer-selected', { bubbles: true, detail: item }));
         close();
       };
+      box.__promaChooseCustomer = choose;
 
       const render = function (items) {
         results.innerHTML = '';
@@ -997,6 +999,53 @@
 
       document.addEventListener('click', function (event) {
         if (!box.contains(event.target)) close();
+      });
+    });
+  };
+
+  const initCustomerCreateForms = function () {
+    document.querySelectorAll('[data-customer-create-open]').forEach(function (button) {
+      if (button.dataset.customerCreateReturnBound === '1') return;
+      button.dataset.customerCreateReturnBound = '1';
+      button.addEventListener('click', function () {
+        window.__promaCustomerReturnBox = button.closest('form')?.querySelector('[data-customer-live-search]') || null;
+      });
+    });
+    document.querySelectorAll('[data-customer-create-form]').forEach(function (form) {
+      if (form.dataset.customerCreateBound === '1') return;
+      form.dataset.customerCreateBound = '1';
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        const submit = form.querySelector('[type="submit"]');
+        const error = form.querySelector('[data-customer-create-error]');
+        if (error) { error.hidden = true; error.textContent = ''; }
+        if (submit) submit.disabled = true;
+        fetch(form.action, {
+          method: 'POST',
+          body: new FormData(form),
+          credentials: 'same-origin',
+          headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        }).then(function (response) {
+          return response.json().then(function (payload) {
+            if (!response.ok || !payload.ok) throw new Error(payload.message || 'ثبت مشتری انجام نشد.');
+            return payload;
+          });
+        }).then(function (payload) {
+          const customer = payload.customer || {};
+          const target = window.__promaCustomerReturnBox;
+          if (target && typeof target.__promaChooseCustomer === 'function') {
+            target.__promaChooseCustomer(customer);
+            target.dispatchEvent(new CustomEvent('proma:customer-created', { bubbles: true, detail: customer }));
+            window.__promaCustomerReturnBox = null;
+          }
+          form.reset();
+          form.closest('.modal')?.querySelector('[data-close-modal]')?.click();
+          if (typeof showToast === 'function') showToast('مشتری ثبت شد و به فرم بازگشت.', 'success');
+          if (!target) window.location.reload();
+        }).catch(function (failure) {
+          if (error) { error.textContent = failure.message || 'ثبت مشتری انجام نشد.'; error.hidden = false; }
+          else if (typeof showToast === 'function') showToast(failure.message || 'ثبت مشتری انجام نشد.', 'error');
+        }).finally(function () { if (submit) submit.disabled = false; });
       });
     });
   };
@@ -2954,6 +3003,84 @@
     });
   };
 
+  const initInstallmentOverflowScope = function () {
+    const form = document.getElementById('installment-bulk-form');
+    if (!form || form.dataset.overflowScopeBound === '1') return;
+    form.dataset.overflowScopeBound = '1';
+    const scope = form.querySelector('[data-installment-payment-scope]');
+    const amount = form.querySelector('[data-installment-group-amount]');
+    const hint = form.querySelector('[data-installment-overflow-hint]');
+    if (!scope || !amount) return;
+    const parseDigits = function (value) {
+      const persian = '۰۱۲۳۴۵۶۷۸۹';
+      const arabic = '٠١٢٣٤٥٦٧٨٩';
+      return parseInt(String(value || '').replace(/[۰-۹]/g, function (char) { return String(persian.indexOf(char)); }).replace(/[٠-٩]/g, function (char) { return String(arabic.indexOf(char)); }).replace(/[^0-9]/g, ''), 10) || 0;
+    };
+    const update = function () {
+      const checked = Array.prototype.filter.call(form.querySelectorAll('[data-installment-payable]:checked'), function () { return true; });
+      const selectedTotal = checked.reduce(function (sum, item) { return sum + parseDigits(item.getAttribute('data-installment-payable')); }, 0);
+      const overflowsSelection = selectedTotal > 0 && parseDigits(amount.value) > selectedTotal;
+      scope.value = overflowsSelection ? 'schedule' : 'selected';
+      if (hint) {
+        hint.textContent = overflowsSelection
+          ? 'مازاد بر اقساط انتخاب‌شده، به اقساط باز بعدی همین قرارداد تخصیص می‌یابد؛ مبلغ بالاتر از کل بدهی رد می‌شود.'
+          : 'تا سقف جمع اقساط انتخاب‌شده تخصیص انجام می‌شود؛ مبلغ بیشتر به اقساط باز بعدی همین قرارداد می‌رود.';
+      }
+    };
+    amount.addEventListener('input', update);
+    form.querySelectorAll('[data-installment-payable]').forEach(function (item) { item.addEventListener('change', update); });
+    update();
+  };
+
+  const initContractActionPortals = function () {
+    document.querySelectorAll('.proma-contract-action-menu').forEach(function (details) {
+      if (details.dataset.portalBound === '1') return;
+      const summary = details.querySelector(':scope > summary');
+      const menu = details.querySelector(':scope > .actions');
+      if (!summary || !menu) return;
+      details.dataset.portalBound = '1';
+      let placeholder = null;
+      const position = function () {
+        if (!details.open || menu.parentNode !== document.body) return;
+        const rect = summary.getBoundingClientRect();
+        const width = Math.min(280, window.innerWidth - 16);
+        menu.style.width = width + 'px';
+        const left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.right - width));
+        const height = menu.offsetHeight;
+        const below = window.innerHeight - rect.bottom - 8;
+        const top = below >= Math.min(height, window.innerHeight * .7) ? rect.bottom + 8 : Math.max(8, rect.top - Math.min(height, window.innerHeight * .7) - 8);
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
+      };
+      const portal = function () {
+        if (!details.open || menu.parentNode === document.body) return;
+        placeholder = document.createComment('proma-contract-action-menu');
+        menu.parentNode.insertBefore(placeholder, menu);
+        menu.classList.add('proma-contract-action-menu__portal');
+        document.body.appendChild(menu);
+        position();
+      };
+      const restore = function () {
+        if (menu.parentNode !== document.body) return;
+        menu.classList.remove('proma-contract-action-menu__portal');
+        menu.style.removeProperty('left'); menu.style.removeProperty('top'); menu.style.removeProperty('width');
+        if (placeholder && placeholder.parentNode) placeholder.parentNode.insertBefore(menu, placeholder);
+        if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+        placeholder = null;
+      };
+      details.addEventListener('toggle', function () { details.open ? portal() : restore(); });
+      document.addEventListener('pointerdown', function (event) {
+        if (details.open && !details.contains(event.target) && !menu.contains(event.target)) details.open = false;
+      });
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && details.open) { details.open = false; summary.focus(); }
+      });
+      window.addEventListener('resize', position);
+      window.addEventListener('scroll', position, true);
+      summary.addEventListener('click', function () { window.requestAnimationFrame(position); });
+    });
+  };
+
   document.addEventListener('error', function (event) {
     const image = event.target;
     if (!image || !image.matches || !image.matches('[data-avatar-image]')) return;
@@ -3211,6 +3338,8 @@ document.addEventListener('DOMContentLoaded', function () {
     initCardLinks();
     initContractDetailWorkspace();
     initContractSettlement();
+    initInstallmentOverflowScope();
+    initContractActionPortals();
     initContactActions();
     initCopyShortcodes();
     initSettingResets();

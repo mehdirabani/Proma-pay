@@ -591,7 +591,7 @@ class ContractsController extends Controller
                 $_POST['quote_uuid'] ?? null,
                 parse_jalali_date($_POST['payment_date'] ?? '') ?: date('Y-m-d'),
                 $_POST['payment_time'] ?? date('H:i'),
-                ($_POST['settlement_scope'] ?? 'selected') === 'contract' ? 'contract' : 'selected'
+                in_array(($_POST['settlement_scope'] ?? 'selected'), ['contract', 'schedule'], true) ? (string) $_POST['settlement_scope'] : 'selected'
             );
             set_flash('success', 'پرداخت گروهی ' . ($group['group_number'] ?? '') . ' ثبت شد.');
         } catch (Throwable $e) {
@@ -618,7 +618,8 @@ class ContractsController extends Controller
                     $_POST['payment_request_uuid'] ?? null,
                     $_POST['quote_uuid'] ?? null,
                     parse_jalali_date($_POST['payment_date'] ?? '') ?: date('Y-m-d'),
-                    $_POST['payment_time'] ?? date('H:i')
+                    $_POST['payment_time'] ?? date('H:i'),
+                    ($_POST['settlement_scope'] ?? 'selected') === 'schedule' ? 'schedule' : 'selected'
                 );
                 $result = ['updated' => count($_POST['installment_ids'] ?? []), 'group_number' => $group['group_number'] ?? ''];
             } else {
@@ -636,13 +637,13 @@ class ContractsController extends Controller
         Auth::requireLogin();
         $contract = Contract::find((int) $id);
         $this->authorizeContractAccess($contract);
-        $scope = ($_GET['scope'] ?? 'selected') === 'contract' ? 'contract' : 'selected';
+        $scope = in_array(($_GET['scope'] ?? 'selected'), ['contract', 'schedule'], true) ? (string) $_GET['scope'] : 'selected';
         $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($_GET['installment_ids'] ?? [])))));
-        if ($scope !== 'contract' && !$ids) {
+        if ($scope === 'selected' && !$ids) {
             $this->json(['ok' => false, 'message' => 'حداقل یک قسط را انتخاب کنید.'], 422);
         }
         try {
-            $quote = SettlementQuoteService::create((int) $contract['id'], $scope === 'contract' ? [] : $ids, Auth::id(), $scope);
+            $quote = SettlementQuoteService::create((int) $contract['id'], in_array($scope, ['contract', 'schedule'], true) ? [] : $ids, Auth::id(), $scope);
             $this->json(['ok' => true, 'quote' => $quote]);
         } catch (Throwable $e) {
             $this->json(['ok' => false, 'message' => $e instanceof InvalidArgumentException ? $e->getMessage() : 'محاسبه پیش‌فاکتور تسویه انجام نشد.'], $e->getCode() === 409 ? 409 : 422);
