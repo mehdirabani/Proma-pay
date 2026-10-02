@@ -79,6 +79,12 @@ $visible = Model::fetch(
     [(int) $pending['id']]
 );
 $assert((int) ($visible['id'] ?? 0) === (int) $pending['id'], 'Admin reconciliation queue cannot find the preserved gateway payment.');
+$reviewGuard = new ReflectionMethod(PaymentsController::class, 'hasUnresolvedGatewayReview');
+$reviewGuard->setAccessible(true);
+$assert($reviewGuard->invoke(new PaymentsController(), $contractId, $customerId) === true, 'Customer gateway retry was not blocked while captured money awaits review.');
+$assert($reviewGuard->invoke(new PaymentsController(), $contractId, $adminId) === false, 'Gateway guard leaked a customer review to another actor.');
+$panelTemplate = (string) file_get_contents(dirname(__DIR__) . '/views/installments/index.php');
+$assert(strpos($panelTemplate, 'پرداخت در حال بررسی مالی') !== false && strpos($panelTemplate, 'gatewayReviewsByContract') !== false, 'Customer panel lacks a visible gateway reconciliation warning.');
 
 $nextQuote = SettlementQuoteService::create($contractId, $ids, $customerId, 'selected', '2026-10-01');
 $incomplete = PaymentGroupService::createPendingGateway($contractId, $ids, 1000000, $customerId, 'qa-review-incomplete-' . $suffix, 'qa-review-incomplete-key-' . $suffix, 'zibal', (string) $nextQuote['quote_uuid'], 'selected');
@@ -114,6 +120,7 @@ $reconciled = PaymentGroupService::reconcileGatewayReview((int) $pending['id'], 
 $assert(($reconciled['status'] ?? '') === 'completed', 'Authorized reconciliation did not complete.');
 $assert(normalize_money($reconciled['allocated_amount'] ?? 0) === 3000000, 'Reconciliation lost a portion of the verified payment.');
 $assert(($reconciled['gateway_ref_id'] ?? '') === 'qa-review-ref-' . $suffix, 'Reconciliation lost the external reference.');
+$assert($reviewGuard->invoke(new PaymentsController(), $contractId, $customerId) === true, 'Another unresolved receipt was not respected by the gateway guard.');
 $reconciledAllocations = Model::fetchAll('SELECT allocated_amount FROM payment_allocations WHERE payment_group_id = ? AND COALESCE(is_reversal, 0) = 0', [(int) $pending['id']]);
 $assert(array_sum(array_map(static function ($row) { return normalize_money($row['allocated_amount']); }, $reconciledAllocations)) === 3000000, 'Reconciliation allocations do not equal the verified amount.');
 $audit = Model::fetch("SELECT id FROM audit_logs WHERE event_action = 'review_reconciled' AND related_type = 'payment_group' AND related_id = ? LIMIT 1", [(int) $pending['id']]);

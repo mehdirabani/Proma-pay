@@ -1,5 +1,6 @@
 <?php
 $customerMode = $customerMode ?? false;
+$gatewayReviewsByContract = $gatewayReviewsByContract ?? [];
 $paymentSettings = $paymentSettings ?? Settings::allKeyed();
 $gatewayOptions = [];
 $groupGatewayOptions = [];
@@ -127,12 +128,22 @@ $installmentTabUrl = static function (string $tab) use ($filters): string {
 </section>
 <?php endif; ?>
 <div data-ajax-results="installments">
+<?php if ($customerMode && $gatewayReviewsByContract): ?>
+  <section class="notice warning" aria-label="پرداخت‌های در حال بررسی مالی">
+    <strong>پرداخت در حال بررسی مالی</strong>
+    <p>وجه تأییدشدهٔ این قراردادها هنوز به اقساط تخصیص نیافته است. برای جلوگیری از پرداخت تکراری، تا اعلام نتیجهٔ واحد مالی پرداخت آنلاین همان قرارداد متوقف است.</p>
+    <?php foreach ($gatewayReviewsByContract as $reviewRows): foreach ($reviewRows as $reviewRow): ?>
+      <div>قرارداد <?= e($reviewRow['contract_number']) ?> · <?= $reviewRow['gateway_verified_amount'] === null ? 'مبلغ در انتظار استعلام درگاه' : money_toman($reviewRow['gateway_verified_amount']) ?> · پیگیری <bdi><?= e($reviewRow['gateway_track_id'] ?? '') ?></bdi></div>
+    <?php endforeach; endforeach; ?>
+  </section>
+<?php endif; ?>
 <?php if ($customerMode && !empty($installmentGroups)): ?>
 <section class="card proma-installment-group-payment">
   <div class="card-header card-no-border"><div><h2>پرداخت آنلاین چند قسطی</h2><p class="text-muted">مبلغ ابتدا به اقساط انتخاب‌شده می‌رسد؛ اگر بیشتر باشد، با تأیید شما به اقساط باز بعدی همین قرارداد تخصیص می‌یابد.</p></div></div>
   <div class="card-body">
     <?php if (!$groupGatewayReady): ?><div class="notice warning">درگاه آنلاین برای پرداخت گروهی فعال یا تنظیم نشده است.</div><?php endif; ?>
     <?php foreach ($installmentGroups as $group): ?>
+      <?php if (!empty($gatewayReviewsByContract[(int) $group['contract_id']])): ?><div class="notice warning">پرداخت آنلاین قرارداد <?= e($group['contract_number']) ?> تا پایان بررسی وجه قبلی غیرفعال است.</div><?php continue; endif; ?>
       <form method="post" action="<?= e(url('payments/gatewayGroup')) ?>" class="proma-installment-group-form" data-payment-group-form data-quote-url="<?= e(url('contracts/settlementQuote/' . (int) $group['contract_id'])) ?>" data-disable-on-submit>
         <?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $group['contract_id'] ?>"><input type="hidden" name="idempotency_key" value="<?= e(bin2hex(random_bytes(24))) ?>"><input type="hidden" name="payment_request_uuid" value="<?= e(bin2hex(random_bytes(16))) ?>"><input type="hidden" name="quote_uuid" value="" data-group-quote-uuid><input type="hidden" name="settlement_scope" value="selected" data-group-scope>
         <div class="proma-installment-group-head"><strong>قرارداد <?= e($group['contract_number']) ?></strong><span data-group-total><?= money_toman($group['total']) ?></span></div>
@@ -365,6 +376,9 @@ $installmentTabUrl = static function (string $tab) use ($filters): string {
 
             <?php if ($gatewayReady): ?>
             <div class="proma-payment-panel <?= $defaultPaymentMethod === 'gateway' ? 'active' : '' ?>" data-payment-method-panel="gateway"<?= $defaultPaymentMethod === 'gateway' ? '' : ' hidden' ?>>
+              <?php if (!empty($gatewayReviewsByContract[(int) $item['contract_id']])): ?>
+                <div class="notice warning">پرداخت آنلاین این قرارداد تا رسیدگی مالی به وجه قبلی غیرفعال است.</div>
+              <?php else: ?>
               <form method="post" action="<?= e(url('payments/gateway')) ?>" class="proma-payment-form" data-disable-on-submit>
                 <?= csrf_field() ?>
                 <input type="hidden" name="installment_id" value="<?= (int) $item['id'] ?>">
@@ -396,6 +410,7 @@ $installmentTabUrl = static function (string $tab) use ($filters): string {
                   <button class="btn secondary" type="button" data-close-modal>بستن</button>
                 </div>
               </form>
+              <?php endif; ?>
             </div>
             <?php endif; ?>
 

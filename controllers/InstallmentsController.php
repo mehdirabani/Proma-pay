@@ -24,6 +24,16 @@ class InstallmentsController extends Controller
     {
         $this->requireRole('customer');
         $customerInstallments = Installment::all(['customer_id' => Auth::id()]);
+        $gatewayReviewRows = Model::fetchAll(
+            "SELECT pg.contract_id, pg.gateway_verified_amount, pg.gateway_track_id, c.contract_number
+             FROM payment_groups pg JOIN contracts c ON c.id = pg.contract_id
+             WHERE pg.customer_id = ? AND pg.status = 'review_required' ORDER BY pg.created_at DESC",
+            [(int) Auth::id()]
+        );
+        $gatewayReviewsByContract = [];
+        foreach ($gatewayReviewRows as $reviewRow) {
+            $gatewayReviewsByContract[(int) $reviewRow['contract_id']][] = $reviewRow;
+        }
         $installmentGroups = [];
         foreach ($customerInstallments as $item) {
             if (empty($item['payment_allowed'])) {
@@ -45,6 +55,7 @@ class InstallmentsController extends Controller
             'title' => 'پنل اقساط من',
             'installments' => $customerInstallments,
             'installmentGroups' => array_values($installmentGroups),
+            'gatewayReviewsByContract' => $gatewayReviewsByContract,
             'contracts' => [],
             'customerMode' => true,
             'installmentsRoute' => 'installments/panel',

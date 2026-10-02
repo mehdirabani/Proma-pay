@@ -43,6 +43,9 @@ class PaymentsController extends Controller
             redirect('installments/panel');
         }
         try {
+            if ($this->hasUnresolvedGatewayReview((int) $installment['contract_id'], (int) Auth::id())) {
+                throw new InvalidArgumentException('یک پرداخت تأییدشدهٔ این قرارداد در حال بررسی مالی است. پیش از پرداخت دوباره، نتیجهٔ آن را پیگیری کنید.', 409);
+            }
             $amount = normalize_money($_POST['amount'] ?? $installment['payable']);
             $quote = SettlementQuoteService::create((int) $installment['contract_id'], [(int) $installment['id']], Auth::id(), 'selected');
             if ($amount <= 0 || $amount > normalize_money($quote['full_settlement_total'] ?? 0)) {
@@ -104,6 +107,9 @@ class PaymentsController extends Controller
         try {
             $contract = Contract::find($contractId);
             if (!$contract || (int) ($contract['customer_id'] ?? 0) !== (int) Auth::id()) throw new InvalidArgumentException('قرارداد برای پرداخت پیدا نشد.', 403);
+            if ($this->hasUnresolvedGatewayReview($contractId, (int) Auth::id())) {
+                throw new InvalidArgumentException('یک پرداخت تأییدشدهٔ این قرارداد در حال بررسی مالی است. پیش از پرداخت دوباره، نتیجهٔ آن را پیگیری کنید.', 409);
+            }
             $installments = SettlementQuoteService::loadInstallments($contractId, $scope === 'schedule' ? $selectedIds : $ids);
             $states = InstallmentFinancialStateService::statesForRows($installments);
             foreach ($installments as $installment) {
@@ -157,6 +163,14 @@ class PaymentsController extends Controller
             $provided = bin2hex(random_bytes(24));
         }
         return 'gateway:' . preg_replace('/[^a-z]/', '', (string) $type) . ':' . (int) Auth::id() . ':' . (int) $scopeId . ':' . $provided;
+    }
+
+    private function hasUnresolvedGatewayReview($contractId, $customerId)
+    {
+        return Model::fetch(
+            "SELECT id FROM payment_groups WHERE contract_id = ? AND customer_id = ? AND status = 'review_required' LIMIT 1",
+            [(int) $contractId, (int) $customerId]
+        ) !== null;
     }
 
     public function cardTransfer()
