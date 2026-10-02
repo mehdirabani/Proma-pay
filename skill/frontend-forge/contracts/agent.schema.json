@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "name",
+    "mission",
+    "inputs",
+    "outputs",
+    "activation",
+    "authority",
+    "quality_gates",
+    "failure_policy",
+    "handoff"
+  ],
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "mission": {
+      "type": "string"
+    },
+    "inputs": {
+      "type": "array",
+      "minItems": 1
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1
+    },
+    "activation": {
+      "type": "array",
+      "minItems": 1
+    },
+    "authority": {
+      "type": "object"
+    },
+    "quality_gates": {
+      "type": "array"
+    },
+    "failure_policy": {
+      "type": "string"
+    },
+    "handoff": {
+      "type": "array"
+    }
+  }
+}

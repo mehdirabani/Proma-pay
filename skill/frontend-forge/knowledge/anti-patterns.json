@@ -1,0 +1,51 @@
+[
+  {
+    "name": "massive-components",
+    "detection": "component owns multiple unrelated responsibilities or high change fan-out",
+    "why_harmful": "couples change and testing",
+    "severity": "high",
+    "replacement": "split by stable responsibility/domain boundary"
+  },
+  {
+    "name": "deep-prop-drilling",
+    "detection": "data passed through unrelated intermediate layers",
+    "why_harmful": "couples component tree",
+    "severity": "medium",
+    "replacement": "rethink ownership/composition; use context only when scope warrants"
+  },
+  {
+    "name": "excessive-global-state",
+    "detection": "local/transient state stored globally without cross-feature need",
+    "why_harmful": "increases coordination and rerender risk",
+    "severity": "high",
+    "replacement": "keep state at narrowest stable owner"
+  },
+  {
+    "name": "arbitrary-tailwind-values",
+    "detection": "frequent one-off arbitrary utilities replacing reusable tokens",
+    "why_harmful": "design drift",
+    "severity": "medium",
+    "replacement": "promote repeated values to theme tokens"
+  },
+  {
+    "name": "unnecessary-useeffect",
+    "detection": "effect used for derivable render state or event logic",
+    "why_harmful": "extra synchronization and bugs",
+    "severity": "medium",
+    "replacement": "derive during render or handle at event boundary"
+  },
+  {
+    "name": "client-component-overuse",
+    "detection": "server-capable subtree forced client-side without interactive need",
+    "why_harmful": "hydration/bundle cost",
+    "severity": "medium",
+    "replacement": "move client boundary downward where framework permits"
+  },
+  {
+    "name": "premature-abstraction",
+    "detection": "abstraction created before stable repeated behavior exists",
+    "why_harmful": "indirection and brittle APIs",
+    "severity": "medium",
+    "replacement": "keep local until reuse/boundary evidence exists"
+  }
+]

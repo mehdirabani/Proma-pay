@@ -1,0 +1,2141 @@
+schema_version: 2
+runtime_version: 1.2.0
+language_support:
+- en
+- fa
+- mixed
+- finglish-tolerant
+modules:
+- id: php-core
+  version: 2
+  file: modules/php-core.md
+  estimated_tokens: 760
+  framework: false
+  dependencies:
+    required: []
+    conditional: []
+  aliases:
+    en:
+    - php
+    - namespace
+    - trait
+    - enum
+    - generator
+    - reflection
+    - spl
+    - attribute
+    fa:
+    - پی اچ پی
+    - فضای نام
+    - تریت
+    - اینوم
+  repository_signals:
+    packages: []
+    files: []
+  verification:
+    required:
+    - syntax_check
+- id: laravel
+  version: 2
+  file: modules/laravel.md
+  estimated_tokens: 920
+  framework: true
+  dependencies:
+    required: []
+    conditional: []
+  aliases:
+    en:
+    - laravel
+    - eloquent
+    - artisan
+    - blade
+    - sanctum
+    - livewire
+    fa:
+    - لاراول
+    - الوکوانت
+    - آرتیزان
+  repository_signals:
+    packages:
+    - laravel/framework
+    files:
+    - artisan
+  verification:
+    required:
+    - framework_version_check
+  exclusive_group: server-framework
+- id: symfony
+  version: 2
+  file: modules/symfony.md
+  estimated_tokens: 920
+  framework: true
+  dependencies:
+    required: []
+    conditional: []
+  aliases:
+    en:
+    - symfony
+    - messenger
+    - framework bundle
+    - symfony console
+    fa:
+    - سیمفونی
+  repository_signals:
+    packages:
+    - symfony/framework-bundle
+    files:
+    - bin/console
+  verification:
+    required:
+    - framework_version_check
+  exclusive_group: server-framework
+- id: wordpress
+  version: 2
+  file: modules/wordpress.md
+  estimated_tokens: 1180
+  framework: true
+  dependencies:
+    required: []
+    conditional: []
+  aliases:
+    en:
+    - wordpress
+    - wp-cli
+    - gutenberg
+    - wp rest
+    - wp-admin
+    fa:
+    - وردپرس
+    - گوتنبرگ
+  repository_signals:
+    packages: []
+    files:
+    - wp-config.php
+    - wp-includes/version.php
+  verification:
+    required:
+    - capability_check
+    - nonce_when_state_change
+    - escape_output
+  version_probes:
+  - type: php_assignment
+    file: wp-includes/version.php
+    variable: wp_version
+    confidence: 0.88
+- id: woocommerce
+  version: 2
+  file: modules/woocommerce.md
+  estimated_tokens: 1450
+  framework: true
+  dependencies:
+    required:
+    - wordpress
+    conditional: []
+  aliases:
+    en:
+    - woocommerce
+    - wc_order
+    - checkout
+    - cart
+    - hpos
+    - action scheduler
+    fa:
+    - ووکامرس
+    - ووکامرث
+    - سبد خرید
+    - تسویه حساب
+  repository_signals:
+    packages:
+    - woocommerce/woocommerce
+    files:
+    - wp-content/plugins/woocommerce/woocommerce.php
+  verification:
+    required:
+    - order_state_test
+    - hpos_compatibility_check
+  version_probes:
+  - type: plugin_header
+    files:
+    - wp-content/plugins/woocommerce/woocommerce.php
+    - woocommerce.php
+    header: Version
+    confidence: 0.86
+- id: api
+  version: 2
+  file: modules/api.md
+  estimated_tokens: 850
+  framework: false
+  dependencies:
+    required: []
+    conditional: []
+  aliases:
+    en:
+    - api
+    - endpoint
+    - rest
+    - graphql
+    - webhook
+    - callback
+    - oauth
+    - jwt
+    fa:
+    - وبهوک
+    - وب هوک
+    - اندپوینت
+    - ای پی آی
+    - کالبک
+  repository_signals:
+    packages: []
+    files: []
+  verification:
+    required:
+    - input_contract_test
+- id: database
+  version: 2
+  file: modules/database.md
+  estimated_tokens: 1050
+  framework: false
+  dependencies:
+    required: []
+    conditional: []
+  aliases:
+    en:
+    - database
+    - sql
+    - query
+    - migration
+    - index
+    - transaction
+    - deadlock
+    - backfill
+    - schema
+    fa:
+    - دیتابیس
+    - پایگاه داده
+    - کوئری
+    - مایگریشن
+    - تراکنش
+    - ایندکس
+  repository_signals:
+    packages:
+    - doctrine/orm
+    - illuminate/database
+    files: []
+  verification:
+    required:
+    - migration_rollback_review
+- id: security
+  version: 2
+  file: modules/security.md
+  estimated_tokens: 1750
+  framework: false
+  dependencies:
+    required: []
+    conditional: []
+  aliases:
+    en:
+    - security
+    - vulnerability
+    - exploit
+    - access control
+    fa:
+    - امنیت
+    - آسیب پذیری
+    - آسیب‌پذیری
+    - باگ امنیتی
+  repository_signals:
+    packages: []
+    files: []
+  verification:
+    required:
+    - security_regression_test
+- id: fintech
+  version: 2
+  file: modules/fintech.md
+  estimated_tokens: 2050
+  framework: false
+  dependencies:
+    required:
+    - security
+    - testing
+    conditional: []
+  aliases:
+    en:
+    - financial state
+    - payments system
+    - ledger system
+    fa:
+    - منطق مالی
+    - سامانه پرداخت
+    - دفتر کل
+  repository_signals:
+    packages: []
+    files: []
+  verification:
+    required:
+    - financial_invariant_test
+    - idempotency_analysis
+    - concurrency_analysis
+- id: testing
+  version: 2
+  file: modules/testing.md
+  estimated_tokens: 820
+  framework: false
+  dependencies:
+    required: []
+    conditional: []
+  aliases:
+    en:
+    - test
+    - phpunit
+    - pest
+    - regression
+    - assertion
+    - coverage
+    fa:
+    - تست
+    - رگرشن
+    - آزمون
+  repository_signals:
+    packages:
+    - phpunit/phpunit
+    - pestphp/pest
+    files:
+    - phpunit.xml
+    - phpunit.xml.dist
+  verification:
+    required:
+    - test_execution
+- id: debugging
+  version: 2
+  file: modules/debugging.md
+  estimated_tokens: 760
+  framework: false
+  dependencies:
+    required: []
+    conditional: []
+  aliases:
+    en:
+    - debug
+    - bug
+    - failure investigation
+    - root cause
+    fa:
+    - دیباگ
+    - باگ
+    - ریشه خطا
+  repository_signals:
+    packages: []
+    files: []
+  verification:
+    required:
+    - reproduction_evidence
+- id: performance
+  version: 2
+  file: modules/performance.md
+  estimated_tokens: 1020
+  framework: false
+  dependencies:
+    required: []
+    conditional: []
+  aliases:
+    en:
+    - performance
+    - latency
+    - profiling
+    - throughput
+    - n+1
+    - memory pressure
+    fa:
+    - کارایی
+    - پرفورمنس
+    - تاخیر
+    - کندی
+  repository_signals:
+    packages: []
+    files: []
+  verification:
+    required:
+    - before_after_measurement
+- id: legacy
+  version: 2
+  file: modules/legacy.md
+  estimated_tokens: 1100
+  framework: false
+  dependencies:
+    required:
+    - testing
+    conditional: []
+  aliases:
+    en:
+    - legacy
+    - deprecated
+    - modernize
+    - backward compatibility
+    fa:
+    - کد قدیمی
+    - منسوخ
+    - سازگاری عقبرو
+  repository_signals:
+    packages: []
+    files: []
+  verification:
+    required:
+    - compatibility_regression
+concepts:
+  authn_bypass:
+    domain: security
+    description: authentication checks can be bypassed or recovery credentials are weak
+    aliases:
+      en:
+      - authentication bypass
+      - auth bypass
+      - predictable reset token
+      - guessable reset token
+      - password reset token can be guessed
+      fa:
+      - دور زدن احراز هویت
+      - توکن بازیابی رمز عبور قابل حدس
+      - توکن ریست پسورد قابل حدسه
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - authentication_regression
+    related_cwe:
+    - CWE-287
+    safety_critical: true
+    tags: []
+  authorization_bypass:
+    domain: security
+    description: authorization or permission boundary can be bypassed
+    aliases:
+      en:
+      - authorization bypass
+      - permission bypass
+      - capability bypass
+      - privilege escalation
+      - missing authorization
+      fa:
+      - دور زدن مجوز
+      - دور زدن سطح دسترسی
+      - ارتقای سطح دسترسی
+      - بررسی مجوز انجام نمی‌شود
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - authorization_regression
+    related_cwe:
+    - CWE-862
+    - CWE-863
+    safety_critical: true
+    tags: []
+  idor:
+    domain: security
+    description: user can access another object by changing an identifier or ownership reference
+    aliases:
+      en:
+      - idor
+      - insecure direct object reference
+      - changing id reveals another user record
+      - object ownership bypass
+      - numeric identifier exposes another account
+      fa:
+      - با تغییر شناسه اطلاعات بقیه را می‌بیند
+      - با عوض کردن آی دی فاکتور بقیه باز می‌شود
+      - شناسه سفارش را عوض می‌کند سفارش مشتری دیگر باز می‌شود
+      - اطلاعات کاربر دیگر با تغییر آیدی
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - ownership_regression
+    related_cwe:
+    - CWE-639
+    safety_critical: true
+    tags: []
+  sql_injection:
+    domain: security
+    description: untrusted input changes SQL command structure
+    aliases:
+      en:
+      - sql injection
+      - unsanitized input reaches sql
+      - query concatenates user input
+      fa:
+      - تزریق sql
+      - ورودی کاربر مستقیم وارد کوئری می‌شود
+      - کوئری با ورودی کاربر چسبانده شده
+    modules:
+    - security
+    - database
+    risk_floor: R5
+    verification:
+    - injection_regression
+    related_cwe:
+    - CWE-89
+    safety_critical: true
+    tags: []
+  command_injection:
+    domain: security
+    description: untrusted input reaches an operating system command interpreter
+    aliases:
+      en:
+      - command injection
+      - user input reaches shell_exec
+      - unescaped shell command
+      - arbitrary shell execution
+      - exec receives request parameter
+      fa:
+      - ورودی کاربر مستقیم وارد shell_exec می‌شود
+      - ورودی بدون بررسی وارد دستور شل می‌شود
+      - کاربر می‌تواند دستور سیستم اجرا کند
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - command_injection_regression
+    related_cwe:
+    - CWE-78
+    safety_critical: true
+    tags: []
+  rce:
+    domain: security
+    description: attacker-controlled input can lead to arbitrary code execution
+    aliases:
+      en:
+      - remote code execution
+      - rce
+      - arbitrary code execution
+      - attacker can execute php code
+      fa:
+      - اجرای کد از راه دور
+      - امکان اجرای کد دلخواه
+      - مهاجم می‌تواند کد اجرا کند
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - exploit_regression
+    related_cwe:
+    - CWE-94
+    safety_critical: true
+    tags: []
+  xss:
+    domain: security
+    description: untrusted content is rendered as executable browser script
+    aliases:
+      en:
+      - cross site scripting
+      - xss
+      - stored script executes in admin
+      - unescaped html attribute
+      fa:
+      - اسکریپت کاربر در مرورگر اجرا می‌شود
+      - xss
+      - خروجی بدون escape
+    modules:
+    - security
+    risk_floor: R4
+    verification:
+    - xss_regression
+    related_cwe:
+    - CWE-79
+    safety_critical: true
+    tags: []
+  csrf:
+    domain: security
+    description: state changing request lacks request-intent protection
+    aliases:
+      en:
+      - csrf
+      - cross site request forgery
+      - state change without nonce
+      fa:
+      - درخواست جعلی بین سایتی
+      - عملیات بدون nonce
+      - csrf
+    modules:
+    - security
+    risk_floor: R4
+    verification:
+    - csrf_regression
+    related_cwe:
+    - CWE-352
+    safety_critical: true
+    tags: []
+  ssrf:
+    domain: security
+    description: server makes attacker-controlled network requests
+    aliases:
+      en:
+      - ssrf
+      - server fetches arbitrary user url
+      - internal metadata url reachable
+      fa:
+      - سرور آدرس دلخواه کاربر را درخواست می‌کند
+      - دسترسی به آدرس داخلی از طریق url کاربر
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - ssrf_regression
+    related_cwe:
+    - CWE-918
+    safety_critical: true
+    tags: []
+  xxe:
+    domain: security
+    description: XML parser permits dangerous external entity resolution
+    aliases:
+      en:
+      - xml external entity
+      - external entity expansion
+      - xxe
+      - xml parser loads external system identifier
+      fa:
+      - موجودیت خارجی xml
+      - پارسر xml فایل خارجی را می‌خواند
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - xxe_regression
+    related_cwe:
+    - CWE-611
+    safety_critical: true
+    tags: []
+  deserialization:
+    domain: security
+    description: untrusted serialized data creates unsafe objects or code paths
+    aliases:
+      en:
+      - insecure deserialization
+      - unserialize user input
+      - object injection
+      fa:
+      - داده کاربر مستقیم unserialize می‌شود
+      - تزریق آبجکت
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - deserialization_regression
+    related_cwe:
+    - CWE-502
+    safety_critical: true
+    tags: []
+  unsafe_upload:
+    domain: security
+    description: uploaded files can become executable or escape allowed type/path rules
+    aliases:
+      en:
+      - unsafe file upload
+      - arbitrary file upload
+      - php file can be uploaded
+      - executable upload
+      fa:
+      - آپلود فایل ناامن
+      - فایل php را می‌شود آپلود کرد
+      - آپلود فایل اجرایی
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - upload_regression
+    related_cwe:
+    - CWE-434
+    safety_critical: true
+    tags: []
+  path_traversal:
+    domain: security
+    description: path input can escape intended directory boundaries
+    aliases:
+      en:
+      - path traversal
+      - directory traversal
+      - dot dot slash escapes directory
+      fa:
+      - پیمایش مسیر
+      - با ../ از پوشه خارج می‌شود
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - path_regression
+    related_cwe:
+    - CWE-22
+    safety_critical: true
+    tags: []
+  file_inclusion:
+    domain: security
+    description: user-controlled path is included or required as executable content
+    aliases:
+      en:
+      - file inclusion
+      - local file inclusion
+      - remote file inclusion
+      - user input reaches include
+      fa:
+      - ورودی کاربر وارد include می‌شود
+      - درج فایل محلی
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - file_inclusion_regression
+    related_cwe:
+    - CWE-98
+    safety_critical: true
+    tags: []
+  open_redirect:
+    domain: security
+    description: untrusted return destination redirects users to an external attacker-controlled site
+    aliases:
+      en:
+      - open redirect
+      - login return url redirects externally
+      - untrusted redirect target
+      - return url accepts external host
+      fa:
+      - ریدایرکت باز
+      - لینک برگشت را می‌شود به سایت خارجی تغییر داد
+      - آدرس بازگشت به دامنه دلخواه می‌رود
+    modules:
+    - security
+    risk_floor: R4
+    verification:
+    - redirect_allowlist_test
+    related_cwe:
+    - CWE-601
+    safety_critical: true
+    tags: []
+  mass_assignment:
+    domain: security
+    description: untrusted field binding can mutate privileged attributes
+    aliases:
+      en:
+      - mass assignment
+      - user can set is_admin
+      - request binds privileged field
+      - untrusted field binding
+      fa:
+      - کاربر می‌تواند فیلد ادمین را خودش ست کند
+      - فیلد سطح دسترسی از ورودی کاربر پر می‌شود
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - privileged_field_regression
+    related_cwe:
+    - CWE-915
+    safety_critical: true
+    tags: []
+  secret_exposure:
+    domain: security
+    description: credentials keys or secrets may be disclosed or logged
+    aliases:
+      en:
+      - secret leakage
+      - credential exposure
+      - api key printed
+      - password logged
+      fa:
+      - افشای کلید
+      - پسورد در لاگ
+      - کلید api نمایش داده می‌شود
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - secret_exposure_regression
+    related_cwe:
+    - CWE-200
+    - CWE-532
+    safety_critical: true
+    tags: []
+  crypto_key_rotation:
+    domain: security
+    description: cryptographic key lifecycle or rotation affects stored protected data
+    aliases:
+      en:
+      - rotate encryption key
+      - cryptographic key rotation
+      - reencrypt stored secrets
+      fa:
+      - چرخش کلید رمزنگاری
+      - تعویض کلید رمزگذاری اطلاعات ذخیره شده
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - key_rotation_plan
+    related_cwe:
+    - CWE-320
+    safety_critical: true
+    tags: []
+  replay_attack:
+    domain: security
+    description: authenticated or financial message can be accepted more than once
+    aliases:
+      en:
+      - replay attack
+      - callback can be replayed
+      - signed request accepted twice
+      - replayed webhook
+      fa:
+      - حمله بازپخش
+      - وبهوک قابل بازپخش است
+      - درخواست امضا شده دوباره پذیرفته می‌شود
+    modules:
+    - security
+    - api
+    risk_floor: R5
+    verification:
+    - replay_regression
+    related_cwe:
+    - CWE-294
+    safety_critical: true
+    tags: []
+  webhook_auth:
+    domain: security
+    description: external callback authenticity or signature must be validated
+    aliases:
+      en:
+      - webhook signature verification
+      - callback authenticity
+      - unsigned webhook
+      - invalid signature accepted
+      fa:
+      - اعتبارسنجی امضای وبهوک
+      - وبهوک بدون امضا پذیرفته می‌شود
+    modules:
+    - security
+    - api
+    risk_floor: R5
+    verification:
+    - invalid_signature_test
+    related_cwe:
+    - CWE-345
+    safety_critical: true
+    tags: []
+  toctou:
+    domain: security
+    description: check and use happen at different times allowing state to change between them
+    aliases:
+      en:
+      - toctou
+      - time of check time of use
+      - resource changes after permission check
+      fa:
+      - شرایط مسابقه بین بررسی و استفاده
+      - بعد از بررسی مجوز وضعیت عوض می‌شود
+    modules:
+    - security
+    risk_floor: R4
+    verification:
+    - race_regression
+    related_cwe:
+    - CWE-367
+    safety_critical: true
+    tags: []
+  information_disclosure:
+    domain: security
+    description: sensitive information is exposed to an unauthorized observer
+    aliases:
+      en:
+      - information disclosure
+      - sensitive data exposed
+      - debug page leaks secrets
+      fa:
+      - افشای اطلاعات
+      - اطلاعات حساس برای کاربر غیرمجاز نمایش داده می‌شود
+    modules:
+    - security
+    risk_floor: R4
+    verification:
+    - disclosure_regression
+    related_cwe:
+    - CWE-200
+    safety_critical: true
+    tags: []
+  supply_chain:
+    domain: security
+    description: dependency or build source integrity may be compromised
+    aliases:
+      en:
+      - dependency confusion
+      - malicious package update
+      - supply chain compromise
+      fa:
+      - آلودگی زنجیره تامین
+      - پکیج مخرب جای dependency را گرفته
+    modules:
+    - security
+    risk_floor: R5
+    verification:
+    - dependency_integrity_review
+    related_cwe:
+    - CWE-829
+    safety_critical: true
+    tags: []
+  payment_mutation:
+    domain: fintech
+    description: operation creates or changes a payment or transaction state
+    aliases:
+      en:
+      - execute payment
+      - capture payment
+      - payment callback changes order
+      - charge customer
+      fa:
+      - اجرای پرداخت
+      - کالبک پرداخت وضعیت سفارش را تغییر می‌دهد
+      - برداشت وجه
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - amount_verification
+    - currency_verification
+    - idempotency_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  balance_invariant:
+    domain: fintech
+    description: balance must respect domain constraints such as not becoming negative without overdraft
+    aliases:
+      en:
+      - balance can go negative
+      - negative balance
+      - available balance invariant
+      fa:
+      - موجودی منفی می‌شود
+      - موجودی نباید زیر صفر برود
+      - مانده قابل برداشت اشتباه می‌شود
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - concurrent_balance_test
+    - invariant_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  double_spend:
+    domain: fintech
+    description: concurrent operations can spend the same available funds more than once
+    aliases:
+      en:
+      - double spend
+      - same funds spent twice
+      - two withdrawals both pass balance check
+      - concurrent debit uses same balance
+      fa:
+      - دو برداشت همزمان هر دو موجودی قبلی را معتبر می‌بینند
+      - دو درخواست همزمان باعث کم شدن دوباره موجودی می‌شود
+      - یک موجودی دوبار خرج می‌شود
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - concurrency_test
+    - serialization_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  duplicate_charge:
+    domain: fintech
+    description: customer may be charged more than once for one logical purchase
+    aliases:
+      en:
+      - double charge
+      - duplicate charge
+      - customer charged twice
+      fa:
+      - دوبار از مشتری پول کم می‌شود
+      - پرداخت مشتری دو بار کسر می‌شود
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - duplicate_delivery_test
+    - idempotency_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  idempotency:
+    domain: fintech
+    description: repeated delivery of same command must not apply financial effect more than once
+    aliases:
+      en:
+      - idempotency
+      - same transaction reference applies twice
+      - duplicate callback creates transaction
+      - retry creates another charge
+      fa:
+      - ثبت دوباره تراکنش
+      - کالبک دوبار تراکنش می‌سازد
+      - تکرار درخواست نباید دوباره اثر مالی بگذارد
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - idempotency_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  settlement:
+    domain: fintech
+    description: settlement aggregates eligible confirmed financial records and must preserve totals
+    aliases:
+      en:
+      - settlement
+      - merchant payout
+      - settlement exceeds eligible transactions
+      fa:
+      - تسویه
+      - واریز به پذیرنده
+      - مبلغ تسویه بیشتر از تراکنش‌های تایید شده
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - reconciliation_test
+    - settlement_invariant_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  reconciliation:
+    domain: fintech
+    description: internal records must be reconciled with external processor or bank evidence
+    aliases:
+      en:
+      - reconciliation
+      - reconcile gateway records
+      - bank total differs from ledger
+      fa:
+      - مغایرت گیری
+      - تطبیق تراکنش با درگاه
+      - جمع بانک با دفتر کل نمی‌خواند
+    modules:
+    - fintech
+    risk_floor: R4
+    verification:
+    - reconciliation_report_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  refund:
+    domain: fintech
+    description: refund reverses captured value and must not exceed eligible captured amount
+    aliases:
+      en:
+      - refund
+      - partial refund
+      - refund exceeds captured amount
+      fa:
+      - بازپرداخت
+      - ریفاند
+      - مبلغ برگشتی بیشتر از مبلغ پرداخت شده
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - refund_limit_test
+    - duplicate_refund_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  capture:
+    domain: fintech
+    description: authorized funds are captured into a final charge
+    aliases:
+      en:
+      - capture authorization
+      - partial capture
+      - capture more than authorized
+      fa:
+      - کپچر پرداخت
+      - برداشت نهایی از مبلغ مجاز شده
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - capture_limit_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  void:
+    domain: fintech
+    description: authorization is cancelled before capture and invalid later transitions must be rejected
+    aliases:
+      en:
+      - void authorization
+      - voided payment later captured
+      fa:
+      - لغو authorization
+      - پرداخت لغو شده بعدا capture می‌شود
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - state_transition_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  ledger:
+    domain: fintech
+    description: financial ledger records durable auditable entries and balances derive from entries
+    aliases:
+      en:
+      - ledger
+      - double entry
+      - immutable ledger entry
+      - journal entry
+      fa:
+      - دفتر کل
+      - ثبت حسابداری
+      - رکورد مالی تغییرناپذیر
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - ledger_balance_test
+    - audit_trail_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  credit_limit:
+    domain: fintech
+    description: credit exposure must not exceed approved limit under concurrent updates
+    aliases:
+      en:
+      - credit limit exceeded
+      - concurrent credit usage
+      - available credit
+      fa:
+      - سقف اعتبار رد می‌شود
+      - استفاده همزمان از اعتبار
+      - اعتبار قابل استفاده
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - credit_limit_concurrency_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  installment_state:
+    domain: fintech
+    description: installment schedules and paid overdue remaining states must remain consistent
+    aliases:
+      en:
+      - installment state
+      - partial installment payment
+      - overdue installment
+      fa:
+      - وضعیت قسط
+      - پرداخت بخشی قسط
+      - قسط معوق
+    modules:
+    - fintech
+    risk_floor: R4
+    verification:
+    - installment_state_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  event_ordering:
+    domain: fintech
+    description: financial events can arrive late duplicated or out of order
+    aliases:
+      en:
+      - out of order payment events
+      - late webhook changes old state
+      - event ordering
+      fa:
+      - رویدادهای پرداخت خارج از ترتیب می‌رسند
+      - وبهوک دیررس وضعیت قبلی را برمی‌گرداند
+    modules:
+    - fintech
+    - api
+    risk_floor: R5
+    verification:
+    - out_of_order_event_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  retry_after_timeout:
+    domain: fintech
+    description: network timeout may happen after processor success so blind retry can duplicate effects
+    aliases:
+      en:
+      - timeout after success
+      - retry after payment timeout
+      - gateway timed out but charge succeeded
+      fa:
+      - تایم اوت بعد از موفقیت پرداخت
+      - درگاه پول را کم کرده ولی پاسخ نرسیده
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - ambiguous_outcome_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  compensating_transaction:
+    domain: fintech
+    description: distributed financial workflow may require compensating action rather than destructive rollback
+    aliases:
+      en:
+      - compensating transaction
+      - saga compensation
+      - reverse failed workflow
+      fa:
+      - تراکنش جبرانی
+      - جبران عملیات مالی شکست خورده
+    modules:
+    - fintech
+    risk_floor: R4
+    verification:
+    - compensation_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  currency_amount:
+    domain: fintech
+    description: amount and currency representation must preserve exact value and expected currency
+    aliases:
+      en:
+      - currency mismatch
+      - amount mismatch
+      - money represented as float
+      - minor units
+      fa:
+      - عدم تطابق مبلغ
+      - واحد پول اشتباه
+      - مبلغ پول با float ذخیره شده
+      - واحد خرد پول
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - amount_verification
+    - currency_verification
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  transaction_identity:
+    domain: fintech
+    description: external transaction reference must uniquely identify one financial effect
+    aliases:
+      en:
+      - transaction reference reused
+      - duplicate processor reference
+      - same external id
+      fa:
+      - شناسه تراکنش تکراری
+      - رفرنس درگاه دوباره استفاده شده
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - transaction_identity_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  financial_state_machine:
+    domain: fintech
+    description: financial entity transition must follow allowed state machine edges
+    aliases:
+      en:
+      - invalid payment state transition
+      - captured payment returns to pending
+      - settled transaction becomes authorized
+      fa:
+      - تغییر وضعیت نامعتبر پرداخت
+      - پرداخت تسویه شده دوباره pending می‌شود
+    modules:
+    - fintech
+    risk_floor: R5
+    verification:
+    - state_transition_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  rounding:
+    domain: fintech
+    description: financial arithmetic rounding must be deterministic and currency-aware
+    aliases:
+      en:
+      - rounding mismatch
+      - decimal precision money
+      - fractional currency rounding
+      fa:
+      - خطای گرد کردن مبلغ
+      - دقت اعشار پول
+    modules:
+    - fintech
+    risk_floor: R4
+    verification:
+    - rounding_test
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  large_backfill:
+    domain: database
+    description: large data backfill requires batching resume strategy lock awareness and deployment compatibility
+    aliases:
+      en:
+      - backfill millions of rows
+      - large table backfill
+      - migrate eighty million rows without downtime
+      fa:
+      - پر کردن میلیون ها رکورد بدون قطعی
+      - مایگریشن جدول خیلی بزرگ بدون downtime
+    modules:
+    - database
+    - performance
+    risk_floor: R4
+    verification:
+    - batching_test
+    - resume_strategy_review
+    - lock_risk_review
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  deadlock:
+    domain: database
+    description: concurrent transactions deadlock and require ordering retry or isolation reasoning
+    aliases:
+      en:
+      - database deadlock
+      - deadlock under concurrent writes
+      fa:
+      - ددلاک دیتابیس
+      - تراکنش های همزمان قفل می‌کنند
+    modules:
+    - database
+    - debugging
+    risk_floor: R3
+    verification:
+    - deadlock_reproduction
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  phantom_read:
+    domain: database
+    description: transaction observes new matching rows due isolation behavior
+    aliases:
+      en:
+      - phantom read
+      - new rows appear inside transaction
+      fa:
+      - فانتوم رید
+      - داخل تراکنش رکورد جدید ظاهر می‌شود
+    modules:
+    - database
+    risk_floor: R3
+    verification:
+    - isolation_test
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  stale_write:
+    domain: database
+    description: write overwrites newer state because concurrency version was not checked
+    aliases:
+      en:
+      - stale write
+      - lost update
+      - overwrites newer value
+      fa:
+      - نوشتن قدیمی تغییر جدید را می‌پوشاند
+      - lost update
+    modules:
+    - database
+    risk_floor: R4
+    verification:
+    - concurrency_test
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  n_plus_one:
+    domain: performance
+    description: repeated per-record queries cause avoidable database amplification
+    aliases:
+      en:
+      - n+1 query
+      - one query per row
+      - repeated relation query
+      fa:
+      - برای هر رکورد یک کوئری جدا می‌زند
+      - مشکل n+1
+    modules:
+    - performance
+    - database
+    risk_floor: R2
+    verification:
+    - query_count_measurement
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  memory_pressure:
+    domain: performance
+    description: operation exhausts memory or retains large object sets
+    aliases:
+      en:
+      - memory exhaustion
+      - out of memory
+      - loads entire dataset into memory
+      fa:
+      - حافظه تمام می‌شود
+      - کل داده را یکجا در رم می‌ریزد
+    modules:
+    - performance
+    risk_floor: R3
+    verification:
+    - memory_profile
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  queue_poison:
+    domain: performance
+    description: poison message repeatedly fails and blocks or duplicates downstream work
+    aliases:
+      en:
+      - poison queue message
+      - job retries forever
+      - poison message
+      fa:
+      - پیام خراب صف مدام retry می‌شود
+      - جاب صف گیر کرده
+    modules:
+    - performance
+    - debugging
+    risk_floor: R3
+    verification:
+    - retry_policy_test
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  woo_order_state:
+    domain: woocommerce
+    description: WooCommerce order lifecycle or status mutation must use supported CRUD/state APIs
+    aliases:
+      en:
+      - woocommerce order status
+      - wc order state
+      - mark order paid
+      fa:
+      - وضعیت سفارش ووکامرس
+      - سفارش را paid کن
+    modules:
+    - woocommerce
+    risk_floor: R3
+    verification:
+    - order_state_test
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  woo_hpos:
+    domain: woocommerce
+    description: WooCommerce order storage compatibility must use CRUD APIs and declare HPOS support appropriately
+    aliases:
+      en:
+      - hpos compatibility
+      - high performance order storage
+      - direct wp_posts order query
+      fa:
+      - سازگاری hpos
+      - ذخیره سفارش جدید ووکامرس
+    modules:
+    - woocommerce
+    risk_floor: R3
+    verification:
+    - hpos_compatibility_check
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  woo_gateway:
+    domain: woocommerce
+    description: WooCommerce gateway callback changes financial and order state
+    aliases:
+      en:
+      - woocommerce payment gateway
+      - gateway callback order
+      - process payment callback
+      fa:
+      - درگاه پرداخت ووکامرس
+      - کالبک درگاه سفارش
+    modules:
+    - woocommerce
+    - fintech
+    - security
+    - api
+    risk_floor: R5
+    verification:
+    - duplicate_callback_test
+    - invalid_signature_test
+    - amount_verification
+    related_cwe: []
+    safety_critical: true
+    tags: []
+  woo_refund:
+    domain: woocommerce
+    description: WooCommerce refund changes order and financial state
+    aliases:
+      en:
+      - woocommerce refund
+      - wc refund order
+      fa:
+      - ریفاند ووکامرس
+      - بازپرداخت سفارش ووکامرس
+    modules:
+    - woocommerce
+    - fintech
+    risk_floor: R5
+    verification:
+    - refund_limit_test
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  woo_stock:
+    domain: woocommerce
+    description: WooCommerce stock changes must remain consistent with order lifecycle and retries
+    aliases:
+      en:
+      - woocommerce stock
+      - reduce stock twice
+      - stock restored twice
+      fa:
+      - موجودی ووکامرس
+      - موجودی کالا دوبار کم می‌شود
+    modules:
+    - woocommerce
+    risk_floor: R3
+    verification:
+    - stock_idempotency_test
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  woo_blocks:
+    domain: woocommerce
+    description: WooCommerce Blocks checkout integration has distinct extension interfaces and compatibility constraints
+    aliases:
+      en:
+      - woocommerce blocks checkout
+      - checkout block extension
+      fa:
+      - چک اوت بلاک ووکامرس
+      - بلوک تسویه حساب
+    modules:
+    - woocommerce
+    risk_floor: R2
+    verification:
+    - blocks_compatibility_check
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  woo_action_scheduler:
+    domain: woocommerce
+    description: Action Scheduler jobs can retry duplicate and require idempotent handlers
+    aliases:
+      en:
+      - action scheduler
+      - scheduled action retry
+      - woocommerce background action
+      fa:
+      - اکشن اسکجولر
+      - کار زمان بندی ووکامرس
+    modules:
+    - woocommerce
+    - debugging
+    risk_floor: R3
+    verification:
+    - retry_idempotency_test
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  laravel_controller:
+    domain: laravel
+    description: Laravel controller routing and request handling
+    aliases:
+      en:
+      - laravel controller
+      - eloquent controller
+      - artisan route
+      fa:
+      - کنترلر لاراول
+    modules:
+    - laravel
+    risk_floor: R2
+    verification:
+    - framework_version_check
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  symfony_controller:
+    domain: symfony
+    description: Symfony controller routing and dependency injection
+    aliases:
+      en:
+      - symfony controller
+      - attribute route symfony
+      fa:
+      - کنترلر سیمفونی
+    modules:
+    - symfony
+    risk_floor: R2
+    verification:
+    - framework_version_check
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  wordpress_capability:
+    domain: wordpress
+    description: WordPress privileged action requires capability authorization separate from nonce
+    aliases:
+      en:
+      - current_user_can
+      - wordpress capability
+      - rest permission callback
+      fa:
+      - سطح دسترسی وردپرس
+      - permission callback وردپرس
+    modules:
+    - wordpress
+    - security
+    risk_floor: R4
+    verification:
+    - capability_check
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  wordpress_nonce:
+    domain: wordpress
+    description: WordPress nonce protects request intent but is not authorization
+    aliases:
+      en:
+      - wordpress nonce
+      - wp_verify_nonce
+      - check_ajax_referer
+      fa:
+      - نانس وردپرس
+      - بررسی nonce
+    modules:
+    - wordpress
+    - security
+    risk_floor: R3
+    verification:
+    - nonce_test
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  wordpress_output:
+    domain: wordpress
+    description: WordPress output must be escaped in the output context and input validated appropriately
+    aliases:
+      en:
+      - escape wordpress output
+      - sanitize wordpress input
+      - esc_html
+      fa:
+      - escape خروجی وردپرس
+      - sanitize ورودی وردپرس
+    modules:
+    - wordpress
+    - security
+    risk_floor: R3
+    verification:
+    - escape_output
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  legacy_upgrade:
+    domain: legacy
+    description: legacy PHP upgrade requires compatibility inventory tests and incremental migration
+    aliases:
+      en:
+      - upgrade legacy php
+      - deprecated php migration
+      - modernize old php
+      fa:
+      - ارتقای php قدیمی
+      - مهاجرت کد منسوخ
+    modules:
+    - legacy
+    risk_floor: R3
+    verification:
+    - compatibility_regression
+    related_cwe: []
+    safety_critical: false
+    tags: []
+  api_contract:
+    domain: api
+    description: API endpoint validates request authorization and response/error contract
+    aliases:
+      en:
+      - api endpoint contract
+      - rest endpoint validation
+      - graphql resolver
+      fa:
+      - قرارداد api
+      - اعتبارسنجی endpoint
+    modules:
+    - api
+    risk_floor: R2
+    verification:
+    - input_contract_test
+    related_cwe: []
+    safety_critical: false
+    tags: []
+intents:
+  bug-fix:
+  - fix
+  - patch
+  - repair
+  - bug
+  - wrong
+  - broken
+  - duplicate
+  - رفع
+  - برطرف
+  - اصلاح
+  - باگ
+  debug:
+  - debug
+  - investigate
+  - trace
+  - reproduce
+  - root cause
+  - intermittent
+  - بررسی
+  - دیباگ
+  - ریشه یابی
+  - گاهی
+  add-feature:
+  - add
+  - implement
+  - build
+  - create
+  - introduce
+  - افزودن
+  - اضافه
+  - پیاده سازی
+  - بساز
+  review:
+  - review
+  - audit
+  - inspect
+  - بازبینی
+  - ممیزی
+  - بررسی کد
+  refactor:
+  - refactor
+  - simplify
+  - restructure
+  - بازآرایی
+  - تمیزکاری
+  optimize:
+  - optimize
+  - speed up
+  - reduce latency
+  - بهینه
+  - سریع تر
+  - کندی
+  migrate:
+  - migrate
+  - migration
+  - upgrade
+  - backfill
+  - انتقال
+  - مایگریشن
+  - ارتقا
+  test:
+  - test
+  - verify with tests
+  - phpunit
+  - pest
+  - تست
+  - آزمون
+  secure:
+  - secure
+  - vulnerability
+  - exploit
+  - hardening
+  - امن کن
+  - آسیب پذیری
+  - باگ امنیتی
+  document:
+  - document
+  - docs
+  - readme
+  - explain behavior
+  - مستند
+  - مستندسازی
+  analyze:
+  - analyze
+  - assess
+  - understand
+  - تحلیل
+  - ارزیابی
+  benchmark:
+  - benchmark
+  - measure comparison
+  - بنچمارک
+  - مقایسه عملکرد
+scopes:
+  copy-only:
+    phrases:
+    - label text only
+    - rename label
+    - copy only
+    - wording only
+    - فقط متن
+    - فقط برچسب
+    - صرفا متن
+    rank: 1
+    suppresses:
+    - fintech
+    hints:
+    - label
+    - text
+    - wording
+    - copy
+    - title
+    - heading
+    - برچسب
+    - متن
+    - عنوان
+  style-only:
+    phrases:
+    - css only
+    - button color
+    - change color
+    - style only
+    - svg icon
+    - icon svg
+    - فقط css
+    - رنگ دکمه
+    - آیکن svg
+    rank: 1
+    suppresses:
+    - fintech
+    hints:
+    - css
+    - color
+    - style
+    - svg
+    - icon
+    - رنگ
+    - آیکن
+    - استایل
+  UI-only:
+    phrases:
+    - ui only
+    - visual only
+    - icon only
+    - settings page label
+    - فقط ui
+    - فقط آیکن
+    rank: 1
+    suppresses:
+    - fintech
+    hints:
+    - ui
+    - interface
+    - screen
+    - page
+    - رابط
+    - صفحه
+  documentation:
+    phrases:
+    - documentation only
+    - document behavior
+    - update readme
+    - docs only
+    - فقط مستندات
+    - مستند کن
+    rank: 1
+    suppresses:
+    - fintech
+    hints:
+    - document
+    - documentation
+    - docs
+    - readme
+    - مستند
+    - راهنما
+  configuration:
+    phrases:
+    - configuration only
+    - config change
+    - تنظیمات فقط
+    rank: 2
+    suppresses: []
+  single-function:
+    phrases:
+    - this function
+    - single function
+    - this method
+    - handler only
+    - این تابع
+    - این متد
+    rank: 3
+    suppresses: []
+  single-file:
+    phrases:
+    - single file
+    - this file only
+    - این فایل
+    rank: 3
+    suppresses: []
+  module:
+    phrases:
+    - module
+    - plugin
+    - package
+    - service
+    - ماژول
+    - افزونه
+    - پکیج
+    rank: 4
+    suppresses: []
+  database:
+    phrases:
+    - database migration
+    - backfill
+    - table migration
+    - schema change
+    - مایگریشن دیتابیس
+    - بک فیل
+    rank: 6
+    suppresses: []
+  security-boundary:
+    phrases:
+    - trust boundary
+    - authorization boundary
+    - security boundary
+    - مرز امنیتی
+    rank: 7
+    suppresses: []
+  financial-state:
+    phrases:
+    - financial state
+    - change balance
+    - charge customer
+    - settlement state
+    - وضعیت مالی
+    - تغییر موجودی
+    - کسر وجه
+    rank: 7
+    suppresses: []
+  cross-module:
+    phrases:
+    - cross module
+    - multiple packages
+    - end to end flow
+    - چند ماژول
+    rank: 8
+    suppresses: []
+  architecture:
+    phrases:
+    - architecture
+    - system design
+    - معماری
+    rank: 9
+    suppresses: []
+  production-operation:
+    phrases:
+    - production operation
+    - without downtime
+    - live data
+    - 80 million rows
+    - پروداکشن
+    - بدون قطعی
+    - داده زنده
+    rank: 10
+    suppresses: []
+negation:
+  prefixes:
+  - not
+  - do not
+  - don't
+  - avoid
+  - exclude
+  - without using
+  - نیست
+  - نیستیم
+  - استفاده نکن
+  - دست نزن
+  - نکن
+  - حذف کن از context
+  relations:
+  - is unrelated
+  - unrelated to
+  - does not involve
+  - ربطی ندارد
+  - ربطی نداره
+  - مرتبط نیست
+  only_markers:
+  - only
+  - only change
+  - just
+  - فقط
+  - صرفا
+  - صرفاً
+  suffixes:
+  - do not touch
+  - do not use
+  - is excluded
+  - is not used
+  - دست نزن
+  - استفاده نکن
+  - نکن
+  - نیست
+risk_policy:
+  levels:
+  - R0
+  - R1
+  - R2
+  - R3
+  - R4
+  - R5
+  budgets:
+    R0: 1800
+    R1: 2400
+    R2: 4200
+    R3: 6500
+    R4: 9500
+    R5: 16000
+  risk_required_modules:
+    R4:
+    - testing
+    R5:
+    - testing
+  autonomy:
+    R0: A4
+    R1: A4
+    R2: A3
+    R3: A3
+    R4: A2
+    R5: A2
+  textual_scopes:
+  - copy-only
+  - style-only
+  - UI-only
+  - documentation
+  critical_override_modules:
+  - security
+workflow_map:
+  bug-fix: workflows/bug-fix.yaml
+  debug: workflows/debug.yaml
+  add-feature: workflows/new-feature.yaml
+  review: workflows/review.yaml
+  refactor: workflows/refactor.yaml
+  optimize: workflows/performance.yaml
+  migrate: workflows/migration.yaml
+  test: workflows/testing.yaml
+  secure: workflows/security.yaml
+  document: workflows/documentation.yaml
+  analyze: workflows/analysis.yaml
+  benchmark: workflows/benchmark.yaml
+semantic_engine:
+  provider_order:
+  - runtime_llm
+  - local_embedding
+  - latent_semantic
+  - concept_graph
+  default_local: latent_semantic
+  lsa_dimensions: 24
+  semantic_threshold: 0.27
+  high_threshold: 0.52
+context_policy:
+  utility_formula: (relevance * risk_weight * necessity * repository_confidence) / estimated_tokens
+  never_minimize_safety: true
+  deescalation: true
+  escalation: true
+trust_hierarchy:
+- platform/system
+- phpforge skill
+- user goal
+- trusted project config
+- repository content
+language_detection:
+  finglish_hints:
+  - pardakht
+  - dargah
+  - dobar
+  - factor
+  - mitone
+  - sabt
+  - bug
+  - fix
+  - route
+  - controller
+repository_intelligence:
+  tools:
+    phpunit:
+      packages:
+      - phpunit/phpunit
+      configs:
+      - phpunit.xml
+      - phpunit.xml.dist
+    pest:
+      packages:
+      - pestphp/pest
+      configs: []
+    phpstan:
+      packages:
+      - phpstan/phpstan
+      configs:
+      - phpstan.neon
+      - phpstan.neon.dist
+    psalm:
+      packages:
+      - vimeo/psalm
+      configs:
+      - psalm.xml
+    rector:
+      packages:
+      - rector/rector
+      configs:
+      - rector.php
+    phpcs:
+      packages:
+      - squizlabs/php_codesniffer
+      configs:
+      - phpcs.xml
+      - phpcs.xml.dist
+    pint:
+      packages:
+      - laravel/pint
+      configs:
+      - pint.json
+  technology_signals:
+    database:
+      doctrine/orm: doctrine-orm
+      illuminate/database: eloquent
+      ext-pdo: pdo
+    cache:
+      predis/predis: redis
+    queue:
+      laravel/horizon: horizon
+      symfony/messenger: symfony-messenger
+  cli_files:
+    wp_cli: wp-cli.yml
+  ci_paths:
+  - .github/workflows
+  - .gitlab-ci.yml
+  - Dockerfile
+  - docker-compose.yml
+  - docker-compose.yaml
+  environment_presence_files:
+  - .env
+  - .env.local
+  - .env.production

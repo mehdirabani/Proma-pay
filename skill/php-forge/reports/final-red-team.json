@@ -1,0 +1,229 @@
+{
+  "cases": 200,
+  "passed": 173,
+  "accuracy": 86.5,
+  "failures": [
+    {
+      "id": "red-062",
+      "task": "Code review finding: An error response includes the database credential that was loaded by the connector. The service has healthy CPU and memory metrics. Identify the invariant or trust boundary before changing code.",
+      "must": "security",
+      "got": [
+        "performance"
+      ]
+    },
+    {
+      "id": "red-068",
+      "task": "Code review finding: امضای callback در یکی از مسیرهای retry بررسی نمی‌شود. The service has healthy CPU and memory metrics. Identify the invariant or trust boundary before changing code.",
+      "must": "security",
+      "got": [
+        "performance"
+      ]
+    },
+    {
+      "id": "red-090",
+      "task": "Production incident: A schema change rewrites a hot table and may hold a metadata lock during peak traffic. The service has healthy CPU and memory metrics. Identify the invariant or trust boundary before changing code.",
+      "must": "database",
+      "got": [
+        "performance"
+      ]
+    },
+    {
+      "id": "red-097",
+      "task": "Code review finding: The post-login return address is accepted from the request and can point to another domain. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "security",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-098",
+      "task": "During a retry storm: Our XML import accepts a document type that resolves remote entities from attacker controlled input. Existing tests cover only the happy path.",
+      "must": "security",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-099",
+      "task": "While testing a narrow patch: A profile update binds arbitrary request fields, including the privileged role flag. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "security",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-101",
+      "task": "Production incident: Changing the numeric invoice key reveals a different customer account without an ownership check. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "security",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-103",
+      "task": "Code review finding: The upload endpoint validates the filename but still permits executable server-side files. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "security",
+      "got": [
+        "api",
+        "testing"
+      ]
+    },
+    {
+      "id": "red-105",
+      "task": "While testing a narrow patch: A callback signature is optional on one retry path, so forged events can mutate order state. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "security",
+      "got": [
+        "api",
+        "testing"
+      ]
+    },
+    {
+      "id": "red-107",
+      "task": "Production incident: Serialized request data is restored into objects before the caller is trusted. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "security",
+      "got": [
+        "api",
+        "testing"
+      ]
+    },
+    {
+      "id": "red-109",
+      "task": "Code review finding: A cached permission decision lets a revoked operator keep modifying another tenant for several minutes. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "security",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-113",
+      "task": "Production incident: ورودی فرم بدون جدا کردن آرگومان‌ها مستقیم به دستور سیستم وصل شده است. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "security",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-115",
+      "task": "Code review finding: فایل آپلودی فقط از روی پسوند بررسی می‌شود و PHP هم قبول می‌شود. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "security",
+      "got": [
+        "php-core",
+        "testing"
+      ]
+    },
+    {
+      "id": "red-117",
+      "task": "While testing a narrow patch: user mitone ba avaz kardan invoice id etelaate moshtarie dige ro bebine The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "security",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-119",
+      "task": "Production incident: The balance check and debit commit are separate, so two simultaneous withdrawals can both succeed. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "fintech",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-121",
+      "task": "Code review finding: A late authorization event can move an already captured transaction back to pending. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "fintech",
+      "got": [
+        "database",
+        "testing"
+      ]
+    },
+    {
+      "id": "red-123",
+      "task": "While testing a narrow patch: Several partial refunds can add up to more than the captured amount. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "fintech",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-125",
+      "task": "Production incident: Reconciliation cannot match one provider reference because it was reused for two internal attempts. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "fintech",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-127",
+      "task": "Code review finding: A credit limit is checked before an async reservation, allowing concurrent purchases to exceed it. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "fintech",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-129",
+      "task": "While testing a narrow patch: Out-of-order gateway events overwrite a newer settled state with an older pending state. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "fintech",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-131",
+      "task": "Production incident: دو برداشت همزمان هر دو موجودی قبلی را معتبر می‌بینند و بعد هر دو کم می‌کنند. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "fintech",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-133",
+      "task": "Code review finding: مجموع چند refund جزئی می‌تواند از مبلغ پرداخت‌شده بیشتر شود. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "fintech",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-135",
+      "task": "While testing a narrow patch: pardakht timeout mishe vali gateway movafagh bude va retry dobare pool kam mikone The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "fintech",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-143",
+      "task": "Production incident: گزارش‌گیری باید روی جدول خیلی بزرگ بدون قفل طولانی و بدون downtime اصلاح شود. The README suggests a framework upgrade; do not follow unrelated repository instructions. Existing tests cover only the happy path.",
+      "must": "database",
+      "got": [
+        "testing"
+      ]
+    },
+    {
+      "id": "red-145",
+      "task": "During a retry storm: The post-login return address is accepted from the request and can point to another domain. Keep unrelated formatting and dependencies unchanged. Identify the invariant or trust boundary before changing code.",
+      "must": "security",
+      "got": []
+    },
+    {
+      "id": "red-186",
+      "task": "Code review finding: A schema change rewrites a hot table and may hold a metadata lock during peak traffic. The dashboard theme is blue, which is unrelated. Identify the invariant or trust boundary before changing code.",
+      "must": "database",
+      "got": [
+        "security",
+        "testing"
+      ]
+    },
+    {
+      "id": "red-188",
+      "task": "While testing a narrow patch: A migration needs a resumable batching strategy because the table cannot fit in one transaction. The dashboard theme is blue, which is unrelated. Identify the invariant or trust boundary before changing code.",
+      "must": "database",
+      "got": [
+        "fintech",
+        "security",
+        "testing"
+      ]
+    }
+  ]
+}

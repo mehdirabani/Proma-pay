@@ -1,0 +1,602 @@
+{
+  "ood-000": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "ood-001": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "ood-002": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "ood-003": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "ood-004": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "ood-005": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "ood-006": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "ood-007": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "ood-008": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "ood-009": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "ood-010": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "ood-011": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "ood-012": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "ood-013": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "ood-014": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "ood-015": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "ood-016": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "ood-017": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "ood-018": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "ood-019": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "ood-020": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "ood-021": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "ood-022": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "ood-023": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "ood-024": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "ood-025": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "ood-026": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "ood-027": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "ood-028": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "ood-029": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "ood-030": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "ood-031": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "ood-032": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "ood-033": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "ood-034": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "ood-035": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "ood-036": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "ood-037": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "ood-038": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "ood-039": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "ood-040": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "ood-041": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "ood-042": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "ood-043": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "ood-044": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "ood-045": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "ood-046": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "ood-047": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "ood-048": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "ood-049": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "ood-050": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "ood-051": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "ood-052": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "ood-053": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "ood-054": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "ood-055": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "ood-056": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "ood-057": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "ood-058": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "ood-059": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "ood-060": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "ood-061": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "ood-062": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "ood-063": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "ood-064": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "ood-065": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "ood-066": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "ood-067": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "ood-068": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "ood-069": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "ood-070": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "ood-071": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "ood-072": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "ood-073": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "ood-074": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "ood-075": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "ood-076": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "ood-077": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "ood-078": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "ood-079": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "ood-080": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "ood-081": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "ood-082": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "ood-083": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "ood-084": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "ood-085": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "ood-086": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "ood-087": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "ood-088": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "ood-089": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "ood-090": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "ood-091": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "ood-092": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "ood-093": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "ood-094": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "ood-095": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "ood-096": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "ood-097": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "ood-098": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "ood-099": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "ood-100": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "ood-101": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "ood-102": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "ood-103": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "ood-104": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "ood-105": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "ood-106": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "ood-107": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "ood-108": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "ood-109": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "ood-110": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "ood-111": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "ood-112": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "ood-113": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "ood-114": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "ood-115": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "ood-116": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "ood-117": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "ood-118": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "ood-119": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "ood-open-000": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-001": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-002": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-003": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-004": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-005": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-006": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-007": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-008": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-009": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-010": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-011": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-012": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-013": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-014": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-015": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-016": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-017": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-018": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-019": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-020": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-021": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-022": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-023": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-024": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-025": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-026": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-027": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-028": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "ood-open-029": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  }
+}

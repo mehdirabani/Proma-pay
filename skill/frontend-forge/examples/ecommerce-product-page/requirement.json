@@ -1,0 +1,15 @@
+{
+  "project_type": "ecommerce",
+  "primary_goal": "conversion",
+  "secondary_goals": [
+    "seo",
+    "performance",
+    "accessibility"
+  ],
+  "constraints": [
+    "mobile-first",
+    "tailwind"
+  ],
+  "uncertainties": [],
+  "confidence": 0.93
+}

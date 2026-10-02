@@ -1,0 +1,502 @@
+{
+  "v153-00-00": {
+    "target": "src/components/Aurora0Panel.tsx",
+    "must_contain": [
+      "min-width: 0;"
+    ],
+    "must_not_contain": [
+      "min-width:600px;"
+    ],
+    "cause_family": "MIN_WIDTH_FIXED"
+  },
+  "v153-00-01": {
+    "target": "src/components/Beryl0Panel.tsx",
+    "must_contain": [
+      "min-width: 0;"
+    ],
+    "must_not_contain": [
+      "min-width:600px;"
+    ],
+    "cause_family": "MIN_WIDTH_FIXED"
+  },
+  "v153-00-02": {
+    "target": "src/components/Cinder0Panel.tsx",
+    "must_contain": [
+      "min-width: 0;"
+    ],
+    "must_not_contain": [
+      "min-width:600px;"
+    ],
+    "cause_family": "MIN_WIDTH_FIXED"
+  },
+  "v153-00-03": {
+    "target": "src/components/Dahlia0Panel.tsx",
+    "must_contain": [
+      "min-width: 0;"
+    ],
+    "must_not_contain": [
+      "min-width:600px;"
+    ],
+    "cause_family": "MIN_WIDTH_FIXED"
+  },
+  "v153-00-04": {
+    "target": "src/components/Ember0Panel.tsx",
+    "must_contain": [
+      "min-width: 0;"
+    ],
+    "must_not_contain": [
+      "min-width:600px;"
+    ],
+    "cause_family": "MIN_WIDTH_FIXED"
+  },
+  "v153-01-00": {
+    "target": "src/components/Aurora1Panel.tsx",
+    "must_contain": [
+      "white-space: normal;"
+    ],
+    "must_not_contain": [
+      "white-space:nowrap;"
+    ],
+    "cause_family": "NOWRAP"
+  },
+  "v153-01-01": {
+    "target": "src/components/Beryl1Panel.tsx",
+    "must_contain": [
+      "white-space: normal;"
+    ],
+    "must_not_contain": [
+      "white-space:nowrap;"
+    ],
+    "cause_family": "NOWRAP"
+  },
+  "v153-01-02": {
+    "target": "src/components/Cinder1Panel.tsx",
+    "must_contain": [
+      "white-space: normal;"
+    ],
+    "must_not_contain": [
+      "white-space:nowrap;"
+    ],
+    "cause_family": "NOWRAP"
+  },
+  "v153-01-03": {
+    "target": "src/components/Dahlia1Panel.tsx",
+    "must_contain": [
+      "white-space: normal;"
+    ],
+    "must_not_contain": [
+      "white-space:nowrap;"
+    ],
+    "cause_family": "NOWRAP"
+  },
+  "v153-01-04": {
+    "target": "src/components/Ember1Panel.tsx",
+    "must_contain": [
+      "white-space: normal;"
+    ],
+    "must_not_contain": [
+      "white-space:nowrap;"
+    ],
+    "cause_family": "NOWRAP"
+  },
+  "v153-02-00": {
+    "target": "src/components/Aurora2Panel.tsx",
+    "must_contain": [
+      "width: 100%;"
+    ],
+    "must_not_contain": [
+      "width:720px;"
+    ],
+    "cause_family": "FIXED_WIDTH"
+  },
+  "v153-02-01": {
+    "target": "src/components/Beryl2Panel.tsx",
+    "must_contain": [
+      "width: 100%;"
+    ],
+    "must_not_contain": [
+      "width:720px;"
+    ],
+    "cause_family": "FIXED_WIDTH"
+  },
+  "v153-02-02": {
+    "target": "src/components/Cinder2Panel.tsx",
+    "must_contain": [
+      "width: 100%;"
+    ],
+    "must_not_contain": [
+      "width:720px;"
+    ],
+    "cause_family": "FIXED_WIDTH"
+  },
+  "v153-02-03": {
+    "target": "src/components/Dahlia2Panel.tsx",
+    "must_contain": [
+      "width: 100%;"
+    ],
+    "must_not_contain": [
+      "width:720px;"
+    ],
+    "cause_family": "FIXED_WIDTH"
+  },
+  "v153-02-04": {
+    "target": "src/components/Ember2Panel.tsx",
+    "must_contain": [
+      "width: 100%;"
+    ],
+    "must_not_contain": [
+      "width:720px;"
+    ],
+    "cause_family": "FIXED_WIDTH"
+  },
+  "v153-03-00": {
+    "target": "src/components/Aurora3Panel.tsx",
+    "must_contain": [
+      "aria-label=\"Field\""
+    ],
+    "must_not_contain": [
+      "<input name=\"card\" />"
+    ],
+    "cause_family": "MISSING_LABEL"
+  },
+  "v153-03-01": {
+    "target": "src/components/Beryl3Panel.tsx",
+    "must_contain": [
+      "aria-label=\"Field\""
+    ],
+    "must_not_contain": [
+      "<input name=\"card\" />"
+    ],
+    "cause_family": "MISSING_LABEL"
+  },
+  "v153-03-02": {
+    "target": "src/components/Cinder3Panel.tsx",
+    "must_contain": [
+      "aria-label=\"Field\""
+    ],
+    "must_not_contain": [
+      "<input name=\"card\" />"
+    ],
+    "cause_family": "MISSING_LABEL"
+  },
+  "v153-03-03": {
+    "target": "src/components/Dahlia3Panel.tsx",
+    "must_contain": [
+      "aria-label=\"Field\""
+    ],
+    "must_not_contain": [
+      "<input name=\"card\" />"
+    ],
+    "cause_family": "MISSING_LABEL"
+  },
+  "v153-03-04": {
+    "target": "src/components/Ember3Panel.tsx",
+    "must_contain": [
+      "aria-label=\"Field\""
+    ],
+    "must_not_contain": [
+      "<input name=\"card\" />"
+    ],
+    "cause_family": "MISSING_LABEL"
+  },
+  "v153-04-00": {
+    "target": "src/components/Aurora4Panel.tsx",
+    "must_contain": [
+      "aria-label=\"Action\""
+    ],
+    "must_not_contain": [
+      "<button><svg"
+    ],
+    "cause_family": "BUTTON_NAME"
+  },
+  "v153-04-01": {
+    "target": "src/components/Beryl4Panel.tsx",
+    "must_contain": [
+      "aria-label=\"Action\""
+    ],
+    "must_not_contain": [
+      "<button><svg"
+    ],
+    "cause_family": "BUTTON_NAME"
+  },
+  "v153-04-02": {
+    "target": "src/components/Cinder4Panel.tsx",
+    "must_contain": [
+      "aria-label=\"Action\""
+    ],
+    "must_not_contain": [
+      "<button><svg"
+    ],
+    "cause_family": "BUTTON_NAME"
+  },
+  "v153-04-03": {
+    "target": "src/components/Dahlia4Panel.tsx",
+    "must_contain": [
+      "aria-label=\"Action\""
+    ],
+    "must_not_contain": [
+      "<button><svg"
+    ],
+    "cause_family": "BUTTON_NAME"
+  },
+  "v153-04-04": {
+    "target": "src/components/Ember4Panel.tsx",
+    "must_contain": [
+      "aria-label=\"Action\""
+    ],
+    "must_not_contain": [
+      "<button><svg"
+    ],
+    "cause_family": "BUTTON_NAME"
+  },
+  "v153-05-00": {
+    "target": "src/components/Aurora5Panel.tsx",
+    "must_contain": [
+      "href=\"/profile\""
+    ],
+    "must_not_contain": [
+      "href=\"/profil\""
+    ],
+    "cause_family": "ROUTE_TYPO"
+  },
+  "v153-05-01": {
+    "target": "src/components/Beryl5Panel.tsx",
+    "must_contain": [
+      "href=\"/profile\""
+    ],
+    "must_not_contain": [
+      "href=\"/profil\""
+    ],
+    "cause_family": "ROUTE_TYPO"
+  },
+  "v153-05-02": {
+    "target": "src/components/Cinder5Panel.tsx",
+    "must_contain": [
+      "href=\"/profile\""
+    ],
+    "must_not_contain": [
+      "href=\"/profil\""
+    ],
+    "cause_family": "ROUTE_TYPO"
+  },
+  "v153-05-03": {
+    "target": "src/components/Dahlia5Panel.tsx",
+    "must_contain": [
+      "href=\"/profile\""
+    ],
+    "must_not_contain": [
+      "href=\"/profil\""
+    ],
+    "cause_family": "ROUTE_TYPO"
+  },
+  "v153-05-04": {
+    "target": "src/components/Ember5Panel.tsx",
+    "must_contain": [
+      "href=\"/profile\""
+    ],
+    "must_not_contain": [
+      "href=\"/profil\""
+    ],
+    "cause_family": "ROUTE_TYPO"
+  },
+  "v153-06-00": {
+    "target": "src/components/Aurora6Panel.tsx",
+    "must_contain": [
+      "price: number"
+    ],
+    "must_not_contain": [
+      "price:string"
+    ],
+    "cause_family": "TYPE_STRING_NUMBER"
+  },
+  "v153-06-01": {
+    "target": "src/components/Beryl6Panel.tsx",
+    "must_contain": [
+      "price: number"
+    ],
+    "must_not_contain": [
+      "price:string"
+    ],
+    "cause_family": "TYPE_STRING_NUMBER"
+  },
+  "v153-06-02": {
+    "target": "src/components/Cinder6Panel.tsx",
+    "must_contain": [
+      "price: number"
+    ],
+    "must_not_contain": [
+      "price:string"
+    ],
+    "cause_family": "TYPE_STRING_NUMBER"
+  },
+  "v153-06-03": {
+    "target": "src/components/Dahlia6Panel.tsx",
+    "must_contain": [
+      "price: number"
+    ],
+    "must_not_contain": [
+      "price:string"
+    ],
+    "cause_family": "TYPE_STRING_NUMBER"
+  },
+  "v153-06-04": {
+    "target": "src/components/Ember6Panel.tsx",
+    "must_contain": [
+      "price: number"
+    ],
+    "must_not_contain": [
+      "price:string"
+    ],
+    "cause_family": "TYPE_STRING_NUMBER"
+  },
+  "v153-07-00": {
+    "target": "src/components/Aurora7Panel.tsx",
+    "must_contain": [
+      "Loading..."
+    ],
+    "must_not_contain": [
+      "if (loading) return null;"
+    ],
+    "cause_family": "LOADING_NULL"
+  },
+  "v153-07-01": {
+    "target": "src/components/Beryl7Panel.tsx",
+    "must_contain": [
+      "Loading..."
+    ],
+    "must_not_contain": [
+      "if (loading) return null;"
+    ],
+    "cause_family": "LOADING_NULL"
+  },
+  "v153-07-02": {
+    "target": "src/components/Cinder7Panel.tsx",
+    "must_contain": [
+      "Loading..."
+    ],
+    "must_not_contain": [
+      "if (loading) return null;"
+    ],
+    "cause_family": "LOADING_NULL"
+  },
+  "v153-07-03": {
+    "target": "src/components/Dahlia7Panel.tsx",
+    "must_contain": [
+      "Loading..."
+    ],
+    "must_not_contain": [
+      "if (loading) return null;"
+    ],
+    "cause_family": "LOADING_NULL"
+  },
+  "v153-07-04": {
+    "target": "src/components/Ember7Panel.tsx",
+    "must_contain": [
+      "Loading..."
+    ],
+    "must_not_contain": [
+      "if (loading) return null;"
+    ],
+    "cause_family": "LOADING_NULL"
+  },
+  "v153-08-00": {
+    "target": "src/components/Aurora8Panel.tsx",
+    "must_contain": [
+      "type=\"submit\""
+    ],
+    "must_not_contain": [
+      "type=\"button\""
+    ],
+    "cause_family": "NON_SUBMIT"
+  },
+  "v153-08-01": {
+    "target": "src/components/Beryl8Panel.tsx",
+    "must_contain": [
+      "type=\"submit\""
+    ],
+    "must_not_contain": [
+      "type=\"button\""
+    ],
+    "cause_family": "NON_SUBMIT"
+  },
+  "v153-08-02": {
+    "target": "src/components/Cinder8Panel.tsx",
+    "must_contain": [
+      "type=\"submit\""
+    ],
+    "must_not_contain": [
+      "type=\"button\""
+    ],
+    "cause_family": "NON_SUBMIT"
+  },
+  "v153-08-03": {
+    "target": "src/components/Dahlia8Panel.tsx",
+    "must_contain": [
+      "type=\"submit\""
+    ],
+    "must_not_contain": [
+      "type=\"button\""
+    ],
+    "cause_family": "NON_SUBMIT"
+  },
+  "v153-08-04": {
+    "target": "src/components/Ember8Panel.tsx",
+    "must_contain": [
+      "type=\"submit\""
+    ],
+    "must_not_contain": [
+      "type=\"button\""
+    ],
+    "cause_family": "NON_SUBMIT"
+  },
+  "v153-09-00": {
+    "target": "src/components/Aurora9Panel.tsx",
+    "must_contain": [
+      "w-full max-w-full"
+    ],
+    "must_not_contain": [
+      "w-[700px]"
+    ],
+    "cause_family": "TAILWIND_FIXED_WIDTH"
+  },
+  "v153-09-01": {
+    "target": "src/components/Beryl9Panel.tsx",
+    "must_contain": [
+      "w-full max-w-full"
+    ],
+    "must_not_contain": [
+      "w-[700px]"
+    ],
+    "cause_family": "TAILWIND_FIXED_WIDTH"
+  },
+  "v153-09-02": {
+    "target": "src/components/Cinder9Panel.tsx",
+    "must_contain": [
+      "w-full max-w-full"
+    ],
+    "must_not_contain": [
+      "w-[700px]"
+    ],
+    "cause_family": "TAILWIND_FIXED_WIDTH"
+  },
+  "v153-09-03": {
+    "target": "src/components/Dahlia9Panel.tsx",
+    "must_contain": [
+      "w-full max-w-full"
+    ],
+    "must_not_contain": [
+      "w-[700px]"
+    ],
+    "cause_family": "TAILWIND_FIXED_WIDTH"
+  },
+  "v153-09-04": {
+    "target": "src/components/Ember9Panel.tsx",
+    "must_contain": [
+      "w-full max-w-full"
+    ],
+    "must_not_contain": [
+      "w-[700px]"
+    ],
+    "cause_family": "TAILWIND_FIXED_WIDTH"
+  }
+}

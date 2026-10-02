@@ -1,0 +1,19 @@
+{
+  "status": "MEASURED",
+  "hidden_critical_recall": 100.0,
+  "hidden_category": {
+    "cases": 56,
+    "passed": 56,
+    "accuracy": 100.0
+  },
+  "development_critical_recall": 100.0,
+  "validation_critical_recall": 100.0,
+  "blind_red_team": {
+    "cases": 96,
+    "passed": 82,
+    "recall": 85.42
+  },
+  "limitations": [
+    "Blind red-team security recall is materially below the hidden-suite result; distractor robustness is a known blocker."
+  ]
+}

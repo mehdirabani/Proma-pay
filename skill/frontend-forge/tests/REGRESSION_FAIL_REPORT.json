@@ -1,0 +1,43 @@
+{
+  "status": "REGRESSION",
+  "deltas": {
+    "architecture": 0.0,
+    "code_quality": -4.0,
+    "ux": -1.0,
+    "performance": -7.0,
+    "accessibility": -2.0,
+    "seo": -1.0,
+    "security": -1.0,
+    "maintainability": -2.0
+  },
+  "regressions": [
+    {
+      "metric": "code_quality",
+      "baseline": 94,
+      "current": 90,
+      "delta": -4.0,
+      "max_allowed_drop": 3
+    },
+    {
+      "metric": "performance",
+      "baseline": 91,
+      "current": 84,
+      "delta": -7.0,
+      "max_allowed_drop": 3
+    },
+    {
+      "metric": "accessibility",
+      "baseline": 92,
+      "current": 90,
+      "delta": -2.0,
+      "max_allowed_drop": 1
+    },
+    {
+      "metric": "security",
+      "baseline": 96,
+      "current": 95,
+      "delta": -1.0,
+      "max_allowed_drop": 0
+    }
+  ]
+}

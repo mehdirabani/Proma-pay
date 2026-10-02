@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "raw_caller_observation": "BLOCKED",
+  "trusted_path": "ObservationRequest -> registered collector execution -> signed observation -> signed evidence",
+  "central_authority_acl": "VERIFIED_UNIT",
+  "signer_os_isolation": "UNVERIFIED",
+  "source_artifact_required": true
+}

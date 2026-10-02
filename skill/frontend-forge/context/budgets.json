@@ -1,0 +1,14 @@
+{
+  "allocation": {
+    "context": 0.55,
+    "generation": 0.25,
+    "validation": 0.15,
+    "reserve": 0.05
+  },
+  "complexity_caps": {
+    "small": 0.35,
+    "medium": 0.65,
+    "large": 0.9
+  },
+  "rule": "effective task budget = model_context_window × complexity_cap; allocations apply inside effective task budget"
+}

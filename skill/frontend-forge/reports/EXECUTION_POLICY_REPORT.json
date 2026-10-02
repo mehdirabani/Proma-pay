@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "allowed_levels": [
+    "L3_IMPLEMENT_LOW_RISK",
+    "L4_IMPLEMENT_AND_VALIDATE",
+    "L5_AUTONOMOUS_REPAIR"
+  ],
+  "L2_PLAN": "BLOCKED",
+  "DIAGNOSTIC_PLAN_ONLY": "BLOCKED",
+  "probable_root_cause_default": "BLOCKED",
+  "benchmark_uses_production_controller": true
+}

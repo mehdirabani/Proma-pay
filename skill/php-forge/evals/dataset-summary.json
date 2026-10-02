@@ -1,0 +1,28 @@
+{
+  "total": 1610,
+  "normalized_unique": 1610,
+  "split_counts": {
+    "development": 903,
+    "validation": 445,
+    "hidden": 262
+  },
+  "category_counts": {
+    "general": 150,
+    "php-core": 70,
+    "laravel": 100,
+    "symfony": 80,
+    "wordpress": 100,
+    "woocommerce": 120,
+    "security": 180,
+    "fintech": 180,
+    "database": 100,
+    "performance": 70,
+    "testing": 60,
+    "legacy": 50,
+    "context": 80,
+    "negation": 70,
+    "ood": 100,
+    "adversarial": 100
+  },
+  "concept_groups": 64
+}

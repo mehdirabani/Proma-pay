@@ -1,0 +1,1034 @@
+{
+  "requirement_summary": {
+    "type": "object",
+    "required": [
+      "status",
+      "task_type",
+      "project_type",
+      "stack",
+      "explicit_requirements",
+      "must_have",
+      "unknowns",
+      "risk_indicators",
+      "required_capabilities",
+      "confidence"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "BLOCKED"
+        ]
+      },
+      "task_type": {
+        "type": "string"
+      },
+      "project_type": {
+        "type": "string"
+      },
+      "stack": {
+        "type": "string"
+      },
+      "explicit_requirements": {
+        "type": "array"
+      },
+      "implicit_constraints": {
+        "type": "array"
+      },
+      "must_have": {
+        "type": "array"
+      },
+      "optional": {
+        "type": "array"
+      },
+      "unknowns": {
+        "type": "array"
+      },
+      "risk_indicators": {
+        "type": "array"
+      },
+      "required_capabilities": {
+        "type": "array"
+      },
+      "confidence": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      }
+    },
+    "additionalProperties": false
+  },
+  "context_summary": {
+    "type": "object",
+    "required": [
+      "status",
+      "workspace",
+      "package_manager",
+      "framework",
+      "dependencies",
+      "scripts",
+      "source_tree",
+      "git_revision"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "PASS",
+          "PARTIAL"
+        ]
+      },
+      "workspace": {
+        "type": "string"
+      },
+      "package_manager": {
+        "type": "string"
+      },
+      "framework": {
+        "type": "string"
+      },
+      "dependencies": {
+        "type": "array"
+      },
+      "scripts": {
+        "type": "object"
+      },
+      "source_tree": {
+        "type": "array"
+      },
+      "routing_system": {
+        "type": "string"
+      },
+      "styling_system": {
+        "type": "string"
+      },
+      "test_system": {
+        "type": "string"
+      },
+      "build_system": {
+        "type": "string"
+      },
+      "git_revision": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": false
+  },
+  "impact_report": {
+    "type": "object",
+    "required": [
+      "status",
+      "mode",
+      "direct_dependencies",
+      "reverse_dependencies",
+      "component_consumers",
+      "routes_affected",
+      "tests_affected",
+      "styles_affected",
+      "build_impact",
+      "risk"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "PASS",
+          "PARTIAL"
+        ]
+      },
+      "mode": {
+        "enum": [
+          "REDUCED",
+          "STATIC_IMPORT_SCAN",
+          "AST"
+        ]
+      },
+      "direct_dependencies": {
+        "type": "object"
+      },
+      "reverse_dependencies": {
+        "type": "object"
+      },
+      "component_consumers": {
+        "type": "array"
+      },
+      "routes_affected": {
+        "type": "array"
+      },
+      "tests_affected": {
+        "type": "array"
+      },
+      "styles_affected": {
+        "type": "array"
+      },
+      "build_impact": {
+        "type": "string"
+      },
+      "risk": {
+        "enum": [
+          "LOW",
+          "MEDIUM",
+          "HIGH",
+          "CRITICAL"
+        ]
+      }
+    },
+    "additionalProperties": false
+  },
+  "architecture_plan": {
+    "type": "object",
+    "required": [
+      "status",
+      "steps",
+      "dependencies",
+      "capabilities",
+      "files",
+      "risk",
+      "checkpoints",
+      "validation_plan",
+      "rollback_plan"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "BLOCKED"
+        ]
+      },
+      "steps": {
+        "type": "array"
+      },
+      "dependencies": {
+        "type": "object"
+      },
+      "capabilities": {
+        "type": "array"
+      },
+      "files": {
+        "type": "array"
+      },
+      "risk": {
+        "enum": [
+          "LOW",
+          "MEDIUM",
+          "HIGH",
+          "CRITICAL"
+        ]
+      },
+      "checkpoints": {
+        "type": "array"
+      },
+      "validation_plan": {
+        "type": "array"
+      },
+      "rollback_plan": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": false
+  },
+  "learning_record": {
+    "type": "object",
+    "required": [
+      "status",
+      "candidate",
+      "observations",
+      "evidence",
+      "confidence",
+      "validation",
+      "accepted"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "candidate",
+          "accepted",
+          "deprecated",
+          "rejected"
+        ]
+      },
+      "candidate": {},
+      "observations": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "evidence": {
+        "type": "array"
+      },
+      "confidence": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "validation": {
+        "enum": [
+          "PENDING",
+          "PASS",
+          "FAIL"
+        ]
+      },
+      "accepted": {
+        "type": "boolean"
+      }
+    },
+    "additionalProperties": false
+  },
+  "audit_record": {
+    "type": "object",
+    "required": [
+      "status",
+      "event_count",
+      "execution_duration_ms",
+      "capability_duration_ms",
+      "retry_count",
+      "cancel_count",
+      "rollback_count",
+      "evidence_count",
+      "failure_distribution"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "PASS",
+          "PARTIAL"
+        ]
+      },
+      "event_count": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "execution_duration_ms": {
+        "type": "number",
+        "minimum": 0
+      },
+      "capability_duration_ms": {
+        "type": "array"
+      },
+      "retry_count": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "cancel_count": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "rollback_count": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "evidence_count": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "sandbox_backend": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "failure_distribution": {
+        "type": "object"
+      }
+    },
+    "additionalProperties": false
+  },
+  "dependency_report": {
+    "type": "object",
+    "required": [
+      "status",
+      "resolved",
+      "capabilities"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "BLOCKED"
+        ]
+      },
+      "resolved": {
+        "type": "boolean"
+      },
+      "capabilities": {
+        "type": "array"
+      }
+    },
+    "additionalProperties": false
+  },
+  "risk_report": {
+    "type": "object",
+    "required": [
+      "score",
+      "level",
+      "approval_required"
+    ],
+    "properties": {
+      "score": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 100
+      },
+      "level": {
+        "enum": [
+          "LOW",
+          "MEDIUM",
+          "HIGH",
+          "CRITICAL"
+        ]
+      },
+      "approval_required": {
+        "type": "boolean"
+      }
+    },
+    "additionalProperties": false
+  },
+  "quality_report": {
+    "type": "object",
+    "required": [
+      "profile",
+      "status",
+      "weighted_score",
+      "missing",
+      "invalid",
+      "blocking_failures",
+      "values"
+    ],
+    "properties": {
+      "profile": {
+        "type": "string"
+      },
+      "status": {
+        "enum": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN",
+          "PARTIAL",
+          "BLOCKED"
+        ]
+      },
+      "weighted_score": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "missing": {
+        "type": "array"
+      },
+      "invalid": {
+        "type": "array"
+      },
+      "blocking_failures": {
+        "type": "array"
+      },
+      "values": {
+        "type": "object"
+      }
+    },
+    "additionalProperties": false
+  },
+  "regression_report": {
+    "type": "object",
+    "required": [
+      "status",
+      "regressions",
+      "deltas",
+      "missing"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "PASS",
+          "REGRESSION",
+          "UNKNOWN"
+        ]
+      },
+      "regressions": {
+        "type": "array"
+      },
+      "deltas": {
+        "type": "object"
+      },
+      "missing": {
+        "type": "array"
+      }
+    },
+    "additionalProperties": false
+  },
+  "environment_report": {
+    "type": "object",
+    "required": [
+      "python",
+      "os",
+      "package_manager",
+      "tools"
+    ],
+    "properties": {
+      "python": {
+        "type": "string"
+      },
+      "os": {
+        "type": "string"
+      },
+      "package_manager": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "tools": {
+        "type": "object"
+      }
+    },
+    "additionalProperties": false
+  },
+  "artifact_record": {
+    "type": "object",
+    "required": [
+      "artifact_id",
+      "type",
+      "path"
+    ],
+    "properties": {
+      "artifact_id": {
+        "type": "string"
+      },
+      "type": {
+        "type": "string"
+      },
+      "path": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": true
+  },
+  "recovery_action": {
+    "type": "object",
+    "required": [
+      "failure",
+      "attempt",
+      "action",
+      "policy"
+    ],
+    "properties": {
+      "failure": {
+        "type": "string"
+      },
+      "attempt": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "action": {
+        "type": "string"
+      },
+      "policy": {
+        "type": "object"
+      }
+    },
+    "additionalProperties": false
+  },
+  "handoff_plan": {
+    "type": "object",
+    "required": [
+      "status",
+      "capabilities"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "BLOCKED"
+        ]
+      },
+      "capabilities": {
+        "type": "array"
+      }
+    },
+    "additionalProperties": false
+  },
+  "git_status": {
+    "type": "object",
+    "required": [
+      "status",
+      "adapter"
+    ],
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "UNVERIFIED",
+          "TOOL_UNAVAILABLE",
+          "SANDBOX_UNAVAILABLE",
+          "BLOCKED",
+          "FAIL",
+          "TOOL_TIMEOUT",
+          "INVALID_CAPABILITY_OUTPUT",
+          "CANCELLED",
+          "SECURITY_BLOCKED",
+          "UNIMPLEMENTED"
+        ]
+      },
+      "adapter": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": true
+  },
+  "typecheck_report": {
+    "type": "object",
+    "required": [
+      "status",
+      "adapter"
+    ],
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "UNVERIFIED",
+          "TOOL_UNAVAILABLE",
+          "SANDBOX_UNAVAILABLE",
+          "BLOCKED",
+          "FAIL",
+          "TOOL_TIMEOUT",
+          "INVALID_CAPABILITY_OUTPUT",
+          "CANCELLED",
+          "SECURITY_BLOCKED",
+          "UNIMPLEMENTED"
+        ]
+      },
+      "adapter": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": true
+  },
+  "lint_report": {
+    "type": "object",
+    "required": [
+      "status",
+      "adapter"
+    ],
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "UNVERIFIED",
+          "TOOL_UNAVAILABLE",
+          "SANDBOX_UNAVAILABLE",
+          "BLOCKED",
+          "FAIL",
+          "TOOL_TIMEOUT",
+          "INVALID_CAPABILITY_OUTPUT",
+          "CANCELLED",
+          "SECURITY_BLOCKED",
+          "UNIMPLEMENTED"
+        ]
+      },
+      "adapter": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": true
+  },
+  "build_report": {
+    "type": "object",
+    "required": [
+      "status",
+      "adapter"
+    ],
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "UNVERIFIED",
+          "TOOL_UNAVAILABLE",
+          "SANDBOX_UNAVAILABLE",
+          "BLOCKED",
+          "FAIL",
+          "TOOL_TIMEOUT",
+          "INVALID_CAPABILITY_OUTPUT",
+          "CANCELLED",
+          "SECURITY_BLOCKED",
+          "UNIMPLEMENTED"
+        ]
+      },
+      "adapter": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": true
+  },
+  "lighthouse_report": {
+    "type": "object",
+    "required": [
+      "status",
+      "adapter"
+    ],
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "UNVERIFIED",
+          "TOOL_UNAVAILABLE",
+          "SANDBOX_UNAVAILABLE",
+          "BLOCKED",
+          "FAIL",
+          "TOOL_TIMEOUT",
+          "INVALID_CAPABILITY_OUTPUT",
+          "CANCELLED",
+          "SECURITY_BLOCKED",
+          "UNIMPLEMENTED"
+        ]
+      },
+      "adapter": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": true
+  },
+  "browser_report": {
+    "type": "object",
+    "required": [
+      "status",
+      "adapter"
+    ],
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "UNVERIFIED",
+          "TOOL_UNAVAILABLE",
+          "SANDBOX_UNAVAILABLE",
+          "BLOCKED",
+          "FAIL",
+          "TOOL_TIMEOUT",
+          "INVALID_CAPABILITY_OUTPUT",
+          "CANCELLED",
+          "SECURITY_BLOCKED",
+          "UNIMPLEMENTED"
+        ]
+      },
+      "adapter": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": true
+  },
+  "accessibility_report": {
+    "type": "object",
+    "required": [
+      "status",
+      "adapter"
+    ],
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "UNVERIFIED",
+          "TOOL_UNAVAILABLE",
+          "SANDBOX_UNAVAILABLE",
+          "BLOCKED",
+          "FAIL",
+          "TOOL_TIMEOUT",
+          "INVALID_CAPABILITY_OUTPUT",
+          "CANCELLED",
+          "SECURITY_BLOCKED",
+          "UNIMPLEMENTED"
+        ]
+      },
+      "adapter": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": true
+  },
+  "sleep_report": {
+    "type": "object"
+  },
+  "expected_output": {
+    "type": "object"
+  },
+  "capability_result": {
+    "type": "object",
+    "required": [
+      "status"
+    ],
+    "properties": {
+      "status": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": true
+  },
+  "token_metrics": {
+    "type": "object",
+    "required": [
+      "status"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "FAIL"
+        ]
+      },
+      "measurement": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": true
+  },
+  "context_pack": {
+    "type": "object",
+    "required": [
+      "loaded",
+      "rejected",
+      "estimated_context_tokens"
+    ],
+    "properties": {
+      "loaded": {
+        "type": "array"
+      },
+      "rejected": {
+        "type": "array"
+      },
+      "estimated_context_tokens": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "additionalProperties": true
+  },
+  "module_trace": {
+    "type": "object",
+    "required": [
+      "loaded_modules",
+      "rejected_modules",
+      "estimated_token_cost"
+    ],
+    "properties": {
+      "loaded_modules": {
+        "type": "array"
+      },
+      "rejected_modules": {
+        "type": "array"
+      },
+      "estimated_token_cost": {
+        "type": "integer"
+      }
+    },
+    "additionalProperties": true
+  },
+  "summary_cache": {
+    "type": "object",
+    "required": [
+      "status",
+      "hit"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "FAIL"
+        ]
+      },
+      "hit": {
+        "type": "boolean"
+      }
+    },
+    "additionalProperties": true
+  },
+  "compressed_findings": {
+    "type": "object",
+    "required": [
+      "status",
+      "kind",
+      "findings"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "FAIL"
+        ]
+      },
+      "kind": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": true
+  },
+  "token_efficiency_report": {
+    "type": "object",
+    "required": [
+      "status",
+      "measurement"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "PASS",
+          "PARTIAL",
+          "FAIL"
+        ]
+      },
+      "measurement": {
+        "enum": [
+          "ESTIMATED_TOKEN_USAGE",
+          "MEASURED_TOKEN_USAGE"
+        ]
+      }
+    },
+    "additionalProperties": true
+  },
+  "engineering_task": {
+    "type": "object",
+    "required": [
+      "goal",
+      "operation",
+      "task_type",
+      "domains",
+      "target_type",
+      "explicit_requirements",
+      "implicit_requirements",
+      "constraints",
+      "acceptance_criteria",
+      "unknowns",
+      "risk"
+    ],
+    "properties": {
+      "operation": {
+        "enum": [
+          "CREATE_FEATURE",
+          "REPAIR",
+          "REFACTOR",
+          "REVIEW",
+          "ANALYZE"
+        ]
+      },
+      "domains": {
+        "type": "array"
+      },
+      "risk": {
+        "enum": [
+          "LOW",
+          "MEDIUM",
+          "HIGH",
+          "CRITICAL"
+        ]
+      }
+    }
+  },
+  "target_safety": {
+    "type": "object",
+    "required": [
+      "state",
+      "allow_edit",
+      "independent_evidence",
+      "reasons"
+    ],
+    "properties": {
+      "state": {
+        "enum": [
+          "TARGET_CONFIRMED",
+          "TARGET_PROBABLE",
+          "TARGET_AMBIGUOUS",
+          "TARGET_NOT_FOUND",
+          "INVALID_TARGET_EVIDENCE"
+        ]
+      },
+      "allow_edit": {
+        "type": "boolean"
+      }
+    }
+  },
+  "root_cause_report": {
+    "type": "object",
+    "required": [
+      "status",
+      "root_cause",
+      "ranked_hypotheses",
+      "evidence_count",
+      "relevant_evidence_count"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "HYPOTHESIS",
+          "SUPPORTED",
+          "ROOT_CAUSE_PROBABLE",
+          "ROOT_CAUSE_CONFIRMED",
+          "ROOT_CAUSE_REJECTED",
+          "ROOT_CAUSE_UNVERIFIED"
+        ]
+      }
+    }
+  },
+  "change_plan": {
+    "type": "object",
+    "required": [
+      "status",
+      "goal",
+      "files",
+      "operations",
+      "dependencies",
+      "expected_effect",
+      "risks",
+      "validation",
+      "rollback",
+      "change_budget"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "PASS",
+          "BLOCKED",
+          "PLAN_BLOCKED",
+          "DIAGNOSTIC_PLAN_ONLY"
+        ]
+      }
+    }
+  },
+  "impact_prediction": {
+    "type": "object",
+    "required": [
+      "direct",
+      "indirect",
+      "risk",
+      "tests_required",
+      "typed_impacts",
+      "centrality",
+      "public_api_impact"
+    ]
+  },
+  "engineering_runtime": {
+    "type": "object",
+    "required": [
+      "status",
+      "engineering_task",
+      "target_safety",
+      "root_cause",
+      "change_plan",
+      "autonomy"
+    ]
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "PASS": {
+    "severity": 0,
+    "ci_required": "PASS",
+    "terminal": true
+  },
+  "PARTIAL": {
+    "severity": 2,
+    "ci_required": "BLOCKED",
+    "terminal": true
+  },
+  "UNVERIFIED": {
+    "severity": 3,
+    "ci_required": "BLOCKED",
+    "terminal": true
+  },
+  "TOOL_UNAVAILABLE": {
+    "severity": 3,
+    "ci_required": "BLOCKED",
+    "terminal": true
+  },
+  "SANDBOX_UNAVAILABLE": {
+    "severity": 4,
+    "ci_required": "BLOCKED",
+    "terminal": true
+  },
+  "BLOCKED": {
+    "severity": 4,
+    "ci_required": "BLOCKED",
+    "terminal": true
+  },
+  "FAIL": {
+    "severity": 5,
+    "ci_required": "FAIL",
+    "terminal": true
+  },
+  "TOOL_TIMEOUT": {
+    "severity": 5,
+    "ci_required": "FAIL",
+    "terminal": true
+  },
+  "INVALID_CAPABILITY_OUTPUT": {
+    "severity": 5,
+    "ci_required": "FAIL",
+    "terminal": true
+  },
+  "CANCELLED": {
+    "severity": 4,
+    "ci_required": "CANCELLED",
+    "terminal": true
+  },
+  "SECURITY_BLOCKED": {
+    "severity": 5,
+    "ci_required": "FAIL",
+    "terminal": true
+  },
+  "UNIMPLEMENTED": {
+    "severity": 3,
+    "ci_required": "BLOCKED",
+    "terminal": true
+  }
+}

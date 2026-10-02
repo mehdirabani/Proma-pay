@@ -1,0 +1,1 @@
+export const Pay20=()=> <form><button type="button">Pay</button></form>

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "metric",
+    "value",
+    "source",
+    "evidence"
+  ],
+  "properties": {
+    "metric": {
+      "type": "string"
+    },
+    "value": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence": {
+      "type": [
+        "string",
+        "object",
+        "array"
+      ]
+    },
+    "baseline": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100
+    }
+  }
+}

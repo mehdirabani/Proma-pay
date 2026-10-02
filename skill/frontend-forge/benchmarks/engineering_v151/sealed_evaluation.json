@@ -1,0 +1,842 @@
+[
+  {
+    "id": "v151-001",
+    "target": "Feature1.css",
+    "old": "min-width: 540px",
+    "new": "min-width: 0",
+    "root_cause_contains": "fixed/min-width causes overflow",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature1.css",
+        "contains": "min-width: 0"
+      }
+    ]
+  },
+  {
+    "id": "v151-002",
+    "target": "Feature2.css",
+    "old": "white-space: nowrap",
+    "new": "white-space: normal",
+    "root_cause_contains": "white-space prevents wrapping",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature2.css",
+        "contains": "white-space: normal"
+      }
+    ]
+  },
+  {
+    "id": "v151-003",
+    "target": "Feature3.tsx",
+    "old": "useState(props.value)",
+    "new": "useState(() => props.value)",
+    "root_cause_contains": "state ownership/remount resets state",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature3.tsx",
+        "contains": "useState(() => props.value)"
+      }
+    ]
+  },
+  {
+    "id": "v151-004",
+    "target": "Feature4.ts",
+    "old": "count: string",
+    "new": "count: number",
+    "root_cause_contains": "type contract mismatch",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature4.ts",
+        "contains": "count: number"
+      }
+    ]
+  },
+  {
+    "id": "v151-005",
+    "target": "Feature5.tsx",
+    "old": "<input id=\"email5\" />",
+    "new": "<><label htmlFor=\"email5\">Email</label><input id=\"email5\" /></>",
+    "root_cause_contains": "missing accessible label",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature5.tsx",
+        "contains": "htmlFor=\"email5\""
+      }
+    ]
+  },
+  {
+    "id": "v151-006",
+    "target": "Feature6.tsx",
+    "old": "import HeavyWidget6 from './HeavyWidget6';",
+    "new": "const HeavyWidget6 = lazy(() => import('./HeavyWidget6'));",
+    "root_cause_contains": "eager import inflates initial bundle",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature6.tsx",
+        "contains": "lazy(() => import"
+      }
+    ]
+  },
+  {
+    "id": "v151-007",
+    "target": "Feature7.tsx",
+    "old": "href=\"/profil\"",
+    "new": "href=\"/profile\"",
+    "root_cause_contains": "route target/path mismatch",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature7.tsx",
+        "contains": "href=\"/profile\""
+      }
+    ]
+  },
+  {
+    "id": "v151-008",
+    "target": "Feature8.tsx",
+    "old": "type=\"button\"",
+    "new": "type=\"submit\"",
+    "root_cause_contains": "form control contract is incorrect",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature8.tsx",
+        "contains": "type=\"submit\""
+      }
+    ]
+  },
+  {
+    "id": "v151-009",
+    "target": "Feature9.tsx",
+    "old": "if (loading) return null",
+    "new": "if (loading) return <div>Loading</div>",
+    "root_cause_contains": "async loading/state branch is incomplete",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature9.tsx",
+        "contains": "Loading</div>"
+      }
+    ]
+  },
+  {
+    "id": "v151-010",
+    "target": "Feature10.ts",
+    "old": "const a=x*2;const b=x*2",
+    "new": "const doubled=x*2;const a=doubled;const b=doubled",
+    "root_cause_contains": "duplicate calculation",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature10.ts",
+        "contains": "const doubled=x*2"
+      }
+    ]
+  },
+  {
+    "id": "v151-011",
+    "target": "Feature11.tsx",
+    "old": "'use client'; ",
+    "new": "",
+    "root_cause_contains": "unnecessary client boundary",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature11.tsx",
+        "contains": "export default function"
+      }
+    ]
+  },
+  {
+    "id": "v151-012",
+    "target": "Feature12.tsx",
+    "old": "p-[13px]",
+    "new": "p-3",
+    "root_cause_contains": "arbitrary Tailwind pixel utility",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature12.tsx",
+        "contains": "className=\"p-3\""
+      }
+    ]
+  },
+  {
+    "id": "v151-013",
+    "target": "Feature13.css",
+    "old": "min-width: 640px",
+    "new": "min-width: 0",
+    "root_cause_contains": "fixed/min-width causes overflow",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature13.css",
+        "contains": "min-width: 0"
+      }
+    ]
+  },
+  {
+    "id": "v151-014",
+    "target": "Feature14.css",
+    "old": "white-space: nowrap",
+    "new": "white-space: normal",
+    "root_cause_contains": "white-space prevents wrapping",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature14.css",
+        "contains": "white-space: normal"
+      }
+    ]
+  },
+  {
+    "id": "v151-015",
+    "target": "Feature15.tsx",
+    "old": "useState(props.value)",
+    "new": "useState(() => props.value)",
+    "root_cause_contains": "state ownership/remount resets state",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature15.tsx",
+        "contains": "useState(() => props.value)"
+      }
+    ]
+  },
+  {
+    "id": "v151-016",
+    "target": "Feature16.ts",
+    "old": "count: string",
+    "new": "count: number",
+    "root_cause_contains": "type contract mismatch",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature16.ts",
+        "contains": "count: number"
+      }
+    ]
+  },
+  {
+    "id": "v151-017",
+    "target": "Feature17.tsx",
+    "old": "<input id=\"email17\" />",
+    "new": "<><label htmlFor=\"email17\">Email</label><input id=\"email17\" /></>",
+    "root_cause_contains": "missing accessible label",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature17.tsx",
+        "contains": "htmlFor=\"email17\""
+      }
+    ]
+  },
+  {
+    "id": "v151-018",
+    "target": "Feature18.tsx",
+    "old": "import HeavyWidget18 from './HeavyWidget18';",
+    "new": "const HeavyWidget18 = lazy(() => import('./HeavyWidget18'));",
+    "root_cause_contains": "eager import inflates initial bundle",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature18.tsx",
+        "contains": "lazy(() => import"
+      }
+    ]
+  },
+  {
+    "id": "v151-019",
+    "target": "Feature19.tsx",
+    "old": "href=\"/profil\"",
+    "new": "href=\"/profile\"",
+    "root_cause_contains": "route target/path mismatch",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature19.tsx",
+        "contains": "href=\"/profile\""
+      }
+    ]
+  },
+  {
+    "id": "v151-020",
+    "target": "Feature20.tsx",
+    "old": "type=\"button\"",
+    "new": "type=\"submit\"",
+    "root_cause_contains": "form control contract is incorrect",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature20.tsx",
+        "contains": "type=\"submit\""
+      }
+    ]
+  },
+  {
+    "id": "v151-021",
+    "target": "Feature21.tsx",
+    "old": "if (loading) return null",
+    "new": "if (loading) return <div>Loading</div>",
+    "root_cause_contains": "async loading/state branch is incomplete",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature21.tsx",
+        "contains": "Loading</div>"
+      }
+    ]
+  },
+  {
+    "id": "v151-022",
+    "target": "Feature22.ts",
+    "old": "const a=x*2;const b=x*2",
+    "new": "const doubled=x*2;const a=doubled;const b=doubled",
+    "root_cause_contains": "duplicate calculation",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature22.ts",
+        "contains": "const doubled=x*2"
+      }
+    ]
+  },
+  {
+    "id": "v151-023",
+    "target": "Feature23.tsx",
+    "old": "'use client'; ",
+    "new": "",
+    "root_cause_contains": "unnecessary client boundary",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature23.tsx",
+        "contains": "export default function"
+      }
+    ]
+  },
+  {
+    "id": "v151-024",
+    "target": "Feature24.tsx",
+    "old": "p-[13px]",
+    "new": "p-3",
+    "root_cause_contains": "arbitrary Tailwind pixel utility",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature24.tsx",
+        "contains": "className=\"p-3\""
+      }
+    ]
+  },
+  {
+    "id": "v151-025",
+    "target": "Feature25.css",
+    "old": "min-width: 600px",
+    "new": "min-width: 0",
+    "root_cause_contains": "fixed/min-width causes overflow",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature25.css",
+        "contains": "min-width: 0"
+      }
+    ]
+  },
+  {
+    "id": "v151-026",
+    "target": "Feature26.css",
+    "old": "white-space: nowrap",
+    "new": "white-space: normal",
+    "root_cause_contains": "white-space prevents wrapping",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature26.css",
+        "contains": "white-space: normal"
+      }
+    ]
+  },
+  {
+    "id": "v151-027",
+    "target": "Feature27.tsx",
+    "old": "useState(props.value)",
+    "new": "useState(() => props.value)",
+    "root_cause_contains": "state ownership/remount resets state",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature27.tsx",
+        "contains": "useState(() => props.value)"
+      }
+    ]
+  },
+  {
+    "id": "v151-028",
+    "target": "Feature28.ts",
+    "old": "count: string",
+    "new": "count: number",
+    "root_cause_contains": "type contract mismatch",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature28.ts",
+        "contains": "count: number"
+      }
+    ]
+  },
+  {
+    "id": "v151-029",
+    "target": "Feature29.tsx",
+    "old": "<input id=\"email29\" />",
+    "new": "<><label htmlFor=\"email29\">Email</label><input id=\"email29\" /></>",
+    "root_cause_contains": "missing accessible label",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature29.tsx",
+        "contains": "htmlFor=\"email29\""
+      }
+    ]
+  },
+  {
+    "id": "v151-030",
+    "target": "Feature30.tsx",
+    "old": "import HeavyWidget30 from './HeavyWidget30';",
+    "new": "const HeavyWidget30 = lazy(() => import('./HeavyWidget30'));",
+    "root_cause_contains": "eager import inflates initial bundle",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature30.tsx",
+        "contains": "lazy(() => import"
+      }
+    ]
+  },
+  {
+    "id": "v151-031",
+    "target": "Feature31.tsx",
+    "old": "href=\"/profil\"",
+    "new": "href=\"/profile\"",
+    "root_cause_contains": "route target/path mismatch",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature31.tsx",
+        "contains": "href=\"/profile\""
+      }
+    ]
+  },
+  {
+    "id": "v151-032",
+    "target": "Feature32.tsx",
+    "old": "type=\"button\"",
+    "new": "type=\"submit\"",
+    "root_cause_contains": "form control contract is incorrect",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature32.tsx",
+        "contains": "type=\"submit\""
+      }
+    ]
+  },
+  {
+    "id": "v151-033",
+    "target": "Feature33.tsx",
+    "old": "if (loading) return null",
+    "new": "if (loading) return <div>Loading</div>",
+    "root_cause_contains": "async loading/state branch is incomplete",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature33.tsx",
+        "contains": "Loading</div>"
+      }
+    ]
+  },
+  {
+    "id": "v151-034",
+    "target": "Feature34.ts",
+    "old": "const a=x*2;const b=x*2",
+    "new": "const doubled=x*2;const a=doubled;const b=doubled",
+    "root_cause_contains": "duplicate calculation",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature34.ts",
+        "contains": "const doubled=x*2"
+      }
+    ]
+  },
+  {
+    "id": "v151-035",
+    "target": "Feature35.tsx",
+    "old": "'use client'; ",
+    "new": "",
+    "root_cause_contains": "unnecessary client boundary",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature35.tsx",
+        "contains": "export default function"
+      }
+    ]
+  },
+  {
+    "id": "v151-036",
+    "target": "Feature36.tsx",
+    "old": "p-[13px]",
+    "new": "p-3",
+    "root_cause_contains": "arbitrary Tailwind pixel utility",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature36.tsx",
+        "contains": "className=\"p-3\""
+      }
+    ]
+  },
+  {
+    "id": "v151-037",
+    "target": "Feature37.css",
+    "old": "min-width: 560px",
+    "new": "min-width: 0",
+    "root_cause_contains": "fixed/min-width causes overflow",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature37.css",
+        "contains": "min-width: 0"
+      }
+    ]
+  },
+  {
+    "id": "v151-038",
+    "target": "Feature38.css",
+    "old": "white-space: nowrap",
+    "new": "white-space: normal",
+    "root_cause_contains": "white-space prevents wrapping",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature38.css",
+        "contains": "white-space: normal"
+      }
+    ]
+  },
+  {
+    "id": "v151-039",
+    "target": "Feature39.tsx",
+    "old": "useState(props.value)",
+    "new": "useState(() => props.value)",
+    "root_cause_contains": "state ownership/remount resets state",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature39.tsx",
+        "contains": "useState(() => props.value)"
+      }
+    ]
+  },
+  {
+    "id": "v151-040",
+    "target": "Feature40.ts",
+    "old": "count: string",
+    "new": "count: number",
+    "root_cause_contains": "type contract mismatch",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature40.ts",
+        "contains": "count: number"
+      }
+    ]
+  },
+  {
+    "id": "v151-041",
+    "target": "Feature41.tsx",
+    "old": "<input id=\"email41\" />",
+    "new": "<><label htmlFor=\"email41\">Email</label><input id=\"email41\" /></>",
+    "root_cause_contains": "missing accessible label",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature41.tsx",
+        "contains": "htmlFor=\"email41\""
+      }
+    ]
+  },
+  {
+    "id": "v151-042",
+    "target": "Feature42.tsx",
+    "old": "import HeavyWidget42 from './HeavyWidget42';",
+    "new": "const HeavyWidget42 = lazy(() => import('./HeavyWidget42'));",
+    "root_cause_contains": "eager import inflates initial bundle",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature42.tsx",
+        "contains": "lazy(() => import"
+      }
+    ]
+  },
+  {
+    "id": "v151-043",
+    "target": "Feature43.tsx",
+    "old": "href=\"/profil\"",
+    "new": "href=\"/profile\"",
+    "root_cause_contains": "route target/path mismatch",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature43.tsx",
+        "contains": "href=\"/profile\""
+      }
+    ]
+  },
+  {
+    "id": "v151-044",
+    "target": "Feature44.tsx",
+    "old": "type=\"button\"",
+    "new": "type=\"submit\"",
+    "root_cause_contains": "form control contract is incorrect",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature44.tsx",
+        "contains": "type=\"submit\""
+      }
+    ]
+  },
+  {
+    "id": "v151-045",
+    "target": "Feature45.tsx",
+    "old": "if (loading) return null",
+    "new": "if (loading) return <div>Loading</div>",
+    "root_cause_contains": "async loading/state branch is incomplete",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature45.tsx",
+        "contains": "Loading</div>"
+      }
+    ]
+  },
+  {
+    "id": "v151-046",
+    "target": "Feature46.ts",
+    "old": "const a=x*2;const b=x*2",
+    "new": "const doubled=x*2;const a=doubled;const b=doubled",
+    "root_cause_contains": "duplicate calculation",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature46.ts",
+        "contains": "const doubled=x*2"
+      }
+    ]
+  },
+  {
+    "id": "v151-047",
+    "target": "Feature47.tsx",
+    "old": "'use client'; ",
+    "new": "",
+    "root_cause_contains": "unnecessary client boundary",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature47.tsx",
+        "contains": "export default function"
+      }
+    ]
+  },
+  {
+    "id": "v151-048",
+    "target": "Feature48.tsx",
+    "old": "p-[13px]",
+    "new": "p-3",
+    "root_cause_contains": "arbitrary Tailwind pixel utility",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature48.tsx",
+        "contains": "className=\"p-3\""
+      }
+    ]
+  },
+  {
+    "id": "v151-049",
+    "target": "Feature49.css",
+    "old": "min-width: 520px",
+    "new": "min-width: 0",
+    "root_cause_contains": "fixed/min-width causes overflow",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature49.css",
+        "contains": "min-width: 0"
+      }
+    ]
+  },
+  {
+    "id": "v151-050",
+    "target": "Feature50.css",
+    "old": "white-space: nowrap",
+    "new": "white-space: normal",
+    "root_cause_contains": "white-space prevents wrapping",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature50.css",
+        "contains": "white-space: normal"
+      }
+    ]
+  },
+  {
+    "id": "v151-051",
+    "target": "Feature51.tsx",
+    "old": "useState(props.value)",
+    "new": "useState(() => props.value)",
+    "root_cause_contains": "state ownership/remount resets state",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature51.tsx",
+        "contains": "useState(() => props.value)"
+      }
+    ]
+  },
+  {
+    "id": "v151-052",
+    "target": "Feature52.ts",
+    "old": "count: string",
+    "new": "count: number",
+    "root_cause_contains": "type contract mismatch",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature52.ts",
+        "contains": "count: number"
+      }
+    ]
+  },
+  {
+    "id": "v151-053",
+    "target": "Feature53.tsx",
+    "old": "<input id=\"email53\" />",
+    "new": "<><label htmlFor=\"email53\">Email</label><input id=\"email53\" /></>",
+    "root_cause_contains": "missing accessible label",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature53.tsx",
+        "contains": "htmlFor=\"email53\""
+      }
+    ]
+  },
+  {
+    "id": "v151-054",
+    "target": "Feature54.tsx",
+    "old": "import HeavyWidget54 from './HeavyWidget54';",
+    "new": "const HeavyWidget54 = lazy(() => import('./HeavyWidget54'));",
+    "root_cause_contains": "eager import inflates initial bundle",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature54.tsx",
+        "contains": "lazy(() => import"
+      }
+    ]
+  },
+  {
+    "id": "v151-055",
+    "target": "Feature55.tsx",
+    "old": "href=\"/profil\"",
+    "new": "href=\"/profile\"",
+    "root_cause_contains": "route target/path mismatch",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature55.tsx",
+        "contains": "href=\"/profile\""
+      }
+    ]
+  },
+  {
+    "id": "v151-056",
+    "target": "Feature56.tsx",
+    "old": "type=\"button\"",
+    "new": "type=\"submit\"",
+    "root_cause_contains": "form control contract is incorrect",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature56.tsx",
+        "contains": "type=\"submit\""
+      }
+    ]
+  },
+  {
+    "id": "v151-057",
+    "target": "Feature57.tsx",
+    "old": "if (loading) return null",
+    "new": "if (loading) return <div>Loading</div>",
+    "root_cause_contains": "async loading/state branch is incomplete",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature57.tsx",
+        "contains": "Loading</div>"
+      }
+    ]
+  },
+  {
+    "id": "v151-058",
+    "target": "Feature58.ts",
+    "old": "const a=x*2;const b=x*2",
+    "new": "const doubled=x*2;const a=doubled;const b=doubled",
+    "root_cause_contains": "duplicate calculation",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature58.ts",
+        "contains": "const doubled=x*2"
+      }
+    ]
+  },
+  {
+    "id": "v151-059",
+    "target": "Feature59.tsx",
+    "old": "'use client'; ",
+    "new": "",
+    "root_cause_contains": "unnecessary client boundary",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature59.tsx",
+        "contains": "export default function"
+      }
+    ]
+  },
+  {
+    "id": "v151-060",
+    "target": "Feature60.tsx",
+    "old": "p-[13px]",
+    "new": "p-3",
+    "root_cause_contains": "arbitrary Tailwind pixel utility",
+    "hidden_assertions": [
+      {
+        "id": "expected-change",
+        "path": "Feature60.tsx",
+        "contains": "className=\"p-3\""
+      }
+    ]
+  }
+]

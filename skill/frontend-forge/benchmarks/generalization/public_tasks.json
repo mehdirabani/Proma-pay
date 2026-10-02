@@ -1,0 +1,44 @@
+[
+  {
+    "id": "holdout-product-en",
+    "task": "The catalog entry spills outside the phone viewport",
+    "lang": "en",
+    "type": "css"
+  },
+  {
+    "id": "holdout-product-fa",
+    "task": "کادر کالا تو صفحه گوشی جا نمی شود",
+    "lang": "fa",
+    "type": "css"
+  },
+  {
+    "id": "holdout-checkout-en",
+    "task": "The purchase form cannot be tabbed",
+    "lang": "en",
+    "type": "accessibility"
+  },
+  {
+    "id": "holdout-navbar-en",
+    "task": "Header links overlap on a narrow viewport",
+    "lang": "en",
+    "type": "responsive"
+  },
+  {
+    "id": "holdout-navbar-fa",
+    "task": "لینک های سربرگ روی نمایشگر باریک روی هم می افتند",
+    "lang": "fa",
+    "type": "responsive"
+  },
+  {
+    "id": "holdout-order-en",
+    "task": "The order recap has the wrong total alignment",
+    "lang": "en",
+    "type": "css"
+  },
+  {
+    "id": "holdout-notify-fa",
+    "task": "بخش اعلان ها بعد از بستن دوباره باز می شود",
+    "lang": "fa",
+    "type": "behavior"
+  }
+]

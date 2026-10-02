@@ -1,0 +1,29 @@
+{
+  "version": "1.2.0",
+  "status": "PILOT",
+  "production_ready": false,
+  "score": null,
+  "reason": "A post-freeze 200-case blind red-team scored 86.5%, and independent Agent A/B plus deployment-model token measurement are not verified.",
+  "evidence": {
+    "package_validation": "PASS (pre-release; final byte audit executed after report/checksum generation)",
+    "dataset_integrity": "PASS",
+    "hidden_holdout": "PASS",
+    "hidden_accuracy": 100.0,
+    "hidden_security_critical_recall": 100.0,
+    "hidden_fintech_critical_recall": 100.0,
+    "hidden_domain_precision": 91.59,
+    "blind_red_team_accuracy": 86.5,
+    "agent_ab": "NOT_VERIFIED",
+    "deployment_token_measurement": "NOT_VERIFIED"
+  },
+  "recommended_autonomy": {
+    "ordinary_low_risk": "A3/A4 depending on repository evidence and tests",
+    "high_risk_security_fintech": "A2",
+    "destructive_production": "A1/A2"
+  },
+  "blocking_items": [
+    "Blind red-team distractor robustness (27/200 failures)",
+    "Independent same-agent blind A/B quality benchmark not executed",
+    "Deployment-model token measurement not executed"
+  ]
+}

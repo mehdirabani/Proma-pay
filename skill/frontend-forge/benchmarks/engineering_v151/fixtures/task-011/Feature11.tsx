@@ -1,0 +1,1 @@
+'use client'; export default function Static11(){return <div>Static 11</div>}

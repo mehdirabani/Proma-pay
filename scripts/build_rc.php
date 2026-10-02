@@ -80,7 +80,7 @@ $excluded = static function (string $relative) use ($normalize): bool {
     if (strpos($path, 'html/rtl/assets/') === 0) {
         return !preg_match('#^html/rtl/assets/(?:css|fonts|images|js|json|svg)/#', $path);
     }
-    foreach (['.git/', '.github/', '.agents/', '.codex/', 'dist/', 'storage/', 'tmp/', 'plugins/', 'plugin-packages/', 'node_modules/', 'docs/accounting-next/', 'docs/accounting-stability/', 'html/docs/', 'html/rtl/dist/', 'html/rtl/starter-kit/', 'html/rtl/template/'] as $prefix) {
+    foreach (['.git/', '.github/', '.agents/', '.codex/', 'skill/', 'dist/', 'storage/', 'tmp/', 'plugins/', 'plugin-packages/', 'node_modules/', 'docs/accounting-next/', 'docs/accounting-stability/', 'html/docs/', 'html/rtl/dist/', 'html/rtl/starter-kit/', 'html/rtl/template/'] as $prefix) {
         if (strpos($path, $prefix) === 0) {
             return true;
         }

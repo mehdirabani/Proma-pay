@@ -1,0 +1,38 @@
+{
+  "repository-symbol-collector": {
+    "version": "15.2.0",
+    "implementation": "engineering_evidence/collectors.py",
+    "code_hash": "3ef788b6c511a9b5e6a35f882b82f668551831ec879b6d6c26b046a7f93dfda0",
+    "allowed_claim_types": [
+      "SYMBOL_DEFINITION"
+    ],
+    "maturity": "VERIFIED_FIXTURE"
+  },
+  "dependency-graph-collector": {
+    "version": "15.2.0",
+    "implementation": "engineering_evidence/collectors.py",
+    "code_hash": "3ef788b6c511a9b5e6a35f882b82f668551831ec879b6d6c26b046a7f93dfda0",
+    "allowed_claim_types": [
+      "DEPENDENCY_RELATIONSHIP"
+    ],
+    "maturity": "VERIFIED_FIXTURE"
+  },
+  "static-task-link-collector": {
+    "version": "15.2.0",
+    "implementation": "engineering_evidence/collectors.py",
+    "code_hash": "3ef788b6c511a9b5e6a35f882b82f668551831ec879b6d6c26b046a7f93dfda0",
+    "allowed_claim_types": [
+      "TASK_TARGET_LINK"
+    ],
+    "maturity": "VERIFIED_FIXTURE"
+  },
+  "static-analysis-collector": {
+    "version": "15.2.0",
+    "implementation": "engineering_evidence/collectors.py",
+    "code_hash": "3ef788b6c511a9b5e6a35f882b82f668551831ec879b6d6c26b046a7f93dfda0",
+    "allowed_claim_types": [
+      "ROOT_CAUSE_OBSERVATION"
+    ],
+    "maturity": "VERIFIED_FIXTURE"
+  }
+}

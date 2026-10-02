@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "required": [
+    "state",
+    "allow_edit",
+    "independent_evidence",
+    "reasons"
+  ]
+}

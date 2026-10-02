@@ -1,0 +1,100 @@
+{
+  "split": "validation",
+  "status": "PASS",
+  "metrics": {
+    "cases": 445,
+    "passed": 445,
+    "module_tp": 762,
+    "module_fn": 0,
+    "module_fp": 48,
+    "security_critical_total": 119,
+    "security_critical_hit": 119,
+    "fintech_critical_total": 76,
+    "fintech_critical_hit": 76,
+    "accuracy": 100.0,
+    "security_critical_recall": 100.0,
+    "fintech_critical_recall": 100.0,
+    "domain_precision": 94.07,
+    "domain_recall": 100.0
+  },
+  "category_metrics": {
+    "adversarial": {
+      "cases": 20,
+      "passed": 20,
+      "accuracy": 100.0
+    },
+    "context": {
+      "cases": 32,
+      "passed": 32,
+      "accuracy": 100.0
+    },
+    "database": {
+      "cases": 50,
+      "passed": 50,
+      "accuracy": 100.0
+    },
+    "fintech": {
+      "cases": 63,
+      "passed": 63,
+      "accuracy": 100.0
+    },
+    "general": {
+      "cases": 43,
+      "passed": 43,
+      "accuracy": 100.0
+    },
+    "laravel": {
+      "cases": 100,
+      "passed": 100,
+      "accuracy": 100.0
+    },
+    "negation": {
+      "cases": 18,
+      "passed": 18,
+      "accuracy": 100.0
+    },
+    "ood": {
+      "cases": 25,
+      "passed": 25,
+      "accuracy": 100.0
+    },
+    "performance": {
+      "cases": 14,
+      "passed": 14,
+      "accuracy": 100.0
+    },
+    "security": {
+      "cases": 23,
+      "passed": 23,
+      "accuracy": 100.0
+    },
+    "testing": {
+      "cases": 40,
+      "passed": 40,
+      "accuracy": 100.0
+    },
+    "woocommerce": {
+      "cases": 17,
+      "passed": 17,
+      "accuracy": 100.0
+    }
+  },
+  "language_metrics": {
+    "persian_or_mixed": {
+      "cases": 84,
+      "passed": 84,
+      "accuracy": 100.0
+    },
+    "english_only": {
+      "cases": 361,
+      "passed": 361,
+      "accuracy": 100.0
+    }
+  },
+  "risk_exact_metrics": {
+    "cases": 0,
+    "passed": 0,
+    "accuracy": null
+  },
+  "failures": []
+}

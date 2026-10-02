@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "collectors": [
+    "static-task-link-collector",
+    "dependency-graph-collector",
+    "repository-symbol-collector",
+    "static-analysis-collector",
+    "static-reproduction-collector"
+  ],
+  "caller_controls": [
+    "collector_id",
+    "candidate",
+    "task context",
+    "hypothesis/cause request where applicable"
+  ],
+  "caller_cannot_control": [
+    "observation",
+    "source_id",
+    "artifact_hash",
+    "relationship result",
+    "task overlap result"
+  ]
+}

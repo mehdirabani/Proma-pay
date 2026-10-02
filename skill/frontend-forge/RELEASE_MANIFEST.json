@@ -1,0 +1,20 @@
+{
+  "name": "Frontend Forge X",
+  "version": "15.3.0",
+  "edition": "Observation-Authenticated Evidence, Policy-Enforced Autonomy & Causal Patch Generation",
+  "entrypoint": "SKILL.md",
+  "test_runner": "tests/run_tests.py",
+  "test_status": "PASS",
+  "tests_run": 360,
+  "release_state": "OBSERVATION_AUTHENTICATED_CAUSAL_LOCAL_VERIFIED_EXTERNAL_EVIDENCE_PENDING",
+  "capabilities_total": 44,
+  "production_capabilities": 35,
+  "optional_capabilities": 7,
+  "test_only_capabilities": 2,
+  "blind_multifile_tasks": 50,
+  "blind_multifile_solved": 50,
+  "unauthorized_patch_rate": 0.0,
+  "real_agent": "UNVERIFIED",
+  "real_repository": "UNVERIFIED",
+  "provider_tokens": "UNVERIFIED"
+}

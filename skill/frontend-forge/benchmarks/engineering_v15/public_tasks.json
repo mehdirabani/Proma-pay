@@ -1,0 +1,422 @@
+[
+  {
+    "id": "eng-001",
+    "split": "development",
+    "category": "CSS",
+    "task": "CSS engineering task 1",
+    "fixture": "fixture-001"
+  },
+  {
+    "id": "eng-002",
+    "split": "development",
+    "category": "Responsive",
+    "task": "Responsive engineering task 2",
+    "fixture": "fixture-002"
+  },
+  {
+    "id": "eng-003",
+    "split": "development",
+    "category": "React State",
+    "task": "React State engineering task 3",
+    "fixture": "fixture-003"
+  },
+  {
+    "id": "eng-004",
+    "split": "development",
+    "category": "TypeScript",
+    "task": "TypeScript engineering task 4",
+    "fixture": "fixture-004"
+  },
+  {
+    "id": "eng-005",
+    "split": "development",
+    "category": "Accessibility",
+    "task": "Accessibility engineering task 5",
+    "fixture": "fixture-005"
+  },
+  {
+    "id": "eng-006",
+    "split": "development",
+    "category": "Performance",
+    "task": "Performance engineering task 6",
+    "fixture": "fixture-006"
+  },
+  {
+    "id": "eng-007",
+    "split": "development",
+    "category": "Refactor",
+    "task": "Refactor engineering task 7",
+    "fixture": "fixture-007"
+  },
+  {
+    "id": "eng-008",
+    "split": "development",
+    "category": "Routing",
+    "task": "Routing engineering task 8",
+    "fixture": "fixture-008"
+  },
+  {
+    "id": "eng-009",
+    "split": "development",
+    "category": "Form",
+    "task": "Form engineering task 9",
+    "fixture": "fixture-009"
+  },
+  {
+    "id": "eng-010",
+    "split": "development",
+    "category": "Async Data",
+    "task": "Async Data engineering task 10",
+    "fixture": "fixture-010"
+  },
+  {
+    "id": "eng-011",
+    "split": "development",
+    "category": "CSS",
+    "task": "CSS engineering task 11",
+    "fixture": "fixture-011"
+  },
+  {
+    "id": "eng-012",
+    "split": "development",
+    "category": "Responsive",
+    "task": "Responsive engineering task 12",
+    "fixture": "fixture-012"
+  },
+  {
+    "id": "eng-013",
+    "split": "development",
+    "category": "React State",
+    "task": "React State engineering task 13",
+    "fixture": "fixture-013"
+  },
+  {
+    "id": "eng-014",
+    "split": "development",
+    "category": "TypeScript",
+    "task": "TypeScript engineering task 14",
+    "fixture": "fixture-014"
+  },
+  {
+    "id": "eng-015",
+    "split": "development",
+    "category": "Accessibility",
+    "task": "Accessibility engineering task 15",
+    "fixture": "fixture-015"
+  },
+  {
+    "id": "eng-016",
+    "split": "development",
+    "category": "Performance",
+    "task": "Performance engineering task 16",
+    "fixture": "fixture-016"
+  },
+  {
+    "id": "eng-017",
+    "split": "development",
+    "category": "Refactor",
+    "task": "Refactor engineering task 17",
+    "fixture": "fixture-017"
+  },
+  {
+    "id": "eng-018",
+    "split": "development",
+    "category": "Routing",
+    "task": "Routing engineering task 18",
+    "fixture": "fixture-018"
+  },
+  {
+    "id": "eng-019",
+    "split": "development",
+    "category": "Form",
+    "task": "Form engineering task 19",
+    "fixture": "fixture-019"
+  },
+  {
+    "id": "eng-020",
+    "split": "development",
+    "category": "Async Data",
+    "task": "Async Data engineering task 20",
+    "fixture": "fixture-020"
+  },
+  {
+    "id": "eng-021",
+    "split": "development",
+    "category": "CSS",
+    "task": "CSS engineering task 21",
+    "fixture": "fixture-021"
+  },
+  {
+    "id": "eng-022",
+    "split": "development",
+    "category": "Responsive",
+    "task": "Responsive engineering task 22",
+    "fixture": "fixture-022"
+  },
+  {
+    "id": "eng-023",
+    "split": "development",
+    "category": "React State",
+    "task": "React State engineering task 23",
+    "fixture": "fixture-023"
+  },
+  {
+    "id": "eng-024",
+    "split": "development",
+    "category": "TypeScript",
+    "task": "TypeScript engineering task 24",
+    "fixture": "fixture-024"
+  },
+  {
+    "id": "eng-025",
+    "split": "development",
+    "category": "Accessibility",
+    "task": "Accessibility engineering task 25",
+    "fixture": "fixture-025"
+  },
+  {
+    "id": "eng-026",
+    "split": "development",
+    "category": "Performance",
+    "task": "Performance engineering task 26",
+    "fixture": "fixture-026"
+  },
+  {
+    "id": "eng-027",
+    "split": "development",
+    "category": "Refactor",
+    "task": "Refactor engineering task 27",
+    "fixture": "fixture-027"
+  },
+  {
+    "id": "eng-028",
+    "split": "development",
+    "category": "Routing",
+    "task": "Routing engineering task 28",
+    "fixture": "fixture-028"
+  },
+  {
+    "id": "eng-029",
+    "split": "development",
+    "category": "Form",
+    "task": "Form engineering task 29",
+    "fixture": "fixture-029"
+  },
+  {
+    "id": "eng-030",
+    "split": "development",
+    "category": "Async Data",
+    "task": "Async Data engineering task 30",
+    "fixture": "fixture-030"
+  },
+  {
+    "id": "eng-031",
+    "split": "validation",
+    "category": "CSS",
+    "task": "CSS engineering task 31",
+    "fixture": "fixture-031"
+  },
+  {
+    "id": "eng-032",
+    "split": "validation",
+    "category": "Responsive",
+    "task": "Responsive engineering task 32",
+    "fixture": "fixture-032"
+  },
+  {
+    "id": "eng-033",
+    "split": "validation",
+    "category": "React State",
+    "task": "React State engineering task 33",
+    "fixture": "fixture-033"
+  },
+  {
+    "id": "eng-034",
+    "split": "validation",
+    "category": "TypeScript",
+    "task": "TypeScript engineering task 34",
+    "fixture": "fixture-034"
+  },
+  {
+    "id": "eng-035",
+    "split": "validation",
+    "category": "Accessibility",
+    "task": "Accessibility engineering task 35",
+    "fixture": "fixture-035"
+  },
+  {
+    "id": "eng-036",
+    "split": "validation",
+    "category": "Performance",
+    "task": "Performance engineering task 36",
+    "fixture": "fixture-036"
+  },
+  {
+    "id": "eng-037",
+    "split": "validation",
+    "category": "Refactor",
+    "task": "Refactor engineering task 37",
+    "fixture": "fixture-037"
+  },
+  {
+    "id": "eng-038",
+    "split": "validation",
+    "category": "Routing",
+    "task": "Routing engineering task 38",
+    "fixture": "fixture-038"
+  },
+  {
+    "id": "eng-039",
+    "split": "validation",
+    "category": "Form",
+    "task": "Form engineering task 39",
+    "fixture": "fixture-039"
+  },
+  {
+    "id": "eng-040",
+    "split": "validation",
+    "category": "Async Data",
+    "task": "Async Data engineering task 40",
+    "fixture": "fixture-040"
+  },
+  {
+    "id": "eng-041",
+    "split": "validation",
+    "category": "CSS",
+    "task": "CSS engineering task 41",
+    "fixture": "fixture-041"
+  },
+  {
+    "id": "eng-042",
+    "split": "validation",
+    "category": "Responsive",
+    "task": "Responsive engineering task 42",
+    "fixture": "fixture-042"
+  },
+  {
+    "id": "eng-043",
+    "split": "validation",
+    "category": "React State",
+    "task": "React State engineering task 43",
+    "fixture": "fixture-043"
+  },
+  {
+    "id": "eng-044",
+    "split": "validation",
+    "category": "TypeScript",
+    "task": "TypeScript engineering task 44",
+    "fixture": "fixture-044"
+  },
+  {
+    "id": "eng-045",
+    "split": "validation",
+    "category": "Accessibility",
+    "task": "Accessibility engineering task 45",
+    "fixture": "fixture-045"
+  },
+  {
+    "id": "eng-046",
+    "split": "sealed_evaluation",
+    "category": "Performance",
+    "task": "Performance engineering task 46",
+    "fixture": "fixture-046"
+  },
+  {
+    "id": "eng-047",
+    "split": "sealed_evaluation",
+    "category": "Refactor",
+    "task": "Refactor engineering task 47",
+    "fixture": "fixture-047"
+  },
+  {
+    "id": "eng-048",
+    "split": "sealed_evaluation",
+    "category": "Routing",
+    "task": "Routing engineering task 48",
+    "fixture": "fixture-048"
+  },
+  {
+    "id": "eng-049",
+    "split": "sealed_evaluation",
+    "category": "Form",
+    "task": "Form engineering task 49",
+    "fixture": "fixture-049"
+  },
+  {
+    "id": "eng-050",
+    "split": "sealed_evaluation",
+    "category": "Async Data",
+    "task": "Async Data engineering task 50",
+    "fixture": "fixture-050"
+  },
+  {
+    "id": "eng-051",
+    "split": "sealed_evaluation",
+    "category": "CSS",
+    "task": "CSS engineering task 51",
+    "fixture": "fixture-051"
+  },
+  {
+    "id": "eng-052",
+    "split": "sealed_evaluation",
+    "category": "Responsive",
+    "task": "Responsive engineering task 52",
+    "fixture": "fixture-052"
+  },
+  {
+    "id": "eng-053",
+    "split": "sealed_evaluation",
+    "category": "React State",
+    "task": "React State engineering task 53",
+    "fixture": "fixture-053"
+  },
+  {
+    "id": "eng-054",
+    "split": "sealed_evaluation",
+    "category": "TypeScript",
+    "task": "TypeScript engineering task 54",
+    "fixture": "fixture-054"
+  },
+  {
+    "id": "eng-055",
+    "split": "sealed_evaluation",
+    "category": "Accessibility",
+    "task": "Accessibility engineering task 55",
+    "fixture": "fixture-055"
+  },
+  {
+    "id": "eng-056",
+    "split": "sealed_evaluation",
+    "category": "Performance",
+    "task": "Performance engineering task 56",
+    "fixture": "fixture-056"
+  },
+  {
+    "id": "eng-057",
+    "split": "sealed_evaluation",
+    "category": "Refactor",
+    "task": "Refactor engineering task 57",
+    "fixture": "fixture-057"
+  },
+  {
+    "id": "eng-058",
+    "split": "sealed_evaluation",
+    "category": "Routing",
+    "task": "Routing engineering task 58",
+    "fixture": "fixture-058"
+  },
+  {
+    "id": "eng-059",
+    "split": "sealed_evaluation",
+    "category": "Form",
+    "task": "Form engineering task 59",
+    "fixture": "fixture-059"
+  },
+  {
+    "id": "eng-060",
+    "split": "sealed_evaluation",
+    "category": "Async Data",
+    "task": "Async Data engineering task 60",
+    "fixture": "fixture-060"
+  }
+]

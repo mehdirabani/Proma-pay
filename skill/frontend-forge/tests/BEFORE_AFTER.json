@@ -1,0 +1,16 @@
+{
+  "v12_measured": {
+    "file_count": 21,
+    "uncompressed_bytes": 3288
+  },
+  "v13_measured": {
+    "file_count": 57,
+    "uncompressed_bytes": 51323,
+    "machine_readable_json_files": 25,
+    "agent_contract_count": 8,
+    "validation_scenarios": 10,
+    "failure_injection_scenarios": 9,
+    "deterministic_test_status": "PASS"
+  },
+  "note": "These are structural/execution-contract measurements, not subjective production-readiness scores."
+}

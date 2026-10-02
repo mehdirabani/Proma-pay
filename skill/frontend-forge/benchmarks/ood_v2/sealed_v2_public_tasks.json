@@ -1,0 +1,652 @@
+[
+  {
+    "id": "sealed-000",
+    "task": "the merchandise result block clips at handset width",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-001",
+    "task": "a catalog row escapes its container on compact screens after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-002",
+    "task": "نمای هر کالا در عرض گوشی از محدوده رد می‌شود در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-003",
+    "task": "ردیف فروش در صفحه کوچک داخل قاب نمی‌ماند به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-004",
+    "task": "the merchandise result block clips at handset width",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-005",
+    "task": "a catalog row escapes its container on compact screens after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-006",
+    "task": "نمای هر کالا در عرض گوشی از محدوده رد می‌شود در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-007",
+    "task": "ردیف فروش در صفحه کوچک داخل قاب نمی‌ماند به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-008",
+    "task": "the merchandise result block clips at handset width",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-009",
+    "task": "a catalog row escapes its container on compact screens after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-010",
+    "task": "tabbing through the buying inputs stops midway",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-011",
+    "task": "keyboard movement across purchase details is incomplete after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-012",
+    "task": "حرکت با کلید تب بین ورودی های خرید نصفه می‌ماند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-013",
+    "task": "جابجایی کیبوردی بین اطلاعات پرداخت کامل نیست به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-014",
+    "task": "tabbing through the buying inputs stops midway",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-015",
+    "task": "keyboard movement across purchase details is incomplete after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-016",
+    "task": "حرکت با کلید تب بین ورودی های خرید نصفه می‌ماند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-017",
+    "task": "جابجایی کیبوردی بین اطلاعات پرداخت کامل نیست به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-018",
+    "task": "tabbing through the buying inputs stops midway",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-019",
+    "task": "keyboard movement across purchase details is incomplete after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-020",
+    "task": "the links across the top collide when width shrinks",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-021",
+    "task": "upper site navigation stacks incorrectly on handhelds after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-022",
+    "task": "پیوندهای بالای سایت در عرض کم روی هم می‌افتند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-023",
+    "task": "ناوبری قسمت بالایی در گوشی به هم می‌ریزد به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-024",
+    "task": "the links across the top collide when width shrinks",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-025",
+    "task": "upper site navigation stacks incorrectly on handhelds after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-026",
+    "task": "پیوندهای بالای سایت در عرض کم روی هم می‌افتند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-027",
+    "task": "ناوبری قسمت بالایی در گوشی به هم می‌ریزد به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-028",
+    "task": "the links across the top collide when width shrinks",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-029",
+    "task": "upper site navigation stacks incorrectly on handhelds after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-030",
+    "task": "delivery destinations in the account are laid out incorrectly",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-031",
+    "task": "the places used for shipment vanish from account settings after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-032",
+    "task": "نشانی های تحویل در حساب چیدمان درستی ندارند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-033",
+    "task": "مقصدهای ارسال از تنظیمات حساب ناپدید می‌شوند به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-034",
+    "task": "delivery destinations in the account are laid out incorrectly",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-035",
+    "task": "the places used for shipment vanish from account settings after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-036",
+    "task": "نشانی های تحویل در حساب چیدمان درستی ندارند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-037",
+    "task": "مقصدهای ارسال از تنظیمات حساب ناپدید می‌شوند به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-038",
+    "task": "delivery destinations in the account are laid out incorrectly",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-039",
+    "task": "the places used for shipment vanish from account settings after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-040",
+    "task": "recent account alerts never reach the message stream",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-041",
+    "task": "the user warning feed is missing fresh entries after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-042",
+    "task": "هشدارهای تازه به جریان پیام حساب نمی‌رسند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-043",
+    "task": "بخش پیام های هشدار ورودی جدید ندارد به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-044",
+    "task": "recent account alerts never reach the message stream",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-045",
+    "task": "the user warning feed is missing fresh entries after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-046",
+    "task": "هشدارهای تازه به جریان پیام حساب نمی‌رسند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-047",
+    "task": "بخش پیام های هشدار ورودی جدید ندارد به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-048",
+    "task": "recent account alerts never reach the message stream",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-049",
+    "task": "the user warning feed is missing fresh entries after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-050",
+    "task": "recent billing documents are absent from the record",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-051",
+    "task": "the receipt archive omits the newest bill after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-052",
+    "task": "مدارک مالی جدید در سوابق دیده نمی‌شوند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-053",
+    "task": "آرشیو رسید آخرین صورتحساب را ندارد به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-054",
+    "task": "recent billing documents are absent from the record",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-055",
+    "task": "the receipt archive omits the newest bill after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-056",
+    "task": "مدارک مالی جدید در سوابق دیده نمی‌شوند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-057",
+    "task": "آرشیو رسید آخرین صورتحساب را ندارد به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-058",
+    "task": "recent billing documents are absent from the record",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-059",
+    "task": "the receipt archive omits the newest bill after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-060",
+    "task": "bookmarked merchandise disappears from the favorites area",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-061",
+    "task": "items marked for later are absent from the saved collection after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-062",
+    "task": "کالاهای نشان شده برای بعد از بخش علاقه مندی محو می‌شوند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-063",
+    "task": "موارد نگه داشته شده در مجموعه ذخیره دیده نمی‌شوند به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-064",
+    "task": "bookmarked merchandise disappears from the favorites area",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-065",
+    "task": "items marked for later are absent from the saved collection after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-066",
+    "task": "کالاهای نشان شده برای بعد از بخش علاقه مندی محو می‌شوند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-067",
+    "task": "موارد نگه داشته شده در مجموعه ذخیره دیده نمی‌شوند به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-068",
+    "task": "bookmarked merchandise disappears from the favorites area",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-069",
+    "task": "items marked for later are absent from the saved collection after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-070",
+    "task": "admin records cannot be panned sideways on a phone",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-071",
+    "task": "the management grid exceeds the narrow display after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-072",
+    "task": "رکوردهای مدیریتی روی گوشی حرکت افقی درستی ندارند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-073",
+    "task": "شبکه اطلاعات پنل از نمایشگر باریک بیرون می‌زند به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-074",
+    "task": "admin records cannot be panned sideways on a phone",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-075",
+    "task": "the management grid exceeds the narrow display after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-076",
+    "task": "رکوردهای مدیریتی روی گوشی حرکت افقی درستی ندارند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-077",
+    "task": "شبکه اطلاعات پنل از نمایشگر باریک بیرون می‌زند به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-078",
+    "task": "admin records cannot be panned sideways on a phone",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-079",
+    "task": "the management grid exceeds the narrow display after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-080",
+    "task": "the image viewer will not move to the next product photo",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-081",
+    "task": "product media remains stuck on one frame after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-082",
+    "task": "نمای عکس کالا به تصویر بعدی نمی‌رود در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-083",
+    "task": "رسانه محصول روی یک تصویر گیر کرده است به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-084",
+    "task": "the image viewer will not move to the next product photo",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-085",
+    "task": "product media remains stuck on one frame after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-086",
+    "task": "نمای عکس کالا به تصویر بعدی نمی‌رود در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-087",
+    "task": "رسانه محصول روی یک تصویر گیر کرده است به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-088",
+    "task": "the image viewer will not move to the next product photo",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-089",
+    "task": "product media remains stuck on one frame after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-090",
+    "task": "refining results by price and group has no effect",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-091",
+    "task": "result narrowing controls are ignored by search after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-092",
+    "task": "محدودسازی نتیجه بر اساس قیمت و گروه اثری ندارد در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-093",
+    "task": "کنترل های محدود کردن جستجو نادیده گرفته می‌شوند به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-094",
+    "task": "refining results by price and group has no effect",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-095",
+    "task": "result narrowing controls are ignored by search after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-096",
+    "task": "محدودسازی نتیجه بر اساس قیمت و گروه اثری ندارد در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-097",
+    "task": "کنترل های محدود کردن جستجو نادیده گرفته می‌شوند به طور مداوم",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-098",
+    "task": "refining results by price and group has no effect",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-099",
+    "task": "result narrowing controls are ignored by search after resize",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-000",
+    "task": "repair the live sports scoreboard",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-001",
+    "task": "the map route planner is broken",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-002",
+    "task": "fix the voice recorder controls",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-003",
+    "task": "جدول امتیاز زنده مسابقه را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-open-004",
+    "task": "مسیر یاب نقشه خراب است",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-open-005",
+    "task": "کنترل ضبط صدا را اصلاح کن",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-open-006",
+    "task": "repair the live sports scoreboard",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-007",
+    "task": "the map route planner is broken",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-008",
+    "task": "fix the voice recorder controls",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-009",
+    "task": "جدول امتیاز زنده مسابقه را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-open-010",
+    "task": "مسیر یاب نقشه خراب است",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-open-011",
+    "task": "کنترل ضبط صدا را اصلاح کن",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-open-012",
+    "task": "repair the live sports scoreboard",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-013",
+    "task": "the map route planner is broken",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-014",
+    "task": "fix the voice recorder controls",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-015",
+    "task": "جدول امتیاز زنده مسابقه را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-open-016",
+    "task": "مسیر یاب نقشه خراب است",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-open-017",
+    "task": "کنترل ضبط صدا را اصلاح کن",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-open-018",
+    "task": "repair the live sports scoreboard",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-019",
+    "task": "the map route planner is broken",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-020",
+    "task": "fix the voice recorder controls",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-021",
+    "task": "جدول امتیاز زنده مسابقه را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-open-022",
+    "task": "مسیر یاب نقشه خراب است",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-open-023",
+    "task": "کنترل ضبط صدا را اصلاح کن",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-open-024",
+    "task": "repair the live sports scoreboard",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-025",
+    "task": "the map route planner is broken",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-026",
+    "task": "fix the voice recorder controls",
+    "lang": "en"
+  },
+  {
+    "id": "sealed-open-027",
+    "task": "جدول امتیاز زنده مسابقه را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-open-028",
+    "task": "مسیر یاب نقشه خراب است",
+    "lang": "fa"
+  },
+  {
+    "id": "sealed-open-029",
+    "task": "کنترل ضبط صدا را اصلاح کن",
+    "lang": "fa"
+  }
+]

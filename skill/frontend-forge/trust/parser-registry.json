@@ -1,0 +1,12 @@
+{
+  "lighthouse-json": {
+    "version": "2",
+    "code_hash": "3801355be9c4045119c084edb2ad10fedf6c4f58074a7dd29b878b73a65919f0",
+    "allowed_metrics": [
+      "performance",
+      "accessibility",
+      "seo"
+    ],
+    "trust": "TRUSTED"
+  }
+}

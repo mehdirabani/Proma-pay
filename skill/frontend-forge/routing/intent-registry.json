@@ -1,0 +1,192 @@
+{
+  "performance": {
+    "signals_en": [
+      "performance",
+      "slow",
+      "speed",
+      "fast",
+      "load faster",
+      "loading",
+      "lcp",
+      "cls",
+      "inp",
+      "optimize loading"
+    ],
+    "signals_fa": [
+      "سرعت",
+      "کند",
+      "لود",
+      "بارگذاری",
+      "عملکرد",
+      "بهینه"
+    ],
+    "modules": [
+      "performance"
+    ]
+  },
+  "accessibility": {
+    "signals_en": [
+      "accessibility",
+      "accessible",
+      "a11y",
+      "wcag",
+      "screen reader",
+      "keyboard",
+      "focus",
+      "focus behavior"
+    ],
+    "signals_fa": [
+      "دسترسی پذیری",
+      "دسترسی‌پذیری",
+      "خوانشگر",
+      "صفحه خوان",
+      "صفحه‌خوان",
+      "کیبورد",
+      "فوکوس",
+      "تمرکز"
+    ],
+    "modules": [
+      "accessibility"
+    ]
+  },
+  "css-tailwind": {
+    "signals_en": [
+      "css",
+      "tailwind",
+      "spacing",
+      "padding",
+      "margin",
+      "responsive",
+      "overflow",
+      "narrow screen",
+      "responsive bug",
+      "mobile layout"
+    ],
+    "signals_fa": [
+      "فاصله",
+      "پدینگ",
+      "مارجین",
+      "تلویند",
+      "ریسپانسیو",
+      "واکنش گرا",
+      "بیرون زدگی",
+      "بیرون‌زدگی",
+      "موبایل",
+      "عرض کم"
+    ],
+    "modules": [
+      "css-tailwind"
+    ]
+  },
+  "security": {
+    "signals_en": [
+      "security",
+      "xss",
+      "auth",
+      "payment",
+      "untrusted"
+    ],
+    "signals_fa": [
+      "امنیت",
+      "احراز هویت",
+      "پرداخت"
+    ],
+    "modules": [
+      "security"
+    ]
+  },
+  "seo": {
+    "signals_en": [
+      "seo",
+      "metadata",
+      "canonical"
+    ],
+    "signals_fa": [
+      "سئو",
+      "متادیتا",
+      "کنونیکال"
+    ],
+    "modules": [
+      "seo"
+    ]
+  },
+  "ecommerce": {
+    "signals_en": [
+      "ecommerce",
+      "checkout",
+      "cart",
+      "product page"
+    ],
+    "signals_fa": [
+      "فروشگاه",
+      "سبد خرید",
+      "تسویه حساب",
+      "صفحه محصول"
+    ],
+    "modules": [
+      "ecommerce"
+    ]
+  },
+  "react": {
+    "signals_en": [
+      "react",
+      "component",
+      "hook"
+    ],
+    "signals_fa": [
+      "ری اکت",
+      "ری‌اکت",
+      "کامپوننت",
+      "هوک"
+    ],
+    "modules": [
+      "react"
+    ]
+  },
+  "nextjs": {
+    "signals_en": [
+      "nextjs",
+      "next.js",
+      "server component"
+    ],
+    "signals_fa": [
+      "نکست",
+      "کامپوننت سرور"
+    ],
+    "modules": [
+      "nextjs"
+    ]
+  },
+  "ci": {
+    "signals_en": [
+      "github actions",
+      "pipeline",
+      "continuous integration"
+    ],
+    "signals_fa": [
+      "سی آی",
+      "پایپ لاین",
+      "گیت هاب اکشن"
+    ],
+    "modules": [
+      "ci-internals"
+    ]
+  },
+  "provenance": {
+    "signals_en": [
+      "provenance",
+      "attestation",
+      "receipt",
+      "signer"
+    ],
+    "signals_fa": [
+      "اثبات منشا",
+      "تصدیق",
+      "رسید اجرایی",
+      "امضاکننده"
+    ],
+    "modules": [
+      "provenance-internals"
+    ]
+  }
+}

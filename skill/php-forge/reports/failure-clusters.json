@@ -1,0 +1,42 @@
+{
+  "total_failures": 27,
+  "by_required_domain": {
+    "security": 14,
+    "database": 4,
+    "fintech": 9
+  },
+  "observed_routes": {
+    "testing": 16,
+    "performance": 3,
+    "api + testing": 3,
+    "php-core + testing": 1,
+    "database + testing": 1,
+    "<none>": 1,
+    "security + testing": 1,
+    "fintech + security + testing": 1
+  },
+  "noise_markers": {
+    "cpu_memory": 3,
+    "happy_path": 21,
+    "readme": 20,
+    "formatting": 1,
+    "blue_theme": 2
+  },
+  "domain_results": {
+    "database": {
+      "cases": 32,
+      "passed": 28,
+      "recall": 87.5
+    },
+    "fintech": {
+      "cases": 72,
+      "passed": 63,
+      "recall": 87.5
+    },
+    "security": {
+      "cases": 96,
+      "passed": 82,
+      "recall": 85.42
+    }
+  }
+}

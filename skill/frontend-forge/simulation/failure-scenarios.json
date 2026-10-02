@@ -1,0 +1,194 @@
+[
+  {
+    "id": "missing_dependency",
+    "setup_events": [
+      "TaskClassified",
+      "ContextResolved",
+      "DependenciesAnalyzed"
+    ],
+    "inject_event": "DependencyFailed",
+    "expected_state": "DEPENDENCY_FAILURE",
+    "recovery_events": [
+      "DependencyAbort"
+    ],
+    "expected_recovery_state": "TASK_ABORTED"
+  },
+  {
+    "id": "broken_execution",
+    "setup_events": [
+      "TaskClassified",
+      "ContextResolved",
+      "DependenciesAnalyzed",
+      "PlanCreated",
+      "PlanValidated",
+      "ExecutionStarted"
+    ],
+    "inject_event": "ExecutionFailed",
+    "expected_state": "EXECUTION_FAILURE",
+    "recovery_events": [
+      "RepairStarted",
+      "RepairCompleted",
+      "RevalidationCompleted",
+      "QualityGatePassed",
+      "KnowledgeUpdated"
+    ],
+    "expected_recovery_state": "TASK_COMPLETED"
+  },
+  {
+    "id": "a11y_regression",
+    "setup_events": [
+      "TaskClassified",
+      "ContextResolved",
+      "DependenciesAnalyzed",
+      "PlanCreated",
+      "PlanValidated",
+      "ExecutionStarted",
+      "OutputGenerated",
+      "QualityValidationStarted"
+    ],
+    "inject_event": "QualityGateFailed",
+    "expected_state": "QUALITY_GATE_FAILURE",
+    "recovery_events": [
+      "RepairStarted",
+      "RepairCompleted",
+      "RevalidationCompleted",
+      "QualityGatePassed",
+      "KnowledgeUpdated"
+    ],
+    "expected_recovery_state": "TASK_COMPLETED"
+  },
+  {
+    "id": "bundle_regression",
+    "setup_events": [
+      "TaskClassified",
+      "ContextResolved",
+      "DependenciesAnalyzed",
+      "PlanCreated",
+      "PlanValidated",
+      "ExecutionStarted",
+      "OutputGenerated",
+      "QualityValidationStarted"
+    ],
+    "inject_event": "RegressionDetected",
+    "expected_state": "REGRESSION_DETECTED",
+    "recovery_events": [
+      "RepairStarted",
+      "RepairCompleted",
+      "RevalidationCompleted",
+      "QualityGatePassed",
+      "KnowledgeUpdated"
+    ],
+    "expected_recovery_state": "TASK_COMPLETED"
+  },
+  {
+    "id": "css_conflict",
+    "setup_events": [
+      "TaskClassified",
+      "ContextResolved",
+      "DependenciesAnalyzed",
+      "PlanCreated",
+      "PlanValidated",
+      "ExecutionStarted",
+      "OutputGenerated",
+      "QualityValidationStarted"
+    ],
+    "inject_event": "TestFailed",
+    "expected_state": "TEST_FAILURE",
+    "recovery_events": [
+      "RepairStarted",
+      "RepairCompleted",
+      "RevalidationCompleted",
+      "QualityGatePassed",
+      "KnowledgeUpdated"
+    ],
+    "expected_recovery_state": "TASK_COMPLETED"
+  },
+  {
+    "id": "mobile_overflow",
+    "setup_events": [
+      "TaskClassified",
+      "ContextResolved",
+      "DependenciesAnalyzed",
+      "PlanCreated",
+      "PlanValidated",
+      "ExecutionStarted",
+      "OutputGenerated",
+      "QualityValidationStarted"
+    ],
+    "inject_event": "TestFailed",
+    "expected_state": "TEST_FAILURE",
+    "recovery_events": [
+      "RepairStarted",
+      "RepairCompleted",
+      "RevalidationCompleted",
+      "QualityGatePassed",
+      "KnowledgeUpdated"
+    ],
+    "expected_recovery_state": "TASK_COMPLETED"
+  },
+  {
+    "id": "state_inconsistency",
+    "setup_events": [
+      "TaskClassified",
+      "ContextResolved",
+      "DependenciesAnalyzed",
+      "PlanCreated",
+      "PlanValidated",
+      "ExecutionStarted",
+      "OutputGenerated",
+      "QualityValidationStarted"
+    ],
+    "inject_event": "TestFailed",
+    "expected_state": "TEST_FAILURE",
+    "recovery_events": [
+      "RepairStarted",
+      "RepairCompleted",
+      "RevalidationCompleted",
+      "QualityGatePassed",
+      "KnowledgeUpdated"
+    ],
+    "expected_recovery_state": "TASK_COMPLETED"
+  },
+  {
+    "id": "agent_disagreement_plan",
+    "setup_events": [
+      "TaskClassified",
+      "ContextResolved",
+      "DependenciesAnalyzed",
+      "PlanCreated"
+    ],
+    "inject_event": "AgentConflictDetected",
+    "expected_state": "AGENT_CONFLICT",
+    "recovery_events": [
+      "AgentConflictResolved",
+      "ExecutionStarted",
+      "OutputGenerated",
+      "QualityValidationStarted",
+      "QualityGatePassed",
+      "KnowledgeUpdated"
+    ],
+    "expected_recovery_state": "TASK_COMPLETED"
+  },
+  {
+    "id": "agent_disagreement_execution",
+    "setup_events": [
+      "TaskClassified",
+      "ContextResolved",
+      "DependenciesAnalyzed",
+      "PlanCreated",
+      "PlanValidated",
+      "ExecutionStarted"
+    ],
+    "inject_event": "AgentConflictDetected",
+    "expected_state": "AGENT_CONFLICT",
+    "recovery_events": [
+      "AgentConflictResolved",
+      "ExecutionStarted",
+      "OutputGenerated",
+      "QualityValidationStarted",
+      "QualityGatePassed",
+      "KnowledgeUpdated"
+    ],
+    "expected_recovery_state": "TASK_COMPLETED"
+  }
+]

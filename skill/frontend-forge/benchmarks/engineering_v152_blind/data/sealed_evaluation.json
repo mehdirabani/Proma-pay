@@ -1,0 +1,174 @@
+{
+  "blind-00": {
+    "target": "product-tile-0.css",
+    "must_contain": [
+      "min-width: 0;"
+    ],
+    "must_not_contain": [
+      "min-width:600px;"
+    ]
+  },
+  "blind-01": {
+    "target": "payment-field-1.tsx",
+    "must_contain": [
+      "aria-label=\"Field\""
+    ],
+    "must_not_contain": []
+  },
+  "blind-02": {
+    "target": "profile-nav-2.tsx",
+    "must_contain": [
+      "href=\"/profile\""
+    ],
+    "must_not_contain": [
+      "href=\"/profil\""
+    ]
+  },
+  "blind-03": {
+    "target": "price-props-3.tsx",
+    "must_contain": [
+      "price: number"
+    ],
+    "must_not_contain": [
+      "price:string"
+    ]
+  },
+  "blind-04": {
+    "target": "results-pane-4.tsx",
+    "must_contain": [
+      "Loading..."
+    ],
+    "must_not_contain": [
+      "if (loading) return null;"
+    ]
+  },
+  "blind-05": {
+    "target": "product-tile-5.css",
+    "must_contain": [
+      "min-width: 0;"
+    ],
+    "must_not_contain": [
+      "min-width:600px;"
+    ]
+  },
+  "blind-06": {
+    "target": "payment-field-6.tsx",
+    "must_contain": [
+      "aria-label=\"Field\""
+    ],
+    "must_not_contain": []
+  },
+  "blind-07": {
+    "target": "profile-nav-7.tsx",
+    "must_contain": [
+      "href=\"/profile\""
+    ],
+    "must_not_contain": [
+      "href=\"/profil\""
+    ]
+  },
+  "blind-08": {
+    "target": "price-props-8.tsx",
+    "must_contain": [
+      "price: number"
+    ],
+    "must_not_contain": [
+      "price:string"
+    ]
+  },
+  "blind-09": {
+    "target": "results-pane-9.tsx",
+    "must_contain": [
+      "Loading..."
+    ],
+    "must_not_contain": [
+      "if (loading) return null;"
+    ]
+  },
+  "blind-10": {
+    "target": "product-tile-10.css",
+    "must_contain": [
+      "min-width: 0;"
+    ],
+    "must_not_contain": [
+      "min-width:600px;"
+    ]
+  },
+  "blind-11": {
+    "target": "payment-field-11.tsx",
+    "must_contain": [
+      "aria-label=\"Field\""
+    ],
+    "must_not_contain": []
+  },
+  "blind-12": {
+    "target": "profile-nav-12.tsx",
+    "must_contain": [
+      "href=\"/profile\""
+    ],
+    "must_not_contain": [
+      "href=\"/profil\""
+    ]
+  },
+  "blind-13": {
+    "target": "price-props-13.tsx",
+    "must_contain": [
+      "price: number"
+    ],
+    "must_not_contain": [
+      "price:string"
+    ]
+  },
+  "blind-14": {
+    "target": "results-pane-14.tsx",
+    "must_contain": [
+      "Loading..."
+    ],
+    "must_not_contain": [
+      "if (loading) return null;"
+    ]
+  },
+  "blind-15": {
+    "target": "product-tile-15.css",
+    "must_contain": [
+      "min-width: 0;"
+    ],
+    "must_not_contain": [
+      "min-width:600px;"
+    ]
+  },
+  "blind-16": {
+    "target": "payment-field-16.tsx",
+    "must_contain": [
+      "aria-label=\"Field\""
+    ],
+    "must_not_contain": []
+  },
+  "blind-17": {
+    "target": "profile-nav-17.tsx",
+    "must_contain": [
+      "href=\"/profile\""
+    ],
+    "must_not_contain": [
+      "href=\"/profil\""
+    ]
+  },
+  "blind-18": {
+    "target": "price-props-18.tsx",
+    "must_contain": [
+      "price: number"
+    ],
+    "must_not_contain": [
+      "price:string"
+    ]
+  },
+  "blind-19": {
+    "target": "results-pane-19.tsx",
+    "must_contain": [
+      "Loading..."
+    ],
+    "must_not_contain": [
+      "if (loading) return null;"
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+name: PHPForge X
+version: 1.2.0
+codename: Generalization-Hardened, Leak-Free, Semantic PHP Engineering Runtime
+entrypoint: SKILL.md
+runtime_registry: manifests/module-registry.yaml
+python: '>=3.10'

@@ -1,0 +1,6 @@
+{
+  "benchmark_version": "retrieval-benchmark-v2",
+  "ood_cases": 150,
+  "calibration_cases": 300,
+  "ood_hash": "f518ab06c074c4a0c87ee6cb9e439bc7ded46e9a8c3f743a0f922ab9b7307425"
+}

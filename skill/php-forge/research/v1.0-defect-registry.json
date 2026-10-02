@@ -1,0 +1,104 @@
+[
+  {
+    "id": "D001",
+    "defect": "13 SKILL.md files violate exactly-one entrypoint",
+    "status": "verified",
+    "severity": "P0"
+  },
+  {
+    "id": "D002",
+    "defect": "Router uses keyword substring matching",
+    "status": "verified",
+    "severity": "P0"
+  },
+  {
+    "id": "D003",
+    "defect": "Persian coverage absent",
+    "status": "verified",
+    "severity": "P0"
+  },
+  {
+    "id": "D004",
+    "defect": "Mixed-language normalization absent",
+    "status": "verified",
+    "severity": "P1"
+  },
+  {
+    "id": "D005",
+    "defect": "Negation resolution absent",
+    "status": "verified",
+    "severity": "P0"
+  },
+  {
+    "id": "D006",
+    "defect": "Scope-aware risk absent",
+    "status": "verified",
+    "severity": "P0"
+  },
+  {
+    "id": "D007",
+    "defect": "module.yaml not routing source of truth",
+    "status": "verified",
+    "severity": "P0"
+  },
+  {
+    "id": "D008",
+    "defect": "Dependencies duplicated/hard-coded in Python",
+    "status": "verified",
+    "severity": "P0"
+  },
+  {
+    "id": "D009",
+    "defect": "Repo framework uncertainty encoded with ? string",
+    "status": "verified",
+    "severity": "P1"
+  },
+  {
+    "id": "D010",
+    "defect": "Adversarial/OOD tests mostly Markdown, non-executable",
+    "status": "verified",
+    "severity": "P0"
+  },
+  {
+    "id": "D011",
+    "defect": "No multilingual benchmark",
+    "status": "verified",
+    "severity": "P0"
+  },
+  {
+    "id": "D012",
+    "defect": "No external LLM A/B execution evidence",
+    "status": "verified",
+    "severity": "P1"
+  },
+  {
+    "id": "D013",
+    "defect": "No measured tokenizer-backed token savings",
+    "status": "verified",
+    "severity": "P1"
+  },
+  {
+    "id": "D014",
+    "defect": "No full CI pipeline",
+    "status": "verified",
+    "severity": "P0"
+  },
+  {
+    "id": "D015",
+    "defect": "Context cost heuristic units only",
+    "status": "verified",
+    "severity": "P1"
+  },
+  {
+    "id": "D016",
+    "defect": "Monorepo/package scope weak",
+    "status": "verified",
+    "severity": "P1"
+  },
+  {
+    "id": "D017",
+    "defect": "High-risk completion gates incomplete",
+    "status": "verified",
+    "severity": "P0"
+  }
+]

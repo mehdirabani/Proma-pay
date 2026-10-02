@@ -1,0 +1,15 @@
+{
+  "status": "VERIFIED_FIXTURE",
+  "chain": [
+    "signed observation",
+    "signed evidence",
+    "target decision",
+    "causal root cause",
+    "plan hash",
+    "autonomy decision",
+    "execution policy",
+    "signed change receipt",
+    "signed validation receipt",
+    "hidden evaluation"
+  ]
+}

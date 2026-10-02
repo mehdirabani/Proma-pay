@@ -1,0 +1,4 @@
+checked_at: '2026-10-01'
+scope: V1.1 runtime hardening; no new claims about latest framework APIs are required
+  for routing runtime
+facts: []

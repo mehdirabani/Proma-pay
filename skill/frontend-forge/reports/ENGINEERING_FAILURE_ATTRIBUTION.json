@@ -1,0 +1,16 @@
+{
+  "measurement": "VERIFIED_BLIND_MULTI_FILE",
+  "failure_distribution": {
+    "PASS": 50
+  },
+  "stages": [
+    "OBSERVATION_FAILURE",
+    "EVIDENCE_AUTHORITY_FAILURE",
+    "TARGET_VALIDATION_FAILURE",
+    "DIAGNOSIS_FAILURE",
+    "POLICY_BLOCK",
+    "PATCH_GENERATION_FAILURE",
+    "PATCH_APPLICATION_FAILURE",
+    "VALIDATION_FAILURE"
+  ]
+}

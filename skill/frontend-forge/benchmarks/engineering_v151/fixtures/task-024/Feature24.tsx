@@ -1,0 +1,1 @@
+export const Box24=()=> <div className="p-[13px]">Box</div>

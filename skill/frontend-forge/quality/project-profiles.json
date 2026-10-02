@@ -1,0 +1,221 @@
+{
+  "ecommerce": {
+    "weights": {
+      "architecture": 0.12,
+      "code_quality": 0.1,
+      "ux": 0.16,
+      "performance": 0.16,
+      "accessibility": 0.12,
+      "seo": 0.14,
+      "security": 0.1,
+      "maintainability": 0.1
+    },
+    "blocking": {
+      "accessibility": 85,
+      "performance": 80,
+      "security": 90,
+      "seo": 80
+    },
+    "minimum_overall": 86,
+    "required_metrics": [
+      "architecture",
+      "code_quality",
+      "ux",
+      "performance",
+      "accessibility",
+      "seo",
+      "security",
+      "maintainability"
+    ]
+  },
+  "saas": {
+    "weights": {
+      "architecture": 0.15,
+      "code_quality": 0.14,
+      "ux": 0.14,
+      "performance": 0.12,
+      "accessibility": 0.13,
+      "seo": 0.06,
+      "security": 0.11,
+      "maintainability": 0.15
+    },
+    "blocking": {
+      "accessibility": 86,
+      "security": 90,
+      "maintainability": 84
+    },
+    "minimum_overall": 86,
+    "required_metrics": [
+      "architecture",
+      "code_quality",
+      "ux",
+      "performance",
+      "accessibility",
+      "security",
+      "maintainability"
+    ]
+  },
+  "dashboard": {
+    "weights": {
+      "architecture": 0.16,
+      "code_quality": 0.15,
+      "ux": 0.1,
+      "performance": 0.1,
+      "accessibility": 0.15,
+      "seo": 0.02,
+      "security": 0.12,
+      "maintainability": 0.2
+    },
+    "blocking": {
+      "accessibility": 88,
+      "security": 90,
+      "maintainability": 85
+    },
+    "minimum_overall": 86,
+    "required_metrics": [
+      "architecture",
+      "code_quality",
+      "ux",
+      "performance",
+      "accessibility",
+      "security",
+      "maintainability"
+    ]
+  },
+  "landing": {
+    "weights": {
+      "architecture": 0.08,
+      "code_quality": 0.08,
+      "ux": 0.16,
+      "performance": 0.2,
+      "accessibility": 0.12,
+      "seo": 0.18,
+      "security": 0.06,
+      "maintainability": 0.12
+    },
+    "blocking": {
+      "performance": 85,
+      "accessibility": 85,
+      "seo": 85,
+      "security": 85
+    },
+    "minimum_overall": 86,
+    "required_metrics": [
+      "architecture",
+      "code_quality",
+      "ux",
+      "performance",
+      "accessibility",
+      "seo",
+      "security",
+      "maintainability"
+    ]
+  },
+  "portfolio": {
+    "weights": {
+      "architecture": 0.09,
+      "code_quality": 0.1,
+      "ux": 0.18,
+      "performance": 0.18,
+      "accessibility": 0.14,
+      "seo": 0.14,
+      "security": 0.05,
+      "maintainability": 0.12
+    },
+    "blocking": {
+      "performance": 82,
+      "accessibility": 86,
+      "seo": 80
+    },
+    "minimum_overall": 84,
+    "required_metrics": [
+      "architecture",
+      "code_quality",
+      "ux",
+      "performance",
+      "accessibility",
+      "seo",
+      "maintainability"
+    ]
+  },
+  "content-platform": {
+    "weights": {
+      "architecture": 0.1,
+      "code_quality": 0.1,
+      "ux": 0.1,
+      "performance": 0.16,
+      "accessibility": 0.13,
+      "seo": 0.2,
+      "security": 0.08,
+      "maintainability": 0.13
+    },
+    "blocking": {
+      "performance": 82,
+      "accessibility": 86,
+      "seo": 88,
+      "security": 86
+    },
+    "minimum_overall": 86,
+    "required_metrics": [
+      "architecture",
+      "code_quality",
+      "performance",
+      "accessibility",
+      "seo",
+      "security",
+      "maintainability"
+    ]
+  },
+  "web-application": {
+    "weights": {
+      "architecture": 0.16,
+      "code_quality": 0.15,
+      "ux": 0.11,
+      "performance": 0.12,
+      "accessibility": 0.13,
+      "seo": 0.03,
+      "security": 0.14,
+      "maintainability": 0.16
+    },
+    "blocking": {
+      "accessibility": 86,
+      "security": 92,
+      "maintainability": 84
+    },
+    "minimum_overall": 86,
+    "required_metrics": [
+      "architecture",
+      "code_quality",
+      "ux",
+      "performance",
+      "accessibility",
+      "security",
+      "maintainability"
+    ]
+  },
+  "design-system": {
+    "weights": {
+      "architecture": 0.18,
+      "code_quality": 0.15,
+      "ux": 0.08,
+      "performance": 0.08,
+      "accessibility": 0.16,
+      "seo": 0.01,
+      "security": 0.04,
+      "maintainability": 0.3
+    },
+    "blocking": {
+      "accessibility": 90,
+      "maintainability": 90,
+      "architecture": 88
+    },
+    "minimum_overall": 88,
+    "required_metrics": [
+      "architecture",
+      "code_quality",
+      "performance",
+      "accessibility",
+      "maintainability"
+    ]
+  }
+}

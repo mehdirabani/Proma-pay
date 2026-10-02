@@ -1,0 +1,17 @@
+{
+  "change": "ProductCard",
+  "affected_components": 8,
+  "affected_pages": 4,
+  "risk": "medium",
+  "required_tests": [
+    "visual",
+    "responsive",
+    "unit",
+    "accessibility"
+  ],
+  "required_agents": [
+    "ui-agent",
+    "qa-agent",
+    "accessibility-agent"
+  ]
+}

@@ -1,0 +1,74 @@
+[
+  {
+    "id": "product-en-explicit",
+    "task": "Fix ProductCard overflow",
+    "lang": "en",
+    "type": "css"
+  },
+  {
+    "id": "product-en-implicit",
+    "task": "Fix the mobile overflow in the product tile",
+    "lang": "en",
+    "type": "css"
+  },
+  {
+    "id": "product-fa-implicit",
+    "task": "کارت محصول در موبایل از صفحه بیرون می زند",
+    "lang": "fa",
+    "type": "css"
+  },
+  {
+    "id": "checkout-en",
+    "task": "Make the checkout payment form keyboard accessible",
+    "lang": "en",
+    "type": "accessibility"
+  },
+  {
+    "id": "checkout-fa",
+    "task": "فرم پرداخت با کیبورد قابل استفاده نیست",
+    "lang": "fa",
+    "type": "accessibility"
+  },
+  {
+    "id": "navbar-en",
+    "task": "The navigation menu breaks on narrow screens",
+    "lang": "en",
+    "type": "responsive"
+  },
+  {
+    "id": "search-fa",
+    "task": "فیلتر جستجو در موبایل درست کار نمی کند",
+    "lang": "fa",
+    "type": "behavior"
+  },
+  {
+    "id": "dashboard-fa",
+    "task": "جدول داشبورد روی موبایل اسکرول خراب دارد",
+    "lang": "fa",
+    "type": "responsive"
+  },
+  {
+    "id": "modal-en",
+    "task": "Fix the dialog popup focus behavior",
+    "lang": "en",
+    "type": "accessibility"
+  },
+  {
+    "id": "cart-en",
+    "task": "The shopping cart drawer is slow to open",
+    "lang": "en",
+    "type": "performance"
+  },
+  {
+    "id": "profile-fa",
+    "task": "پروفایل کاربر در صفحه حساب خراب است",
+    "lang": "fa",
+    "type": "behavior"
+  },
+  {
+    "id": "gallery-en",
+    "task": "Optimize the product image gallery loading",
+    "lang": "en",
+    "type": "performance"
+  }
+]

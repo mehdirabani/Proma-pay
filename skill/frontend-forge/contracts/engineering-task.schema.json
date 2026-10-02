@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "required": [
+    "goal",
+    "operation",
+    "task_type",
+    "domains",
+    "explicit_requirements",
+    "implicit_requirements",
+    "constraints",
+    "acceptance_criteria",
+    "unknowns",
+    "risk"
+  ]
+}

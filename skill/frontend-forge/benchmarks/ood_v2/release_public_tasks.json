@@ -1,0 +1,602 @@
+[
+  {
+    "id": "final-000",
+    "task": "small-screen merchandising entries escape the visible column",
+    "lang": "en"
+  },
+  {
+    "id": "final-001",
+    "task": "the sales listing block is clipped on a handset during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-002",
+    "task": "ورودی فهرست فروش در صفحه گوشی از ستون بیرون می‌رود در رابط فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "final-003",
+    "task": "بلاک نمایش کالای فروش در نمایشگر کوچک بریده می‌شود",
+    "lang": "fa"
+  },
+  {
+    "id": "final-004",
+    "task": "small-screen merchandising entries escape the visible column during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-005",
+    "task": "the sales listing block is clipped on a handset in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-006",
+    "task": "ورودی فهرست فروش در صفحه گوشی از ستون بیرون می‌رود",
+    "lang": "fa"
+  },
+  {
+    "id": "final-007",
+    "task": "بلاک نمایش کالای فروش در نمایشگر کوچک بریده می‌شود هنگام تغییر اندازه",
+    "lang": "fa"
+  },
+  {
+    "id": "final-008",
+    "task": "small-screen merchandising entries escape the visible column in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-009",
+    "task": "keyboard traversal across buying details gets interrupted",
+    "lang": "en"
+  },
+  {
+    "id": "final-010",
+    "task": "focus skips controls while entering purchase information during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-011",
+    "task": "پیمایش کیبوردی اطلاعات خرید وسط کار قطع می‌شود در رابط فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "final-012",
+    "task": "فوکوس هنگام وارد کردن اطلاعات خرید چند کنترل را رد می‌کند",
+    "lang": "fa"
+  },
+  {
+    "id": "final-013",
+    "task": "keyboard traversal across buying details gets interrupted during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-014",
+    "task": "focus skips controls while entering purchase information in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-015",
+    "task": "پیمایش کیبوردی اطلاعات خرید وسط کار قطع می‌شود",
+    "lang": "fa"
+  },
+  {
+    "id": "final-016",
+    "task": "فوکوس هنگام وارد کردن اطلاعات خرید چند کنترل را رد می‌کند هنگام تغییر اندازه",
+    "lang": "fa"
+  },
+  {
+    "id": "final-017",
+    "task": "keyboard traversal across buying details gets interrupted in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-018",
+    "task": "top-of-site links collide when horizontal room is limited",
+    "lang": "en"
+  },
+  {
+    "id": "final-019",
+    "task": "the upper navigation cluster no longer fits on phones during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-020",
+    "task": "پیوندهای قسمت بالای سایت در فضای افقی کم روی هم می‌افتند در رابط فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "final-021",
+    "task": "مجموعه ناوبری بالای صفحه روی گوشی جا نمی‌شود",
+    "lang": "fa"
+  },
+  {
+    "id": "final-022",
+    "task": "top-of-site links collide when horizontal room is limited during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-023",
+    "task": "the upper navigation cluster no longer fits on phones in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-024",
+    "task": "پیوندهای قسمت بالای سایت در فضای افقی کم روی هم می‌افتند",
+    "lang": "fa"
+  },
+  {
+    "id": "final-025",
+    "task": "مجموعه ناوبری بالای صفحه روی گوشی جا نمی‌شود هنگام تغییر اندازه",
+    "lang": "fa"
+  },
+  {
+    "id": "final-026",
+    "task": "top-of-site links collide when horizontal room is limited in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-027",
+    "task": "shipment destinations saved in the account are rendered incorrectly",
+    "lang": "en"
+  },
+  {
+    "id": "final-028",
+    "task": "the account loses the places used for deliveries during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-029",
+    "task": "مقصدهای تحویل ثبت شده در حساب اشتباه نمایش داده می‌شوند در رابط فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "final-030",
+    "task": "حساب کاربری محل های مربوط به ارسال را گم می‌کند",
+    "lang": "fa"
+  },
+  {
+    "id": "final-031",
+    "task": "shipment destinations saved in the account are rendered incorrectly during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-032",
+    "task": "the account loses the places used for deliveries in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-033",
+    "task": "مقصدهای تحویل ثبت شده در حساب اشتباه نمایش داده می‌شوند",
+    "lang": "fa"
+  },
+  {
+    "id": "final-034",
+    "task": "حساب کاربری محل های مربوط به ارسال را گم می‌کند هنگام تغییر اندازه",
+    "lang": "fa"
+  },
+  {
+    "id": "final-035",
+    "task": "shipment destinations saved in the account are rendered incorrectly in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-036",
+    "task": "fresh warnings never appear in the account message stream",
+    "lang": "en"
+  },
+  {
+    "id": "final-037",
+    "task": "new user alerts are absent from the message feed during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-038",
+    "task": "هشدارهای تازه وارد جریان پیام حساب نمی‌شوند در رابط فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "final-039",
+    "task": "اعلان جدید در خوراک پیام کاربر وجود ندارد",
+    "lang": "fa"
+  },
+  {
+    "id": "final-040",
+    "task": "fresh warnings never appear in the account message stream during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-041",
+    "task": "new user alerts are absent from the message feed in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-042",
+    "task": "هشدارهای تازه وارد جریان پیام حساب نمی‌شوند",
+    "lang": "fa"
+  },
+  {
+    "id": "final-043",
+    "task": "اعلان جدید در خوراک پیام کاربر وجود ندارد هنگام تغییر اندازه",
+    "lang": "fa"
+  },
+  {
+    "id": "final-044",
+    "task": "fresh warnings never appear in the account message stream in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-045",
+    "task": "the financial record omits the latest billing document",
+    "lang": "en"
+  },
+  {
+    "id": "final-046",
+    "task": "new receipts are absent from the billing archive during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-047",
+    "task": "پرونده مالی آخرین مدرک صورتحساب را ندارد در رابط فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "final-048",
+    "task": "رسیدهای جدید از آرشیو مالی حذف شده‌اند",
+    "lang": "fa"
+  },
+  {
+    "id": "final-049",
+    "task": "the financial record omits the latest billing document during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-050",
+    "task": "new receipts are absent from the billing archive in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-051",
+    "task": "پرونده مالی آخرین مدرک صورتحساب را ندارد",
+    "lang": "fa"
+  },
+  {
+    "id": "final-052",
+    "task": "رسیدهای جدید از آرشیو مالی حذف شده‌اند هنگام تغییر اندازه",
+    "lang": "fa"
+  },
+  {
+    "id": "final-053",
+    "task": "the financial record omits the latest billing document in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-054",
+    "task": "merchandise kept for later disappears from the favorites collection",
+    "lang": "en"
+  },
+  {
+    "id": "final-055",
+    "task": "bookmarked products do not show in the retained-items area during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-056",
+    "task": "کالاهایی که برای بعد نگه داشته شده‌اند در مجموعه محبوب‌ها نیستند در رابط فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "final-057",
+    "task": "محصولات نشانه گذاری شده در بخش موارد نگه داشته شده دیده نمی‌شوند",
+    "lang": "fa"
+  },
+  {
+    "id": "final-058",
+    "task": "merchandise kept for later disappears from the favorites collection during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-059",
+    "task": "bookmarked products do not show in the retained-items area in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-060",
+    "task": "کالاهایی که برای بعد نگه داشته شده‌اند در مجموعه محبوب‌ها نیستند",
+    "lang": "fa"
+  },
+  {
+    "id": "final-061",
+    "task": "محصولات نشانه گذاری شده در بخش موارد نگه داشته شده دیده نمی‌شوند هنگام تغییر اندازه",
+    "lang": "fa"
+  },
+  {
+    "id": "final-062",
+    "task": "merchandise kept for later disappears from the favorites collection in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-063",
+    "task": "management records cannot move sideways on a narrow display",
+    "lang": "en"
+  },
+  {
+    "id": "final-064",
+    "task": "the admin data grid extends past the phone edge during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-065",
+    "task": "رکوردهای مدیریتی روی نمایشگر باریک حرکت افقی ندارند در رابط فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "final-066",
+    "task": "شبکه داده پنل از لبه گوشی بیرون می‌زند",
+    "lang": "fa"
+  },
+  {
+    "id": "final-067",
+    "task": "management records cannot move sideways on a narrow display during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-068",
+    "task": "the admin data grid extends past the phone edge in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-069",
+    "task": "رکوردهای مدیریتی روی نمایشگر باریک حرکت افقی ندارند",
+    "lang": "fa"
+  },
+  {
+    "id": "final-070",
+    "task": "شبکه داده پنل از لبه گوشی بیرون می‌زند هنگام تغییر اندازه",
+    "lang": "fa"
+  },
+  {
+    "id": "final-071",
+    "task": "management records cannot move sideways on a narrow display in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-072",
+    "task": "the merchandise image viewer remains on a single frame",
+    "lang": "en"
+  },
+  {
+    "id": "final-073",
+    "task": "advancing to another product picture no longer works during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-074",
+    "task": "نمایشگر تصویر کالا روی یک فریم می‌ماند در رابط فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "final-075",
+    "task": "رفتن به عکس بعدی محصول دیگر کار نمی‌کند",
+    "lang": "fa"
+  },
+  {
+    "id": "final-076",
+    "task": "the merchandise image viewer remains on a single frame during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-077",
+    "task": "advancing to another product picture no longer works in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-078",
+    "task": "نمایشگر تصویر کالا روی یک فریم می‌ماند",
+    "lang": "fa"
+  },
+  {
+    "id": "final-079",
+    "task": "رفتن به عکس بعدی محصول دیگر کار نمی‌کند هنگام تغییر اندازه",
+    "lang": "fa"
+  },
+  {
+    "id": "final-080",
+    "task": "the merchandise image viewer remains on a single frame in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-081",
+    "task": "search results ignore narrowing controls for group and price",
+    "lang": "en"
+  },
+  {
+    "id": "final-082",
+    "task": "refinement controls fail to reduce the result set during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-083",
+    "task": "نتایج جستجو کنترل محدودسازی قیمت و گروه را نادیده می‌گیرند در رابط فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "final-084",
+    "task": "ابزارهای محدود کردن نتیجه تعداد نتایج را کم نمی‌کنند",
+    "lang": "fa"
+  },
+  {
+    "id": "final-085",
+    "task": "search results ignore narrowing controls for group and price during resize",
+    "lang": "en"
+  },
+  {
+    "id": "final-086",
+    "task": "refinement controls fail to reduce the result set in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-087",
+    "task": "نتایج جستجو کنترل محدودسازی قیمت و گروه را نادیده می‌گیرند",
+    "lang": "fa"
+  },
+  {
+    "id": "final-088",
+    "task": "ابزارهای محدود کردن نتیجه تعداد نتایج را کم نمی‌کنند هنگام تغییر اندازه",
+    "lang": "fa"
+  },
+  {
+    "id": "final-089",
+    "task": "search results ignore narrowing controls for group and price in the current UI",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-000",
+    "task": "repair the stock market heatmap",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-001",
+    "task": "the podcast queue is broken",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-002",
+    "task": "fix the flight tracker panel",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-003",
+    "task": "نقشه حرارتی بورس را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "final-open-004",
+    "task": "صف پادکست خراب است",
+    "lang": "fa"
+  },
+  {
+    "id": "final-open-005",
+    "task": "پنل رهگیری پرواز را اصلاح کن",
+    "lang": "fa"
+  },
+  {
+    "id": "final-open-006",
+    "task": "repair the stock market heatmap",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-007",
+    "task": "the podcast queue is broken",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-008",
+    "task": "fix the flight tracker panel",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-009",
+    "task": "نقشه حرارتی بورس را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "final-open-010",
+    "task": "صف پادکست خراب است",
+    "lang": "fa"
+  },
+  {
+    "id": "final-open-011",
+    "task": "پنل رهگیری پرواز را اصلاح کن",
+    "lang": "fa"
+  },
+  {
+    "id": "final-open-012",
+    "task": "repair the stock market heatmap",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-013",
+    "task": "the podcast queue is broken",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-014",
+    "task": "fix the flight tracker panel",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-015",
+    "task": "نقشه حرارتی بورس را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "final-open-016",
+    "task": "صف پادکست خراب است",
+    "lang": "fa"
+  },
+  {
+    "id": "final-open-017",
+    "task": "پنل رهگیری پرواز را اصلاح کن",
+    "lang": "fa"
+  },
+  {
+    "id": "final-open-018",
+    "task": "repair the stock market heatmap",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-019",
+    "task": "the podcast queue is broken",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-020",
+    "task": "fix the flight tracker panel",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-021",
+    "task": "نقشه حرارتی بورس را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "final-open-022",
+    "task": "صف پادکست خراب است",
+    "lang": "fa"
+  },
+  {
+    "id": "final-open-023",
+    "task": "پنل رهگیری پرواز را اصلاح کن",
+    "lang": "fa"
+  },
+  {
+    "id": "final-open-024",
+    "task": "repair the stock market heatmap",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-025",
+    "task": "the podcast queue is broken",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-026",
+    "task": "fix the flight tracker panel",
+    "lang": "en"
+  },
+  {
+    "id": "final-open-027",
+    "task": "نقشه حرارتی بورس را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "final-open-028",
+    "task": "صف پادکست خراب است",
+    "lang": "fa"
+  },
+  {
+    "id": "final-open-029",
+    "task": "پنل رهگیری پرواز را اصلاح کن",
+    "lang": "fa"
+  }
+]

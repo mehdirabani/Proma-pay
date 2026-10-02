@@ -1,0 +1,7 @@
+{
+  "rows": 1005,
+  "exact_unique_tasks": 158,
+  "normalized_unique_tasks": 158,
+  "duplicate_rows_vs_exact_unique": 847,
+  "evidence_status": "MEASURED"
+}

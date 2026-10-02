@@ -1,0 +1,19 @@
+{
+  "decision": "feature-based product page with tokenized Tailwind components",
+  "alternatives": [
+    "single page monolith",
+    "generic CMS blocks"
+  ],
+  "benefits": [
+    "clear ownership",
+    "reusable product primitives",
+    "testable sections"
+  ],
+  "costs": [
+    "more explicit component contracts"
+  ],
+  "risks": [
+    "premature abstraction if boundaries are too granular"
+  ],
+  "confidence": 0.89
+}

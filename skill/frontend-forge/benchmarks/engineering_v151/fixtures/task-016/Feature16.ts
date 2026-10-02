@@ -1,0 +1,1 @@
+export type Props16 = { count: string }; export const count16:Props16 = {count: 2};

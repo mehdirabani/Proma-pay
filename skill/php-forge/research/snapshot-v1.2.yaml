@@ -1,0 +1,36 @@
+checked_at: '2026-10-01'
+sources:
+- title: PHP Supported Versions
+  url: https://www.php.net/supported-versions.php
+  applies_to: PHP version support lifecycle
+  confidence: official
+- title: WordPress Security API
+  url: https://developer.wordpress.org/apis/security/
+  applies_to: WordPress validation sanitization escaping
+  confidence: official
+- title: WordPress Nonces
+  url: https://developer.wordpress.org/apis/security/nonces/
+  applies_to: nonce is not authorization
+  confidence: official
+- title: WooCommerce HPOS
+  url: https://developer.woocommerce.com/docs/features/orders/high-performance-order-storage/
+  applies_to: WooCommerce order storage and CRUD compatibility
+  confidence: official
+  checked_at: '2026-10-01'
+- title: WooCommerce HPOS Extension Recipe Book
+  url: https://developer.woocommerce.com/docs/features/orders/high-performance-order-storage/recipe-book/
+  applies_to: extension compatibility and order APIs
+  confidence: official
+  checked_at: '2026-10-01'
+- title: Action Scheduler
+  url: https://actionscheduler.org/
+  applies_to: WooCommerce/WordPress background job queue behavior
+  confidence: official-project
+  checked_at: '2026-10-01'
+- title: CWE-78
+  url: https://cwe.mitre.org/data/definitions/78.html
+  applies_to: OS command injection ontology mapping
+  confidence: authoritative-taxonomy
+  checked_at: '2026-10-01'
+note: Version-sensitive facts must be rechecked when stale or repository evidence
+  conflicts.

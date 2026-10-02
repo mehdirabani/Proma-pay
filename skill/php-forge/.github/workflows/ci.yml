@@ -1,0 +1,32 @@
+name: PHPForge X v1.2 CI
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install -r requirements.txt
+      - run: python scripts/check_runtime_dependencies.py
+      - run: python scripts/generate_dataset_v2.py
+      - run: python scripts/validate_dataset_isolation.py
+      - run: python scripts/detect_router_hardcoding.py
+      - run: python scripts/validate_python_syntax.py
+      - run: python tests/test_runtime_contracts.py
+      - run: python scripts/run_required_regressions.py
+      - run: python scripts/run_mutation_tests_v2.py
+      - run: python scripts/run_evals.py --split development
+      - run: python scripts/run_evals.py --split validation
+      - run: python scripts/run_category_eval.py --category security
+      - run: python scripts/run_category_eval.py --category fintech
+      - run: python scripts/run_category_eval.py --category negation
+      - run: python scripts/run_category_eval.py --category context
+      - run: python scripts/run_category_eval.py --category ood
+      - run: python scripts/run_category_eval.py --category adversarial
+      - run: python scripts/run_category_eval.py --language fa-mixed
+      - run: python -c "from scripts.run_evals import run; print('PASS hidden-eval interface import')"
+      - run: python scripts/generate_checksums.py
+      - run: python scripts/verify_checksums.py
+      - run: python scripts/release_hygiene.py
+      - run: python scripts/validate_package.py

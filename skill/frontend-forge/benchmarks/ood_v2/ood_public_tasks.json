@@ -1,0 +1,752 @@
+[
+  {
+    "id": "ood-000",
+    "task": "the merchandise block spills outside the phone screen",
+    "lang": "en"
+  },
+  {
+    "id": "ood-001",
+    "task": "catalog entry does not fit on a compact display please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-002",
+    "task": "result unit breaks when the viewport gets narrow in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-003",
+    "task": "listing block overflows on handheld width after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-004",
+    "task": "کادر کالا رو گوشی می‌زنه بیرون",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-005",
+    "task": "بخش محصول روی نمایشگر کوچک جا نمی‌شود لطفا",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-006",
+    "task": "ردیف کالا در موبایل از قاب خارج می‌شود در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-007",
+    "task": "نمای آیتم در عرض کم به هم می‌ریزد بعد از تغییر ظاهر",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-008",
+    "task": "the merchandise block spills outside the phone screen",
+    "lang": "en"
+  },
+  {
+    "id": "ood-009",
+    "task": "catalog entry does not fit on a compact display please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-010",
+    "task": "result unit breaks when the viewport gets narrow in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-011",
+    "task": "listing block overflows on handheld width after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-012",
+    "task": "purchase form cannot be tabbed",
+    "lang": "en"
+  },
+  {
+    "id": "ood-013",
+    "task": "I cannot move through payment fields with the keyboard please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-014",
+    "task": "the screen for entering payment details skips fields in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-015",
+    "task": "keyboard focus is broken while buying after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-016",
+    "task": "با تب نمی‌توانم بین فیلدهای خرید حرکت کنم",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-017",
+    "task": "در صفحه پرداخت با کیبورد نمی‌شود بین ورودی‌ها جابه‌جا شد لطفا",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-018",
+    "task": "فوکوس ورودی های خرید درست جلو نمی‌رود در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-019",
+    "task": "فرم پرداخت با صفحه کلید قابل استفاده نیست بعد از تغییر ظاهر",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-020",
+    "task": "purchase form cannot be tabbed",
+    "lang": "en"
+  },
+  {
+    "id": "ood-021",
+    "task": "I cannot move through payment fields with the keyboard please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-022",
+    "task": "the screen for entering payment details skips fields in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-023",
+    "task": "keyboard focus is broken while buying after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-024",
+    "task": "header links overlap on a narrow viewport",
+    "lang": "en"
+  },
+  {
+    "id": "ood-025",
+    "task": "top links collide on small screens please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-026",
+    "task": "site navigation at the top is cramped on mobile in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-027",
+    "task": "the upper navigation breaks at phone width after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-028",
+    "task": "لینک‌های بالای سایت روی صفحه باریک قاطی می‌شوند",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-029",
+    "task": "منوی بالای سایت تو موبایل روی هم می‌افتد لطفا",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-030",
+    "task": "ناوبری سربرگ در عرض کم خراب می‌شود در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-031",
+    "task": "لینک های هدر روی گوشی همپوشانی دارند بعد از تغییر ظاهر",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-032",
+    "task": "header links overlap on a narrow viewport",
+    "lang": "en"
+  },
+  {
+    "id": "ood-033",
+    "task": "top links collide on small screens please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-034",
+    "task": "site navigation at the top is cramped on mobile in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-035",
+    "task": "the upper navigation breaks at phone width after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-036",
+    "task": "saved shipping locations are not displayed correctly",
+    "lang": "en"
+  },
+  {
+    "id": "ood-037",
+    "task": "delivery addresses disappear from my account please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-038",
+    "task": "shipping address list has the wrong layout in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-039",
+    "task": "where I keep delivery locations is broken after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-040",
+    "task": "بخش مربوط به آدرس ارسال درست نمایش داده نمی‌شود",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-041",
+    "task": "نشانی های تحویل تو حساب کاربری گم می‌شوند لطفا",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-042",
+    "task": "فهرست آدرس های ارسال ظاهر درستی ندارد در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-043",
+    "task": "محل های تحویل ذخیره شده خراب است بعد از تغییر ظاهر",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-044",
+    "task": "saved shipping locations are not displayed correctly",
+    "lang": "en"
+  },
+  {
+    "id": "ood-045",
+    "task": "delivery addresses disappear from my account please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-046",
+    "task": "shipping address list has the wrong layout in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-047",
+    "task": "where I keep delivery locations is broken after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-048",
+    "task": "message alerts are not showing in the account area",
+    "lang": "en"
+  },
+  {
+    "id": "ood-049",
+    "task": "the notification feed misses new alerts please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-050",
+    "task": "account messages do not appear in the alert area in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-051",
+    "task": "the alerts list is stale after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-052",
+    "task": "اعلان های حساب نمایش داده نمی‌شوند",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-053",
+    "task": "فهرست هشدارها پیام جدید را نشان نمی‌دهد لطفا",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-054",
+    "task": "پیام های جدید تو بخش اعلان نمی‌آید در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-055",
+    "task": "لیست اعلان ها به روز نیست بعد از تغییر ظاهر",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-056",
+    "task": "message alerts are not showing in the account area",
+    "lang": "en"
+  },
+  {
+    "id": "ood-057",
+    "task": "the notification feed misses new alerts please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-058",
+    "task": "account messages do not appear in the alert area in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-059",
+    "task": "the alerts list is stale after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-060",
+    "task": "invoice history does not show recent receipts",
+    "lang": "en"
+  },
+  {
+    "id": "ood-061",
+    "task": "billing records are missing from the history please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-062",
+    "task": "receipt list in billing is broken in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-063",
+    "task": "recent invoices do not render after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-064",
+    "task": "فهرست فاکتورها سابقه جدید را نشان نمی‌دهد",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-065",
+    "task": "سوابق صورتحساب ناقص است لطفا",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-066",
+    "task": "رسیدهای اخیر در بخش مالی دیده نمی‌شوند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-067",
+    "task": "تاریخچه فاکتور درست رندر نمی‌شود بعد از تغییر ظاهر",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-068",
+    "task": "invoice history does not show recent receipts",
+    "lang": "en"
+  },
+  {
+    "id": "ood-069",
+    "task": "billing records are missing from the history please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-070",
+    "task": "receipt list in billing is broken in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-071",
+    "task": "recent invoices do not render after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-072",
+    "task": "favorite products are missing from the saved-items area",
+    "lang": "en"
+  },
+  {
+    "id": "ood-073",
+    "task": "wishlist entries disappear after saving please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-074",
+    "task": "saved products are not visible in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-075",
+    "task": "my favorite merchandise list is broken after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-076",
+    "task": "محصولات علاقه مندی از فهرست ذخیره ناپدید می‌شوند",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-077",
+    "task": "لیست علاقه مندی بعد از ذخیره خالی می‌شود لطفا",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-078",
+    "task": "کالاهای ذخیره شده دیده نمی‌شوند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-079",
+    "task": "فهرست محصولات محبوب من خراب است بعد از تغییر ظاهر",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-080",
+    "task": "favorite products are missing from the saved-items area",
+    "lang": "en"
+  },
+  {
+    "id": "ood-081",
+    "task": "wishlist entries disappear after saving please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-082",
+    "task": "saved products are not visible in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-083",
+    "task": "my favorite merchandise list is broken after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-084",
+    "task": "dashboard rows scroll incorrectly on mobile",
+    "lang": "en"
+  },
+  {
+    "id": "ood-085",
+    "task": "the admin records grid has broken horizontal scrolling please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-086",
+    "task": "table rows in the dashboard overflow narrow screens in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-087",
+    "task": "admin data grid is unusable on phone width after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-088",
+    "task": "جدول داشبورد روی موبایل اسکرول خراب دارد",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-089",
+    "task": "رکوردهای پنل مدیریت روی صفحه کوچک بیرون می‌زنند لطفا",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-090",
+    "task": "اسکرول افقی جدول مدیریتی درست کار نمی‌کند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-091",
+    "task": "جدول رکوردها تو گوشی قابل استفاده نیست بعد از تغییر ظاهر",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-092",
+    "task": "dashboard rows scroll incorrectly on mobile",
+    "lang": "en"
+  },
+  {
+    "id": "ood-093",
+    "task": "the admin records grid has broken horizontal scrolling please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-094",
+    "task": "table rows in the dashboard overflow narrow screens in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-095",
+    "task": "admin data grid is unusable on phone width after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-096",
+    "task": "product pictures do not advance in the image viewer",
+    "lang": "en"
+  },
+  {
+    "id": "ood-097",
+    "task": "gallery slides stop moving please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-098",
+    "task": "zoomed product images are stuck in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-099",
+    "task": "the product photo viewer is broken after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-100",
+    "task": "تصاویر محصول در گالری جلو نمی‌روند",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-101",
+    "task": "اسلایدهای عکس متوقف شده‌اند لطفا",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-102",
+    "task": "بزرگنمایی عکس محصول گیر می‌کند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-103",
+    "task": "نمایشگر تصاویر کالا خراب است بعد از تغییر ظاهر",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-104",
+    "task": "product pictures do not advance in the image viewer",
+    "lang": "en"
+  },
+  {
+    "id": "ood-105",
+    "task": "gallery slides stop moving please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-106",
+    "task": "zoomed product images are stuck in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-107",
+    "task": "the product photo viewer is broken after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-108",
+    "task": "price and category controls do not filter search results",
+    "lang": "en"
+  },
+  {
+    "id": "ood-109",
+    "task": "search refinements are ignored please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-110",
+    "task": "the filtering controls on results do nothing in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-111",
+    "task": "category filter in search is broken after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-112",
+    "task": "فیلتر قیمت و دسته روی نتایج اثر نمی‌کند",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-113",
+    "task": "محدود کردن نتایج جستجو کار نمی‌کند لطفا",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-114",
+    "task": "کنترل های فیلتر نتایج بی اثرند در نسخه فعلی",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-115",
+    "task": "فیلتر دسته در جستجو خراب است بعد از تغییر ظاهر",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-116",
+    "task": "price and category controls do not filter search results",
+    "lang": "en"
+  },
+  {
+    "id": "ood-117",
+    "task": "search refinements are ignored please",
+    "lang": "en"
+  },
+  {
+    "id": "ood-118",
+    "task": "the filtering controls on results do nothing in the current layout",
+    "lang": "en"
+  },
+  {
+    "id": "ood-119",
+    "task": "category filter in search is broken after the latest UI change",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-000",
+    "task": "fix the weather widget",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-001",
+    "task": "the cryptocurrency ticker does not refresh",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-002",
+    "task": "repair the appointment calendar",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-003",
+    "task": "ویجت آب و هوا را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-open-004",
+    "task": "نمودار ارز دیجیتال به روز نمی شود",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-open-005",
+    "task": "تقویم نوبت دهی خراب است",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-open-006",
+    "task": "fix the weather widget",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-007",
+    "task": "the cryptocurrency ticker does not refresh",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-008",
+    "task": "repair the appointment calendar",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-009",
+    "task": "ویجت آب و هوا را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-open-010",
+    "task": "نمودار ارز دیجیتال به روز نمی شود",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-open-011",
+    "task": "تقویم نوبت دهی خراب است",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-open-012",
+    "task": "fix the weather widget",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-013",
+    "task": "the cryptocurrency ticker does not refresh",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-014",
+    "task": "repair the appointment calendar",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-015",
+    "task": "ویجت آب و هوا را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-open-016",
+    "task": "نمودار ارز دیجیتال به روز نمی شود",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-open-017",
+    "task": "تقویم نوبت دهی خراب است",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-open-018",
+    "task": "fix the weather widget",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-019",
+    "task": "the cryptocurrency ticker does not refresh",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-020",
+    "task": "repair the appointment calendar",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-021",
+    "task": "ویجت آب و هوا را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-open-022",
+    "task": "نمودار ارز دیجیتال به روز نمی شود",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-open-023",
+    "task": "تقویم نوبت دهی خراب است",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-open-024",
+    "task": "fix the weather widget",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-025",
+    "task": "the cryptocurrency ticker does not refresh",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-026",
+    "task": "repair the appointment calendar",
+    "lang": "en"
+  },
+  {
+    "id": "ood-open-027",
+    "task": "ویجت آب و هوا را درست کن",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-open-028",
+    "task": "نمودار ارز دیجیتال به روز نمی شود",
+    "lang": "fa"
+  },
+  {
+    "id": "ood-open-029",
+    "task": "تقویم نوبت دهی خراب است",
+    "lang": "fa"
+  }
+]

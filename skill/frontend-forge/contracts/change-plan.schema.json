@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "required": [
+    "status",
+    "goal",
+    "files",
+    "operations",
+    "dependencies",
+    "expected_effect",
+    "risks",
+    "validation",
+    "rollback"
+  ]
+}

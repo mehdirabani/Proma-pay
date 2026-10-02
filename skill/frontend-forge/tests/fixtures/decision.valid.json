@@ -1,0 +1,17 @@
+{
+  "decision": "use_feature_based_architecture",
+  "alternatives": [
+    "page_monolith",
+    "route_only_structure"
+  ],
+  "benefits": [
+    "clear ownership"
+  ],
+  "costs": [
+    "more explicit boundaries"
+  ],
+  "risks": [
+    "over-abstraction"
+  ],
+  "confidence": 0.88
+}

@@ -1,0 +1,542 @@
+{
+  "eng-001": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target1.tsx"
+    ],
+    "correct_patch_hash": "5d2f4fe0d09027960e3cedd4a04eda7987c37cdafcdf5b33b453c63b98b4fe2b"
+  },
+  "eng-002": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target2.tsx"
+    ],
+    "correct_patch_hash": "a86564f9d78245a9142522b5ae833a38638d838978d37d784d60595877a0a32a"
+  },
+  "eng-003": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target3.tsx"
+    ],
+    "correct_patch_hash": "4fe8138ba7e7f82bcda8e26cdded3f954c942fb77f9d604d5265fb7587b96f2e"
+  },
+  "eng-004": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target4.tsx"
+    ],
+    "correct_patch_hash": "60c139cdd5c7b902896842618d70c7ffa16761f39878b7c8115993b8878a45bf"
+  },
+  "eng-005": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target5.tsx"
+    ],
+    "correct_patch_hash": "7095e8b97c18b841bf8b50c179a219dca5e262e267b1fc1ea77309e6a1cde5f5"
+  },
+  "eng-006": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target6.tsx"
+    ],
+    "correct_patch_hash": "323c90e9363326e18048b5f80fca1c21c659d6d2b6dd99775571bf9a9850a643"
+  },
+  "eng-007": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target7.tsx"
+    ],
+    "correct_patch_hash": "52bbf50442119c4686e710ac2dbc611747c7b84efb7360bd7376744b10c78551"
+  },
+  "eng-008": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target8.tsx"
+    ],
+    "correct_patch_hash": "29b8b6a4edb7f1ff2962d593bb5baef9a615fb56e8c2df5e4d73d516b5f29354"
+  },
+  "eng-009": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target9.tsx"
+    ],
+    "correct_patch_hash": "a602b4159fca69b7b640262dac3797d80d8ec528c3f8ee2492364092d1a9369b"
+  },
+  "eng-010": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target10.tsx"
+    ],
+    "correct_patch_hash": "c7537bef38c256e0bd9bb20dc611672422cecd29ed973af102c4e8b458488b1f"
+  },
+  "eng-011": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target11.tsx"
+    ],
+    "correct_patch_hash": "6c411ebce31fe264db8a0988a0ce4b65fd473f1805196b37439a643d7bcc5823"
+  },
+  "eng-012": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target12.tsx"
+    ],
+    "correct_patch_hash": "06cdcbb424aa46113d47fcc0fe0f999ce11cf4bf97e9292c7626e4d89552dcbc"
+  },
+  "eng-013": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target13.tsx"
+    ],
+    "correct_patch_hash": "ae7c966f33e0740ea02f7906f15f2bd53bafede16273b9db8784f20c398c3b76"
+  },
+  "eng-014": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target14.tsx"
+    ],
+    "correct_patch_hash": "3ae445575ac0f3d2b19fcd2a8d4cea9bc77dfa244247a2e901882fc748a31dee"
+  },
+  "eng-015": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target15.tsx"
+    ],
+    "correct_patch_hash": "f3d458621d867bd64df46a9b6dfc354de80af0ffb1b396a81800351fd662e35a"
+  },
+  "eng-016": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target16.tsx"
+    ],
+    "correct_patch_hash": "f88987430bf8d2c068beb0a8fa0ea034b45e06a92c85cdb9550d5017c4837f30"
+  },
+  "eng-017": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target17.tsx"
+    ],
+    "correct_patch_hash": "c470b2deaeb00a7f846563d094b0704c46839501144874a3cfaf0eb3b292da9e"
+  },
+  "eng-018": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target18.tsx"
+    ],
+    "correct_patch_hash": "c162da4a69c3d4c1d20187196c76401b5d3921238c9124b61e78c66fc71df52d"
+  },
+  "eng-019": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target19.tsx"
+    ],
+    "correct_patch_hash": "3482ae229155ee3c56ed52daf28115a401d4ea0b2210867ed33e8bfcffc26ec4"
+  },
+  "eng-020": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target20.tsx"
+    ],
+    "correct_patch_hash": "ab9932aa4c79119aa7812e23f197bb7e101aeec8b48484c20dc3db7c92d15ab3"
+  },
+  "eng-021": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target21.tsx"
+    ],
+    "correct_patch_hash": "501e05f6cfb2eb8f91a9a49ec7e7afcc6a2d931a27f02a2590a8f6ef7c34865f"
+  },
+  "eng-022": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target22.tsx"
+    ],
+    "correct_patch_hash": "43b7127bddd74f2cd6cbc7f3d52b1874f3d943aefd10736f72b04520d50e8380"
+  },
+  "eng-023": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target23.tsx"
+    ],
+    "correct_patch_hash": "2ceb3fba57f93fddad4e4f2de0ce14e5377f7c0f4502f28597388d56de4babf8"
+  },
+  "eng-024": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target24.tsx"
+    ],
+    "correct_patch_hash": "fdb26ea68322a5b0ae2ade8247fd43dfce9e0c5b63e8c074c3e40f6524372920"
+  },
+  "eng-025": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target25.tsx"
+    ],
+    "correct_patch_hash": "f4f5b0acab57d8405ad96b6677f99619a66ebada8187fc7fcaa5df5e2de92121"
+  },
+  "eng-026": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target26.tsx"
+    ],
+    "correct_patch_hash": "756eb8e6abc0233c64f66924cbce6384a46c8e94e9dd2a2fb7e03be98112e81e"
+  },
+  "eng-027": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target27.tsx"
+    ],
+    "correct_patch_hash": "1498e0890efa04c2a349594e535a213429a4ccaf885a6dd51468df98828807d2"
+  },
+  "eng-028": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target28.tsx"
+    ],
+    "correct_patch_hash": "4714560f8aae935f180c7e808dd119f446131b449dd2f1e37718e218c0a31f00"
+  },
+  "eng-029": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target29.tsx"
+    ],
+    "correct_patch_hash": "9eee96167d20c53ab81c31fe3a5bcc9b0d2fea15af0bce5c339010c5ea7836b6"
+  },
+  "eng-030": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target30.tsx"
+    ],
+    "correct_patch_hash": "b4426a79dcce5bfa56c655a9f86c0785c5db14cb13c306da068238dd8ac4e26d"
+  },
+  "eng-031": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target31.tsx"
+    ],
+    "correct_patch_hash": "d2a0520ff2e928a5f4620c2b5f224303e335a23d9162d4933f9660107a992535"
+  },
+  "eng-032": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target32.tsx"
+    ],
+    "correct_patch_hash": "78b07bc24eed0570a5f5c30d25eedef60b77a08ec8175442ac9f509c3ec11dcf"
+  },
+  "eng-033": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target33.tsx"
+    ],
+    "correct_patch_hash": "e7435c43a555a091666e6d5978dda6ffb9615343916845d2ad17e5be569858c9"
+  },
+  "eng-034": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target34.tsx"
+    ],
+    "correct_patch_hash": "cd5b7f706816fbb59da53924bac37f0772c612ef2960a030aa8ac6de2ed42274"
+  },
+  "eng-035": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target35.tsx"
+    ],
+    "correct_patch_hash": "ad6e79566b9f6bc024e95524f65a6732cf85baeec08ec379eb8358018c15a28d"
+  },
+  "eng-036": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target36.tsx"
+    ],
+    "correct_patch_hash": "7067ddae41ed466840914e290fa1240796dcafb989222ea5695be872bd098452"
+  },
+  "eng-037": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target37.tsx"
+    ],
+    "correct_patch_hash": "495e80d14709d7ffed4560d21148bc8ef6e136dfb946fe3f88fe0cb28e25761a"
+  },
+  "eng-038": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target38.tsx"
+    ],
+    "correct_patch_hash": "02fbfc14e9ee5e1dc8d8ac8b7b5e75e1ac151f89e4b3b7fceac344b81b444c94"
+  },
+  "eng-039": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target39.tsx"
+    ],
+    "correct_patch_hash": "60cddade6464a93e6d2b1c4110bc6f19725f5be0be9f594e9ec591595b082043"
+  },
+  "eng-040": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target40.tsx"
+    ],
+    "correct_patch_hash": "3c2974e71959e2c9a9098c5bbf105545589ec3425a699ac6a5a44e099c5d15c2"
+  },
+  "eng-041": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target41.tsx"
+    ],
+    "correct_patch_hash": "512f6d90850ce065d8ebc14ee401102852b9d767ad7d369251b4a328caa392ca"
+  },
+  "eng-042": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target42.tsx"
+    ],
+    "correct_patch_hash": "7d921e0adc0576ac5c3564ac3837b062e75541ab8038772d9a04653202aa1478"
+  },
+  "eng-043": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target43.tsx"
+    ],
+    "correct_patch_hash": "ddd3b4c82039dd97717eacd9ba9d8cc5d3bfdab559c382ebef24e8e7da910ecc"
+  },
+  "eng-044": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target44.tsx"
+    ],
+    "correct_patch_hash": "14da180f7c6d1d153cb10c6836af7903fd2de568ce7cdac9439bd3695c56e335"
+  },
+  "eng-045": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target45.tsx"
+    ],
+    "correct_patch_hash": "8ffb50d25d8121587e72b84d16370a40d7e7c80610dd4b4b9eb858c66a4095c7"
+  },
+  "eng-046": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target46.tsx"
+    ],
+    "correct_patch_hash": "63ea7a19c4f563736bf0cb76ce76a9dfe084492dd72a451b3c1c3ae92cc5b0c1"
+  },
+  "eng-047": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target47.tsx"
+    ],
+    "correct_patch_hash": "1e9a338aac394ade00597cfa4fb25cf4ddabc60abe912d5c3305a6b7857091c3"
+  },
+  "eng-048": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target48.tsx"
+    ],
+    "correct_patch_hash": "acfd825b3cdb2a29533911a71a0bfe47bdea30c1cc815fa67acc8655036dd1d7"
+  },
+  "eng-049": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target49.tsx"
+    ],
+    "correct_patch_hash": "edd453e4a66257297a0b3e70388b270b1574c480012a059e2aeac5651a6d9f1c"
+  },
+  "eng-050": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target50.tsx"
+    ],
+    "correct_patch_hash": "aed220ea5ec4b4501b7911180a6f5eeb6dd094014be300b1c084d68abebcbf73"
+  },
+  "eng-051": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target51.tsx"
+    ],
+    "correct_patch_hash": "fc5c30b39376f83e5fcfa3389263bf4ea54e496c120633b1e032eba1b96cc208"
+  },
+  "eng-052": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target52.tsx"
+    ],
+    "correct_patch_hash": "6c50334004fc3fdd32106491f90751e928501ba40a1162c5ba8bc0c8d0738c6b"
+  },
+  "eng-053": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target53.tsx"
+    ],
+    "correct_patch_hash": "0176cd82bf391b7f79071db5ab19fe735698f94d29987568935017758ebeb47c"
+  },
+  "eng-054": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target54.tsx"
+    ],
+    "correct_patch_hash": "2b6f6a7f395cd7936566baf171d481b2eff91549837275fc3329cedc1a68557d"
+  },
+  "eng-055": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target55.tsx"
+    ],
+    "correct_patch_hash": "cc50cd5fb2ec9ab704d8e82751a856dae7f35f6042680cd67e511e24780db197"
+  },
+  "eng-056": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target56.tsx"
+    ],
+    "correct_patch_hash": "4601fbe200b193e7f621e19d4f449b5abf2f1dc769b23ff145353add6d11a0fc"
+  },
+  "eng-057": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target57.tsx"
+    ],
+    "correct_patch_hash": "a83fd09301513fb47d4a983f2d4960544cd17113ffb434e2c76ad91cbfd73cbf"
+  },
+  "eng-058": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target58.tsx"
+    ],
+    "correct_patch_hash": "b08d9af7accd332aee1cca06e0d67e5c68b29bcc9b6d6410df99329089b4205d"
+  },
+  "eng-059": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target59.tsx"
+    ],
+    "correct_patch_hash": "4f1a90aefd586d8eeeedcf30eb85ec138f62a962db757573c0c65fd26adb5310"
+  },
+  "eng-060": {
+    "acceptance": [
+      "hidden_behavior_pass"
+    ],
+    "expected_files": [
+      "src/target60.tsx"
+    ],
+    "correct_patch_hash": "1db5eab46dbc64cb61bca0ca97ab69831d634b388d2f55baf6aa0fe6858ebeec"
+  }
+}

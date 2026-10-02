@@ -1,0 +1,57 @@
+{
+  "ecommerce": [
+    "design",
+    "components",
+    "performance",
+    "accessibility",
+    "seo",
+    "security"
+  ],
+  "saas": [
+    "design",
+    "components",
+    "performance",
+    "accessibility",
+    "maintainability",
+    "security"
+  ],
+  "dashboard": [
+    "components",
+    "accessibility",
+    "maintainability",
+    "performance",
+    "security"
+  ],
+  "landing": [
+    "design",
+    "performance",
+    "seo",
+    "accessibility"
+  ],
+  "portfolio": [
+    "design",
+    "performance",
+    "accessibility",
+    "seo"
+  ],
+  "content-platform": [
+    "seo",
+    "performance",
+    "accessibility",
+    "components",
+    "maintainability"
+  ],
+  "web-application": [
+    "components",
+    "security",
+    "accessibility",
+    "performance",
+    "maintainability"
+  ],
+  "design-system": [
+    "components",
+    "accessibility",
+    "maintainability",
+    "regression"
+  ]
+}

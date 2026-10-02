@@ -1,0 +1,1 @@
+export const Pay32=()=> <form><button type="button">Pay</button></form>

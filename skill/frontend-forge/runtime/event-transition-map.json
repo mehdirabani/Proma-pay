@@ -1,0 +1,384 @@
+{
+  "events": [
+    {
+      "event": "TaskClassified",
+      "from": "TASK_RECEIVED",
+      "to": "TASK_CLASSIFIED",
+      "activates": [
+        "requirement-reasoner"
+      ]
+    },
+    {
+      "event": "ContextResolved",
+      "from": "TASK_CLASSIFIED",
+      "to": "CONTEXT_RESOLVED",
+      "activates": [
+        "context-engine"
+      ]
+    },
+    {
+      "event": "ContextFailed",
+      "from": "TASK_CLASSIFIED",
+      "to": "CONTEXT_FAILURE",
+      "activates": [
+        "context-engine"
+      ]
+    },
+    {
+      "event": "DependenciesAnalyzed",
+      "from": "CONTEXT_RESOLVED",
+      "to": "DEPENDENCIES_ANALYZED",
+      "activates": [
+        "impact-analyzer"
+      ]
+    },
+    {
+      "event": "DependencyFailed",
+      "from": "DEPENDENCIES_ANALYZED",
+      "to": "DEPENDENCY_FAILURE",
+      "activates": [
+        "dependency-resolver"
+      ]
+    },
+    {
+      "event": "PlanCreated",
+      "from": "DEPENDENCIES_ANALYZED",
+      "to": "PLAN_CREATED",
+      "activates": [
+        "planner"
+      ]
+    },
+    {
+      "event": "PlanValidated",
+      "from": "PLAN_CREATED",
+      "to": "PLAN_VALIDATED",
+      "activates": [
+        "architecture-agent"
+      ]
+    },
+    {
+      "event": "PlanningFailed",
+      "from": "PLAN_CREATED",
+      "to": "PLANNING_FAILURE",
+      "activates": [
+        "architecture-agent"
+      ]
+    },
+    {
+      "event": "AgentConflictDetected",
+      "from": "PLAN_CREATED",
+      "to": "AGENT_CONFLICT",
+      "activates": [
+        "arbitrator-agent"
+      ]
+    },
+    {
+      "event": "AgentConflictDetected",
+      "from": "PLAN_VALIDATED",
+      "to": "AGENT_CONFLICT",
+      "activates": [
+        "arbitrator-agent"
+      ]
+    },
+    {
+      "event": "AgentConflictDetected",
+      "from": "EXECUTION_STARTED",
+      "to": "AGENT_CONFLICT",
+      "activates": [
+        "arbitrator-agent"
+      ]
+    },
+    {
+      "event": "AgentConflictDetected",
+      "from": "QUALITY_VALIDATION",
+      "to": "AGENT_CONFLICT",
+      "activates": [
+        "arbitrator-agent"
+      ]
+    },
+    {
+      "event": "AgentConflictResolved",
+      "from": "AGENT_CONFLICT",
+      "to": "PLAN_VALIDATED",
+      "activates": [
+        "agent-coordinator"
+      ]
+    },
+    {
+      "event": "ApprovalRequired",
+      "from": "PLAN_VALIDATED",
+      "to": "AWAITING_APPROVAL",
+      "activates": [
+        "risk-engine"
+      ]
+    },
+    {
+      "event": "ApprovalGranted",
+      "from": "AWAITING_APPROVAL",
+      "to": "EXECUTION_STARTED",
+      "activates": [
+        "capability-executor"
+      ]
+    },
+    {
+      "event": "ApprovalDenied",
+      "from": "AWAITING_APPROVAL",
+      "to": "ABORT_REQUESTED",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "event": "ExecutionStarted",
+      "from": "PLAN_VALIDATED",
+      "to": "EXECUTION_STARTED",
+      "activates": [
+        "capability-executor"
+      ]
+    },
+    {
+      "event": "OutputGenerated",
+      "from": "EXECUTION_STARTED",
+      "to": "OUTPUT_GENERATED",
+      "activates": [
+        "artifact-store"
+      ]
+    },
+    {
+      "event": "ExecutionFailed",
+      "from": "EXECUTION_STARTED",
+      "to": "EXECUTION_FAILURE",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "event": "QualityValidationStarted",
+      "from": "OUTPUT_GENERATED",
+      "to": "QUALITY_VALIDATION",
+      "activates": [
+        "quality-engine"
+      ]
+    },
+    {
+      "event": "TestFailed",
+      "from": "QUALITY_VALIDATION",
+      "to": "TEST_FAILURE",
+      "activates": [
+        "qa-agent"
+      ]
+    },
+    {
+      "event": "QualityGateFailed",
+      "from": "QUALITY_VALIDATION",
+      "to": "QUALITY_GATE_FAILURE",
+      "activates": [
+        "quality-engine"
+      ]
+    },
+    {
+      "event": "RegressionDetected",
+      "from": "QUALITY_VALIDATION",
+      "to": "REGRESSION_DETECTED",
+      "activates": [
+        "regression-runner"
+      ]
+    },
+    {
+      "event": "QualityGatePassed",
+      "from": "QUALITY_VALIDATION",
+      "to": "KNOWLEDGE_UPDATE",
+      "activates": [
+        "learning-engine"
+      ]
+    },
+    {
+      "event": "RepairStarted",
+      "from": "EXECUTION_FAILURE",
+      "to": "REPAIR",
+      "activates": [
+        "failure-manager",
+        "frontend-agent"
+      ]
+    },
+    {
+      "event": "RepairStarted",
+      "from": "TEST_FAILURE",
+      "to": "REPAIR",
+      "activates": [
+        "failure-manager",
+        "frontend-agent"
+      ]
+    },
+    {
+      "event": "RepairStarted",
+      "from": "QUALITY_GATE_FAILURE",
+      "to": "REPAIR",
+      "activates": [
+        "failure-manager",
+        "frontend-agent"
+      ]
+    },
+    {
+      "event": "RepairStarted",
+      "from": "REGRESSION_DETECTED",
+      "to": "REPAIR",
+      "activates": [
+        "failure-manager",
+        "frontend-agent"
+      ]
+    },
+    {
+      "event": "AbortRequested",
+      "from": "EXECUTION_FAILURE",
+      "to": "ABORT_REQUESTED",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "event": "AbortRequested",
+      "from": "TEST_FAILURE",
+      "to": "ABORT_REQUESTED",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "event": "AbortRequested",
+      "from": "QUALITY_GATE_FAILURE",
+      "to": "ABORT_REQUESTED",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "event": "AbortRequested",
+      "from": "REGRESSION_DETECTED",
+      "to": "ABORT_REQUESTED",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "event": "AbortRequested",
+      "from": "CONTEXT_FAILURE",
+      "to": "ABORT_REQUESTED",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "event": "AbortRequested",
+      "from": "PLANNING_FAILURE",
+      "to": "ABORT_REQUESTED",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "event": "AbortRequested",
+      "from": "DEPENDENCY_FAILURE",
+      "to": "ABORT_REQUESTED",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "event": "AbortRequested",
+      "from": "AGENT_CONFLICT",
+      "to": "ABORT_REQUESTED",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "event": "RepairCompleted",
+      "from": "REPAIR",
+      "to": "REVALIDATE",
+      "activates": [
+        "qa-agent"
+      ]
+    },
+    {
+      "event": "RevalidationCompleted",
+      "from": "REVALIDATE",
+      "to": "QUALITY_VALIDATION",
+      "activates": [
+        "quality-engine"
+      ]
+    },
+    {
+      "event": "RevalidationTestFailed",
+      "from": "REVALIDATE",
+      "to": "TEST_FAILURE",
+      "activates": [
+        "qa-agent"
+      ]
+    },
+    {
+      "event": "KnowledgeUpdated",
+      "from": "KNOWLEDGE_UPDATE",
+      "to": "TASK_COMPLETED",
+      "activates": [
+        "observability"
+      ]
+    },
+    {
+      "event": "CancelRequested",
+      "from": "EXECUTION_STARTED",
+      "to": "CANCEL_REQUESTED",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "event": "CancelRequested",
+      "from": "OUTPUT_GENERATED",
+      "to": "CANCEL_REQUESTED",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "event": "CancelRequested",
+      "from": "QUALITY_VALIDATION",
+      "to": "CANCEL_REQUESTED",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "event": "SafeStop",
+      "from": "ABORT_REQUESTED",
+      "to": "SAFE_STOP",
+      "activates": [
+        "artifact-store"
+      ]
+    },
+    {
+      "event": "SafeStop",
+      "from": "CANCEL_REQUESTED",
+      "to": "SAFE_STOP",
+      "activates": [
+        "artifact-store"
+      ]
+    },
+    {
+      "event": "AbortFinalized",
+      "from": "SAFE_STOP",
+      "to": "TASK_ABORTED",
+      "activates": [
+        "observability"
+      ]
+    },
+    {
+      "event": "CancelFinalized",
+      "from": "SAFE_STOP",
+      "to": "TASK_CANCELLED",
+      "activates": [
+        "observability"
+      ]
+    }
+  ]
+}

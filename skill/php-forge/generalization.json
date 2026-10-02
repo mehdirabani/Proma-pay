@@ -1,0 +1,42 @@
+{
+  "status": "PARTIALLY_PROVEN",
+  "dataset": {
+    "total_unique": 1610,
+    "concept_groups": 64,
+    "development": 903,
+    "validation": 445,
+    "hidden": 262
+  },
+  "hidden": {
+    "accuracy": 100.0,
+    "domain_precision": 91.59,
+    "domain_recall": 100.0,
+    "persian_or_mixed_accuracy": 100.0,
+    "ood_accuracy": 100.0,
+    "negation_accuracy": 100.0,
+    "context_accuracy": 100.0
+  },
+  "blind_red_team": {
+    "accuracy": 86.5,
+    "cases": 200,
+    "failure_count": 27,
+    "domain_results": {
+      "database": {
+        "cases": 32,
+        "passed": 28,
+        "recall": 87.5
+      },
+      "fintech": {
+        "cases": 72,
+        "passed": 63,
+        "recall": 87.5
+      },
+      "security": {
+        "cases": 96,
+        "passed": 82,
+        "recall": 85.42
+      }
+    }
+  },
+  "conclusion": "Hidden concept-isolated evaluation passes, but the post-freeze blind red-team exposes distractor sensitivity; robust generalization is not proven."
+}

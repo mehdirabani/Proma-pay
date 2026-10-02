@@ -1,0 +1,23 @@
+{
+  "critical_engineering": {
+    "scope": "V15.3_CRITICAL_IN_PROCESS_MODULES",
+    "line_percent": 97.54,
+    "branch_percent": 75.93,
+    "num_statements": 244,
+    "covered_lines": 238,
+    "missing_lines": 6,
+    "num_branches": 162,
+    "covered_branches": 123,
+    "missing_branches": 39,
+    "target_line": 88,
+    "target_branch": 80,
+    "line_target_met": true,
+    "branch_target_met": false,
+    "note": "Central authority signer loop and process-isolated benchmark worker are not credited to this in-process coverage figure."
+  },
+  "full_package_instrumented": "UNVERIFIED_TIMEOUT",
+  "functional_suite": {
+    "tests_run": 360,
+    "status": "PASS"
+  }
+}

@@ -1,0 +1,482 @@
+[
+  {
+    "id": "v151-001",
+    "split": "development",
+    "category": "responsive",
+    "task": "Product cards overflow on mobile in variant 1.",
+    "fixture": "task-001",
+    "language": "en"
+  },
+  {
+    "id": "v151-002",
+    "split": "development",
+    "category": "css",
+    "task": "Long content does not wrap in the content panel 2.",
+    "fixture": "task-002",
+    "language": "en"
+  },
+  {
+    "id": "v151-003",
+    "split": "development",
+    "category": "react_state",
+    "task": "Editor state resets unexpectedly after parent changes in case 3.",
+    "fixture": "task-003",
+    "language": "en"
+  },
+  {
+    "id": "v151-004",
+    "split": "development",
+    "category": "typescript",
+    "task": "Fix the TypeScript prop contract for count in case 4.",
+    "fixture": "task-004",
+    "language": "en"
+  },
+  {
+    "id": "v151-005",
+    "split": "development",
+    "category": "accessibility",
+    "task": "The email field cannot be identified by assistive technology in case 5.",
+    "fixture": "task-005",
+    "language": "en"
+  },
+  {
+    "id": "v151-006",
+    "split": "development",
+    "category": "performance",
+    "task": "Reduce avoidable eager loading of the heavy widget in page 6.",
+    "fixture": "task-006",
+    "language": "en"
+  },
+  {
+    "id": "v151-007",
+    "split": "development",
+    "category": "routing",
+    "task": "The profile navigation link opens the wrong route in case 7.",
+    "fixture": "task-007",
+    "language": "en"
+  },
+  {
+    "id": "v151-008",
+    "split": "development",
+    "category": "form",
+    "task": "Payment form does not submit from its primary button in case 8.",
+    "fixture": "task-008",
+    "language": "en"
+  },
+  {
+    "id": "v151-009",
+    "split": "development",
+    "category": "async_data",
+    "task": "Users see a blank screen while async data loads in case 9.",
+    "fixture": "task-009",
+    "language": "en"
+  },
+  {
+    "id": "v151-010",
+    "split": "development",
+    "category": "refactor",
+    "task": "Remove local duplicated calculation without changing behavior in case 10.",
+    "fixture": "task-010",
+    "language": "en"
+  },
+  {
+    "id": "v151-011",
+    "split": "development",
+    "category": "nextjs",
+    "task": "Remove the unnecessary client boundary from static Next.js component 11.",
+    "fixture": "task-011",
+    "language": "en"
+  },
+  {
+    "id": "v151-012",
+    "split": "development",
+    "category": "tailwind",
+    "task": "Use the project spacing utility instead of the arbitrary Tailwind value in box 12.",
+    "fixture": "task-012",
+    "language": "en"
+  },
+  {
+    "id": "v151-013",
+    "split": "development",
+    "category": "responsive",
+    "task": "Product cards overflow on mobile in variant 13.",
+    "fixture": "task-013",
+    "language": "en"
+  },
+  {
+    "id": "v151-014",
+    "split": "development",
+    "category": "css",
+    "task": "Long content does not wrap in the content panel 14.",
+    "fixture": "task-014",
+    "language": "en"
+  },
+  {
+    "id": "v151-015",
+    "split": "development",
+    "category": "react_state",
+    "task": "Editor state resets unexpectedly after parent changes in case 15.",
+    "fixture": "task-015",
+    "language": "en"
+  },
+  {
+    "id": "v151-016",
+    "split": "development",
+    "category": "typescript",
+    "task": "Fix the TypeScript prop contract for count in case 16.",
+    "fixture": "task-016",
+    "language": "en"
+  },
+  {
+    "id": "v151-017",
+    "split": "development",
+    "category": "accessibility",
+    "task": "The email field cannot be identified by assistive technology in case 17.",
+    "fixture": "task-017",
+    "language": "en"
+  },
+  {
+    "id": "v151-018",
+    "split": "development",
+    "category": "performance",
+    "task": "Reduce avoidable eager loading of the heavy widget in page 18.",
+    "fixture": "task-018",
+    "language": "en"
+  },
+  {
+    "id": "v151-019",
+    "split": "development",
+    "category": "routing",
+    "task": "The profile navigation link opens the wrong route in case 19.",
+    "fixture": "task-019",
+    "language": "en"
+  },
+  {
+    "id": "v151-020",
+    "split": "development",
+    "category": "form",
+    "task": "Payment form does not submit from its primary button in case 20.",
+    "fixture": "task-020",
+    "language": "en"
+  },
+  {
+    "id": "v151-021",
+    "split": "development",
+    "category": "async_data",
+    "task": "Users see a blank screen while async data loads in case 21.",
+    "fixture": "task-021",
+    "language": "en"
+  },
+  {
+    "id": "v151-022",
+    "split": "development",
+    "category": "refactor",
+    "task": "Remove local duplicated calculation without changing behavior in case 22.",
+    "fixture": "task-022",
+    "language": "en"
+  },
+  {
+    "id": "v151-023",
+    "split": "development",
+    "category": "nextjs",
+    "task": "Remove the unnecessary client boundary from static Next.js component 23.",
+    "fixture": "task-023",
+    "language": "en"
+  },
+  {
+    "id": "v151-024",
+    "split": "development",
+    "category": "tailwind",
+    "task": "Use the project spacing utility instead of the arbitrary Tailwind value in box 24.",
+    "fixture": "task-024",
+    "language": "en"
+  },
+  {
+    "id": "v151-025",
+    "split": "development",
+    "category": "responsive",
+    "task": "Product cards overflow on mobile in variant 25.",
+    "fixture": "task-025",
+    "language": "en"
+  },
+  {
+    "id": "v151-026",
+    "split": "development",
+    "category": "css",
+    "task": "Long content does not wrap in the content panel 26.",
+    "fixture": "task-026",
+    "language": "en"
+  },
+  {
+    "id": "v151-027",
+    "split": "development",
+    "category": "react_state",
+    "task": "Editor state resets unexpectedly after parent changes in case 27.",
+    "fixture": "task-027",
+    "language": "en"
+  },
+  {
+    "id": "v151-028",
+    "split": "development",
+    "category": "typescript",
+    "task": "Fix the TypeScript prop contract for count in case 28.",
+    "fixture": "task-028",
+    "language": "en"
+  },
+  {
+    "id": "v151-029",
+    "split": "development",
+    "category": "accessibility",
+    "task": "The email field cannot be identified by assistive technology in case 29.",
+    "fixture": "task-029",
+    "language": "en"
+  },
+  {
+    "id": "v151-030",
+    "split": "development",
+    "category": "performance",
+    "task": "Reduce avoidable eager loading of the heavy widget in page 30.",
+    "fixture": "task-030",
+    "language": "en"
+  },
+  {
+    "id": "v151-031",
+    "split": "validation",
+    "category": "routing",
+    "task": "The profile navigation link opens the wrong route in case 31.",
+    "fixture": "task-031",
+    "language": "en"
+  },
+  {
+    "id": "v151-032",
+    "split": "validation",
+    "category": "form",
+    "task": "Payment form does not submit from its primary button in case 32.",
+    "fixture": "task-032",
+    "language": "en"
+  },
+  {
+    "id": "v151-033",
+    "split": "validation",
+    "category": "async_data",
+    "task": "Users see a blank screen while async data loads in case 33.",
+    "fixture": "task-033",
+    "language": "en"
+  },
+  {
+    "id": "v151-034",
+    "split": "validation",
+    "category": "refactor",
+    "task": "Remove local duplicated calculation without changing behavior in case 34.",
+    "fixture": "task-034",
+    "language": "en"
+  },
+  {
+    "id": "v151-035",
+    "split": "validation",
+    "category": "nextjs",
+    "task": "Remove the unnecessary client boundary from static Next.js component 35.",
+    "fixture": "task-035",
+    "language": "en"
+  },
+  {
+    "id": "v151-036",
+    "split": "validation",
+    "category": "tailwind",
+    "task": "Use the project spacing utility instead of the arbitrary Tailwind value in box 36.",
+    "fixture": "task-036",
+    "language": "en"
+  },
+  {
+    "id": "v151-037",
+    "split": "validation",
+    "category": "responsive",
+    "task": "Product cards overflow on mobile in variant 37.",
+    "fixture": "task-037",
+    "language": "en"
+  },
+  {
+    "id": "v151-038",
+    "split": "validation",
+    "category": "css",
+    "task": "Long content does not wrap in the content panel 38.",
+    "fixture": "task-038",
+    "language": "en"
+  },
+  {
+    "id": "v151-039",
+    "split": "validation",
+    "category": "react_state",
+    "task": "Editor state resets unexpectedly after parent changes in case 39.",
+    "fixture": "task-039",
+    "language": "en"
+  },
+  {
+    "id": "v151-040",
+    "split": "validation",
+    "category": "typescript",
+    "task": "Fix the TypeScript prop contract for count in case 40.",
+    "fixture": "task-040",
+    "language": "en"
+  },
+  {
+    "id": "v151-041",
+    "split": "validation",
+    "category": "accessibility",
+    "task": "The email field cannot be identified by assistive technology in case 41.",
+    "fixture": "task-041",
+    "language": "en"
+  },
+  {
+    "id": "v151-042",
+    "split": "validation",
+    "category": "performance",
+    "task": "Reduce avoidable eager loading of the heavy widget in page 42.",
+    "fixture": "task-042",
+    "language": "en"
+  },
+  {
+    "id": "v151-043",
+    "split": "validation",
+    "category": "routing",
+    "task": "The profile navigation link opens the wrong route in case 43.",
+    "fixture": "task-043",
+    "language": "en"
+  },
+  {
+    "id": "v151-044",
+    "split": "validation",
+    "category": "form",
+    "task": "Payment form does not submit from its primary button in case 44.",
+    "fixture": "task-044",
+    "language": "en"
+  },
+  {
+    "id": "v151-045",
+    "split": "validation",
+    "category": "async_data",
+    "task": "Users see a blank screen while async data loads in case 45.",
+    "fixture": "task-045",
+    "language": "en"
+  },
+  {
+    "id": "v151-046",
+    "split": "sealed_evaluation",
+    "category": "refactor",
+    "task": "Remove local duplicated calculation without changing behavior in case 46.",
+    "fixture": "task-046",
+    "language": "en"
+  },
+  {
+    "id": "v151-047",
+    "split": "sealed_evaluation",
+    "category": "nextjs",
+    "task": "Remove the unnecessary client boundary from static Next.js component 47.",
+    "fixture": "task-047",
+    "language": "en"
+  },
+  {
+    "id": "v151-048",
+    "split": "sealed_evaluation",
+    "category": "tailwind",
+    "task": "Use the project spacing utility instead of the arbitrary Tailwind value in box 48.",
+    "fixture": "task-048",
+    "language": "en"
+  },
+  {
+    "id": "v151-049",
+    "split": "sealed_evaluation",
+    "category": "responsive",
+    "task": "Product cards overflow on mobile in variant 49.",
+    "fixture": "task-049",
+    "language": "en"
+  },
+  {
+    "id": "v151-050",
+    "split": "sealed_evaluation",
+    "category": "css",
+    "task": "Long content does not wrap in the content panel 50.",
+    "fixture": "task-050",
+    "language": "en"
+  },
+  {
+    "id": "v151-051",
+    "split": "sealed_evaluation",
+    "category": "react_state",
+    "task": "Editor state resets unexpectedly after parent changes in case 51.",
+    "fixture": "task-051",
+    "language": "en"
+  },
+  {
+    "id": "v151-052",
+    "split": "sealed_evaluation",
+    "category": "typescript",
+    "task": "Fix the TypeScript prop contract for count in case 52.",
+    "fixture": "task-052",
+    "language": "en"
+  },
+  {
+    "id": "v151-053",
+    "split": "sealed_evaluation",
+    "category": "accessibility",
+    "task": "The email field cannot be identified by assistive technology in case 53.",
+    "fixture": "task-053",
+    "language": "en"
+  },
+  {
+    "id": "v151-054",
+    "split": "sealed_evaluation",
+    "category": "performance",
+    "task": "Reduce avoidable eager loading of the heavy widget in page 54.",
+    "fixture": "task-054",
+    "language": "en"
+  },
+  {
+    "id": "v151-055",
+    "split": "sealed_evaluation",
+    "category": "routing",
+    "task": "The profile navigation link opens the wrong route in case 55.",
+    "fixture": "task-055",
+    "language": "en"
+  },
+  {
+    "id": "v151-056",
+    "split": "sealed_evaluation",
+    "category": "form",
+    "task": "Payment form does not submit from its primary button in case 56.",
+    "fixture": "task-056",
+    "language": "en"
+  },
+  {
+    "id": "v151-057",
+    "split": "sealed_evaluation",
+    "category": "async_data",
+    "task": "Users see a blank screen while async data loads in case 57.",
+    "fixture": "task-057",
+    "language": "en"
+  },
+  {
+    "id": "v151-058",
+    "split": "sealed_evaluation",
+    "category": "refactor",
+    "task": "Remove local duplicated calculation without changing behavior in case 58.",
+    "fixture": "task-058",
+    "language": "en"
+  },
+  {
+    "id": "v151-059",
+    "split": "sealed_evaluation",
+    "category": "nextjs",
+    "task": "Remove the unnecessary client boundary from static Next.js component 59.",
+    "fixture": "task-059",
+    "language": "en"
+  },
+  {
+    "id": "v151-060",
+    "split": "sealed_evaluation",
+    "category": "tailwind",
+    "task": "Use the project spacing utility instead of the arbitrary Tailwind value in box 60.",
+    "fixture": "task-060",
+    "language": "en"
+  }
+]

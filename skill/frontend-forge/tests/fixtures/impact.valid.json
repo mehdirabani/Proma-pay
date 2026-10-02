@@ -1,0 +1,14 @@
+{
+  "change": "Button",
+  "affected_components": 8,
+  "affected_pages": 4,
+  "risk": "medium",
+  "required_tests": [
+    "visual",
+    "accessibility"
+  ],
+  "required_agents": [
+    "ui-agent",
+    "qa-agent"
+  ]
+}

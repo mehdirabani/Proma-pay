@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "change",
+    "affected_components",
+    "affected_pages",
+    "risk",
+    "required_tests",
+    "required_agents"
+  ],
+  "properties": {
+    "change": {
+      "type": "string"
+    },
+    "affected_components": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "affected_pages": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "risk": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "required_tests": {
+      "type": "array"
+    },
+    "required_agents": {
+      "type": "array"
+    }
+  }
+}

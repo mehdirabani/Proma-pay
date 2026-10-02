@@ -1,0 +1,2 @@
+# External blind A/B benchmark spec
+Compare the same model/agent on frozen repositories/tasks: baseline full-context vs PHPForge routed-context. Blind evaluator scores build/test success, regression, security failures, API hallucination, unnecessary edits, repository fit, tokens, repair iterations, and time when available. Record model, tokenizer, config, timestamp, commit, dataset version. No result may be claimed before execution.

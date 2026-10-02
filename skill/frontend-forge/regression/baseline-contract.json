@@ -1,0 +1,18 @@
+{
+  "baseline_types": [
+    "architecture",
+    "visual",
+    "behavior",
+    "performance",
+    "accessibility",
+    "bundle"
+  ],
+  "required_fields": [
+    "baseline_id",
+    "type",
+    "scope",
+    "measurement",
+    "created_at",
+    "approval"
+  ]
+}

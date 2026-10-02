@@ -1,0 +1,23 @@
+{
+  "required": [
+    "pattern",
+    "scope",
+    "observations",
+    "success_rate",
+    "confidence",
+    "status",
+    "evidence"
+  ],
+  "status": [
+    "candidate",
+    "accepted",
+    "deprecated",
+    "stale",
+    "removed"
+  ],
+  "promotion": {
+    "min_observations": 3,
+    "min_success_rate": 0.8,
+    "min_confidence": 0.75
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "responsive": {
+    "relevant_files": [
+      "src/components/ProductCard.tsx",
+      "src/styles/ProductCard.module.css",
+      "tests/ProductCard.test.tsx",
+      "src/utils/price.ts"
+    ],
+    "critical_files": [
+      "src/components/ProductCard.tsx",
+      "src/styles/ProductCard.module.css"
+    ]
+  },
+  "performance-en": {
+    "relevant_files": [
+      "src/components/ProductCard.tsx",
+      "src/utils/price.ts"
+    ],
+    "critical_files": [
+      "src/components/ProductCard.tsx"
+    ]
+  },
+  "performance-fa": {
+    "relevant_files": [
+      "src/components/ProductCard.tsx",
+      "src/utils/price.ts"
+    ],
+    "critical_files": [
+      "src/components/ProductCard.tsx"
+    ]
+  },
+  "a11y-en": {
+    "relevant_files": [
+      "src/components/ProductCard.tsx",
+      "tests/ProductCard.test.tsx"
+    ],
+    "critical_files": [
+      "src/components/ProductCard.tsx"
+    ]
+  },
+  "a11y-fa": {
+    "relevant_files": [
+      "src/components/ProductCard.tsx",
+      "tests/ProductCard.test.tsx"
+    ],
+    "critical_files": [
+      "src/components/ProductCard.tsx"
+    ]
+  },
+  "style": {
+    "relevant_files": [
+      "src/components/ProductCard.tsx",
+      "src/styles/ProductCard.module.css"
+    ],
+    "critical_files": [
+      "src/styles/ProductCard.module.css"
+    ]
+  },
+  "test": {
+    "relevant_files": [
+      "src/components/ProductCard.tsx",
+      "tests/ProductCard.test.tsx",
+      "src/utils/price.ts"
+    ],
+    "critical_files": [
+      "src/components/ProductCard.tsx",
+      "tests/ProductCard.test.tsx"
+    ]
+  },
+  "refactor": {
+    "relevant_files": [
+      "src/components/ProductCard.tsx",
+      "src/utils/price.ts",
+      "tests/ProductCard.test.tsx",
+      "src/pages/Search.tsx"
+    ],
+    "critical_files": [
+      "src/components/ProductCard.tsx",
+      "src/utils/price.ts"
+    ]
+  },
+  "search-use": {
+    "relevant_files": [
+      "src/components/ProductCard.tsx",
+      "src/pages/Search.tsx"
+    ],
+    "critical_files": [
+      "src/components/ProductCard.tsx",
+      "src/pages/Search.tsx"
+    ]
+  },
+  "type": {
+    "relevant_files": [
+      "src/components/ProductCard.tsx",
+      "src/utils/price.ts"
+    ],
+    "critical_files": [
+      "src/components/ProductCard.tsx"
+    ]
+  },
+  "large": {
+    "relevant_files": [
+      "src/components/ProductCard.tsx",
+      "src/styles/ProductCard.module.css",
+      "tests/ProductCard.test.tsx",
+      "src/utils/price.ts",
+      "src/pages/Search.tsx"
+    ],
+    "critical_files": [
+      "src/components/ProductCard.tsx",
+      "src/styles/ProductCard.module.css",
+      "src/utils/price.ts"
+    ]
+  },
+  "quality-first": {
+    "relevant_files": [
+      "src/components/ProductCard.tsx",
+      "src/styles/ProductCard.module.css",
+      "tests/ProductCard.test.tsx",
+      "src/utils/price.ts",
+      "src/pages/Search.tsx"
+    ],
+    "critical_files": [
+      "src/components/ProductCard.tsx",
+      "src/utils/price.ts"
+    ]
+  }
+}

@@ -1,0 +1,1 @@
+import HeavyWidget18 from './HeavyWidget18'; export default function Page18(){return <HeavyWidget18/>}

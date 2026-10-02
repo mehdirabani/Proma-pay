@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "errors": [],
+  "stats": {
+    "development__validation": {
+      "exact_or_normalized_overlap": 0,
+      "concept_group_overlap": 0,
+      "near_duplicate_pairs_ge_0.965": 0,
+      "max_similarity": 0.9555
+    },
+    "development__hidden": {
+      "exact_or_normalized_overlap": 0,
+      "concept_group_overlap": 0,
+      "near_duplicate_pairs_ge_0.965": 0,
+      "max_similarity": 0.9627
+    },
+    "validation__hidden": {
+      "exact_or_normalized_overlap": 0,
+      "concept_group_overlap": 0,
+      "near_duplicate_pairs_ge_0.965": 0,
+      "max_similarity": 0.96
+    },
+    "total": {
+      "rows": 1610,
+      "unique_normalized": 1610,
+      "unique_ratio": 1.0
+    }
+  }
+}

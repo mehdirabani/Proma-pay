@@ -1,0 +1,15 @@
+id: authz
+version: 2
+preconditions:
+- identify actor
+- identify object ownership
+- identify permission boundary
+execution:
+- enforce authorization server-side
+- separate authentication from authorization
+verification:
+- unauthorized_access_test
+- ownership_regression
+- csrf_or_nonce_when_applicable
+completion:
+- permission boundary verified

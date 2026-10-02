@@ -1,0 +1,17 @@
+{
+  "required": [
+    "requirement_summary",
+    "architecture_decision",
+    "activated_engines",
+    "validation_results",
+    "remaining_risks"
+  ],
+  "deep_optional": [
+    "component_map",
+    "impact_report",
+    "benchmark_results",
+    "decision_trace",
+    "regression_results",
+    "confidence"
+  ]
+}

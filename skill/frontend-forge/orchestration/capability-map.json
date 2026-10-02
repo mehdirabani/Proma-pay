@@ -1,0 +1,38 @@
+{
+  "ecommerce-product-page": [
+    "frontend",
+    "ecommerce",
+    "seo",
+    "accessibility",
+    "performance"
+  ],
+  "dashboard": [
+    "frontend",
+    "dashboard",
+    "accessibility",
+    "component-architecture"
+  ],
+  "landing-page": [
+    "frontend",
+    "seo",
+    "performance",
+    "design"
+  ],
+  "legacy-css-refactor": [
+    "frontend",
+    "css-architecture",
+    "regression"
+  ],
+  "react-library": [
+    "frontend",
+    "react",
+    "component-architecture",
+    "accessibility"
+  ],
+  "nextjs-seo": [
+    "frontend",
+    "nextjs",
+    "seo",
+    "performance"
+  ]
+}

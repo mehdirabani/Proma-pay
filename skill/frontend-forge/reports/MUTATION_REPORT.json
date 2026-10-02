@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "generalized_mutation_score": "UNVERIFIED",
+  "caught_attack_cases": [
+    "raw caller trusted observation blocked",
+    "missing artifact blocked",
+    "caller source_id ignored",
+    "broker ACL wrong record blocked",
+    "same-root evidence correlated",
+    "L2 patch blocked",
+    "diagnostic plan patch blocked",
+    "probable root cause patch blocked",
+    "wrong cause patch mismatch",
+    "fake change signature rejected",
+    "wrong task/transaction/revision rejected",
+    "sealed read/list/stat denied"
+  ],
+  "note": "Explicit mutation/red-team cases; not a generalized mutation testing percentage."
+}

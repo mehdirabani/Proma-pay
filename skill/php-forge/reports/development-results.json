@@ -1,0 +1,115 @@
+{
+  "split": "development",
+  "status": "PASS",
+  "metrics": {
+    "cases": 903,
+    "passed": 903,
+    "module_tp": 1674,
+    "module_fn": 0,
+    "module_fp": 63,
+    "security_critical_total": 338,
+    "security_critical_hit": 338,
+    "fintech_critical_total": 110,
+    "fintech_critical_hit": 110,
+    "accuracy": 100.0,
+    "security_critical_recall": 100.0,
+    "fintech_critical_recall": 100.0,
+    "domain_precision": 96.37,
+    "domain_recall": 100.0
+  },
+  "category_metrics": {
+    "adversarial": {
+      "cases": 80,
+      "passed": 80,
+      "accuracy": 100.0
+    },
+    "context": {
+      "cases": 32,
+      "passed": 32,
+      "accuracy": 100.0
+    },
+    "database": {
+      "cases": 25,
+      "passed": 25,
+      "accuracy": 100.0
+    },
+    "fintech": {
+      "cases": 81,
+      "passed": 81,
+      "accuracy": 100.0
+    },
+    "general": {
+      "cases": 86,
+      "passed": 86,
+      "accuracy": 100.0
+    },
+    "legacy": {
+      "cases": 50,
+      "passed": 50,
+      "accuracy": 100.0
+    },
+    "negation": {
+      "cases": 35,
+      "passed": 35,
+      "accuracy": 100.0
+    },
+    "ood": {
+      "cases": 50,
+      "passed": 50,
+      "accuracy": 100.0
+    },
+    "performance": {
+      "cases": 42,
+      "passed": 42,
+      "accuracy": 100.0
+    },
+    "php-core": {
+      "cases": 70,
+      "passed": 70,
+      "accuracy": 100.0
+    },
+    "security": {
+      "cases": 101,
+      "passed": 101,
+      "accuracy": 100.0
+    },
+    "symfony": {
+      "cases": 80,
+      "passed": 80,
+      "accuracy": 100.0
+    },
+    "testing": {
+      "cases": 20,
+      "passed": 20,
+      "accuracy": 100.0
+    },
+    "woocommerce": {
+      "cases": 51,
+      "passed": 51,
+      "accuracy": 100.0
+    },
+    "wordpress": {
+      "cases": 100,
+      "passed": 100,
+      "accuracy": 100.0
+    }
+  },
+  "language_metrics": {
+    "persian_or_mixed": {
+      "cases": 180,
+      "passed": 180,
+      "accuracy": 100.0
+    },
+    "english_only": {
+      "cases": 723,
+      "passed": 723,
+      "accuracy": 100.0
+    }
+  },
+  "risk_exact_metrics": {
+    "cases": 0,
+    "passed": 0,
+    "accuracy": null
+  },
+  "failures": []
+}

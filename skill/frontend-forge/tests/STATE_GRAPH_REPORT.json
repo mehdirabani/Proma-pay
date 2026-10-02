@@ -1,0 +1,29 @@
+{
+  "valid": true,
+  "errors": [],
+  "reachable": [
+    "AGENT_CONFLICT",
+    "CONTEXT_FAILURE",
+    "CONTEXT_RESOLVED",
+    "DEPENDENCIES_ANALYZED",
+    "DEPENDENCY_FAILURE",
+    "EXECUTION_FAILURE",
+    "EXECUTION_STARTED",
+    "KNOWLEDGE_UPDATE",
+    "OUTPUT_GENERATED",
+    "PLANNING_FAILURE",
+    "PLAN_CREATED",
+    "PLAN_VALIDATED",
+    "QUALITY_GATE_FAILURE",
+    "QUALITY_VALIDATION",
+    "REGRESSION_DETECTED",
+    "REPAIR",
+    "REVALIDATE",
+    "TASK_ABORTED",
+    "TASK_CLASSIFIED",
+    "TASK_COMPLETED",
+    "TASK_RECEIVED",
+    "TEST_FAILURE"
+  ],
+  "unreachable": []
+}

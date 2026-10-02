@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "signature": "Ed25519 verified",
+  "bindings": [
+    "task_id",
+    "session_id",
+    "transaction_id",
+    "plan_hash",
+    "root_cause_record_hash",
+    "target_evidence_hash",
+    "autonomy_decision_hash",
+    "execution_policy_hash",
+    "before_hashes",
+    "after_hashes",
+    "revision_after"
+  ],
+  "fake_signature": "REJECTED",
+  "wrong_task": "REJECTED",
+  "wrong_transaction": "REJECTED",
+  "wrong_revision": "REJECTED"
+}

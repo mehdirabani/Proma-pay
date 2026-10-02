@@ -1,0 +1,1 @@
+export type Props40 = { count: string }; export const count40:Props40 = {count: 2};

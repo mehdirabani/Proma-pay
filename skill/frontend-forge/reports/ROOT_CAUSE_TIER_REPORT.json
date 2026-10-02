@@ -1,0 +1,10 @@
+{
+  "tiers": [
+    "HYPOTHESIS",
+    "STATIC_ASSOCIATION",
+    "REPRODUCED",
+    "INTERVENTION_CONFIRMED"
+  ],
+  "fixture_benchmark_tier": "REPRODUCED",
+  "L4_without_strong_causal_evidence": "BLOCKED"
+}

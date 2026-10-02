@@ -1,0 +1,22 @@
+{
+  "base_adapter": {
+    "version": "14.3.0",
+    "code_hash": "efa5f84393cd2fdfe22bd6b0b26551792fbd28234c510f3807c9667bcfe2e1c2",
+    "trust": "TRUSTED_LOCAL"
+  },
+  "cli_adapter": {
+    "version": "14.3.0",
+    "code_hash": "2abf91f15d29ca21a6de7bc6402fca1d6220bc05d40ceceafa5a0d1d05b8d90b",
+    "trust": "TRUSTED_LOCAL"
+  },
+  "registry": {
+    "version": "14.3.0",
+    "code_hash": "e2efb3e9f1a86e3273e542664d7524bc23fa99ed275fdebb9c0136186f7ff754",
+    "trust": "TRUSTED_LOCAL"
+  },
+  "tool_adapters": {
+    "version": "14.3.0",
+    "code_hash": "637b3c8bf7f93886169f4dde1c79cf9396c51ced77aa52b39c7fad81832bded5",
+    "trust": "TRUSTED_LOCAL"
+  }
+}

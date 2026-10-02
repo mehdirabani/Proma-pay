@@ -1,0 +1,15 @@
+id: debug
+version: 2
+preconditions:
+- inspect repository evidence when available
+- identify requested scope
+execution:
+- apply smallest correct change
+- preserve repository conventions
+verification:
+- run relevant verification ladder
+- inspect diff for unrelated changes
+completion:
+- requested outcome achieved
+- no known regression
+- unrelated changes absent

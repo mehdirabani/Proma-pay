@@ -1,0 +1,54 @@
+{
+  "requirements_mapped": {
+    "type": "evidence_present",
+    "required_evidence": [
+      "requirement_summary"
+    ],
+    "failure_state": "PLANNING_FAILURE"
+  },
+  "impact_analyzed": {
+    "type": "evidence_present",
+    "required_evidence": [
+      "impact_report"
+    ],
+    "failure_state": "PLANNING_FAILURE"
+  },
+  "required_capabilities_resolved": {
+    "type": "evidence_present",
+    "required_evidence": [
+      "capability_plan"
+    ],
+    "failure_state": "DEPENDENCY_FAILURE"
+  },
+  "risk_policy_satisfied": {
+    "type": "risk_policy",
+    "failure_state": "AWAITING_APPROVAL"
+  },
+  "high_risk_requires_approval": {
+    "type": "risk_requires_approval",
+    "failure_state": "PLANNING_FAILURE"
+  },
+  "approval_granted": {
+    "type": "boolean_flag",
+    "field": "approval_granted",
+    "failure_state": "ABORT_REQUESTED"
+  },
+  "mandatory_quality_evidence_present": {
+    "type": "quality_evidence",
+    "failure_state": "QUALITY_GATE_FAILURE"
+  },
+  "mandatory_gates_pass": {
+    "type": "boolean_flag",
+    "field": "quality_pass",
+    "failure_state": "QUALITY_GATE_FAILURE"
+  },
+  "no_blocking_regression": {
+    "type": "boolean_flag",
+    "field": "no_blocking_regression",
+    "failure_state": "REGRESSION_DETECTED"
+  },
+  "learning_record_written_or_skipped_with_reason": {
+    "type": "learning_record",
+    "failure_state": "QUALITY_GATE_FAILURE"
+  }
+}

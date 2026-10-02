@@ -1,0 +1,566 @@
+{
+  "version": "15.1.0",
+  "capabilities": {
+    "requirement-reasoner": {
+      "type": "engine",
+      "handler": "runtime_py.builtin_capabilities:requirement_reasoner",
+      "inputs": [
+        "task"
+      ],
+      "outputs": [
+        "requirement_summary"
+      ],
+      "timeout": 30,
+      "retry": 0,
+      "maturity": "VERIFIED",
+      "scope": "production"
+    },
+    "context-engine": {
+      "type": "engine",
+      "handler": "runtime_py.builtin_capabilities:context_engine",
+      "inputs": [
+        "task",
+        "workspace"
+      ],
+      "outputs": [
+        "context_summary"
+      ],
+      "timeout": 30,
+      "retry": 0,
+      "maturity": "VERIFIED",
+      "scope": "production"
+    },
+    "impact-analyzer": {
+      "type": "engine",
+      "handler": "runtime_py.builtin_capabilities:impact_analyzer",
+      "inputs": [
+        "affected_files"
+      ],
+      "outputs": [
+        "impact_report"
+      ],
+      "timeout": 30,
+      "retry": 0,
+      "maturity": "VERIFIED",
+      "scope": "production"
+    },
+    "dependency-resolver": {
+      "type": "engine",
+      "handler": "runtime_py.builtin_capabilities:dependency_resolver",
+      "inputs": [
+        "capability_plan"
+      ],
+      "outputs": [
+        "dependency_report"
+      ],
+      "timeout": 30,
+      "retry": 0,
+      "maturity": "REFERENCE",
+      "scope": "production"
+    },
+    "planner": {
+      "type": "engine",
+      "handler": "runtime_py.builtin_capabilities:planner",
+      "inputs": [
+        "requirement_summary",
+        "impact_report"
+      ],
+      "outputs": [
+        "architecture_plan"
+      ],
+      "timeout": 30,
+      "retry": 0,
+      "maturity": "VERIFIED",
+      "scope": "production"
+    },
+    "risk-engine": {
+      "type": "engine",
+      "handler": "runtime_py.risk:assess_risk",
+      "inputs": [
+        "risk_input"
+      ],
+      "outputs": [
+        "risk_report"
+      ],
+      "timeout": 10,
+      "retry": 0,
+      "maturity": "VERIFIED",
+      "scope": "production"
+    },
+    "quality-engine": {
+      "type": "engine",
+      "handler": "runtime_py.quality_v14:evaluate_quality",
+      "inputs": [
+        "profile",
+        "evidence",
+        "mode"
+      ],
+      "outputs": [
+        "quality_report"
+      ],
+      "timeout": 30,
+      "retry": 0,
+      "maturity": "VERIFIED",
+      "scope": "production"
+    },
+    "regression-runner": {
+      "type": "engine",
+      "handler": "runtime_py.regression_v14:compare_evidence",
+      "inputs": [
+        "baseline",
+        "current"
+      ],
+      "outputs": [
+        "regression_report"
+      ],
+      "timeout": 30,
+      "retry": 0,
+      "maturity": "VERIFIED",
+      "scope": "production"
+    },
+    "environment-scan": {
+      "type": "engine",
+      "handler": "runtime_py.environment:scan_environment",
+      "inputs": [],
+      "outputs": [
+        "environment_report"
+      ],
+      "timeout": 20,
+      "retry": 0,
+      "maturity": "VERIFIED",
+      "scope": "production"
+    },
+    "artifact-store": {
+      "type": "engine",
+      "handler": "runtime_py.builtin_capabilities:artifact_registration",
+      "inputs": [
+        "artifact"
+      ],
+      "outputs": [
+        "artifact_record"
+      ],
+      "timeout": 20,
+      "retry": 0,
+      "maturity": "REFERENCE",
+      "scope": "production"
+    },
+    "learning-engine": {
+      "type": "engine",
+      "handler": "runtime_py.builtin_capabilities:learning_record",
+      "inputs": [
+        "outcome"
+      ],
+      "outputs": [
+        "learning_record"
+      ],
+      "timeout": 20,
+      "retry": 0,
+      "maturity": "IMPLEMENTED",
+      "scope": "production"
+    },
+    "observability": {
+      "type": "engine",
+      "handler": "runtime_py.builtin_capabilities:observability_record",
+      "inputs": [
+        "trace"
+      ],
+      "outputs": [
+        "audit_record"
+      ],
+      "timeout": 20,
+      "retry": 0,
+      "maturity": "IMPLEMENTED",
+      "scope": "production"
+    },
+    "capability-executor": {
+      "type": "system",
+      "handler": "runtime_py.capability_executor:execute_capability",
+      "inputs": [
+        "capability_id",
+        "context"
+      ],
+      "outputs": [
+        "capability_result"
+      ],
+      "timeout": 120,
+      "retry": 0,
+      "maturity": "VERIFIED",
+      "scope": "production"
+    },
+    "failure-manager": {
+      "type": "engine",
+      "handler": "failure.failure_manager:handle_failure",
+      "inputs": [
+        "failure",
+        "session"
+      ],
+      "outputs": [
+        "recovery_action"
+      ],
+      "timeout": 30,
+      "retry": 0,
+      "maturity": "REFERENCE",
+      "scope": "production"
+    },
+    "agent-coordinator": {
+      "type": "engine",
+      "handler": "runtime_py.builtin_capabilities:agent_coordinator",
+      "inputs": [
+        "capability_plan"
+      ],
+      "outputs": [
+        "handoff_plan"
+      ],
+      "timeout": 30,
+      "retry": 0,
+      "maturity": "REFERENCE",
+      "scope": "production"
+    },
+    "git-status": {
+      "type": "adapter",
+      "adapter": "git",
+      "inputs": [
+        "workspace"
+      ],
+      "outputs": [
+        "git_status"
+      ],
+      "timeout": 20,
+      "retry": 0,
+      "maturity": "IMPLEMENTED",
+      "scope": "production"
+    },
+    "typescript-check": {
+      "type": "adapter",
+      "adapter": "typescript",
+      "inputs": [
+        "workspace"
+      ],
+      "outputs": [
+        "typecheck_report"
+      ],
+      "timeout": 120,
+      "retry": 0,
+      "maturity": "IMPLEMENTED",
+      "scope": "production"
+    },
+    "eslint-check": {
+      "type": "adapter",
+      "adapter": "eslint",
+      "inputs": [
+        "workspace"
+      ],
+      "outputs": [
+        "lint_report"
+      ],
+      "timeout": 120,
+      "retry": 0,
+      "maturity": "IMPLEMENTED",
+      "scope": "production"
+    },
+    "build-check": {
+      "type": "adapter",
+      "adapter": "build",
+      "inputs": [
+        "workspace",
+        "script"
+      ],
+      "outputs": [
+        "build_report"
+      ],
+      "timeout": 180,
+      "retry": 0,
+      "maturity": "IMPLEMENTED",
+      "scope": "production"
+    },
+    "lighthouse-check": {
+      "type": "adapter",
+      "adapter": "lighthouse",
+      "inputs": [
+        "workspace",
+        "target_url"
+      ],
+      "outputs": [
+        "lighthouse_report"
+      ],
+      "timeout": 120,
+      "retry": 1,
+      "maturity": "IMPLEMENTED",
+      "scope": "production"
+    },
+    "playwright-check": {
+      "type": "adapter",
+      "adapter": "playwright",
+      "inputs": [
+        "workspace",
+        "target_url"
+      ],
+      "outputs": [
+        "browser_report"
+      ],
+      "timeout": 120,
+      "retry": 0,
+      "maturity": "IMPLEMENTED",
+      "scope": "production"
+    },
+    "accessibility-check": {
+      "type": "adapter",
+      "adapter": "axe",
+      "inputs": [
+        "target_url"
+      ],
+      "outputs": [
+        "accessibility_report"
+      ],
+      "timeout": 120,
+      "retry": 0,
+      "maturity": "STUB",
+      "scope": "optional"
+    },
+    "architecture-agent": {
+      "type": "agent",
+      "contract_ref": "agents/contracts.json",
+      "maturity": "REFERENCE",
+      "scope": "production"
+    },
+    "frontend-agent": {
+      "type": "agent",
+      "contract_ref": "agents/contracts.json",
+      "maturity": "REFERENCE",
+      "scope": "production"
+    },
+    "ui-agent": {
+      "type": "agent",
+      "contract_ref": "agents/contracts.json",
+      "maturity": "REFERENCE",
+      "scope": "production"
+    },
+    "qa-agent": {
+      "type": "agent",
+      "contract_ref": "agents/contracts.json",
+      "maturity": "REFERENCE",
+      "scope": "production"
+    },
+    "accessibility-agent": {
+      "type": "agent",
+      "contract_ref": "agents/contracts.json",
+      "maturity": "REFERENCE",
+      "scope": "production"
+    },
+    "performance-agent": {
+      "type": "agent",
+      "contract_ref": "agents/contracts.json",
+      "maturity": "REFERENCE",
+      "scope": "production"
+    },
+    "security-agent": {
+      "type": "agent",
+      "contract_ref": "agents/contracts.json",
+      "maturity": "REFERENCE",
+      "scope": "production"
+    },
+    "arbitrator-agent": {
+      "type": "agent",
+      "contract_ref": "agents/contracts.json",
+      "maturity": "REFERENCE",
+      "scope": "production"
+    },
+    "test-invalid-output": {
+      "type": "engine",
+      "handler": "runtime_py.test_handlers:wrong_output",
+      "inputs": [],
+      "outputs": [
+        "expected_output"
+      ],
+      "timeout": 5,
+      "retry": 0,
+      "test_only": true,
+      "maturity": "REFERENCE",
+      "scope": "test-only"
+    },
+    "test-sleep-engine": {
+      "type": "engine",
+      "handler": "runtime_py.test_handlers:sleep_output",
+      "inputs": [
+        "seconds"
+      ],
+      "outputs": [
+        "sleep_report"
+      ],
+      "timeout": 1,
+      "retry": 0,
+      "test_only": true,
+      "maturity": "REFERENCE",
+      "scope": "test-only"
+    },
+    "token-meter": {
+      "type": "engine",
+      "handler": "token_intelligence.capabilities:token_meter_capability",
+      "inputs": [
+        "text"
+      ],
+      "outputs": [
+        "token_metrics"
+      ],
+      "maturity": "VERIFIED",
+      "scope": "optional",
+      "lazy": true
+    },
+    "context-selector": {
+      "type": "engine",
+      "handler": "token_intelligence.capabilities:context_selector_capability",
+      "inputs": [
+        "task",
+        "candidates",
+        "budget"
+      ],
+      "outputs": [
+        "context_pack"
+      ],
+      "maturity": "VERIFIED",
+      "scope": "optional",
+      "lazy": true
+    },
+    "context-cache": {
+      "type": "engine",
+      "handler": "token_intelligence.capabilities:context_cache_capability",
+      "inputs": [
+        "file"
+      ],
+      "outputs": [
+        "summary_cache"
+      ],
+      "maturity": "VERIFIED",
+      "scope": "optional",
+      "lazy": true
+    },
+    "context-compressor": {
+      "type": "engine",
+      "handler": "token_intelligence.capabilities:context_compressor_capability",
+      "inputs": [
+        "tool_output"
+      ],
+      "outputs": [
+        "compressed_findings"
+      ],
+      "maturity": "VERIFIED",
+      "scope": "optional",
+      "lazy": true
+    },
+    "module-loader": {
+      "type": "engine",
+      "handler": "token_intelligence.capabilities:module_loader_capability",
+      "inputs": [
+        "task",
+        "risk"
+      ],
+      "outputs": [
+        "module_trace"
+      ],
+      "maturity": "VERIFIED",
+      "scope": "optional",
+      "lazy": false
+    },
+    "token-benchmark": {
+      "type": "engine",
+      "handler": "token_intelligence.capabilities:token_benchmark_capability",
+      "inputs": [
+        "fixture"
+      ],
+      "outputs": [
+        "token_efficiency_report"
+      ],
+      "maturity": "VERIFIED",
+      "scope": "optional",
+      "lazy": true
+    },
+    "engineering-task-analyzer": {
+      "type": "engine",
+      "handler": "engineering_intelligence.capabilities:task_cap",
+      "inputs": [
+        "task"
+      ],
+      "outputs": [
+        "engineering_task"
+      ],
+      "timeout": 20,
+      "retry": 0,
+      "maturity": "VERIFIED_UNIT",
+      "scope": "production"
+    },
+    "target-safety-gate": {
+      "type": "engine",
+      "handler": "engineering_intelligence.capabilities:safety_cap",
+      "inputs": [
+        "candidate"
+      ],
+      "outputs": [
+        "target_safety"
+      ],
+      "timeout": 20,
+      "retry": 0,
+      "maturity": "VERIFIED_UNIT",
+      "scope": "production"
+    },
+    "root-cause-engine-v15": {
+      "type": "engine",
+      "handler": "engineering_intelligence.capabilities:root_cause_cap",
+      "inputs": [
+        "symptom"
+      ],
+      "outputs": [
+        "root_cause_report"
+      ],
+      "timeout": 20,
+      "retry": 0,
+      "maturity": "VERIFIED_UNIT",
+      "scope": "production"
+    },
+    "change-planner-v15": {
+      "type": "engine",
+      "handler": "engineering_intelligence.capabilities:plan_cap",
+      "inputs": [
+        "engineering_task",
+        "root_cause_report",
+        "target_safety"
+      ],
+      "outputs": [
+        "change_plan"
+      ],
+      "timeout": 20,
+      "retry": 0,
+      "maturity": "VERIFIED_UNIT",
+      "scope": "production"
+    },
+    "impact-predictor-v15": {
+      "type": "engine",
+      "handler": "engineering_intelligence.capabilities:impact_cap",
+      "inputs": [
+        "change_files",
+        "graph"
+      ],
+      "outputs": [
+        "impact_prediction"
+      ],
+      "timeout": 20,
+      "retry": 0,
+      "maturity": "VERIFIED_UNIT",
+      "scope": "production"
+    },
+    "engineering-orchestrator-v2": {
+      "type": "engine",
+      "handler": "engineering_intelligence.capabilities:orchestrator_cap",
+      "inputs": [
+        "task",
+        "workspace"
+      ],
+      "outputs": [
+        "engineering_runtime"
+      ],
+      "timeout": 60,
+      "retry": 0,
+      "maturity": "VERIFIED_FIXTURE",
+      "scope": "production"
+    }
+  }
+}

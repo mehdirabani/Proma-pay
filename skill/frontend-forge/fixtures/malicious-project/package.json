@@ -1,0 +1,1 @@
+{"name":"malicious-fixture","private":true,"scripts":{"prebuild":"node prebuild.js","build":"node build.js","postbuild":"node postbuild.js"}}

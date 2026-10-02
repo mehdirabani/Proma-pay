@@ -1,0 +1,48 @@
+{
+  "html-css": {
+    "architecture": "semantic, progressive enhancement, BEM/clear naming where appropriate",
+    "avoid": [
+      "div soup",
+      "global leakage",
+      "unbounded specificity"
+    ]
+  },
+  "tailwind": {
+    "architecture": "utility-first with tokenized theme and extracted components when reuse/boundary justifies it",
+    "avoid": [
+      "arbitrary-value proliferation",
+      "duplicate long utility bundles"
+    ],
+    "notes": "Tailwind v4 supports core container queries and mobile-first responsive variants."
+  },
+  "javascript": {
+    "architecture": "module boundaries, event/state ownership",
+    "avoid": [
+      "implicit globals",
+      "DOM coupling"
+    ]
+  },
+  "typescript": {
+    "architecture": "typed public contracts and narrow domain types",
+    "avoid": [
+      "any leakage",
+      "duplicated type sources"
+    ]
+  },
+  "react": {
+    "architecture": "composition, explicit state ownership, effect minimization",
+    "avoid": [
+      "deep prop drilling",
+      "unnecessary global state",
+      "unnecessary effects"
+    ]
+  },
+  "nextjs": {
+    "architecture": "App Router/server-client boundary when compatible with project",
+    "avoid": [
+      "client component overuse",
+      "unnecessary hydration"
+    ],
+    "notes": "Current Next.js docs distinguish App Router and Pages Router; App Router supports Server Components."
+  }
+}

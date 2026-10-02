@@ -1,0 +1,71 @@
+{
+  "core-router": {
+    "files": [
+      "SKILL.md"
+    ],
+    "always": true,
+    "lazy": false
+  },
+  "css-tailwind": {
+    "files": [
+      "quality/frontend-quality-engines.md"
+    ],
+    "lazy": true
+  },
+  "react": {
+    "files": [
+      "profiles/stack-profiles.json"
+    ],
+    "lazy": true
+  },
+  "nextjs": {
+    "files": [
+      "profiles/stack-profiles.json"
+    ],
+    "lazy": true
+  },
+  "accessibility": {
+    "files": [
+      "quality/frontend-quality-engines.md"
+    ],
+    "lazy": true
+  },
+  "performance": {
+    "files": [
+      "quality/frontend-quality-engines.md"
+    ],
+    "lazy": true
+  },
+  "seo": {
+    "files": [
+      "quality/frontend-quality-engines.md"
+    ],
+    "lazy": true
+  },
+  "security": {
+    "files": [
+      "TRUST_MODEL.md",
+      "security/sandbox_policy.py"
+    ],
+    "lazy": true
+  },
+  "provenance-internals": {
+    "files": [
+      "TRUST_MODEL.md",
+      "provenance/execution_broker.py"
+    ],
+    "lazy": true
+  },
+  "ci-internals": {
+    "files": [
+      "ci/ci_runner.py"
+    ],
+    "lazy": true
+  },
+  "ecommerce": {
+    "files": [
+      "quality/project-profiles.json"
+    ],
+    "lazy": true
+  }
+}

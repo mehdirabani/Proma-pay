@@ -1,0 +1,58 @@
+{
+  "CONTEXT_FAILURE": {
+    "detect": "required P0 context unavailable",
+    "retry": 1,
+    "recovery": "re-resolve or use reversible assumption",
+    "rollback": false,
+    "escalate": true
+  },
+  "PLANNING_FAILURE": {
+    "detect": "plan violates hard constraint",
+    "retry": 1,
+    "recovery": "regenerate candidates",
+    "rollback": false,
+    "escalate": true
+  },
+  "EXECUTION_FAILURE": {
+    "detect": "implementation/tool operation failed",
+    "retry": 2,
+    "recovery": "retry from checkpoint or alternate strategy",
+    "rollback": true,
+    "escalate": true
+  },
+  "TEST_FAILURE": {
+    "detect": "required test fails",
+    "retry": 2,
+    "recovery": "repair then revalidate",
+    "rollback": true,
+    "escalate": false
+  },
+  "QUALITY_GATE_FAILURE": {
+    "detect": "blocking quality threshold fails",
+    "retry": 2,
+    "recovery": "activate remediation agent",
+    "rollback": true,
+    "escalate": true
+  },
+  "DEPENDENCY_FAILURE": {
+    "detect": "dependency/version cannot resolve",
+    "retry": 0,
+    "recovery": "dependency resolver selects compatible alternative",
+    "rollback": false,
+    "escalate": true
+  },
+  "AGENT_CONFLICT": {
+    "detect": "blocking recommendations conflict",
+    "retry": 1,
+    "recovery": "arbitration",
+    "rollback": false,
+    "escalate": true
+  },
+  "REGRESSION_DETECTED": {
+    "detect": "current result worse than protected baseline",
+    "retry": 2,
+    "recovery": "repair or revert",
+    "rollback": true,
+    "escalate": true
+  }
+}

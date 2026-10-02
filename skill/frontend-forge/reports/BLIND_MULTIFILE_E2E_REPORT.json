@@ -1,0 +1,768 @@
+{
+  "measurement": "VERIFIED_BLIND_MULTI_FILE",
+  "isolation_mode": "SEPARATE_UID_PROCESS",
+  "tasks": 50,
+  "solved": 50,
+  "success_rate": 1.0,
+  "unauthorized_patch_rate": 0.0,
+  "sealed_access_probe": {
+    "read": "ACCESS_DENIED",
+    "list": "ACCESS_DENIED",
+    "stat": "ACCESS_DENIED"
+  },
+  "failure_distribution": {
+    "PASS": 50
+  },
+  "rows": [
+    {
+      "task_id": "v153-00-00",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Aurora0Panel.tsx",
+      "cause_code": "MIN_WIDTH_FIXED",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-00-01",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Beryl0Panel.tsx",
+      "cause_code": "MIN_WIDTH_FIXED",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-00-02",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Cinder0Panel.tsx",
+      "cause_code": "MIN_WIDTH_FIXED",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-00-03",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Dahlia0Panel.tsx",
+      "cause_code": "MIN_WIDTH_FIXED",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-00-04",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Ember0Panel.tsx",
+      "cause_code": "MIN_WIDTH_FIXED",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-01-00",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Aurora1Panel.tsx",
+      "cause_code": "NOWRAP",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-01-01",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Beryl1Panel.tsx",
+      "cause_code": "NOWRAP",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-01-02",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Cinder1Panel.tsx",
+      "cause_code": "NOWRAP",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-01-03",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Dahlia1Panel.tsx",
+      "cause_code": "NOWRAP",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-01-04",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Ember1Panel.tsx",
+      "cause_code": "NOWRAP",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-02-00",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Aurora2Panel.tsx",
+      "cause_code": "FIXED_WIDTH",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-02-01",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Beryl2Panel.tsx",
+      "cause_code": "FIXED_WIDTH",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-02-02",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Cinder2Panel.tsx",
+      "cause_code": "FIXED_WIDTH",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-02-03",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Dahlia2Panel.tsx",
+      "cause_code": "FIXED_WIDTH",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-02-04",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Ember2Panel.tsx",
+      "cause_code": "FIXED_WIDTH",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-03-00",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Aurora3Panel.tsx",
+      "cause_code": "MISSING_LABEL",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-03-01",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Beryl3Panel.tsx",
+      "cause_code": "MISSING_LABEL",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-03-02",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Cinder3Panel.tsx",
+      "cause_code": "MISSING_LABEL",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-03-03",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Dahlia3Panel.tsx",
+      "cause_code": "MISSING_LABEL",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-03-04",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Ember3Panel.tsx",
+      "cause_code": "MISSING_LABEL",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-04-00",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Aurora4Panel.tsx",
+      "cause_code": "BUTTON_NAME",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-04-01",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Beryl4Panel.tsx",
+      "cause_code": "BUTTON_NAME",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-04-02",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Cinder4Panel.tsx",
+      "cause_code": "BUTTON_NAME",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-04-03",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Dahlia4Panel.tsx",
+      "cause_code": "BUTTON_NAME",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-04-04",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Ember4Panel.tsx",
+      "cause_code": "BUTTON_NAME",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-05-00",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Aurora5Panel.tsx",
+      "cause_code": "ROUTE_TYPO",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-05-01",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Beryl5Panel.tsx",
+      "cause_code": "ROUTE_TYPO",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-05-02",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Cinder5Panel.tsx",
+      "cause_code": "ROUTE_TYPO",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-05-03",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Dahlia5Panel.tsx",
+      "cause_code": "ROUTE_TYPO",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-05-04",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Ember5Panel.tsx",
+      "cause_code": "ROUTE_TYPO",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-06-00",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Aurora6Panel.tsx",
+      "cause_code": "TYPE_STRING_NUMBER",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-06-01",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Beryl6Panel.tsx",
+      "cause_code": "TYPE_STRING_NUMBER",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-06-02",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Cinder6Panel.tsx",
+      "cause_code": "TYPE_STRING_NUMBER",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-06-03",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Dahlia6Panel.tsx",
+      "cause_code": "TYPE_STRING_NUMBER",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-06-04",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Ember6Panel.tsx",
+      "cause_code": "TYPE_STRING_NUMBER",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-07-00",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Aurora7Panel.tsx",
+      "cause_code": "LOADING_NULL",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-07-01",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Beryl7Panel.tsx",
+      "cause_code": "LOADING_NULL",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-07-02",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Cinder7Panel.tsx",
+      "cause_code": "LOADING_NULL",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-07-03",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Dahlia7Panel.tsx",
+      "cause_code": "LOADING_NULL",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-07-04",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Ember7Panel.tsx",
+      "cause_code": "LOADING_NULL",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-08-00",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Aurora8Panel.tsx",
+      "cause_code": "NON_SUBMIT",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-08-01",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Beryl8Panel.tsx",
+      "cause_code": "NON_SUBMIT",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-08-02",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Cinder8Panel.tsx",
+      "cause_code": "NON_SUBMIT",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-08-03",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Dahlia8Panel.tsx",
+      "cause_code": "NON_SUBMIT",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-08-04",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Ember8Panel.tsx",
+      "cause_code": "NON_SUBMIT",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-09-00",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Aurora9Panel.tsx",
+      "cause_code": "TAILWIND_FIXED_WIDTH",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-09-01",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Beryl9Panel.tsx",
+      "cause_code": "TAILWIND_FIXED_WIDTH",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-09-02",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Cinder9Panel.tsx",
+      "cause_code": "TAILWIND_FIXED_WIDTH",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-09-03",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Dahlia9Panel.tsx",
+      "cause_code": "TAILWIND_FIXED_WIDTH",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    },
+    {
+      "task_id": "v153-09-04",
+      "execution_status": "PATCH_APPLIED",
+      "evaluation": {
+        "success": true,
+        "target_ok": true,
+        "behavior_ok": true,
+        "change_receipt_ok": true,
+        "validation_ok": true,
+        "receipt_reason": "PASS"
+      },
+      "candidate": "src/components/Ember9Panel.tsx",
+      "cause_code": "TAILWIND_FIXED_WIDTH",
+      "autonomy": "L3_IMPLEMENT_LOW_RISK"
+    }
+  ]
+}

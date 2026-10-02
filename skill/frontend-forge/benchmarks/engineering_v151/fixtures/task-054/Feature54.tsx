@@ -1,0 +1,1 @@
+import HeavyWidget54 from './HeavyWidget54'; export default function Page54(){return <HeavyWidget54/>}

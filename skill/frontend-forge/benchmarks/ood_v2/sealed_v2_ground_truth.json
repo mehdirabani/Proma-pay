@@ -1,0 +1,1052 @@
+{
+  "sealed-000": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "required": [
+      "src/widgets/CatalogSurface.tsx",
+      "src/styles/CatalogSurface.module.css",
+      "tests/CatalogSurface.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-001": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "required": [
+      "src/widgets/CatalogSurface.tsx",
+      "src/styles/CatalogSurface.module.css",
+      "tests/CatalogSurface.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-002": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "required": [
+      "src/widgets/CatalogSurface.tsx",
+      "src/styles/CatalogSurface.module.css",
+      "tests/CatalogSurface.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-003": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "required": [
+      "src/widgets/CatalogSurface.tsx",
+      "src/styles/CatalogSurface.module.css",
+      "tests/CatalogSurface.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-004": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "required": [
+      "src/widgets/CatalogSurface.tsx",
+      "src/styles/CatalogSurface.module.css",
+      "tests/CatalogSurface.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-005": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "required": [
+      "src/widgets/CatalogSurface.tsx",
+      "src/styles/CatalogSurface.module.css",
+      "tests/CatalogSurface.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-006": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "required": [
+      "src/widgets/CatalogSurface.tsx",
+      "src/styles/CatalogSurface.module.css",
+      "tests/CatalogSurface.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-007": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "required": [
+      "src/widgets/CatalogSurface.tsx",
+      "src/styles/CatalogSurface.module.css",
+      "tests/CatalogSurface.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-008": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "required": [
+      "src/widgets/CatalogSurface.tsx",
+      "src/styles/CatalogSurface.module.css",
+      "tests/CatalogSurface.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-009": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "required": [
+      "src/widgets/CatalogSurface.tsx",
+      "src/styles/CatalogSurface.module.css",
+      "tests/CatalogSurface.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-010": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "required": [
+      "src/widgets/PaymentJourney.tsx",
+      "src/styles/PaymentJourney.module.css",
+      "tests/PaymentJourney.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-011": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "required": [
+      "src/widgets/PaymentJourney.tsx",
+      "src/styles/PaymentJourney.module.css",
+      "tests/PaymentJourney.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-012": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "required": [
+      "src/widgets/PaymentJourney.tsx",
+      "src/styles/PaymentJourney.module.css",
+      "tests/PaymentJourney.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-013": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "required": [
+      "src/widgets/PaymentJourney.tsx",
+      "src/styles/PaymentJourney.module.css",
+      "tests/PaymentJourney.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-014": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "required": [
+      "src/widgets/PaymentJourney.tsx",
+      "src/styles/PaymentJourney.module.css",
+      "tests/PaymentJourney.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-015": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "required": [
+      "src/widgets/PaymentJourney.tsx",
+      "src/styles/PaymentJourney.module.css",
+      "tests/PaymentJourney.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-016": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "required": [
+      "src/widgets/PaymentJourney.tsx",
+      "src/styles/PaymentJourney.module.css",
+      "tests/PaymentJourney.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-017": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "required": [
+      "src/widgets/PaymentJourney.tsx",
+      "src/styles/PaymentJourney.module.css",
+      "tests/PaymentJourney.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-018": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "required": [
+      "src/widgets/PaymentJourney.tsx",
+      "src/styles/PaymentJourney.module.css",
+      "tests/PaymentJourney.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-019": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "required": [
+      "src/widgets/PaymentJourney.tsx",
+      "src/styles/PaymentJourney.module.css",
+      "tests/PaymentJourney.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-020": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "required": [
+      "src/widgets/MastheadCluster.tsx",
+      "src/styles/MastheadCluster.module.css",
+      "tests/MastheadCluster.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-021": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "required": [
+      "src/widgets/MastheadCluster.tsx",
+      "src/styles/MastheadCluster.module.css",
+      "tests/MastheadCluster.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-022": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "required": [
+      "src/widgets/MastheadCluster.tsx",
+      "src/styles/MastheadCluster.module.css",
+      "tests/MastheadCluster.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-023": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "required": [
+      "src/widgets/MastheadCluster.tsx",
+      "src/styles/MastheadCluster.module.css",
+      "tests/MastheadCluster.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-024": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "required": [
+      "src/widgets/MastheadCluster.tsx",
+      "src/styles/MastheadCluster.module.css",
+      "tests/MastheadCluster.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-025": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "required": [
+      "src/widgets/MastheadCluster.tsx",
+      "src/styles/MastheadCluster.module.css",
+      "tests/MastheadCluster.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-026": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "required": [
+      "src/widgets/MastheadCluster.tsx",
+      "src/styles/MastheadCluster.module.css",
+      "tests/MastheadCluster.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-027": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "required": [
+      "src/widgets/MastheadCluster.tsx",
+      "src/styles/MastheadCluster.module.css",
+      "tests/MastheadCluster.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-028": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "required": [
+      "src/widgets/MastheadCluster.tsx",
+      "src/styles/MastheadCluster.module.css",
+      "tests/MastheadCluster.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-029": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "required": [
+      "src/widgets/MastheadCluster.tsx",
+      "src/styles/MastheadCluster.module.css",
+      "tests/MastheadCluster.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-030": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "required": [
+      "src/widgets/FulfillmentBook.tsx",
+      "src/styles/FulfillmentBook.module.css",
+      "tests/FulfillmentBook.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-031": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "required": [
+      "src/widgets/FulfillmentBook.tsx",
+      "src/styles/FulfillmentBook.module.css",
+      "tests/FulfillmentBook.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-032": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "required": [
+      "src/widgets/FulfillmentBook.tsx",
+      "src/styles/FulfillmentBook.module.css",
+      "tests/FulfillmentBook.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-033": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "required": [
+      "src/widgets/FulfillmentBook.tsx",
+      "src/styles/FulfillmentBook.module.css",
+      "tests/FulfillmentBook.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-034": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "required": [
+      "src/widgets/FulfillmentBook.tsx",
+      "src/styles/FulfillmentBook.module.css",
+      "tests/FulfillmentBook.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-035": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "required": [
+      "src/widgets/FulfillmentBook.tsx",
+      "src/styles/FulfillmentBook.module.css",
+      "tests/FulfillmentBook.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-036": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "required": [
+      "src/widgets/FulfillmentBook.tsx",
+      "src/styles/FulfillmentBook.module.css",
+      "tests/FulfillmentBook.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-037": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "required": [
+      "src/widgets/FulfillmentBook.tsx",
+      "src/styles/FulfillmentBook.module.css",
+      "tests/FulfillmentBook.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-038": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "required": [
+      "src/widgets/FulfillmentBook.tsx",
+      "src/styles/FulfillmentBook.module.css",
+      "tests/FulfillmentBook.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-039": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "required": [
+      "src/widgets/FulfillmentBook.tsx",
+      "src/styles/FulfillmentBook.module.css",
+      "tests/FulfillmentBook.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-040": {
+    "target": "src/widgets/AlertStream.tsx",
+    "required": [
+      "src/widgets/AlertStream.tsx",
+      "src/styles/AlertStream.module.css",
+      "tests/AlertStream.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-041": {
+    "target": "src/widgets/AlertStream.tsx",
+    "required": [
+      "src/widgets/AlertStream.tsx",
+      "src/styles/AlertStream.module.css",
+      "tests/AlertStream.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-042": {
+    "target": "src/widgets/AlertStream.tsx",
+    "required": [
+      "src/widgets/AlertStream.tsx",
+      "src/styles/AlertStream.module.css",
+      "tests/AlertStream.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-043": {
+    "target": "src/widgets/AlertStream.tsx",
+    "required": [
+      "src/widgets/AlertStream.tsx",
+      "src/styles/AlertStream.module.css",
+      "tests/AlertStream.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-044": {
+    "target": "src/widgets/AlertStream.tsx",
+    "required": [
+      "src/widgets/AlertStream.tsx",
+      "src/styles/AlertStream.module.css",
+      "tests/AlertStream.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-045": {
+    "target": "src/widgets/AlertStream.tsx",
+    "required": [
+      "src/widgets/AlertStream.tsx",
+      "src/styles/AlertStream.module.css",
+      "tests/AlertStream.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-046": {
+    "target": "src/widgets/AlertStream.tsx",
+    "required": [
+      "src/widgets/AlertStream.tsx",
+      "src/styles/AlertStream.module.css",
+      "tests/AlertStream.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-047": {
+    "target": "src/widgets/AlertStream.tsx",
+    "required": [
+      "src/widgets/AlertStream.tsx",
+      "src/styles/AlertStream.module.css",
+      "tests/AlertStream.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-048": {
+    "target": "src/widgets/AlertStream.tsx",
+    "required": [
+      "src/widgets/AlertStream.tsx",
+      "src/styles/AlertStream.module.css",
+      "tests/AlertStream.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-049": {
+    "target": "src/widgets/AlertStream.tsx",
+    "required": [
+      "src/widgets/AlertStream.tsx",
+      "src/styles/AlertStream.module.css",
+      "tests/AlertStream.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-050": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "required": [
+      "src/widgets/BillingLedger.tsx",
+      "src/styles/BillingLedger.module.css",
+      "tests/BillingLedger.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-051": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "required": [
+      "src/widgets/BillingLedger.tsx",
+      "src/styles/BillingLedger.module.css",
+      "tests/BillingLedger.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-052": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "required": [
+      "src/widgets/BillingLedger.tsx",
+      "src/styles/BillingLedger.module.css",
+      "tests/BillingLedger.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-053": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "required": [
+      "src/widgets/BillingLedger.tsx",
+      "src/styles/BillingLedger.module.css",
+      "tests/BillingLedger.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-054": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "required": [
+      "src/widgets/BillingLedger.tsx",
+      "src/styles/BillingLedger.module.css",
+      "tests/BillingLedger.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-055": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "required": [
+      "src/widgets/BillingLedger.tsx",
+      "src/styles/BillingLedger.module.css",
+      "tests/BillingLedger.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-056": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "required": [
+      "src/widgets/BillingLedger.tsx",
+      "src/styles/BillingLedger.module.css",
+      "tests/BillingLedger.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-057": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "required": [
+      "src/widgets/BillingLedger.tsx",
+      "src/styles/BillingLedger.module.css",
+      "tests/BillingLedger.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-058": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "required": [
+      "src/widgets/BillingLedger.tsx",
+      "src/styles/BillingLedger.module.css",
+      "tests/BillingLedger.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-059": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "required": [
+      "src/widgets/BillingLedger.tsx",
+      "src/styles/BillingLedger.module.css",
+      "tests/BillingLedger.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-060": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "required": [
+      "src/widgets/SavedItemsShelf.tsx",
+      "src/styles/SavedItemsShelf.module.css",
+      "tests/SavedItemsShelf.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-061": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "required": [
+      "src/widgets/SavedItemsShelf.tsx",
+      "src/styles/SavedItemsShelf.module.css",
+      "tests/SavedItemsShelf.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-062": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "required": [
+      "src/widgets/SavedItemsShelf.tsx",
+      "src/styles/SavedItemsShelf.module.css",
+      "tests/SavedItemsShelf.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-063": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "required": [
+      "src/widgets/SavedItemsShelf.tsx",
+      "src/styles/SavedItemsShelf.module.css",
+      "tests/SavedItemsShelf.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-064": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "required": [
+      "src/widgets/SavedItemsShelf.tsx",
+      "src/styles/SavedItemsShelf.module.css",
+      "tests/SavedItemsShelf.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-065": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "required": [
+      "src/widgets/SavedItemsShelf.tsx",
+      "src/styles/SavedItemsShelf.module.css",
+      "tests/SavedItemsShelf.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-066": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "required": [
+      "src/widgets/SavedItemsShelf.tsx",
+      "src/styles/SavedItemsShelf.module.css",
+      "tests/SavedItemsShelf.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-067": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "required": [
+      "src/widgets/SavedItemsShelf.tsx",
+      "src/styles/SavedItemsShelf.module.css",
+      "tests/SavedItemsShelf.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-068": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "required": [
+      "src/widgets/SavedItemsShelf.tsx",
+      "src/styles/SavedItemsShelf.module.css",
+      "tests/SavedItemsShelf.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-069": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "required": [
+      "src/widgets/SavedItemsShelf.tsx",
+      "src/styles/SavedItemsShelf.module.css",
+      "tests/SavedItemsShelf.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-070": {
+    "target": "src/widgets/DataGridView.tsx",
+    "required": [
+      "src/widgets/DataGridView.tsx",
+      "src/styles/DataGridView.module.css",
+      "tests/DataGridView.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-071": {
+    "target": "src/widgets/DataGridView.tsx",
+    "required": [
+      "src/widgets/DataGridView.tsx",
+      "src/styles/DataGridView.module.css",
+      "tests/DataGridView.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-072": {
+    "target": "src/widgets/DataGridView.tsx",
+    "required": [
+      "src/widgets/DataGridView.tsx",
+      "src/styles/DataGridView.module.css",
+      "tests/DataGridView.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-073": {
+    "target": "src/widgets/DataGridView.tsx",
+    "required": [
+      "src/widgets/DataGridView.tsx",
+      "src/styles/DataGridView.module.css",
+      "tests/DataGridView.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-074": {
+    "target": "src/widgets/DataGridView.tsx",
+    "required": [
+      "src/widgets/DataGridView.tsx",
+      "src/styles/DataGridView.module.css",
+      "tests/DataGridView.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-075": {
+    "target": "src/widgets/DataGridView.tsx",
+    "required": [
+      "src/widgets/DataGridView.tsx",
+      "src/styles/DataGridView.module.css",
+      "tests/DataGridView.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-076": {
+    "target": "src/widgets/DataGridView.tsx",
+    "required": [
+      "src/widgets/DataGridView.tsx",
+      "src/styles/DataGridView.module.css",
+      "tests/DataGridView.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-077": {
+    "target": "src/widgets/DataGridView.tsx",
+    "required": [
+      "src/widgets/DataGridView.tsx",
+      "src/styles/DataGridView.module.css",
+      "tests/DataGridView.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-078": {
+    "target": "src/widgets/DataGridView.tsx",
+    "required": [
+      "src/widgets/DataGridView.tsx",
+      "src/styles/DataGridView.module.css",
+      "tests/DataGridView.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-079": {
+    "target": "src/widgets/DataGridView.tsx",
+    "required": [
+      "src/widgets/DataGridView.tsx",
+      "src/styles/DataGridView.module.css",
+      "tests/DataGridView.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-080": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "required": [
+      "src/widgets/MediaCarousel.tsx",
+      "src/styles/MediaCarousel.module.css",
+      "tests/MediaCarousel.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-081": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "required": [
+      "src/widgets/MediaCarousel.tsx",
+      "src/styles/MediaCarousel.module.css",
+      "tests/MediaCarousel.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-082": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "required": [
+      "src/widgets/MediaCarousel.tsx",
+      "src/styles/MediaCarousel.module.css",
+      "tests/MediaCarousel.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-083": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "required": [
+      "src/widgets/MediaCarousel.tsx",
+      "src/styles/MediaCarousel.module.css",
+      "tests/MediaCarousel.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-084": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "required": [
+      "src/widgets/MediaCarousel.tsx",
+      "src/styles/MediaCarousel.module.css",
+      "tests/MediaCarousel.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-085": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "required": [
+      "src/widgets/MediaCarousel.tsx",
+      "src/styles/MediaCarousel.module.css",
+      "tests/MediaCarousel.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-086": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "required": [
+      "src/widgets/MediaCarousel.tsx",
+      "src/styles/MediaCarousel.module.css",
+      "tests/MediaCarousel.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-087": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "required": [
+      "src/widgets/MediaCarousel.tsx",
+      "src/styles/MediaCarousel.module.css",
+      "tests/MediaCarousel.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-088": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "required": [
+      "src/widgets/MediaCarousel.tsx",
+      "src/styles/MediaCarousel.module.css",
+      "tests/MediaCarousel.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-089": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "required": [
+      "src/widgets/MediaCarousel.tsx",
+      "src/styles/MediaCarousel.module.css",
+      "tests/MediaCarousel.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-090": {
+    "target": "src/widgets/FilterRail.tsx",
+    "required": [
+      "src/widgets/FilterRail.tsx",
+      "src/styles/FilterRail.module.css",
+      "tests/FilterRail.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-091": {
+    "target": "src/widgets/FilterRail.tsx",
+    "required": [
+      "src/widgets/FilterRail.tsx",
+      "src/styles/FilterRail.module.css",
+      "tests/FilterRail.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-092": {
+    "target": "src/widgets/FilterRail.tsx",
+    "required": [
+      "src/widgets/FilterRail.tsx",
+      "src/styles/FilterRail.module.css",
+      "tests/FilterRail.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-093": {
+    "target": "src/widgets/FilterRail.tsx",
+    "required": [
+      "src/widgets/FilterRail.tsx",
+      "src/styles/FilterRail.module.css",
+      "tests/FilterRail.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-094": {
+    "target": "src/widgets/FilterRail.tsx",
+    "required": [
+      "src/widgets/FilterRail.tsx",
+      "src/styles/FilterRail.module.css",
+      "tests/FilterRail.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-095": {
+    "target": "src/widgets/FilterRail.tsx",
+    "required": [
+      "src/widgets/FilterRail.tsx",
+      "src/styles/FilterRail.module.css",
+      "tests/FilterRail.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-096": {
+    "target": "src/widgets/FilterRail.tsx",
+    "required": [
+      "src/widgets/FilterRail.tsx",
+      "src/styles/FilterRail.module.css",
+      "tests/FilterRail.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-097": {
+    "target": "src/widgets/FilterRail.tsx",
+    "required": [
+      "src/widgets/FilterRail.tsx",
+      "src/styles/FilterRail.module.css",
+      "tests/FilterRail.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-098": {
+    "target": "src/widgets/FilterRail.tsx",
+    "required": [
+      "src/widgets/FilterRail.tsx",
+      "src/styles/FilterRail.module.css",
+      "tests/FilterRail.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-099": {
+    "target": "src/widgets/FilterRail.tsx",
+    "required": [
+      "src/widgets/FilterRail.tsx",
+      "src/styles/FilterRail.module.css",
+      "tests/FilterRail.test.tsx"
+    ],
+    "label": "EXACT"
+  },
+  "sealed-open-000": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-001": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-002": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-003": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-004": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-005": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-006": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-007": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-008": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-009": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-010": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-011": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-012": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-013": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-014": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-015": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-016": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-017": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-018": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-019": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-020": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-021": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-022": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-023": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-024": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-025": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-026": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-027": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-028": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "sealed-open-029": {
+    "target": null,
+    "required": [],
+    "label": "NOT_FOUND_CORRECTLY"
+  }
+}

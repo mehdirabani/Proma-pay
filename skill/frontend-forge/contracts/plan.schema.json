@@ -1,0 +1,48 @@
+{
+  "type": "object",
+  "required": [
+    "status",
+    "steps",
+    "dependencies",
+    "capabilities",
+    "checkpoints",
+    "risk",
+    "validation_plan",
+    "rollback_plan"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "PASS",
+        "PARTIAL",
+        "BLOCKED"
+      ]
+    },
+    "steps": {
+      "type": "array"
+    },
+    "dependencies": {
+      "type": "object"
+    },
+    "capabilities": {
+      "type": "array"
+    },
+    "checkpoints": {
+      "type": "array"
+    },
+    "risk": {
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+      ]
+    },
+    "validation_plan": {
+      "type": "array"
+    },
+    "rollback_plan": {
+      "type": "string"
+    }
+  }
+}

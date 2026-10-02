@@ -1,0 +1,47 @@
+{
+  "static-task-link-collector": {
+    "version": "15.3.0",
+    "implementation": "engineering_evidence.collectors_v3:task_link",
+    "code_hash": "4c76c7be36379e23adc49d95b5317e5c6d85d10fa996a708006ac5e68b5fab82",
+    "allowed_claim_types": [
+      "TASK_TARGET_LINK"
+    ],
+    "maturity": "VERIFIED_FIXTURE"
+  },
+  "dependency-graph-collector": {
+    "version": "15.3.0",
+    "implementation": "engineering_evidence.collectors_v3:dependency",
+    "code_hash": "4c76c7be36379e23adc49d95b5317e5c6d85d10fa996a708006ac5e68b5fab82",
+    "allowed_claim_types": [
+      "DEPENDENCY_RELATIONSHIP"
+    ],
+    "maturity": "VERIFIED_FIXTURE"
+  },
+  "repository-symbol-collector": {
+    "version": "15.3.0",
+    "implementation": "engineering_evidence.collectors_v3:symbol",
+    "code_hash": "4c76c7be36379e23adc49d95b5317e5c6d85d10fa996a708006ac5e68b5fab82",
+    "allowed_claim_types": [
+      "SYMBOL_DEFINITION"
+    ],
+    "maturity": "VERIFIED_FIXTURE"
+  },
+  "static-analysis-collector": {
+    "version": "15.3.0",
+    "implementation": "engineering_evidence.collectors_v3:root_cause",
+    "code_hash": "4c76c7be36379e23adc49d95b5317e5c6d85d10fa996a708006ac5e68b5fab82",
+    "allowed_claim_types": [
+      "ROOT_CAUSE_OBSERVATION"
+    ],
+    "maturity": "VERIFIED_FIXTURE"
+  },
+  "static-reproduction-collector": {
+    "version": "15.3.0",
+    "implementation": "engineering_evidence.collectors_v3:reproduce",
+    "code_hash": "4c76c7be36379e23adc49d95b5317e5c6d85d10fa996a708006ac5e68b5fab82",
+    "allowed_claim_types": [
+      "REPRODUCTION"
+    ],
+    "maturity": "VERIFIED_FIXTURE"
+  }
+}

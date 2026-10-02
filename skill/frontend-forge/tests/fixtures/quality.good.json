@@ -1,0 +1,76 @@
+{
+  "architecture": {
+    "value": 92,
+    "source": "architecture-review",
+    "evidence": {
+      "review": "A1"
+    }
+  },
+  "code_quality": {
+    "value": 94,
+    "source": "lint-type-test",
+    "evidence": {
+      "suite": "pass"
+    }
+  },
+  "ux": {
+    "value": 90,
+    "source": "scenario-review",
+    "evidence": {
+      "flows": 5
+    }
+  },
+  "performance": {
+    "lighthouse": {
+      "categories": {
+        "performance": {
+          "score": 0.91
+        },
+        "seo": {
+          "score": 0.95
+        }
+      }
+    },
+    "source": "lighthouse",
+    "evidence": {
+      "run": "lh-1"
+    }
+  },
+  "accessibility": {
+    "value": 92,
+    "source": "axe+manual",
+    "evidence": {
+      "violations": 0
+    }
+  },
+  "seo": {
+    "lighthouse": {
+      "categories": {
+        "performance": {
+          "score": 0.91
+        },
+        "seo": {
+          "score": 0.95
+        }
+      }
+    },
+    "source": "lighthouse",
+    "evidence": {
+      "run": "lh-1"
+    }
+  },
+  "security": {
+    "value": 96,
+    "source": "security-review",
+    "evidence": {
+      "critical": 0
+    }
+  },
+  "maintainability": {
+    "value": 91,
+    "source": "maintainability-review",
+    "evidence": {
+      "review": "M1"
+    }
+  }
+}

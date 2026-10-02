@@ -1,0 +1,62 @@
+[
+  {
+    "id": "responsive",
+    "task": "Fix ProductCard responsive overflow",
+    "complexity": "SMALL"
+  },
+  {
+    "id": "performance-en",
+    "task": "Make ProductCard load faster",
+    "complexity": "SMALL"
+  },
+  {
+    "id": "performance-fa",
+    "task": "سرعت لود ProductCard را بهتر کن",
+    "complexity": "SMALL"
+  },
+  {
+    "id": "a11y-en",
+    "task": "Improve ProductCard accessibility",
+    "complexity": "SMALL"
+  },
+  {
+    "id": "a11y-fa",
+    "task": "دسترسی پذیری ProductCard را اصلاح کن",
+    "complexity": "SMALL"
+  },
+  {
+    "id": "style",
+    "task": "Change ProductCard spacing",
+    "complexity": "TRIVIAL"
+  },
+  {
+    "id": "test",
+    "task": "Debug ProductCard test failure",
+    "complexity": "MEDIUM"
+  },
+  {
+    "id": "refactor",
+    "task": "Refactor ProductCard component",
+    "complexity": "MEDIUM"
+  },
+  {
+    "id": "search-use",
+    "task": "Change ProductCard usage in Search",
+    "complexity": "MEDIUM"
+  },
+  {
+    "id": "type",
+    "task": "Fix TypeScript issue in ProductCard",
+    "complexity": "MEDIUM"
+  },
+  {
+    "id": "large",
+    "task": "Large refactor around ProductCard",
+    "complexity": "LARGE"
+  },
+  {
+    "id": "quality-first",
+    "task": "Review ProductCard behavior and dependencies",
+    "complexity": "MEDIUM"
+  }
+]

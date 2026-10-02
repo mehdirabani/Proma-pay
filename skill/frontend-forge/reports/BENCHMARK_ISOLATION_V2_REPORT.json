@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "execution_process": "Process A",
+  "evaluation_process": "Parent/Evaluation boundary",
+  "isolation_mode": "SEPARATE_UID_PROCESS",
+  "sealed_access_probe": {
+    "read": "ACCESS_DENIED",
+    "list": "ACCESS_DENIED",
+    "stat": "ACCESS_DENIED"
+  },
+  "execution_runtime_copy_excludes_sealed_data": true,
+  "note": "Separate UID was available and used in this build environment; this is local benchmark isolation, not a claim about external sandbox conformance."
+}

@@ -1,0 +1,702 @@
+[
+  {
+    "task_id": "v153-00-00",
+    "task": "Fix mobile overflow in the Aurora0 checkout panel",
+    "files": {
+      "src/components/Aurora0Panel.tsx": "export const Aurora0Panel=()=> <section><h2>Aurora0 checkout panel</h2><style>{`.card{min-width:600px;}`}</style><div className=\"card\">Order</div></section>;",
+      "src/components/Aurora0PanelLegacy.tsx": "export const Aurora0PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Aurora0Summary.tsx": "export const Aurora0Summary=()=> <aside><h3>Aurora0 summary</h3></aside>;",
+      "src/App.tsx": "import {Aurora0Panel} from './components/Aurora0Panel'; export const App=()=> <Aurora0Panel/>;",
+      "src/components/Aurora0Panel.test.tsx": "import {Aurora0Panel} from './Aurora0Panel'; describe('Aurora0 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/aurora0.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "MIN_WIDTH_FIXED"
+  },
+  {
+    "task_id": "v153-00-01",
+    "task": "Fix mobile overflow in the Beryl0 checkout panel",
+    "files": {
+      "src/components/Beryl0Panel.tsx": "export const Beryl0Panel=()=> <section><h2>Beryl0 checkout panel</h2><style>{`.card{min-width:600px;}`}</style><div className=\"card\">Order</div></section>;",
+      "src/components/Beryl0PanelLegacy.tsx": "export const Beryl0PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Beryl0Summary.tsx": "export const Beryl0Summary=()=> <aside><h3>Beryl0 summary</h3></aside>;",
+      "src/App.tsx": "import {Beryl0Panel} from './components/Beryl0Panel'; export const App=()=> <Beryl0Panel/>;",
+      "src/components/Beryl0Panel.test.tsx": "import {Beryl0Panel} from './Beryl0Panel'; describe('Beryl0 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/beryl0.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "MIN_WIDTH_FIXED"
+  },
+  {
+    "task_id": "v153-00-02",
+    "task": "Fix mobile overflow in the Cinder0 checkout panel",
+    "files": {
+      "src/components/Cinder0Panel.tsx": "export const Cinder0Panel=()=> <section><h2>Cinder0 checkout panel</h2><style>{`.card{min-width:600px;}`}</style><div className=\"card\">Order</div></section>;",
+      "src/components/Cinder0PanelLegacy.tsx": "export const Cinder0PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Cinder0Summary.tsx": "export const Cinder0Summary=()=> <aside><h3>Cinder0 summary</h3></aside>;",
+      "src/App.tsx": "import {Cinder0Panel} from './components/Cinder0Panel'; export const App=()=> <Cinder0Panel/>;",
+      "src/components/Cinder0Panel.test.tsx": "import {Cinder0Panel} from './Cinder0Panel'; describe('Cinder0 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/cinder0.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "MIN_WIDTH_FIXED"
+  },
+  {
+    "task_id": "v153-00-03",
+    "task": "Fix mobile overflow in the Dahlia0 checkout panel",
+    "files": {
+      "src/components/Dahlia0Panel.tsx": "export const Dahlia0Panel=()=> <section><h2>Dahlia0 checkout panel</h2><style>{`.card{min-width:600px;}`}</style><div className=\"card\">Order</div></section>;",
+      "src/components/Dahlia0PanelLegacy.tsx": "export const Dahlia0PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Dahlia0Summary.tsx": "export const Dahlia0Summary=()=> <aside><h3>Dahlia0 summary</h3></aside>;",
+      "src/App.tsx": "import {Dahlia0Panel} from './components/Dahlia0Panel'; export const App=()=> <Dahlia0Panel/>;",
+      "src/components/Dahlia0Panel.test.tsx": "import {Dahlia0Panel} from './Dahlia0Panel'; describe('Dahlia0 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/dahlia0.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "MIN_WIDTH_FIXED"
+  },
+  {
+    "task_id": "v153-00-04",
+    "task": "Fix mobile overflow in the Ember0 checkout panel",
+    "files": {
+      "src/components/Ember0Panel.tsx": "export const Ember0Panel=()=> <section><h2>Ember0 checkout panel</h2><style>{`.card{min-width:600px;}`}</style><div className=\"card\">Order</div></section>;",
+      "src/components/Ember0PanelLegacy.tsx": "export const Ember0PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Ember0Summary.tsx": "export const Ember0Summary=()=> <aside><h3>Ember0 summary</h3></aside>;",
+      "src/App.tsx": "import {Ember0Panel} from './components/Ember0Panel'; export const App=()=> <Ember0Panel/>;",
+      "src/components/Ember0Panel.test.tsx": "import {Ember0Panel} from './Ember0Panel'; describe('Ember0 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/ember0.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "MIN_WIDTH_FIXED"
+  },
+  {
+    "task_id": "v153-01-00",
+    "task": "Fix mobile text wrapping in the Aurora1 checkout panel",
+    "files": {
+      "src/components/Aurora1Panel.tsx": "export const Aurora1Panel=()=> <section><h2>Aurora1 checkout panel</h2><style>{`.title{white-space:nowrap;}`}</style><div className=\"title\">Very long order title</div></section>;",
+      "src/components/Aurora1PanelLegacy.tsx": "export const Aurora1PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Aurora1Summary.tsx": "export const Aurora1Summary=()=> <aside><h3>Aurora1 summary</h3></aside>;",
+      "src/App.tsx": "import {Aurora1Panel} from './components/Aurora1Panel'; export const App=()=> <Aurora1Panel/>;",
+      "src/components/Aurora1Panel.test.tsx": "import {Aurora1Panel} from './Aurora1Panel'; describe('Aurora1 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/aurora1.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "NOWRAP"
+  },
+  {
+    "task_id": "v153-01-01",
+    "task": "Fix mobile text wrapping in the Beryl1 checkout panel",
+    "files": {
+      "src/components/Beryl1Panel.tsx": "export const Beryl1Panel=()=> <section><h2>Beryl1 checkout panel</h2><style>{`.title{white-space:nowrap;}`}</style><div className=\"title\">Very long order title</div></section>;",
+      "src/components/Beryl1PanelLegacy.tsx": "export const Beryl1PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Beryl1Summary.tsx": "export const Beryl1Summary=()=> <aside><h3>Beryl1 summary</h3></aside>;",
+      "src/App.tsx": "import {Beryl1Panel} from './components/Beryl1Panel'; export const App=()=> <Beryl1Panel/>;",
+      "src/components/Beryl1Panel.test.tsx": "import {Beryl1Panel} from './Beryl1Panel'; describe('Beryl1 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/beryl1.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "NOWRAP"
+  },
+  {
+    "task_id": "v153-01-02",
+    "task": "Fix mobile text wrapping in the Cinder1 checkout panel",
+    "files": {
+      "src/components/Cinder1Panel.tsx": "export const Cinder1Panel=()=> <section><h2>Cinder1 checkout panel</h2><style>{`.title{white-space:nowrap;}`}</style><div className=\"title\">Very long order title</div></section>;",
+      "src/components/Cinder1PanelLegacy.tsx": "export const Cinder1PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Cinder1Summary.tsx": "export const Cinder1Summary=()=> <aside><h3>Cinder1 summary</h3></aside>;",
+      "src/App.tsx": "import {Cinder1Panel} from './components/Cinder1Panel'; export const App=()=> <Cinder1Panel/>;",
+      "src/components/Cinder1Panel.test.tsx": "import {Cinder1Panel} from './Cinder1Panel'; describe('Cinder1 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/cinder1.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "NOWRAP"
+  },
+  {
+    "task_id": "v153-01-03",
+    "task": "Fix mobile text wrapping in the Dahlia1 checkout panel",
+    "files": {
+      "src/components/Dahlia1Panel.tsx": "export const Dahlia1Panel=()=> <section><h2>Dahlia1 checkout panel</h2><style>{`.title{white-space:nowrap;}`}</style><div className=\"title\">Very long order title</div></section>;",
+      "src/components/Dahlia1PanelLegacy.tsx": "export const Dahlia1PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Dahlia1Summary.tsx": "export const Dahlia1Summary=()=> <aside><h3>Dahlia1 summary</h3></aside>;",
+      "src/App.tsx": "import {Dahlia1Panel} from './components/Dahlia1Panel'; export const App=()=> <Dahlia1Panel/>;",
+      "src/components/Dahlia1Panel.test.tsx": "import {Dahlia1Panel} from './Dahlia1Panel'; describe('Dahlia1 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/dahlia1.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "NOWRAP"
+  },
+  {
+    "task_id": "v153-01-04",
+    "task": "Fix mobile text wrapping in the Ember1 checkout panel",
+    "files": {
+      "src/components/Ember1Panel.tsx": "export const Ember1Panel=()=> <section><h2>Ember1 checkout panel</h2><style>{`.title{white-space:nowrap;}`}</style><div className=\"title\">Very long order title</div></section>;",
+      "src/components/Ember1PanelLegacy.tsx": "export const Ember1PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Ember1Summary.tsx": "export const Ember1Summary=()=> <aside><h3>Ember1 summary</h3></aside>;",
+      "src/App.tsx": "import {Ember1Panel} from './components/Ember1Panel'; export const App=()=> <Ember1Panel/>;",
+      "src/components/Ember1Panel.test.tsx": "import {Ember1Panel} from './Ember1Panel'; describe('Ember1 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/ember1.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "NOWRAP"
+  },
+  {
+    "task_id": "v153-02-00",
+    "task": "Fix mobile layout overflow in the Aurora2 cart panel",
+    "files": {
+      "src/components/Aurora2Panel.tsx": "export const Aurora2Panel=()=> <section><h2>Aurora2 cart panel</h2><style>{`.box{width:720px;}`}</style><div className=\"box\">Cart</div></section>;",
+      "src/components/Aurora2PanelLegacy.tsx": "export const Aurora2PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Aurora2Summary.tsx": "export const Aurora2Summary=()=> <aside><h3>Aurora2 summary</h3></aside>;",
+      "src/App.tsx": "import {Aurora2Panel} from './components/Aurora2Panel'; export const App=()=> <Aurora2Panel/>;",
+      "src/components/Aurora2Panel.test.tsx": "import {Aurora2Panel} from './Aurora2Panel'; describe('Aurora2 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/aurora2.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "FIXED_WIDTH"
+  },
+  {
+    "task_id": "v153-02-01",
+    "task": "Fix mobile layout overflow in the Beryl2 cart panel",
+    "files": {
+      "src/components/Beryl2Panel.tsx": "export const Beryl2Panel=()=> <section><h2>Beryl2 cart panel</h2><style>{`.box{width:720px;}`}</style><div className=\"box\">Cart</div></section>;",
+      "src/components/Beryl2PanelLegacy.tsx": "export const Beryl2PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Beryl2Summary.tsx": "export const Beryl2Summary=()=> <aside><h3>Beryl2 summary</h3></aside>;",
+      "src/App.tsx": "import {Beryl2Panel} from './components/Beryl2Panel'; export const App=()=> <Beryl2Panel/>;",
+      "src/components/Beryl2Panel.test.tsx": "import {Beryl2Panel} from './Beryl2Panel'; describe('Beryl2 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/beryl2.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "FIXED_WIDTH"
+  },
+  {
+    "task_id": "v153-02-02",
+    "task": "Fix mobile layout overflow in the Cinder2 cart panel",
+    "files": {
+      "src/components/Cinder2Panel.tsx": "export const Cinder2Panel=()=> <section><h2>Cinder2 cart panel</h2><style>{`.box{width:720px;}`}</style><div className=\"box\">Cart</div></section>;",
+      "src/components/Cinder2PanelLegacy.tsx": "export const Cinder2PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Cinder2Summary.tsx": "export const Cinder2Summary=()=> <aside><h3>Cinder2 summary</h3></aside>;",
+      "src/App.tsx": "import {Cinder2Panel} from './components/Cinder2Panel'; export const App=()=> <Cinder2Panel/>;",
+      "src/components/Cinder2Panel.test.tsx": "import {Cinder2Panel} from './Cinder2Panel'; describe('Cinder2 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/cinder2.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "FIXED_WIDTH"
+  },
+  {
+    "task_id": "v153-02-03",
+    "task": "Fix mobile layout overflow in the Dahlia2 cart panel",
+    "files": {
+      "src/components/Dahlia2Panel.tsx": "export const Dahlia2Panel=()=> <section><h2>Dahlia2 cart panel</h2><style>{`.box{width:720px;}`}</style><div className=\"box\">Cart</div></section>;",
+      "src/components/Dahlia2PanelLegacy.tsx": "export const Dahlia2PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Dahlia2Summary.tsx": "export const Dahlia2Summary=()=> <aside><h3>Dahlia2 summary</h3></aside>;",
+      "src/App.tsx": "import {Dahlia2Panel} from './components/Dahlia2Panel'; export const App=()=> <Dahlia2Panel/>;",
+      "src/components/Dahlia2Panel.test.tsx": "import {Dahlia2Panel} from './Dahlia2Panel'; describe('Dahlia2 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/dahlia2.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "FIXED_WIDTH"
+  },
+  {
+    "task_id": "v153-02-04",
+    "task": "Fix mobile layout overflow in the Ember2 cart panel",
+    "files": {
+      "src/components/Ember2Panel.tsx": "export const Ember2Panel=()=> <section><h2>Ember2 cart panel</h2><style>{`.box{width:720px;}`}</style><div className=\"box\">Cart</div></section>;",
+      "src/components/Ember2PanelLegacy.tsx": "export const Ember2PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Ember2Summary.tsx": "export const Ember2Summary=()=> <aside><h3>Ember2 summary</h3></aside>;",
+      "src/App.tsx": "import {Ember2Panel} from './components/Ember2Panel'; export const App=()=> <Ember2Panel/>;",
+      "src/components/Ember2Panel.test.tsx": "import {Ember2Panel} from './Ember2Panel'; describe('Ember2 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/ember2.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "FIXED_WIDTH"
+  },
+  {
+    "task_id": "v153-03-00",
+    "task": "Fix accessibility label for the Aurora3 payment input",
+    "files": {
+      "src/components/Aurora3Panel.tsx": "export const Aurora3Panel=()=> <section><h2>Aurora3 payment input</h2><input name=\"card\" /></section>;",
+      "src/components/Aurora3PanelLegacy.tsx": "export const Aurora3PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Aurora3Summary.tsx": "export const Aurora3Summary=()=> <aside><h3>Aurora3 summary</h3></aside>;",
+      "src/App.tsx": "import {Aurora3Panel} from './components/Aurora3Panel'; export const App=()=> <Aurora3Panel/>;",
+      "src/components/Aurora3Panel.test.tsx": "import {Aurora3Panel} from './Aurora3Panel'; describe('Aurora3 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/aurora3.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "MISSING_LABEL"
+  },
+  {
+    "task_id": "v153-03-01",
+    "task": "Fix accessibility label for the Beryl3 payment input",
+    "files": {
+      "src/components/Beryl3Panel.tsx": "export const Beryl3Panel=()=> <section><h2>Beryl3 payment input</h2><input name=\"card\" /></section>;",
+      "src/components/Beryl3PanelLegacy.tsx": "export const Beryl3PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Beryl3Summary.tsx": "export const Beryl3Summary=()=> <aside><h3>Beryl3 summary</h3></aside>;",
+      "src/App.tsx": "import {Beryl3Panel} from './components/Beryl3Panel'; export const App=()=> <Beryl3Panel/>;",
+      "src/components/Beryl3Panel.test.tsx": "import {Beryl3Panel} from './Beryl3Panel'; describe('Beryl3 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/beryl3.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "MISSING_LABEL"
+  },
+  {
+    "task_id": "v153-03-02",
+    "task": "Fix accessibility label for the Cinder3 payment input",
+    "files": {
+      "src/components/Cinder3Panel.tsx": "export const Cinder3Panel=()=> <section><h2>Cinder3 payment input</h2><input name=\"card\" /></section>;",
+      "src/components/Cinder3PanelLegacy.tsx": "export const Cinder3PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Cinder3Summary.tsx": "export const Cinder3Summary=()=> <aside><h3>Cinder3 summary</h3></aside>;",
+      "src/App.tsx": "import {Cinder3Panel} from './components/Cinder3Panel'; export const App=()=> <Cinder3Panel/>;",
+      "src/components/Cinder3Panel.test.tsx": "import {Cinder3Panel} from './Cinder3Panel'; describe('Cinder3 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/cinder3.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "MISSING_LABEL"
+  },
+  {
+    "task_id": "v153-03-03",
+    "task": "Fix accessibility label for the Dahlia3 payment input",
+    "files": {
+      "src/components/Dahlia3Panel.tsx": "export const Dahlia3Panel=()=> <section><h2>Dahlia3 payment input</h2><input name=\"card\" /></section>;",
+      "src/components/Dahlia3PanelLegacy.tsx": "export const Dahlia3PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Dahlia3Summary.tsx": "export const Dahlia3Summary=()=> <aside><h3>Dahlia3 summary</h3></aside>;",
+      "src/App.tsx": "import {Dahlia3Panel} from './components/Dahlia3Panel'; export const App=()=> <Dahlia3Panel/>;",
+      "src/components/Dahlia3Panel.test.tsx": "import {Dahlia3Panel} from './Dahlia3Panel'; describe('Dahlia3 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/dahlia3.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "MISSING_LABEL"
+  },
+  {
+    "task_id": "v153-03-04",
+    "task": "Fix accessibility label for the Ember3 payment input",
+    "files": {
+      "src/components/Ember3Panel.tsx": "export const Ember3Panel=()=> <section><h2>Ember3 payment input</h2><input name=\"card\" /></section>;",
+      "src/components/Ember3PanelLegacy.tsx": "export const Ember3PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Ember3Summary.tsx": "export const Ember3Summary=()=> <aside><h3>Ember3 summary</h3></aside>;",
+      "src/App.tsx": "import {Ember3Panel} from './components/Ember3Panel'; export const App=()=> <Ember3Panel/>;",
+      "src/components/Ember3Panel.test.tsx": "import {Ember3Panel} from './Ember3Panel'; describe('Ember3 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/ember3.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "MISSING_LABEL"
+  },
+  {
+    "task_id": "v153-04-00",
+    "task": "Fix keyboard accessibility name for the Aurora4 action button",
+    "files": {
+      "src/components/Aurora4Panel.tsx": "export const Aurora4Panel=()=> <section><h2>Aurora4 action button</h2><button><svg><path/></svg></button></section>;",
+      "src/components/Aurora4PanelLegacy.tsx": "export const Aurora4PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Aurora4Summary.tsx": "export const Aurora4Summary=()=> <aside><h3>Aurora4 summary</h3></aside>;",
+      "src/App.tsx": "import {Aurora4Panel} from './components/Aurora4Panel'; export const App=()=> <Aurora4Panel/>;",
+      "src/components/Aurora4Panel.test.tsx": "import {Aurora4Panel} from './Aurora4Panel'; describe('Aurora4 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/aurora4.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "BUTTON_NAME"
+  },
+  {
+    "task_id": "v153-04-01",
+    "task": "Fix keyboard accessibility name for the Beryl4 action button",
+    "files": {
+      "src/components/Beryl4Panel.tsx": "export const Beryl4Panel=()=> <section><h2>Beryl4 action button</h2><button><svg><path/></svg></button></section>;",
+      "src/components/Beryl4PanelLegacy.tsx": "export const Beryl4PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Beryl4Summary.tsx": "export const Beryl4Summary=()=> <aside><h3>Beryl4 summary</h3></aside>;",
+      "src/App.tsx": "import {Beryl4Panel} from './components/Beryl4Panel'; export const App=()=> <Beryl4Panel/>;",
+      "src/components/Beryl4Panel.test.tsx": "import {Beryl4Panel} from './Beryl4Panel'; describe('Beryl4 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/beryl4.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "BUTTON_NAME"
+  },
+  {
+    "task_id": "v153-04-02",
+    "task": "Fix keyboard accessibility name for the Cinder4 action button",
+    "files": {
+      "src/components/Cinder4Panel.tsx": "export const Cinder4Panel=()=> <section><h2>Cinder4 action button</h2><button><svg><path/></svg></button></section>;",
+      "src/components/Cinder4PanelLegacy.tsx": "export const Cinder4PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Cinder4Summary.tsx": "export const Cinder4Summary=()=> <aside><h3>Cinder4 summary</h3></aside>;",
+      "src/App.tsx": "import {Cinder4Panel} from './components/Cinder4Panel'; export const App=()=> <Cinder4Panel/>;",
+      "src/components/Cinder4Panel.test.tsx": "import {Cinder4Panel} from './Cinder4Panel'; describe('Cinder4 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/cinder4.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "BUTTON_NAME"
+  },
+  {
+    "task_id": "v153-04-03",
+    "task": "Fix keyboard accessibility name for the Dahlia4 action button",
+    "files": {
+      "src/components/Dahlia4Panel.tsx": "export const Dahlia4Panel=()=> <section><h2>Dahlia4 action button</h2><button><svg><path/></svg></button></section>;",
+      "src/components/Dahlia4PanelLegacy.tsx": "export const Dahlia4PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Dahlia4Summary.tsx": "export const Dahlia4Summary=()=> <aside><h3>Dahlia4 summary</h3></aside>;",
+      "src/App.tsx": "import {Dahlia4Panel} from './components/Dahlia4Panel'; export const App=()=> <Dahlia4Panel/>;",
+      "src/components/Dahlia4Panel.test.tsx": "import {Dahlia4Panel} from './Dahlia4Panel'; describe('Dahlia4 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/dahlia4.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "BUTTON_NAME"
+  },
+  {
+    "task_id": "v153-04-04",
+    "task": "Fix keyboard accessibility name for the Ember4 action button",
+    "files": {
+      "src/components/Ember4Panel.tsx": "export const Ember4Panel=()=> <section><h2>Ember4 action button</h2><button><svg><path/></svg></button></section>;",
+      "src/components/Ember4PanelLegacy.tsx": "export const Ember4PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Ember4Summary.tsx": "export const Ember4Summary=()=> <aside><h3>Ember4 summary</h3></aside>;",
+      "src/App.tsx": "import {Ember4Panel} from './components/Ember4Panel'; export const App=()=> <Ember4Panel/>;",
+      "src/components/Ember4Panel.test.tsx": "import {Ember4Panel} from './Ember4Panel'; describe('Ember4 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/ember4.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "BUTTON_NAME"
+  },
+  {
+    "task_id": "v153-05-00",
+    "task": "Fix broken route link in the Aurora5 profile panel",
+    "files": {
+      "src/components/Aurora5Panel.tsx": "export const Aurora5Panel=()=> <section><h2>Aurora5 profile panel</h2><a href=\"/profil\">Profile</a></section>;",
+      "src/components/Aurora5PanelLegacy.tsx": "export const Aurora5PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Aurora5Summary.tsx": "export const Aurora5Summary=()=> <aside><h3>Aurora5 summary</h3></aside>;",
+      "src/App.tsx": "import {Aurora5Panel} from './components/Aurora5Panel'; export const App=()=> <Aurora5Panel/>;",
+      "src/components/Aurora5Panel.test.tsx": "import {Aurora5Panel} from './Aurora5Panel'; describe('Aurora5 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/aurora5.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "ROUTE_TYPO"
+  },
+  {
+    "task_id": "v153-05-01",
+    "task": "Fix broken route link in the Beryl5 profile panel",
+    "files": {
+      "src/components/Beryl5Panel.tsx": "export const Beryl5Panel=()=> <section><h2>Beryl5 profile panel</h2><a href=\"/profil\">Profile</a></section>;",
+      "src/components/Beryl5PanelLegacy.tsx": "export const Beryl5PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Beryl5Summary.tsx": "export const Beryl5Summary=()=> <aside><h3>Beryl5 summary</h3></aside>;",
+      "src/App.tsx": "import {Beryl5Panel} from './components/Beryl5Panel'; export const App=()=> <Beryl5Panel/>;",
+      "src/components/Beryl5Panel.test.tsx": "import {Beryl5Panel} from './Beryl5Panel'; describe('Beryl5 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/beryl5.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "ROUTE_TYPO"
+  },
+  {
+    "task_id": "v153-05-02",
+    "task": "Fix broken route link in the Cinder5 profile panel",
+    "files": {
+      "src/components/Cinder5Panel.tsx": "export const Cinder5Panel=()=> <section><h2>Cinder5 profile panel</h2><a href=\"/profil\">Profile</a></section>;",
+      "src/components/Cinder5PanelLegacy.tsx": "export const Cinder5PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Cinder5Summary.tsx": "export const Cinder5Summary=()=> <aside><h3>Cinder5 summary</h3></aside>;",
+      "src/App.tsx": "import {Cinder5Panel} from './components/Cinder5Panel'; export const App=()=> <Cinder5Panel/>;",
+      "src/components/Cinder5Panel.test.tsx": "import {Cinder5Panel} from './Cinder5Panel'; describe('Cinder5 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/cinder5.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "ROUTE_TYPO"
+  },
+  {
+    "task_id": "v153-05-03",
+    "task": "Fix broken route link in the Dahlia5 profile panel",
+    "files": {
+      "src/components/Dahlia5Panel.tsx": "export const Dahlia5Panel=()=> <section><h2>Dahlia5 profile panel</h2><a href=\"/profil\">Profile</a></section>;",
+      "src/components/Dahlia5PanelLegacy.tsx": "export const Dahlia5PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Dahlia5Summary.tsx": "export const Dahlia5Summary=()=> <aside><h3>Dahlia5 summary</h3></aside>;",
+      "src/App.tsx": "import {Dahlia5Panel} from './components/Dahlia5Panel'; export const App=()=> <Dahlia5Panel/>;",
+      "src/components/Dahlia5Panel.test.tsx": "import {Dahlia5Panel} from './Dahlia5Panel'; describe('Dahlia5 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/dahlia5.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "ROUTE_TYPO"
+  },
+  {
+    "task_id": "v153-05-04",
+    "task": "Fix broken route link in the Ember5 profile panel",
+    "files": {
+      "src/components/Ember5Panel.tsx": "export const Ember5Panel=()=> <section><h2>Ember5 profile panel</h2><a href=\"/profil\">Profile</a></section>;",
+      "src/components/Ember5PanelLegacy.tsx": "export const Ember5PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Ember5Summary.tsx": "export const Ember5Summary=()=> <aside><h3>Ember5 summary</h3></aside>;",
+      "src/App.tsx": "import {Ember5Panel} from './components/Ember5Panel'; export const App=()=> <Ember5Panel/>;",
+      "src/components/Ember5Panel.test.tsx": "import {Ember5Panel} from './Ember5Panel'; describe('Ember5 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/ember5.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "ROUTE_TYPO"
+  },
+  {
+    "task_id": "v153-06-00",
+    "task": "Fix TypeScript type mismatch for Aurora6 price amount",
+    "files": {
+      "src/components/Aurora6Panel.tsx": "type Props={price:string}; export const Aurora6Panel=(p:Props)=> <section><h2>Aurora6 price amount</h2>{p.price}</section>;",
+      "src/components/Aurora6PanelLegacy.tsx": "export const Aurora6PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Aurora6Summary.tsx": "export const Aurora6Summary=()=> <aside><h3>Aurora6 summary</h3></aside>;",
+      "src/App.tsx": "import {Aurora6Panel} from './components/Aurora6Panel'; export const App=()=> <Aurora6Panel/>;",
+      "src/components/Aurora6Panel.test.tsx": "import {Aurora6Panel} from './Aurora6Panel'; describe('Aurora6 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/aurora6.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "TYPE_STRING_NUMBER"
+  },
+  {
+    "task_id": "v153-06-01",
+    "task": "Fix TypeScript type mismatch for Beryl6 price amount",
+    "files": {
+      "src/components/Beryl6Panel.tsx": "type Props={price:string}; export const Beryl6Panel=(p:Props)=> <section><h2>Beryl6 price amount</h2>{p.price}</section>;",
+      "src/components/Beryl6PanelLegacy.tsx": "export const Beryl6PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Beryl6Summary.tsx": "export const Beryl6Summary=()=> <aside><h3>Beryl6 summary</h3></aside>;",
+      "src/App.tsx": "import {Beryl6Panel} from './components/Beryl6Panel'; export const App=()=> <Beryl6Panel/>;",
+      "src/components/Beryl6Panel.test.tsx": "import {Beryl6Panel} from './Beryl6Panel'; describe('Beryl6 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/beryl6.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "TYPE_STRING_NUMBER"
+  },
+  {
+    "task_id": "v153-06-02",
+    "task": "Fix TypeScript type mismatch for Cinder6 price amount",
+    "files": {
+      "src/components/Cinder6Panel.tsx": "type Props={price:string}; export const Cinder6Panel=(p:Props)=> <section><h2>Cinder6 price amount</h2>{p.price}</section>;",
+      "src/components/Cinder6PanelLegacy.tsx": "export const Cinder6PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Cinder6Summary.tsx": "export const Cinder6Summary=()=> <aside><h3>Cinder6 summary</h3></aside>;",
+      "src/App.tsx": "import {Cinder6Panel} from './components/Cinder6Panel'; export const App=()=> <Cinder6Panel/>;",
+      "src/components/Cinder6Panel.test.tsx": "import {Cinder6Panel} from './Cinder6Panel'; describe('Cinder6 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/cinder6.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "TYPE_STRING_NUMBER"
+  },
+  {
+    "task_id": "v153-06-03",
+    "task": "Fix TypeScript type mismatch for Dahlia6 price amount",
+    "files": {
+      "src/components/Dahlia6Panel.tsx": "type Props={price:string}; export const Dahlia6Panel=(p:Props)=> <section><h2>Dahlia6 price amount</h2>{p.price}</section>;",
+      "src/components/Dahlia6PanelLegacy.tsx": "export const Dahlia6PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Dahlia6Summary.tsx": "export const Dahlia6Summary=()=> <aside><h3>Dahlia6 summary</h3></aside>;",
+      "src/App.tsx": "import {Dahlia6Panel} from './components/Dahlia6Panel'; export const App=()=> <Dahlia6Panel/>;",
+      "src/components/Dahlia6Panel.test.tsx": "import {Dahlia6Panel} from './Dahlia6Panel'; describe('Dahlia6 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/dahlia6.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "TYPE_STRING_NUMBER"
+  },
+  {
+    "task_id": "v153-06-04",
+    "task": "Fix TypeScript type mismatch for Ember6 price amount",
+    "files": {
+      "src/components/Ember6Panel.tsx": "type Props={price:string}; export const Ember6Panel=(p:Props)=> <section><h2>Ember6 price amount</h2>{p.price}</section>;",
+      "src/components/Ember6PanelLegacy.tsx": "export const Ember6PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Ember6Summary.tsx": "export const Ember6Summary=()=> <aside><h3>Ember6 summary</h3></aside>;",
+      "src/App.tsx": "import {Ember6Panel} from './components/Ember6Panel'; export const App=()=> <Ember6Panel/>;",
+      "src/components/Ember6Panel.test.tsx": "import {Ember6Panel} from './Ember6Panel'; describe('Ember6 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/ember6.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "TYPE_STRING_NUMBER"
+  },
+  {
+    "task_id": "v153-07-00",
+    "task": "Fix loading feedback in the Aurora7 results panel",
+    "files": {
+      "src/components/Aurora7Panel.tsx": "export function Aurora7Panel(){ const loading=true; if (loading) return null; return <section><h2>Aurora7 results panel</h2></section>; }",
+      "src/components/Aurora7PanelLegacy.tsx": "export const Aurora7PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Aurora7Summary.tsx": "export const Aurora7Summary=()=> <aside><h3>Aurora7 summary</h3></aside>;",
+      "src/App.tsx": "import {Aurora7Panel} from './components/Aurora7Panel'; export const App=()=> <Aurora7Panel/>;",
+      "src/components/Aurora7Panel.test.tsx": "import {Aurora7Panel} from './Aurora7Panel'; describe('Aurora7 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/aurora7.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "LOADING_NULL"
+  },
+  {
+    "task_id": "v153-07-01",
+    "task": "Fix loading feedback in the Beryl7 results panel",
+    "files": {
+      "src/components/Beryl7Panel.tsx": "export function Beryl7Panel(){ const loading=true; if (loading) return null; return <section><h2>Beryl7 results panel</h2></section>; }",
+      "src/components/Beryl7PanelLegacy.tsx": "export const Beryl7PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Beryl7Summary.tsx": "export const Beryl7Summary=()=> <aside><h3>Beryl7 summary</h3></aside>;",
+      "src/App.tsx": "import {Beryl7Panel} from './components/Beryl7Panel'; export const App=()=> <Beryl7Panel/>;",
+      "src/components/Beryl7Panel.test.tsx": "import {Beryl7Panel} from './Beryl7Panel'; describe('Beryl7 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/beryl7.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "LOADING_NULL"
+  },
+  {
+    "task_id": "v153-07-02",
+    "task": "Fix loading feedback in the Cinder7 results panel",
+    "files": {
+      "src/components/Cinder7Panel.tsx": "export function Cinder7Panel(){ const loading=true; if (loading) return null; return <section><h2>Cinder7 results panel</h2></section>; }",
+      "src/components/Cinder7PanelLegacy.tsx": "export const Cinder7PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Cinder7Summary.tsx": "export const Cinder7Summary=()=> <aside><h3>Cinder7 summary</h3></aside>;",
+      "src/App.tsx": "import {Cinder7Panel} from './components/Cinder7Panel'; export const App=()=> <Cinder7Panel/>;",
+      "src/components/Cinder7Panel.test.tsx": "import {Cinder7Panel} from './Cinder7Panel'; describe('Cinder7 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/cinder7.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "LOADING_NULL"
+  },
+  {
+    "task_id": "v153-07-03",
+    "task": "Fix loading feedback in the Dahlia7 results panel",
+    "files": {
+      "src/components/Dahlia7Panel.tsx": "export function Dahlia7Panel(){ const loading=true; if (loading) return null; return <section><h2>Dahlia7 results panel</h2></section>; }",
+      "src/components/Dahlia7PanelLegacy.tsx": "export const Dahlia7PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Dahlia7Summary.tsx": "export const Dahlia7Summary=()=> <aside><h3>Dahlia7 summary</h3></aside>;",
+      "src/App.tsx": "import {Dahlia7Panel} from './components/Dahlia7Panel'; export const App=()=> <Dahlia7Panel/>;",
+      "src/components/Dahlia7Panel.test.tsx": "import {Dahlia7Panel} from './Dahlia7Panel'; describe('Dahlia7 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/dahlia7.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "LOADING_NULL"
+  },
+  {
+    "task_id": "v153-07-04",
+    "task": "Fix loading feedback in the Ember7 results panel",
+    "files": {
+      "src/components/Ember7Panel.tsx": "export function Ember7Panel(){ const loading=true; if (loading) return null; return <section><h2>Ember7 results panel</h2></section>; }",
+      "src/components/Ember7PanelLegacy.tsx": "export const Ember7PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Ember7Summary.tsx": "export const Ember7Summary=()=> <aside><h3>Ember7 summary</h3></aside>;",
+      "src/App.tsx": "import {Ember7Panel} from './components/Ember7Panel'; export const App=()=> <Ember7Panel/>;",
+      "src/components/Ember7Panel.test.tsx": "import {Ember7Panel} from './Ember7Panel'; describe('Ember7 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/ember7.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "LOADING_NULL"
+  },
+  {
+    "task_id": "v153-08-00",
+    "task": "Fix form submit behavior in the Aurora8 payment panel",
+    "files": {
+      "src/components/Aurora8Panel.tsx": "export const Aurora8Panel=()=> <form><h2>Aurora8 payment panel</h2><button type=\"button\">Pay</button></form>;",
+      "src/components/Aurora8PanelLegacy.tsx": "export const Aurora8PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Aurora8Summary.tsx": "export const Aurora8Summary=()=> <aside><h3>Aurora8 summary</h3></aside>;",
+      "src/App.tsx": "import {Aurora8Panel} from './components/Aurora8Panel'; export const App=()=> <Aurora8Panel/>;",
+      "src/components/Aurora8Panel.test.tsx": "import {Aurora8Panel} from './Aurora8Panel'; describe('Aurora8 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/aurora8.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "NON_SUBMIT"
+  },
+  {
+    "task_id": "v153-08-01",
+    "task": "Fix form submit behavior in the Beryl8 payment panel",
+    "files": {
+      "src/components/Beryl8Panel.tsx": "export const Beryl8Panel=()=> <form><h2>Beryl8 payment panel</h2><button type=\"button\">Pay</button></form>;",
+      "src/components/Beryl8PanelLegacy.tsx": "export const Beryl8PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Beryl8Summary.tsx": "export const Beryl8Summary=()=> <aside><h3>Beryl8 summary</h3></aside>;",
+      "src/App.tsx": "import {Beryl8Panel} from './components/Beryl8Panel'; export const App=()=> <Beryl8Panel/>;",
+      "src/components/Beryl8Panel.test.tsx": "import {Beryl8Panel} from './Beryl8Panel'; describe('Beryl8 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/beryl8.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "NON_SUBMIT"
+  },
+  {
+    "task_id": "v153-08-02",
+    "task": "Fix form submit behavior in the Cinder8 payment panel",
+    "files": {
+      "src/components/Cinder8Panel.tsx": "export const Cinder8Panel=()=> <form><h2>Cinder8 payment panel</h2><button type=\"button\">Pay</button></form>;",
+      "src/components/Cinder8PanelLegacy.tsx": "export const Cinder8PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Cinder8Summary.tsx": "export const Cinder8Summary=()=> <aside><h3>Cinder8 summary</h3></aside>;",
+      "src/App.tsx": "import {Cinder8Panel} from './components/Cinder8Panel'; export const App=()=> <Cinder8Panel/>;",
+      "src/components/Cinder8Panel.test.tsx": "import {Cinder8Panel} from './Cinder8Panel'; describe('Cinder8 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/cinder8.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "NON_SUBMIT"
+  },
+  {
+    "task_id": "v153-08-03",
+    "task": "Fix form submit behavior in the Dahlia8 payment panel",
+    "files": {
+      "src/components/Dahlia8Panel.tsx": "export const Dahlia8Panel=()=> <form><h2>Dahlia8 payment panel</h2><button type=\"button\">Pay</button></form>;",
+      "src/components/Dahlia8PanelLegacy.tsx": "export const Dahlia8PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Dahlia8Summary.tsx": "export const Dahlia8Summary=()=> <aside><h3>Dahlia8 summary</h3></aside>;",
+      "src/App.tsx": "import {Dahlia8Panel} from './components/Dahlia8Panel'; export const App=()=> <Dahlia8Panel/>;",
+      "src/components/Dahlia8Panel.test.tsx": "import {Dahlia8Panel} from './Dahlia8Panel'; describe('Dahlia8 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/dahlia8.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "NON_SUBMIT"
+  },
+  {
+    "task_id": "v153-08-04",
+    "task": "Fix form submit behavior in the Ember8 payment panel",
+    "files": {
+      "src/components/Ember8Panel.tsx": "export const Ember8Panel=()=> <form><h2>Ember8 payment panel</h2><button type=\"button\">Pay</button></form>;",
+      "src/components/Ember8PanelLegacy.tsx": "export const Ember8PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Ember8Summary.tsx": "export const Ember8Summary=()=> <aside><h3>Ember8 summary</h3></aside>;",
+      "src/App.tsx": "import {Ember8Panel} from './components/Ember8Panel'; export const App=()=> <Ember8Panel/>;",
+      "src/components/Ember8Panel.test.tsx": "import {Ember8Panel} from './Ember8Panel'; describe('Ember8 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/ember8.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "NON_SUBMIT"
+  },
+  {
+    "task_id": "v153-09-00",
+    "task": "Fix mobile overflow in the Aurora9 Tailwind card",
+    "files": {
+      "src/components/Aurora9Panel.tsx": "export const Aurora9Panel=()=> <section><h2>Aurora9 Tailwind card</h2><div className=\"w-[700px]\">Card</div></section>;",
+      "src/components/Aurora9PanelLegacy.tsx": "export const Aurora9PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Aurora9Summary.tsx": "export const Aurora9Summary=()=> <aside><h3>Aurora9 summary</h3></aside>;",
+      "src/App.tsx": "import {Aurora9Panel} from './components/Aurora9Panel'; export const App=()=> <Aurora9Panel/>;",
+      "src/components/Aurora9Panel.test.tsx": "import {Aurora9Panel} from './Aurora9Panel'; describe('Aurora9 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/aurora9.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "TAILWIND_FIXED_WIDTH"
+  },
+  {
+    "task_id": "v153-09-01",
+    "task": "Fix mobile overflow in the Beryl9 Tailwind card",
+    "files": {
+      "src/components/Beryl9Panel.tsx": "export const Beryl9Panel=()=> <section><h2>Beryl9 Tailwind card</h2><div className=\"w-[700px]\">Card</div></section>;",
+      "src/components/Beryl9PanelLegacy.tsx": "export const Beryl9PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Beryl9Summary.tsx": "export const Beryl9Summary=()=> <aside><h3>Beryl9 summary</h3></aside>;",
+      "src/App.tsx": "import {Beryl9Panel} from './components/Beryl9Panel'; export const App=()=> <Beryl9Panel/>;",
+      "src/components/Beryl9Panel.test.tsx": "import {Beryl9Panel} from './Beryl9Panel'; describe('Beryl9 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/beryl9.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "TAILWIND_FIXED_WIDTH"
+  },
+  {
+    "task_id": "v153-09-02",
+    "task": "Fix mobile overflow in the Cinder9 Tailwind card",
+    "files": {
+      "src/components/Cinder9Panel.tsx": "export const Cinder9Panel=()=> <section><h2>Cinder9 Tailwind card</h2><div className=\"w-[700px]\">Card</div></section>;",
+      "src/components/Cinder9PanelLegacy.tsx": "export const Cinder9PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Cinder9Summary.tsx": "export const Cinder9Summary=()=> <aside><h3>Cinder9 summary</h3></aside>;",
+      "src/App.tsx": "import {Cinder9Panel} from './components/Cinder9Panel'; export const App=()=> <Cinder9Panel/>;",
+      "src/components/Cinder9Panel.test.tsx": "import {Cinder9Panel} from './Cinder9Panel'; describe('Cinder9 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/cinder9.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "TAILWIND_FIXED_WIDTH"
+  },
+  {
+    "task_id": "v153-09-03",
+    "task": "Fix mobile overflow in the Dahlia9 Tailwind card",
+    "files": {
+      "src/components/Dahlia9Panel.tsx": "export const Dahlia9Panel=()=> <section><h2>Dahlia9 Tailwind card</h2><div className=\"w-[700px]\">Card</div></section>;",
+      "src/components/Dahlia9PanelLegacy.tsx": "export const Dahlia9PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Dahlia9Summary.tsx": "export const Dahlia9Summary=()=> <aside><h3>Dahlia9 summary</h3></aside>;",
+      "src/App.tsx": "import {Dahlia9Panel} from './components/Dahlia9Panel'; export const App=()=> <Dahlia9Panel/>;",
+      "src/components/Dahlia9Panel.test.tsx": "import {Dahlia9Panel} from './Dahlia9Panel'; describe('Dahlia9 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/dahlia9.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "TAILWIND_FIXED_WIDTH"
+  },
+  {
+    "task_id": "v153-09-04",
+    "task": "Fix mobile overflow in the Ember9 Tailwind card",
+    "files": {
+      "src/components/Ember9Panel.tsx": "export const Ember9Panel=()=> <section><h2>Ember9 Tailwind card</h2><div className=\"w-[700px]\">Card</div></section>;",
+      "src/components/Ember9PanelLegacy.tsx": "export const Ember9PanelLegacy=()=> <section><h2>Archived legacy view</h2><div style={{minWidth:800}}>Legacy</div></section>;",
+      "src/components/Ember9Summary.tsx": "export const Ember9Summary=()=> <aside><h3>Ember9 summary</h3></aside>;",
+      "src/App.tsx": "import {Ember9Panel} from './components/Ember9Panel'; export const App=()=> <Ember9Panel/>;",
+      "src/components/Ember9Panel.test.tsx": "import {Ember9Panel} from './Ember9Panel'; describe('Ember9 behavior',()=>{ it('renders',()=>{}) });",
+      "src/styles/ember9.css": ".decoy { min-width: 900px; color: red; }",
+      "src/utils/form-utils.ts": "export const normalize=(x:string)=>x.trim();"
+    },
+    "cause_family": "TAILWIND_FIXED_WIDTH"
+  }
+]

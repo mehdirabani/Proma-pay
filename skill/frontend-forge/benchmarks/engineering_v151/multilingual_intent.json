@@ -1,0 +1,59 @@
+[
+  {
+    "task": "Implement accessible checkout form",
+    "operation": "CREATE_FEATURE",
+    "domains": [
+      "accessibility",
+      "form"
+    ]
+  },
+  {
+    "task": "Implement responsive checkout page",
+    "operation": "CREATE_FEATURE",
+    "domains": [
+      "responsive",
+      "form"
+    ]
+  },
+  {
+    "task": "Fix mobile ProductCard overflow",
+    "operation": "REPAIR",
+    "domains": [
+      "responsive"
+    ]
+  },
+  {
+    "task": "Refactor duplicated cart calculation",
+    "operation": "REFACTOR",
+    "domains": []
+  },
+  {
+    "task": "یک فرم پرداخت قابل دسترس بساز",
+    "operation": "CREATE_FEATURE",
+    "domains": [
+      "accessibility",
+      "form"
+    ]
+  },
+  {
+    "task": "نمایش کارت محصول در موبایل را درست کن",
+    "operation": "REPAIR",
+    "domains": [
+      "responsive"
+    ]
+  },
+  {
+    "task": "لینک مسیر پروفایل خراب است، اصلاح کن",
+    "operation": "REPAIR",
+    "domains": [
+      "routing"
+    ]
+  },
+  {
+    "task": "سرعت لود صفحه را بهتر کن",
+    "operation": "ANALYZE",
+    "domains": [
+      "performance"
+    ]
+  }
+]

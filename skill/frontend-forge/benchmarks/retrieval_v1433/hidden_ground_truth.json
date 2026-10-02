@@ -1,0 +1,83 @@
+{
+  "product-en-explicit": {
+    "target": "src/components/ProductCard.tsx",
+    "required": [
+      "src/components/ProductCard.tsx",
+      "src/styles/ProductCard.module.css"
+    ]
+  },
+  "product-en-implicit": {
+    "target": "src/components/ProductCard.tsx",
+    "required": [
+      "src/components/ProductCard.tsx",
+      "src/styles/ProductCard.module.css"
+    ]
+  },
+  "product-fa-implicit": {
+    "target": "src/components/ProductCard.tsx",
+    "required": [
+      "src/components/ProductCard.tsx",
+      "src/styles/ProductCard.module.css"
+    ]
+  },
+  "checkout-en": {
+    "target": "src/components/CheckoutForm.tsx",
+    "required": [
+      "src/components/CheckoutForm.tsx",
+      "tests/CheckoutForm.test.tsx"
+    ]
+  },
+  "checkout-fa": {
+    "target": "src/components/CheckoutForm.tsx",
+    "required": [
+      "src/components/CheckoutForm.tsx",
+      "tests/CheckoutForm.test.tsx"
+    ]
+  },
+  "navbar-en": {
+    "target": "src/components/Navbar.tsx",
+    "required": [
+      "src/components/Navbar.tsx",
+      "src/styles/Navbar.module.css"
+    ]
+  },
+  "search-fa": {
+    "target": "src/components/SearchFilters.tsx",
+    "required": [
+      "src/components/SearchFilters.tsx",
+      "tests/SearchFilters.test.tsx"
+    ]
+  },
+  "dashboard-fa": {
+    "target": "src/components/DashboardTable.tsx",
+    "required": [
+      "src/components/DashboardTable.tsx",
+      "src/styles/DashboardTable.module.css"
+    ]
+  },
+  "modal-en": {
+    "target": "src/components/Modal.tsx",
+    "required": [
+      "src/components/Modal.tsx",
+      "tests/Modal.test.tsx"
+    ]
+  },
+  "cart-en": {
+    "target": "src/components/CartDrawer.tsx",
+    "required": [
+      "src/components/CartDrawer.tsx"
+    ]
+  },
+  "profile-fa": {
+    "target": "src/components/UserProfile.tsx",
+    "required": [
+      "src/components/UserProfile.tsx"
+    ]
+  },
+  "gallery-en": {
+    "target": "src/components/ProductGallery.tsx",
+    "required": [
+      "src/components/ProductGallery.tsx"
+    ]
+  }
+}

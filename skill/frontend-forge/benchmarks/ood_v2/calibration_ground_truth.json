@@ -1,0 +1,1602 @@
+{
+  "cal-000": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-001": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-002": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-003": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-004": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-005": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-006": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-007": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-008": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-009": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-010": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-011": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-012": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-013": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-014": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-015": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-016": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-017": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-018": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-019": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-020": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-021": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-022": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-023": {
+    "target": "src/widgets/CatalogSurface.tsx",
+    "label": "EXACT"
+  },
+  "cal-024": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-025": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-026": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-027": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-028": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-029": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-030": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-031": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-032": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-033": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-034": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-035": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-036": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-037": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-038": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-039": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-040": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-041": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-042": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-043": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-044": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-045": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-046": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-047": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-048": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-049": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-050": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-051": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-052": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-053": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-054": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-055": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-056": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-057": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-058": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-059": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-060": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-061": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-062": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-063": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-064": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-065": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-066": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-067": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-068": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-069": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-070": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-071": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-072": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-073": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-074": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-075": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-076": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-077": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-078": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-079": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-080": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-081": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-082": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-083": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-084": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-085": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-086": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-087": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-088": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-089": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-090": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-091": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-092": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-093": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-094": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-095": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-096": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-097": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-098": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-099": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-100": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-101": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-102": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-103": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-104": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-105": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-106": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-107": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-108": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-109": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-110": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-111": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-112": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-113": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-114": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-115": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-116": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-117": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-118": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-119": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-120": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-121": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-122": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-123": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-124": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-125": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-126": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-127": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-128": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-129": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-130": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-131": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-132": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-133": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-134": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-135": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-136": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-137": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-138": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-139": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-140": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-141": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-142": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-143": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-144": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-145": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-146": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-147": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-148": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-149": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-150": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-151": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-152": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-153": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-154": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-155": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-156": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-157": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-158": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-159": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-160": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-161": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-162": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-163": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-164": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-165": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-166": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-167": {
+    "target": "src/widgets/SavedItemsShelf.tsx",
+    "label": "EXACT"
+  },
+  "cal-168": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-169": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-170": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-171": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-172": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-173": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-174": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-175": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-176": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-177": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-178": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-179": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-180": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-181": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-182": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-183": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-184": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-185": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-186": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-187": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-188": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-189": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-190": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-191": {
+    "target": "src/widgets/DataGridView.tsx",
+    "label": "EXACT"
+  },
+  "cal-192": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-193": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-194": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-195": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-196": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-197": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-198": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-199": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-200": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-201": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-202": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-203": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-204": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-205": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-206": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-207": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-208": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-209": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-210": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-211": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-212": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-213": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-214": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-215": {
+    "target": "src/widgets/MediaCarousel.tsx",
+    "label": "EXACT"
+  },
+  "cal-216": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-217": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-218": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-219": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-220": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-221": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-222": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-223": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-224": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-225": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-226": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-227": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-228": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-229": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-230": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-231": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-232": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-233": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-234": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-235": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-236": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-237": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-238": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-239": {
+    "target": "src/widgets/FilterRail.tsx",
+    "label": "EXACT"
+  },
+  "cal-open-000": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-001": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-002": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-003": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-004": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-005": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-006": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-007": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-008": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-009": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-010": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-011": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-012": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-013": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-014": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-015": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-016": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-017": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-018": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-019": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-020": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-021": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-022": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-023": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-024": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-025": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-026": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-027": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-028": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-029": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-030": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-031": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-032": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-033": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-034": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-035": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-036": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-037": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-038": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-039": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-040": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-041": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-042": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-043": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-044": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-045": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-046": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-047": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-048": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-049": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-050": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-051": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-052": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-053": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-054": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-055": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-056": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-057": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-058": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-open-059": {
+    "target": null,
+    "label": "NOT_FOUND_CORRECTLY"
+  },
+  "cal-nearmiss-000": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-001": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-002": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-003": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-004": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-005": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-006": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-007": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-008": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-009": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-010": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-011": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-012": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-013": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-014": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-015": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-016": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-017": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-018": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-019": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-020": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-021": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-022": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-023": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-024": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-025": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-026": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-027": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-028": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-029": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-030": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-031": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-032": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-033": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-034": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-035": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-036": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-037": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-038": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-039": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-040": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-041": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-042": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-043": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-044": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-045": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-046": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-047": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-048": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-049": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-050": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-051": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-052": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-053": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-054": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-055": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-056": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-057": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-058": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-059": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-060": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-061": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-062": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-063": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-064": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-065": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-066": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-067": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-068": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-069": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-070": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-071": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-072": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-073": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-074": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-075": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-076": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-077": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-078": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-079": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-080": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-081": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-082": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-083": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-084": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-085": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-086": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-087": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-088": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-089": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-090": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-091": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-092": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-093": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-094": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-095": {
+    "target": "src/widgets/FulfillmentBook.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-096": {
+    "target": "src/widgets/PaymentJourney.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-097": {
+    "target": "src/widgets/MastheadCluster.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-098": {
+    "target": "src/widgets/AlertStream.tsx",
+    "label": "EXACT"
+  },
+  "cal-nearmiss-099": {
+    "target": "src/widgets/BillingLedger.tsx",
+    "label": "EXACT"
+  }
+}

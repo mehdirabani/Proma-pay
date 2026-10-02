@@ -1,0 +1,16 @@
+id: database-migration
+version: 2
+preconditions:
+- measure table size
+- identify rollback/resume strategy
+execution:
+- batch writes
+- bound lock duration
+- plan index impact
+- consider replication lag/backpressure
+verification:
+- resume_test
+- rollback_review
+- production_risk_simulation
+completion:
+- backwards compatibility checked

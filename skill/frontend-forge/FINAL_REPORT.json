@@ -1,0 +1,114 @@
+{
+  "version": "15.3.0",
+  "release_state": "OBSERVATION_AUTHENTICATED_CAUSAL_LOCAL_VERIFIED_EXTERNAL_EVIDENCE_PENDING",
+  "baseline_v15_2": {
+    "status": "PASS",
+    "tests_run": 337,
+    "failures": [],
+    "errors": [],
+    "elapsed_seconds": 19.8575,
+    "measurement": "INDEPENDENT_REEXECUTION"
+  },
+  "test_results": {
+    "status": "PASS",
+    "tests_run": 360,
+    "failures": [],
+    "errors": [],
+    "skipped": [],
+    "elapsed_seconds": 22.3345,
+    "slowest_tests": [
+      {
+        "test": "test_blind_multifile_pipeline (test_v153_blind_multifile.T.test_blind_multifile_pipeline)",
+        "seconds": 1.8464
+      },
+      {
+        "test": "test_resume_across_process_boundary (test_process_resume_ci_observability.ProcessResumeCIObservabilityTests.test_resume_across_process_boundary)",
+        "seconds": 1.442
+      },
+      {
+        "test": "test_no_accepted_quality_regression (test_v1431_benchmark.T.test_no_accepted_quality_regression)",
+        "seconds": 1.3063
+      },
+      {
+        "test": "test_ts_compiler_mode_real_or_reduced (test_v151_autonomy_impact_ts.T.test_ts_compiler_mode_real_or_reduced)",
+        "seconds": 1.2705
+      },
+      {
+        "test": "test_blind_run_and_reports (test_v1432_benchmark_integrity.BenchmarkIntegrity.test_blind_run_and_reports)",
+        "seconds": 1.2656
+      },
+      {
+        "test": "test_5000_file_index_completes (test_v1433_benchmark_integrity.BenchmarkIntegrity1433.test_5000_file_index_completes)",
+        "seconds": 1.1449
+      },
+      {
+        "test": "test_report_is_estimated_and_reproducible_shape (test_v1431_benchmark.T.test_report_is_estimated_and_reproducible_shape)",
+        "seconds": 1.1346
+      },
+      {
+        "test": "test_engine_timeout_really_returns_quickly (test_v141_capability_contract.V141CapabilityContractTests.test_engine_timeout_really_returns_quickly)",
+        "seconds": 1.0096
+      },
+      {
+        "test": "test_parallel_environment_and_requirement (test_scheduler_failure_visual_agent.MiscRuntimeTests.test_parallel_environment_and_requirement)",
+        "seconds": 0.9973
+      },
+      {
+        "test": "test_typescript_adapter_real_or_unavailable (test_capabilities_adapters.CapabilityAdapterTests.test_typescript_adapter_real_or_unavailable)",
+        "seconds": 0.8902
+      }
+    ],
+    "flaky_status": "UNVERIFIED_SINGLE_RUN"
+  },
+  "blind_multifile": {
+    "measurement": "VERIFIED_BLIND_MULTI_FILE",
+    "isolation_mode": "SEPARATE_UID_PROCESS",
+    "tasks": 50,
+    "solved": 50,
+    "success_rate": 1.0,
+    "unauthorized_patch_rate": 0.0,
+    "sealed_access_probe": {
+      "read": "ACCESS_DENIED",
+      "list": "ACCESS_DENIED",
+      "stat": "ACCESS_DENIED"
+    },
+    "failure_distribution": {
+      "PASS": 50
+    }
+  },
+  "coverage": {
+    "scope": "V15.3_CRITICAL_IN_PROCESS_MODULES",
+    "line_percent": 97.54,
+    "branch_percent": 75.93,
+    "num_statements": 244,
+    "covered_lines": 238,
+    "missing_lines": 6,
+    "num_branches": 162,
+    "covered_branches": 123,
+    "missing_branches": 39,
+    "target_line": 88,
+    "target_branch": 80,
+    "line_target_met": true,
+    "branch_target_met": false,
+    "note": "Central authority signer loop and process-isolated benchmark worker are not credited to this in-process coverage figure."
+  },
+  "verified": [
+    "observation-authenticated evidence",
+    "collector ACL",
+    "source artifact binding/freshness",
+    "policy-enforced execution",
+    "causal patch binding",
+    "signed change receipt verification",
+    "separate-UID sealed benchmark boundary",
+    "50-task multi-file hidden evaluation"
+  ],
+  "unverified": [
+    "real agent",
+    "real repository",
+    "provider tokens",
+    "external browser/Lighthouse/Axe",
+    "signer OS-principal isolation outside benchmark process",
+    "full external sandbox conformance"
+  ],
+  "benchmark_honesty": "50 fixture tasks across 10 causal mechanism families; not real-agent or real-repository proof."
+}

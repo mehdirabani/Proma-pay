@@ -1,0 +1,6 @@
+{
+  "version": "retrieval-benchmark-v2-sealed-2",
+  "cases": 130,
+  "sha256": "17d483fe9bc8f1e737c0ca57367e51cbd9e18f0214fc00c501faf07aae833056",
+  "note": "Created after diagnostic OOD set retirement; production retrieval code does not import this data."
+}

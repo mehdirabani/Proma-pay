@@ -1,0 +1,137 @@
+{
+  "runtime_version": "1.2.0",
+  "measurement": "deterministic executable evals",
+  "development": {
+    "cases": 903,
+    "passed": 903,
+    "module_tp": 1674,
+    "module_fn": 0,
+    "module_fp": 63,
+    "security_critical_total": 338,
+    "security_critical_hit": 338,
+    "fintech_critical_total": 110,
+    "fintech_critical_hit": 110,
+    "accuracy": 100.0,
+    "security_critical_recall": 100.0,
+    "fintech_critical_recall": 100.0,
+    "domain_precision": 96.37,
+    "domain_recall": 100.0
+  },
+  "validation": {
+    "cases": 445,
+    "passed": 445,
+    "module_tp": 762,
+    "module_fn": 0,
+    "module_fp": 48,
+    "security_critical_total": 119,
+    "security_critical_hit": 119,
+    "fintech_critical_total": 76,
+    "fintech_critical_hit": 76,
+    "accuracy": 100.0,
+    "security_critical_recall": 100.0,
+    "fintech_critical_recall": 100.0,
+    "domain_precision": 94.07,
+    "domain_recall": 100.0
+  },
+  "hidden": {
+    "cases": 262,
+    "passed": 262,
+    "module_tp": 621,
+    "module_fn": 0,
+    "module_fp": 57,
+    "security_critical_total": 134,
+    "security_critical_hit": 134,
+    "fintech_critical_total": 65,
+    "fintech_critical_hit": 65,
+    "accuracy": 100.0,
+    "security_critical_recall": 100.0,
+    "fintech_critical_recall": 100.0,
+    "domain_precision": 91.59,
+    "domain_recall": 100.0
+  },
+  "hidden_categories": {
+    "context": {
+      "cases": 16,
+      "passed": 16,
+      "accuracy": 100.0
+    },
+    "database": {
+      "cases": 25,
+      "passed": 25,
+      "accuracy": 100.0
+    },
+    "fintech": {
+      "cases": 36,
+      "passed": 36,
+      "accuracy": 100.0
+    },
+    "general": {
+      "cases": 21,
+      "passed": 21,
+      "accuracy": 100.0
+    },
+    "negation": {
+      "cases": 17,
+      "passed": 17,
+      "accuracy": 100.0
+    },
+    "ood": {
+      "cases": 25,
+      "passed": 25,
+      "accuracy": 100.0
+    },
+    "performance": {
+      "cases": 14,
+      "passed": 14,
+      "accuracy": 100.0
+    },
+    "security": {
+      "cases": 56,
+      "passed": 56,
+      "accuracy": 100.0
+    },
+    "woocommerce": {
+      "cases": 52,
+      "passed": 52,
+      "accuracy": 100.0
+    }
+  },
+  "hidden_languages": {
+    "persian_or_mixed": {
+      "cases": 68,
+      "passed": 68,
+      "accuracy": 100.0
+    },
+    "english_only": {
+      "cases": 194,
+      "passed": 194,
+      "accuracy": 100.0
+    }
+  },
+  "final_red_team": {
+    "cases": 200,
+    "passed": 173,
+    "accuracy": 86.5,
+    "domain_results": {
+      "database": {
+        "cases": 32,
+        "passed": 28,
+        "recall": 87.5
+      },
+      "fintech": {
+        "cases": 72,
+        "passed": 63,
+        "recall": 87.5
+      },
+      "security": {
+        "cases": 96,
+        "passed": 82,
+        "recall": 85.42
+      }
+    }
+  },
+  "notes": [
+    "Pass rate evaluates explicit required conditions, while domain_precision exposes extra module activation.",
+    "Hidden holdout was executed once after runtime freeze; runtime was not modified after its result."
+  ]
+}

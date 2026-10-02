@@ -1,0 +1,82 @@
+{
+  "architecture": {
+    "adapter": "normalized-score",
+    "input": {
+      "value": "0..100",
+      "source": "architecture-review",
+      "evidence": "required"
+    },
+    "normalization": "identity",
+    "severity": "major"
+  },
+  "code_quality": {
+    "adapter": "normalized-score",
+    "input": {
+      "value": "0..100",
+      "source": "lint/type/test/code-review",
+      "evidence": "required"
+    },
+    "normalization": "identity",
+    "severity": "major"
+  },
+  "ux": {
+    "adapter": "normalized-score",
+    "input": {
+      "value": "0..100",
+      "source": "scenario-review",
+      "evidence": "required"
+    },
+    "normalization": "identity",
+    "severity": "major"
+  },
+  "performance": {
+    "adapter": "lighthouse-or-normalized",
+    "input": {
+      "value": "0..100 OR lighthouse categories.performance.score 0..1",
+      "source": "required",
+      "evidence": "required"
+    },
+    "normalization": "lighthouse score × 100 or identity",
+    "severity": "major"
+  },
+  "accessibility": {
+    "adapter": "normalized-score",
+    "input": {
+      "value": "0..100",
+      "source": "axe/manual/wcag-review",
+      "evidence": "required"
+    },
+    "normalization": "identity",
+    "severity": "blocker"
+  },
+  "seo": {
+    "adapter": "lighthouse-or-normalized",
+    "input": {
+      "value": "0..100 OR lighthouse categories.seo.score 0..1",
+      "source": "required",
+      "evidence": "required"
+    },
+    "normalization": "lighthouse score × 100 or identity",
+    "severity": "major"
+  },
+  "security": {
+    "adapter": "normalized-score",
+    "input": {
+      "value": "0..100",
+      "source": "security-review",
+      "evidence": "required"
+    },
+    "normalization": "identity",
+    "severity": "blocker"
+  },
+  "maintainability": {
+    "adapter": "normalized-score",
+    "input": {
+      "value": "0..100",
+      "source": "maintainability-review",
+      "evidence": "required"
+    },
+    "normalization": "identity",
+    "severity": "major"
+  }
+}

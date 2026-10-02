@@ -23,3 +23,6 @@ proma-pay_v*.zip
 proma-accounting_v*.zip
 proma-update-*.zip
 proma-update-*-manifest.json
+/storage/private/
+__pycache__/
+*.pyc

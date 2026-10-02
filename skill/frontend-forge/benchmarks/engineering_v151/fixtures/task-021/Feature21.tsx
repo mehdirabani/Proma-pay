@@ -1,0 +1,1 @@
+export function Data21({loading}){ if (loading) return null; return <div>Data</div> }

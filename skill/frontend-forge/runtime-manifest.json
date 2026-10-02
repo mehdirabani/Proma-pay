@@ -1,0 +1,45 @@
+{
+  "runtime_version": "15.3.0",
+  "canonical_event_model": "runtime/event-transition-map.json",
+  "state_machine": "runtime/state-machine.json",
+  "capability_registry": "runtime/capability-registry.json",
+  "status_model": "runtime/status-model.json",
+  "profiles": [
+    "content-platform",
+    "dashboard",
+    "design-system",
+    "ecommerce",
+    "landing",
+    "portfolio",
+    "saas",
+    "web-application"
+  ],
+  "modes": [
+    "SIMULATION",
+    "LOCAL",
+    "CI",
+    "PRODUCTION"
+  ],
+  "production_capabilities": 35,
+  "test_only_capabilities": 2,
+  "optional_capabilities": 7,
+  "release_state": "OBSERVATION_AUTHENTICATED_LOCAL_VERIFICATION_PENDING",
+  "external_conformance_jobs": [
+    "sandbox-bubblewrap",
+    "browser-chromium",
+    "lighthouse",
+    "axe"
+  ],
+  "token_intelligence": {
+    "enabled": true,
+    "measurement_default": "ESTIMATED_TOKEN_USAGE",
+    "lazy_loading": true,
+    "quality_preservation_required": true
+  },
+  "token_engine_version": "14.3.2",
+  "context_engine_version": "14.3.5",
+  "retrieval_benchmark": "retrieval-benchmark-v2-release-sealed",
+  "provider_token_claim": "UNVERIFIED",
+  "engineering_evidence": "engineering_evidence/",
+  "production_evidence_path": "EngineeringObservationBroker.observe"
+}

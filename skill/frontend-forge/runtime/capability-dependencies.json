@@ -1,0 +1,14 @@
+{
+  "lighthouse-check": [],
+  "playwright-check": [],
+  "accessibility-check": [
+    "playwright-check"
+  ],
+  "build-check": [],
+  "typescript-check": [],
+  "eslint-check": [],
+  "quality-engine": [],
+  "regression-runner": [
+    "quality-engine"
+  ]
+}

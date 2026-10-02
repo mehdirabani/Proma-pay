@@ -1,0 +1,1 @@
+export const calc34=(x:number)=>{const a=x*2;const b=x*2;return a+b}

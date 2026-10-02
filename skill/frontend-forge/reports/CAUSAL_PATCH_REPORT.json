@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "supported_fixture_mechanisms": [
+    "MIN_WIDTH_FIXED",
+    "NOWRAP",
+    "FIXED_WIDTH",
+    "MISSING_LABEL",
+    "BUTTON_NAME",
+    "ROUTE_TYPO",
+    "TYPE_STRING_NUMBER",
+    "LOADING_NULL",
+    "NON_SUBMIT",
+    "TAILWIND_FIXED_WIDTH"
+  ],
+  "root_cause_required": true,
+  "plan_required": true,
+  "cause_mismatch": "REJECTED",
+  "task_keyword_only_patch": "REJECTED_BY_CONTRACT"
+}

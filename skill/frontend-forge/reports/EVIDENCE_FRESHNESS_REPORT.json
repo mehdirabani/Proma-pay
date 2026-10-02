@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "revision_binding": true,
+  "artifact_hash_recheck": true,
+  "timestamp_max_age_supported": true,
+  "stale_artifact_result": "OBSERVATION_STALE"
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "metric": "architecture",
+    "measurement": "rubric: constraints, boundaries, dependencies, reversibility",
+    "severity": "major",
+    "remediation": "architecture review"
+  },
+  {
+    "metric": "code_quality",
+    "measurement": "lint/type/test plus duplication/complexity review when tools available",
+    "severity": "major",
+    "remediation": "refactor"
+  },
+  {
+    "metric": "ux",
+    "measurement": "profile-specific flow/interaction scenario checks",
+    "severity": "major",
+    "remediation": "ui review"
+  },
+  {
+    "metric": "performance",
+    "measurement": "budget/baseline comparison when runtime metrics available; otherwise static risk report",
+    "severity": "major",
+    "remediation": "performance agent"
+  },
+  {
+    "metric": "accessibility",
+    "measurement": "WCAG-oriented automated/manual checks as available",
+    "severity": "blocker",
+    "remediation": "accessibility agent"
+  },
+  {
+    "metric": "seo",
+    "measurement": "technical SEO checks for relevant profiles",
+    "severity": "major",
+    "remediation": "seo workflow"
+  },
+  {
+    "metric": "security",
+    "measurement": "frontend threat checklist/dependency evidence as available",
+    "severity": "blocker",
+    "remediation": "security agent"
+  },
+  {
+    "metric": "maintainability",
+    "measurement": "dependency/API churn/duplication/testability rubric",
+    "severity": "major",
+    "remediation": "refactor"
+  }
+]

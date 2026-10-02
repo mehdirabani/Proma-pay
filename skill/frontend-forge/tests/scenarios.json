@@ -1,0 +1,191 @@
+[
+  {
+    "id": 1,
+    "task": "responsive ecommerce product page",
+    "project": "ecommerce",
+    "stack": "tailwind",
+    "must_activate": [
+      "frontend",
+      "design",
+      "components",
+      "performance",
+      "accessibility",
+      "seo",
+      "security"
+    ],
+    "must_not_activate": [
+      "dashboard"
+    ]
+  },
+  {
+    "id": 2,
+    "task": "enterprise admin dashboard",
+    "project": "dashboard",
+    "stack": "react",
+    "must_activate": [
+      "frontend",
+      "dashboard",
+      "components",
+      "accessibility",
+      "maintainability",
+      "performance",
+      "security"
+    ],
+    "must_not_activate": [
+      "seo"
+    ]
+  },
+  {
+    "id": 3,
+    "task": "SaaS landing page",
+    "project": "saas",
+    "stack": "nextjs",
+    "must_activate": [
+      "frontend",
+      "design",
+      "components",
+      "performance",
+      "accessibility",
+      "maintainability",
+      "security",
+      "seo"
+    ],
+    "must_not_activate": [
+      "ecommerce"
+    ]
+  },
+  {
+    "id": 4,
+    "task": "legacy CSS refactor",
+    "project": "web-application",
+    "stack": "html-css",
+    "must_activate": [
+      "frontend",
+      "components",
+      "accessibility",
+      "maintainability",
+      "security",
+      "performance",
+      "regression"
+    ],
+    "must_not_activate": [
+      "ecommerce"
+    ]
+  },
+  {
+    "id": 5,
+    "task": "Tailwind design system",
+    "project": "design-system",
+    "stack": "tailwind",
+    "must_activate": [
+      "frontend",
+      "components",
+      "accessibility",
+      "maintainability",
+      "regression",
+      "design"
+    ],
+    "must_not_activate": [
+      "ecommerce"
+    ]
+  },
+  {
+    "id": 6,
+    "task": "React component library",
+    "project": "design-system",
+    "stack": "react",
+    "must_activate": [
+      "frontend",
+      "components",
+      "accessibility",
+      "maintainability",
+      "regression",
+      "performance"
+    ],
+    "must_not_activate": [
+      "ecommerce"
+    ]
+  },
+  {
+    "id": 7,
+    "task": "Next.js SEO content application",
+    "project": "content-platform",
+    "stack": "nextjs",
+    "must_activate": [
+      "frontend",
+      "seo",
+      "performance",
+      "accessibility",
+      "components",
+      "maintainability"
+    ],
+    "must_not_activate": [
+      "dashboard"
+    ]
+  },
+  {
+    "id": 8,
+    "task": "screenshot-to-code landing page",
+    "project": "landing",
+    "stack": "tailwind",
+    "must_activate": [
+      "frontend",
+      "design",
+      "components",
+      "performance",
+      "seo",
+      "accessibility"
+    ],
+    "must_not_activate": [
+      "dashboard"
+    ]
+  },
+  {
+    "id": 9,
+    "task": "large secure project modification",
+    "project": "web-application",
+    "stack": "typescript",
+    "must_activate": [
+      "frontend",
+      "components",
+      "security",
+      "accessibility",
+      "performance",
+      "maintainability"
+    ],
+    "must_not_activate": []
+  },
+  {
+    "id": 10,
+    "task": "accessibility repair for React application",
+    "project": "web-application",
+    "stack": "react",
+    "must_activate": [
+      "frontend",
+      "accessibility",
+      "components",
+      "performance",
+      "maintainability",
+      "security"
+    ],
+    "must_not_activate": []
+  },
+  {
+    "id": 11,
+    "task": "portfolio site",
+    "project": "portfolio",
+    "stack": "nextjs",
+    "must_activate": [
+      "frontend",
+      "design",
+      "performance",
+      "accessibility",
+      "seo",
+      "components",
+      "maintainability"
+    ],
+    "must_not_activate": [
+      "ecommerce"
+    ]
+  }
+]

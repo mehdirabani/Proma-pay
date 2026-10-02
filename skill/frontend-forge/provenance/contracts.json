@@ -1,0 +1,42 @@
+{
+  "receipt_required": [
+    "receipt_id",
+    "session_id",
+    "task_id",
+    "execution_id",
+    "capability_id",
+    "adapter_id",
+    "actor",
+    "runtime_mode",
+    "workspace_id",
+    "workspace_fingerprint",
+    "project_revision",
+    "command_hash",
+    "tool_binary_hash",
+    "tool_version",
+    "sandbox_backend",
+    "sandbox_policy_hash",
+    "started_at",
+    "completed_at",
+    "sequence",
+    "nonce",
+    "exit_code",
+    "stdout_hash",
+    "stderr_hash",
+    "key_id",
+    "signature"
+  ],
+  "attestation_required": [
+    "attestation_id",
+    "receipt_id",
+    "session_id",
+    "task_id",
+    "project_revision",
+    "workspace_fingerprint",
+    "logical_path",
+    "artifact_hash",
+    "created_at",
+    "key_id",
+    "signature"
+  ]
+}

@@ -1,0 +1,23 @@
+id: payment-webhook
+version: 2
+preconditions:
+- identify gateway
+- identify callback endpoint
+- identify transaction identity
+execution:
+- authenticate source
+- validate signature
+- validate amount
+- validate currency
+- enforce idempotency
+- guard state transition
+verification:
+- invalid_signature_test
+- duplicate_callback_test
+- replay_test
+- amount_mismatch_test
+- currency_mismatch_test
+- failure_path_test
+completion:
+- financial invariant preserved
+- audit trail present

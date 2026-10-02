@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "version",
+    "capabilities"
+  ],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "agent",
+              "engine",
+              "adapter",
+              "system"
+            ]
+          },
+          "handler": {
+            "type": "string"
+          },
+          "adapter": {
+            "type": "string"
+          },
+          "contract_ref": {
+            "type": "string"
+          },
+          "inputs": {
+            "type": "array"
+          },
+          "outputs": {
+            "type": "array"
+          },
+          "timeout": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "retry": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "engine"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "handler",
+                "inputs",
+                "outputs"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "adapter"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "adapter",
+                "inputs",
+                "outputs"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "agent"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "contract_ref"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

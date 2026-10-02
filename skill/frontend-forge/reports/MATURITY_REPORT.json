@@ -1,0 +1,15 @@
+{
+  "Engineering Observation Broker": "VERIFIED_BLIND_MULTI_FILE",
+  "Central Authority ACL": "VERIFIED_UNIT",
+  "Evidence Source/Freshness": "VERIFIED_UNIT",
+  "Target Safety V3": "VERIFIED_BLIND_MULTI_FILE",
+  "Causal Diagnosis V3": "VERIFIED_BLIND_MULTI_FILE",
+  "Execution Policy Gate": "VERIFIED_BLIND_MULTI_FILE",
+  "Causal Patch Generator": "VERIFIED_BLIND_MULTI_FILE",
+  "Change Receipt V2": "VERIFIED_BLIND_MULTI_FILE",
+  "Validation Receipt": "VERIFIED_BLIND_MULTI_FILE",
+  "Blind Multi-file Benchmark": "VERIFIED_BLIND_MULTI_FILE",
+  "Real Agent Engineering": "STUB",
+  "Real Repository Engineering": "STUB",
+  "Provider Token Measurement": "STUB"
+}

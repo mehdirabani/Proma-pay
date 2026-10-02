@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "benchmark_tasks": 50,
+  "unauthorized_patch_rate": 0.0,
+  "target": 0.0
+}

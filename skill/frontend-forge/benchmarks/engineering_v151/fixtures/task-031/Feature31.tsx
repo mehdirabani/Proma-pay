@@ -1,0 +1,1 @@
+export const Link31=()=> <a href="/profil">Profile</a>

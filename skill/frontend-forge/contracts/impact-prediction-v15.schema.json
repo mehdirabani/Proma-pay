@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "required": [
+    "direct",
+    "indirect",
+    "risk",
+    "tests_required"
+  ]
+}

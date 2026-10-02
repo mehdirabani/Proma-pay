@@ -1,0 +1,49 @@
+{
+  "measurement": "ESTIMATED_TOKEN_USAGE",
+  "modules": {
+    "core-router": {
+      "estimated_token_cost": 350,
+      "lazy": false
+    },
+    "css-tailwind": {
+      "estimated_token_cost": 700,
+      "lazy": true
+    },
+    "react": {
+      "estimated_token_cost": 950,
+      "lazy": true
+    },
+    "nextjs": {
+      "estimated_token_cost": 900,
+      "lazy": true
+    },
+    "accessibility": {
+      "estimated_token_cost": 800,
+      "lazy": true
+    },
+    "performance": {
+      "estimated_token_cost": 850,
+      "lazy": true
+    },
+    "seo": {
+      "estimated_token_cost": 750,
+      "lazy": true
+    },
+    "security": {
+      "estimated_token_cost": 1100,
+      "lazy": true
+    },
+    "provenance-internals": {
+      "estimated_token_cost": 1500,
+      "lazy": true
+    },
+    "ci-internals": {
+      "estimated_token_cost": 1200,
+      "lazy": true
+    },
+    "ecommerce": {
+      "estimated_token_cost": 900,
+      "lazy": true
+    }
+  }
+}

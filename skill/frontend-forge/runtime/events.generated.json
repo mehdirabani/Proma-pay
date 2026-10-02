@@ -1,0 +1,291 @@
+{
+  "generated_from": "runtime/event-transition-map.json",
+  "events": [
+    {
+      "name": "TaskClassified",
+      "activates": [
+        "requirement-reasoner"
+      ]
+    },
+    {
+      "name": "ContextResolved",
+      "activates": [
+        "context-engine"
+      ]
+    },
+    {
+      "name": "ContextFailed",
+      "activates": [
+        "context-engine"
+      ]
+    },
+    {
+      "name": "DependenciesAnalyzed",
+      "activates": [
+        "impact-analyzer"
+      ]
+    },
+    {
+      "name": "DependencyFailed",
+      "activates": [
+        "dependency-resolver"
+      ]
+    },
+    {
+      "name": "PlanCreated",
+      "activates": [
+        "planner"
+      ]
+    },
+    {
+      "name": "PlanValidated",
+      "activates": [
+        "architecture-agent"
+      ]
+    },
+    {
+      "name": "PlanningFailed",
+      "activates": [
+        "architecture-agent"
+      ]
+    },
+    {
+      "name": "AgentConflictDetected",
+      "activates": [
+        "arbitrator-agent"
+      ]
+    },
+    {
+      "name": "AgentConflictDetected",
+      "activates": [
+        "arbitrator-agent"
+      ]
+    },
+    {
+      "name": "AgentConflictDetected",
+      "activates": [
+        "arbitrator-agent"
+      ]
+    },
+    {
+      "name": "AgentConflictDetected",
+      "activates": [
+        "arbitrator-agent"
+      ]
+    },
+    {
+      "name": "AgentConflictResolved",
+      "activates": [
+        "agent-coordinator"
+      ]
+    },
+    {
+      "name": "ApprovalRequired",
+      "activates": [
+        "risk-engine"
+      ]
+    },
+    {
+      "name": "ApprovalGranted",
+      "activates": [
+        "capability-executor"
+      ]
+    },
+    {
+      "name": "ApprovalDenied",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "name": "ExecutionStarted",
+      "activates": [
+        "capability-executor"
+      ]
+    },
+    {
+      "name": "OutputGenerated",
+      "activates": [
+        "artifact-store"
+      ]
+    },
+    {
+      "name": "ExecutionFailed",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "name": "QualityValidationStarted",
+      "activates": [
+        "quality-engine"
+      ]
+    },
+    {
+      "name": "TestFailed",
+      "activates": [
+        "qa-agent"
+      ]
+    },
+    {
+      "name": "QualityGateFailed",
+      "activates": [
+        "quality-engine"
+      ]
+    },
+    {
+      "name": "RegressionDetected",
+      "activates": [
+        "regression-runner"
+      ]
+    },
+    {
+      "name": "QualityGatePassed",
+      "activates": [
+        "learning-engine"
+      ]
+    },
+    {
+      "name": "RepairStarted",
+      "activates": [
+        "failure-manager",
+        "frontend-agent"
+      ]
+    },
+    {
+      "name": "RepairStarted",
+      "activates": [
+        "failure-manager",
+        "frontend-agent"
+      ]
+    },
+    {
+      "name": "RepairStarted",
+      "activates": [
+        "failure-manager",
+        "frontend-agent"
+      ]
+    },
+    {
+      "name": "RepairStarted",
+      "activates": [
+        "failure-manager",
+        "frontend-agent"
+      ]
+    },
+    {
+      "name": "AbortRequested",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "name": "AbortRequested",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "name": "AbortRequested",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "name": "AbortRequested",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "name": "AbortRequested",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "name": "AbortRequested",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "name": "AbortRequested",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "name": "AbortRequested",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "name": "RepairCompleted",
+      "activates": [
+        "qa-agent"
+      ]
+    },
+    {
+      "name": "RevalidationCompleted",
+      "activates": [
+        "quality-engine"
+      ]
+    },
+    {
+      "name": "RevalidationTestFailed",
+      "activates": [
+        "qa-agent"
+      ]
+    },
+    {
+      "name": "KnowledgeUpdated",
+      "activates": [
+        "observability"
+      ]
+    },
+    {
+      "name": "CancelRequested",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "name": "CancelRequested",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "name": "CancelRequested",
+      "activates": [
+        "failure-manager"
+      ]
+    },
+    {
+      "name": "SafeStop",
+      "activates": [
+        "artifact-store"
+      ]
+    },
+    {
+      "name": "SafeStop",
+      "activates": [
+        "artifact-store"
+      ]
+    },
+    {
+      "name": "AbortFinalized",
+      "activates": [
+        "observability"
+      ]
+    },
+    {
+      "name": "CancelFinalized",
+      "activates": [
+        "observability"
+      ]
+    }
+  ]
+}

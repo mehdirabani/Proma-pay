@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "missing_artifact": "REJECTED",
+  "candidate_binding": "ENFORCED",
+  "artifact_hash_binding": "ENFORCED",
+  "collector_code_hash": "ENFORCED"
+}

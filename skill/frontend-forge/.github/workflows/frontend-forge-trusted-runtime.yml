@@ -1,0 +1,32 @@
+name: Frontend Forge Trusted Runtime
+on:
+  workflow_dispatch:
+  pull_request:
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install -r requirements.txt
+      - run: python tests/run_tests.py
+
+  sandbox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y bubblewrap
+      - run: python tests/environment_jobs/sandbox_conformance.py
+
+  browser-lighthouse-a11y:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: npm install -g lighthouse @axe-core/cli
+      - run: pip install playwright && playwright install chromium
+      - run: python tests/environment_jobs/browser_tool_conformance.py

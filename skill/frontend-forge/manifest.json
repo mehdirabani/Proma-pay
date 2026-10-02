@@ -1,0 +1,24 @@
+{
+  "name": "Frontend Forge X v15.2",
+  "version": "15.2.0",
+  "type": "executable-agent-skill-specification",
+  "entrypoint": "SKILL.md",
+  "reference_runtime": "runtime_py/runtime.py",
+  "state_machine": "runtime/state-machine.json",
+  "event_transition_map": "runtime/event-transition-map.json",
+  "capability_registry": "runtime/capability-registry.json",
+  "quality_profiles": "quality/project-profiles.json",
+  "measurement_contracts": "quality/measurement-contracts.json",
+  "test_runner": "tests/run_tests.py",
+  "trust_model": "strict-production-evidence-and-sandbox",
+  "process_supervisor": "security/process_supervisor.py",
+  "evidence_parsers": "evidence/parsers.py",
+  "output_contracts": "runtime/output-contracts.json",
+  "token_claim_policy": [
+    "ESTIMATED_FIXTURE",
+    "MEASURED_TOKENIZER",
+    "MEASURED_PROVIDER",
+    "REAL_PROJECT_MEASURED"
+  ],
+  "edition": "Attested Engineering Evidence, Causal Diagnosis & Blind Autonomous Evaluation Edition"
+}

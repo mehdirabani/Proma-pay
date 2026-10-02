@@ -1,0 +1,256 @@
+[
+  {
+    "name": "architecture-agent",
+    "mission": "select scalable architecture and component boundaries",
+    "inputs": [
+      "requirement_contract",
+      "project_graph",
+      "stack_profile"
+    ],
+    "outputs": [
+      "architecture_plan",
+      "decision_record"
+    ],
+    "activation": [
+      "new architecture",
+      "material structural change",
+      "high architecture risk"
+    ],
+    "authority": {
+      "can_recommend": true,
+      "can_block_release": true,
+      "can_modify": false
+    },
+    "quality_gates": [
+      "hard_constraints_satisfied",
+      "tradeoff_record_complete"
+    ],
+    "failure_policy": "low confidence triggers second architecture review",
+    "handoff": [
+      "frontend-agent",
+      "performance-agent",
+      "qa-agent"
+    ]
+  },
+  {
+    "name": "frontend-agent",
+    "mission": "implement and refactor frontend code according to approved plan",
+    "inputs": [
+      "architecture_plan",
+      "component_map",
+      "design_tokens",
+      "affected_files"
+    ],
+    "outputs": [
+      "source_changes",
+      "implementation_report"
+    ],
+    "activation": [
+      "implementation required",
+      "repair required"
+    ],
+    "authority": {
+      "can_recommend": true,
+      "can_block_release": false,
+      "can_modify": true
+    },
+    "quality_gates": [
+      "implementation_matches_plan",
+      "no_unapproved_scope_expansion"
+    ],
+    "failure_policy": "checkpoint, analyze error, retry bounded by runtime policy",
+    "handoff": [
+      "qa-agent",
+      "accessibility-agent",
+      "performance-agent"
+    ]
+  },
+  {
+    "name": "ui-agent",
+    "mission": "engineer layout, hierarchy, tokens, interaction and responsive behavior",
+    "inputs": [
+      "requirements",
+      "visual_reference",
+      "project_profile"
+    ],
+    "outputs": [
+      "design_decisions",
+      "component_map",
+      "design_tokens"
+    ],
+    "activation": [
+      "visual implementation",
+      "screenshot/figma",
+      "design system task"
+    ],
+    "authority": {
+      "can_recommend": true,
+      "can_block_release": false,
+      "can_modify": false
+    },
+    "quality_gates": [
+      "hierarchy_consistent",
+      "responsive_strategy_defined"
+    ],
+    "failure_policy": "insufficient visual evidence lowers confidence and requests constraints",
+    "handoff": [
+      "frontend-agent",
+      "accessibility-agent"
+    ]
+  },
+  {
+    "name": "qa-agent",
+    "mission": "validate functional, visual and regression safety",
+    "inputs": [
+      "source_changes",
+      "test_plan",
+      "baseline"
+    ],
+    "outputs": [
+      "test_results",
+      "regression_report"
+    ],
+    "activation": [
+      "code generated",
+      "repair complete",
+      "regression event"
+    ],
+    "authority": {
+      "can_recommend": true,
+      "can_block_release": true,
+      "can_modify": false
+    },
+    "quality_gates": [
+      "mandatory_tests_pass",
+      "no_blocking_regression"
+    ],
+    "failure_policy": "emit TEST_FAILURE or REGRESSION_DETECTED",
+    "handoff": [
+      "frontend-agent",
+      "arbitrator-agent"
+    ]
+  },
+  {
+    "name": "accessibility-agent",
+    "mission": "enforce WCAG-oriented accessible implementation",
+    "inputs": [
+      "component_map",
+      "source_changes",
+      "project_profile"
+    ],
+    "outputs": [
+      "accessibility_report",
+      "remediation_plan"
+    ],
+    "activation": [
+      "interactive UI",
+      "quality gate failure",
+      "accessibility repair"
+    ],
+    "authority": {
+      "can_recommend": true,
+      "can_block_release": true,
+      "can_modify": false
+    },
+    "quality_gates": [
+      "wcag_2_2_aa_target",
+      "keyboard_and_focus_checked"
+    ],
+    "failure_policy": "blocking issue returns to frontend agent",
+    "handoff": [
+      "frontend-agent",
+      "qa-agent"
+    ]
+  },
+  {
+    "name": "performance-agent",
+    "mission": "protect runtime/loading performance budgets",
+    "inputs": [
+      "architecture_plan",
+      "source_changes",
+      "performance_baseline"
+    ],
+    "outputs": [
+      "performance_report",
+      "optimization_plan"
+    ],
+    "activation": [
+      "performance-sensitive page",
+      "regression",
+      "quality gate failure"
+    ],
+    "authority": {
+      "can_recommend": true,
+      "can_block_release": true,
+      "can_modify": false
+    },
+    "quality_gates": [
+      "profile_performance_budget_pass"
+    ],
+    "failure_policy": "block on configured performance regression",
+    "handoff": [
+      "frontend-agent",
+      "qa-agent"
+    ]
+  },
+  {
+    "name": "security-agent",
+    "mission": "identify frontend security hazards and release blockers",
+    "inputs": [
+      "source_changes",
+      "dependencies",
+      "auth_context"
+    ],
+    "outputs": [
+      "security_report",
+      "remediation_plan"
+    ],
+    "activation": [
+      "auth/payment/sensitive data",
+      "external script",
+      "unsafe rendering"
+    ],
+    "authority": {
+      "can_recommend": true,
+      "can_block_release": true,
+      "can_modify": false
+    },
+    "quality_gates": [
+      "no_critical_frontend_security_issue"
+    ],
+    "failure_policy": "critical finding blocks release",
+    "handoff": [
+      "frontend-agent",
+      "qa-agent"
+    ]
+  },
+  {
+    "name": "arbitrator-agent",
+    "mission": "resolve blocking agent conflicts using constraints, evidence and benchmark impact",
+    "inputs": [
+      "conflicting_proposals",
+      "requirements",
+      "quality_weights"
+    ],
+    "outputs": [
+      "arbitration_decision"
+    ],
+    "activation": [
+      "AgentConflictDetected"
+    ],
+    "authority": {
+      "can_recommend": true,
+      "can_block_release": false,
+      "can_modify": false
+    },
+    "quality_gates": [
+      "alternatives_compared",
+      "decision_trace_written"
+    ],
+    "failure_policy": "unresolved conflict escalates to user/project authority",
+    "handoff": [
+      "architecture-agent",
+      "qa-agent"
+    ]
+  }
+]

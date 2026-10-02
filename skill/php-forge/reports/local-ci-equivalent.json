@@ -1,0 +1,45 @@
+{
+  "status": "PASS",
+  "executed_at": "2026-10-01",
+  "mode": "local CI-equivalent; hidden holdout intentionally NOT re-executed after its one release run",
+  "gates": [
+    "runtime dependencies",
+    "dataset isolation",
+    "domain hard-code detector",
+    "Python syntax",
+    "runtime contracts",
+    "required regressions",
+    "mutation tests",
+    "development eval",
+    "validation eval",
+    "security category",
+    "fintech category",
+    "negation category",
+    "context category",
+    "OOD category",
+    "adversarial category",
+    "Persian/mixed category",
+    "package pre-checksum",
+    "release hygiene"
+  ],
+  "development": {
+    "cases": 903,
+    "passed": 903
+  },
+  "validation": {
+    "cases": 445,
+    "passed": 445
+  },
+  "hidden_reference": {
+    "cases": 262,
+    "passed": 262,
+    "rerun_in_ci": false
+  },
+  "blind_red_team_reference": {
+    "cases": 200,
+    "passed": 173,
+    "accuracy": 86.5,
+    "rerun_in_ci": false
+  },
+  "remote_github_actions": "NOT_EXECUTED"
+}

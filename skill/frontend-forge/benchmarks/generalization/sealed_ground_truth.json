@@ -1,0 +1,51 @@
+{
+  "holdout-product-en": {
+    "target": "src/components/MerchandisePanel.tsx",
+    "required": [
+      "src/components/MerchandisePanel.tsx",
+      "src/styles/MerchandisePanel.module.css"
+    ]
+  },
+  "holdout-product-fa": {
+    "target": "src/components/MerchandisePanel.tsx",
+    "required": [
+      "src/components/MerchandisePanel.tsx",
+      "src/styles/MerchandisePanel.module.css"
+    ]
+  },
+  "holdout-checkout-en": {
+    "target": "src/components/PurchasePane.tsx",
+    "required": [
+      "src/components/PurchasePane.tsx",
+      "tests/PurchasePane.test.tsx"
+    ]
+  },
+  "holdout-navbar-en": {
+    "target": "src/components/TopLinks.tsx",
+    "required": [
+      "src/components/TopLinks.tsx",
+      "src/styles/TopLinks.module.css"
+    ]
+  },
+  "holdout-navbar-fa": {
+    "target": "src/components/TopLinks.tsx",
+    "required": [
+      "src/components/TopLinks.tsx",
+      "src/styles/TopLinks.module.css"
+    ]
+  },
+  "holdout-order-en": {
+    "target": "src/components/OrderSummary.tsx",
+    "required": [
+      "src/components/OrderSummary.tsx",
+      "src/styles/OrderSummary.module.css"
+    ]
+  },
+  "holdout-notify-fa": {
+    "target": "src/components/NotificationCenter.tsx",
+    "required": [
+      "src/components/NotificationCenter.tsx",
+      "tests/NotificationCenter.test.tsx"
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "runtime",
+    "language",
+    "intent",
+    "scope",
+    "risk",
+    "concepts",
+    "modules",
+    "selected_context",
+    "verification",
+    "autonomy"
+  ],
+  "properties": {
+    "runtime": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "intent": {
+      "type": "object"
+    },
+    "scope": {
+      "type": "object"
+    },
+    "risk": {
+      "type": "object"
+    },
+    "concepts": {
+      "type": "array"
+    },
+    "modules": {
+      "type": "array"
+    },
+    "selected_context": {
+      "type": "object"
+    },
+    "verification": {
+      "type": "array"
+    },
+    "autonomy": {
+      "type": "object"
+    }
+  }
+}

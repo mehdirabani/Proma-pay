@@ -1,0 +1,65 @@
+{
+  "version": "1.2.0",
+  "development": {
+    "cases": 903,
+    "passed": 903,
+    "module_tp": 1674,
+    "module_fn": 0,
+    "module_fp": 63,
+    "security_critical_total": 338,
+    "security_critical_hit": 338,
+    "fintech_critical_total": 110,
+    "fintech_critical_hit": 110,
+    "accuracy": 100.0,
+    "security_critical_recall": 100.0,
+    "fintech_critical_recall": 100.0,
+    "domain_precision": 96.37,
+    "domain_recall": 100.0
+  },
+  "validation": {
+    "cases": 445,
+    "passed": 445,
+    "module_tp": 762,
+    "module_fn": 0,
+    "module_fp": 48,
+    "security_critical_total": 119,
+    "security_critical_hit": 119,
+    "fintech_critical_total": 76,
+    "fintech_critical_hit": 76,
+    "accuracy": 100.0,
+    "security_critical_recall": 100.0,
+    "fintech_critical_recall": 100.0,
+    "domain_precision": 94.07,
+    "domain_recall": 100.0
+  },
+  "hidden": {
+    "cases": 262,
+    "passed": 262,
+    "module_tp": 621,
+    "module_fn": 0,
+    "module_fp": 57,
+    "security_critical_total": 134,
+    "security_critical_hit": 134,
+    "fintech_critical_total": 65,
+    "fintech_critical_hit": 65,
+    "accuracy": 100.0,
+    "security_critical_recall": 100.0,
+    "fintech_critical_recall": 100.0,
+    "domain_precision": 91.59,
+    "domain_recall": 100.0
+  },
+  "red_team": {
+    "cases": 200,
+    "passed": 173,
+    "accuracy": 86.5
+  },
+  "agent_ab": {
+    "status": "NOT_VERIFIED",
+    "reason": "No independent external agent adapter supplied; self-simulation is not accepted as blind A/B evidence."
+  },
+  "token_measurement": {
+    "status": "NOT_VERIFIED",
+    "reason": "No deployment-model tokenizer adapter supplied. Character count is intentionally not reported as token count."
+  },
+  "status": "PILOT"
+}

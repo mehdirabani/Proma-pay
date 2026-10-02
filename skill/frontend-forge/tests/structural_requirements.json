@@ -1,0 +1,22 @@
+{
+  "required_files": [
+    "SKILL.md",
+    "ARCHITECTURE.md",
+    "EXECUTION_MODEL.md",
+    "AGENT_MODEL.md",
+    "REASONING_MODEL.md",
+    "CONTEXT_MODEL.md",
+    "LEARNING_MODEL.md",
+    "BENCHMARK.md",
+    "TESTING.md",
+    "CHANGELOG.md",
+    "runtime/state-machine.json",
+    "runtime/events.json",
+    "agents/contracts.json",
+    "quality/project-profiles.json",
+    "learning/rule-contract.json"
+  ],
+  "min_agent_contracts": 8,
+  "min_failure_scenarios": 8,
+  "min_validation_scenarios": 10
+}
