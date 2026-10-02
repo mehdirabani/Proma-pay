@@ -256,6 +256,27 @@ class PaymentsController extends Controller
         ]);
     }
 
+    public function reconcileGatewayGroup($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            if (empty($_POST['confirm_bank_receipt'])) {
+                throw new InvalidArgumentException('تأیید تطبیق با گزارش درگاه الزامی است.', 422);
+            }
+            PaymentGroupService::reconcileGatewayReview(
+                (int) $id,
+                (int) Auth::id(),
+                $_POST['gateway_ref_id'] ?? '',
+                $_POST['reconciliation_reason'] ?? ''
+            );
+            set_flash('success', 'وجه تأییدشده با بدهی فعلی قرارداد تطبیق و تخصیص داده شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'تطبیق پرداخت انجام نشد. شناسه درخواست را به پشتیبانی اعلام کنید: ' . ErrorHandler::requestId());
+        }
+        redirect('payments');
+    }
+
     public function callback()
     {
         require_once __DIR__ . '/../bootstrap.php';

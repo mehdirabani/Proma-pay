@@ -84,5 +84,67 @@ $nextQuote = SettlementQuoteService::create($contractId, $ids, $customerId, 'sel
 $incomplete = PaymentGroupService::createPendingGateway($contractId, $ids, 1000000, $customerId, 'qa-review-incomplete-' . $suffix, 'qa-review-incomplete-key-' . $suffix, 'zibal', (string) $nextQuote['quote_uuid'], 'selected');
 $incompleteReview = PaymentGroupService::recordGatewayReview((int) $incomplete['id'], null, null, 'Gateway success response without an exact amount.');
 $assert(($incompleteReview['status'] ?? '') === 'review_required' && $incompleteReview['gateway_verified_amount'] === null, 'Malformed verified gateway response was not retained for manual review.');
+$gatewayReviewGroups = Model::fetchAll(
+    "SELECT pg.*, c.contract_number, u.full_name AS customer_name
+     FROM payment_groups pg JOIN contracts c ON c.id = pg.contract_id JOIN users u ON u.id = pg.customer_id
+     WHERE pg.id IN (?, ?) ORDER BY pg.id",
+    [(int) $pending['id'], (int) $incomplete['id']]
+);
+$payments = [];
+ob_start();
+require dirname(__DIR__) . '/views/payments/index.php';
+$reviewMarkup = ob_get_clean();
+$assert(strpos($reviewMarkup, e(url('payments/reconcileGatewayGroup/' . (int) $pending['id']))) !== false, 'Admin review form is missing from rendered payments page.');
+$assert(strpos($reviewMarkup, 'name="confirm_bank_receipt"') !== false && strpos($reviewMarkup, 'name="gateway_ref_id"') !== false, 'Bank attestation or typed reference is missing.');
+$assert(strpos($reviewMarkup, e(url('payments/reconcileGatewayGroup/' . (int) $incomplete['id']))) === false, 'Incomplete gateway proof exposed an unsafe allocation action.');
+
+$rejected = 0;
+foreach ([
+    [$customerId, 'qa-review-ref-' . $suffix, 'role'],
+    [$adminId, 'wrong-reference', 'reference'],
+] as $invalidAttempt) {
+    try {
+        PaymentGroupService::reconcileGatewayReview((int) $pending['id'], (int) $invalidAttempt[0], $invalidAttempt[1], 'QA rejection');
+    } catch (InvalidArgumentException $expected) {
+        $rejected++;
+    }
+}
+$assert($rejected === 2, 'Unauthorized actor or mismatched gateway reference was accepted.');
+$reconciled = PaymentGroupService::reconcileGatewayReview((int) $pending['id'], $adminId, 'qa-review-ref-' . $suffix, 'Verified against synthetic bank statement');
+$assert(($reconciled['status'] ?? '') === 'completed', 'Authorized reconciliation did not complete.');
+$assert(normalize_money($reconciled['allocated_amount'] ?? 0) === 3000000, 'Reconciliation lost a portion of the verified payment.');
+$assert(($reconciled['gateway_ref_id'] ?? '') === 'qa-review-ref-' . $suffix, 'Reconciliation lost the external reference.');
+$reconciledAllocations = Model::fetchAll('SELECT allocated_amount FROM payment_allocations WHERE payment_group_id = ? AND COALESCE(is_reversal, 0) = 0', [(int) $pending['id']]);
+$assert(array_sum(array_map(static function ($row) { return normalize_money($row['allocated_amount']); }, $reconciledAllocations)) === 3000000, 'Reconciliation allocations do not equal the verified amount.');
+$audit = Model::fetch("SELECT id FROM audit_logs WHERE event_action = 'review_reconciled' AND related_type = 'payment_group' AND related_id = ? LIMIT 1", [(int) $pending['id']]);
+$assert((int) ($audit['id'] ?? 0) > 0, 'Reconciliation lacks a durable audit record.');
+$repeat = PaymentGroupService::completeGateway((int) $pending['id'], 3000000, 'qa-review-ref-' . $suffix, $customerId);
+$assert((int) $repeat['id'] === (int) $pending['id'], 'Callback retry after reconciliation is not idempotent.');
+$allocationCount = Model::fetch('SELECT COUNT(*) AS n FROM payment_allocations WHERE payment_group_id = ? AND COALESCE(is_reversal, 0) = 0', [(int) $pending['id']]);
+$assert((int) $allocationCount['n'] === count($reconciledAllocations), 'Callback retry duplicated allocations.');
+
+// An external receipt larger than the remaining debt stays in review until
+// a separate refund/credit policy is available.
+$excessContractId = Contract::createWithInstallments([
+    'customer_id' => $customerId, 'principal_amount' => 2000000, 'down_payment_amount' => 0,
+    'monthly_interest_rate' => 0, 'interest_type' => 'simple', 'months' => 1,
+    'start_date' => '2026-10-01', 'first_due_date' => '2026-11-01', 'created_by' => $adminId,
+]);
+$excessRows = SettlementQuoteService::loadInstallments($excessContractId);
+$excessIds = array_map(static function ($row) { return (int) $row['id']; }, $excessRows);
+$excessQuote = SettlementQuoteService::create($excessContractId, $excessIds, $customerId, 'selected', '2026-10-01');
+$excessPending = PaymentGroupService::createPendingGateway($excessContractId, $excessIds, 2000000, $customerId, 'qa-excess-track-' . $suffix, 'qa-excess-key-' . $suffix, 'zibal', (string) $excessQuote['quote_uuid'], 'selected');
+PaymentGroupService::create($excessContractId, $excessIds, 1000000, $adminId, 'manual', 'QA competing excess payment', false, 'qa-excess-competing-' . $suffix, null, '2026-10-01', '10:00', 'selected');
+$excessReview = PaymentGroupService::completeGateway((int) $excessPending['id'], 2000000, 'qa-excess-ref-' . $suffix, $customerId);
+$assert(($excessReview['status'] ?? '') === 'review_required', 'Excess verified funds did not enter review.');
+try {
+    PaymentGroupService::reconcileGatewayReview((int) $excessPending['id'], $adminId, 'qa-excess-ref-' . $suffix, 'QA excess balance');
+    throw new RuntimeException('Reconciliation allocated money beyond contract debt.');
+} catch (InvalidArgumentException $expected) {
+    $remainingReview = Model::fetch('SELECT status, gateway_verified_amount FROM payment_groups WHERE id = ?', [(int) $excessPending['id']]);
+    $assert(($remainingReview['status'] ?? '') === 'review_required' && normalize_money($remainingReview['gateway_verified_amount'] ?? 0) === 2000000, 'Excess funds were not preserved after rejected reconciliation.');
+    $excessAllocation = Model::fetch('SELECT COUNT(*) AS n FROM payment_allocations WHERE payment_group_id = ?', [(int) $excessPending['id']]);
+    $assert((int) $excessAllocation['n'] === 0, 'Excess funds were partially allocated without a credit/refund policy.');
+}
 
 echo "INTEGRATION_GATEWAY_RECONCILIATION_V204_OK\n";

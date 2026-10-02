@@ -28,10 +28,39 @@
     <td data-label="مبلغ تأییدشده"><?= $review['gateway_verified_amount'] === null ? 'نیاز به استعلام درگاه' : money_toman($review['gateway_verified_amount']) ?></td>
     <td data-label="شناسه درگاه"><small dir="ltr"><?= e($review['gateway_track_id'] ?? '') ?></small><br><small dir="ltr"><?= e($review['gateway_ref_id'] ?? '') ?></small></td>
     <td data-label="دلیل بررسی"><?= e($review['reconciliation_reason'] ?? '') ?></td><td data-label="ثبت درخواست"><?= e(jdatetime($review['created_at'])) ?></td>
-    <td data-label="عملیات"><a class="btn small secondary" href="<?= e(url('contracts/show/' . (int) $review['contract_id'])) ?>">بررسی قرارداد</a></td>
+    <td data-label="عملیات">
+      <div class="proma-table-actions">
+        <a class="btn small secondary" href="<?= e(url('contracts/show/' . (int) $review['contract_id'])) ?>">بررسی قرارداد</a>
+        <?php if ($review['gateway_verified_amount'] !== null && normalize_money($review['gateway_verified_amount']) === normalize_money($review['requested_amount']) && !empty($review['gateway_ref_id'])): ?>
+          <button class="btn small warning" type="button" data-open-modal="reconcile-gateway-<?= (int) $review['id'] ?>">تطبیق و تخصیص</button>
+        <?php else: ?>
+          <span class="badge warning">استعلام بانکی لازم است</span>
+        <?php endif; ?>
+      </div>
+    </td>
   </tr><?php endforeach; ?>
   </tbody></table></div>
 </section>
+<?php foreach ($gatewayReviewGroups as $review): ?>
+  <?php if ($review['gateway_verified_amount'] === null || normalize_money($review['gateway_verified_amount']) !== normalize_money($review['requested_amount']) || empty($review['gateway_ref_id'])) continue; ?>
+  <div class="modal" id="reconcile-gateway-<?= (int) $review['id'] ?>">
+    <div class="modal-content">
+      <div class="modal-header"><h3>تطبیق پرداخت درگاه</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن">×</button></div>
+      <form method="post" action="<?= e(url('payments/reconcileGatewayGroup/' . (int) $review['id'])) ?>">
+        <?= csrf_field() ?>
+        <div class="modal-body form-grid">
+          <div class="notice warning full">ابتدا دریافت قطعی وجه را در گزارش درگاه بررسی کنید. این عملیات وجه را بر پایهٔ بدهی فعلی قرارداد دوباره محاسبه و تخصیص می‌دهد؛ اگر مبلغ از بدهی فعلی بیشتر باشد، هیچ تخصیصی انجام نمی‌شود.</div>
+          <label>قرارداد<input value="<?= e($review['contract_number']) ?>" disabled></label>
+          <label>وجه تأییدشده<input value="<?= e(money_toman($review['gateway_verified_amount'])) ?>" disabled></label>
+          <label class="full">شناسه مرجع درگاه را دوباره وارد کنید<input name="gateway_ref_id" dir="ltr" autocomplete="off" required></label>
+          <label class="full">علت و مستند تطبیق<textarea name="reconciliation_reason" rows="3" required></textarea></label>
+          <label class="proma-confirm-check full"><input type="checkbox" name="confirm_bank_receipt" value="1" required> دریافت قطعی وجه و انطباق شناسه را با گزارش درگاه تأیید می‌کنم.</label>
+        </div>
+        <div class="modal-footer"><button class="btn secondary" type="button" data-close-modal>انصراف</button><button class="btn" type="submit">تطبیق و تخصیص وجه</button></div>
+      </form>
+    </div>
+  </div>
+<?php endforeach; ?>
 <?php endif; ?>
 <section class="card proma-list-section">
   <div class="card-header card-no-border">

@@ -158,6 +158,51 @@ class PaymentGroupService
         }
     }
 
+    /** Requote a verified, unallocated gateway receipt after an admin checks the bank reference. */
+    public static function reconcileGatewayReview($groupId, $adminId, $confirmedRefId, $reason)
+    {
+        $groupId = (int) $groupId;
+        $admin = User::find((int) $adminId);
+        if (!is_string($reason) || !is_string($confirmedRefId)) throw new InvalidArgumentException('اطلاعات تطبیق معتبر نیست.', 422);
+        $reason = trim($reason);
+        if (!$admin || ($admin['role'] ?? '') !== 'admin') throw new InvalidArgumentException('مجوز تطبیق پرداخت ندارید.', 403);
+        if ($reason === '' || trim((string) $confirmedRefId) === '') throw new InvalidArgumentException('علت و شناسه مرجع درگاه الزامی است.', 422);
+        Model::begin();
+        try {
+            $group = Model::fetch('SELECT * FROM payment_groups WHERE id = ? FOR UPDATE', [$groupId]);
+            if (!$group || ($group['status'] ?? '') !== 'review_required') throw new InvalidArgumentException('این پرداخت در صف تطبیق نیست.', 409);
+            $amount = normalize_money($group['gateway_verified_amount'] ?? 0);
+            if ($amount <= 0 || $amount !== normalize_money($group['requested_amount'] ?? 0)
+                || !hash_equals((string) ($group['gateway_ref_id'] ?? ''), trim((string) $confirmedRefId))) {
+                throw new InvalidArgumentException('مبلغ یا شناسه مرجع با دریافت تأییدشدهٔ درگاه یکسان نیست. ابتدا گزارش بانکی بررسی شود.', 409);
+            }
+            $contract = self::lockedContract((int) $group['contract_id'], (int) $adminId, false);
+            $rows = SettlementQuoteService::loadInstallments((int) $group['contract_id'], [], true);
+            $scope = ($group['allocation_scope'] ?? '') === 'contract' ? 'contract' : 'schedule';
+            $quote = SettlementQuoteService::persistQuote($contract, $rows, $adminId, $scope, date('Y-m-d'));
+            $ids = self::ids(json_decode((string) ($quote['selected_installment_ids_json'] ?? '[]'), true) ?: []);
+            $verified = SettlementQuoteService::verifyLocked((string) $quote['quote_uuid'], $contract, $rows, $ids, $amount, $adminId, $scope, date('Y-m-d'));
+            Model::execute('UPDATE payment_groups SET quote_uuid = ?, selection_json = ?, allocation_json = ?, allocation_scope = ?, reconciliation_reason = ? WHERE id = ?', [
+                (string) $quote['quote_uuid'], json_encode($ids), json_encode($verified['plan']['allocations'], JSON_UNESCAPED_UNICODE), $scope,
+                function_exists('mb_substr') ? mb_substr('تطبیق توسط مدیر: ' . $reason, 0, 255, 'UTF-8') : substr('تطبیق توسط مدیر: ' . $reason, 0, 255), $groupId,
+            ]);
+            $group['quote_uuid'] = (string) $quote['quote_uuid'];
+            $result = self::writeAllocations($group, $verified['plan'], date('Y-m-d'), date('H:i'), (string) $group['gateway_ref_id'], (int) $adminId);
+            SettlementQuoteService::markUsed((string) $quote['quote_uuid'], $groupId);
+            AuditLog::record('payment_gateway', 'review_reconciled', 'payment_group', $groupId, [
+                'actor_user_id' => (int) $adminId, 'contract_id' => (int) $group['contract_id'], 'description' => $reason,
+                'old_values' => ['status' => 'review_required', 'gateway_verified_amount' => $group['gateway_verified_amount']],
+                'new_values' => ['status' => 'completed', 'allocated_amount' => $result['allocated_amount'], 'gateway_ref_id' => $group['gateway_ref_id']],
+            ]);
+            Model::commit();
+            self::afterCommit($result, (int) $adminId);
+            return $result;
+        } catch (Throwable $e) {
+            Model::rollBack();
+            throw $e;
+        }
+    }
+
     public static function failGateway($groupId, $reason = '')
     {
         return Model::execute("UPDATE payment_groups SET status = 'failed', description = ? WHERE id = ? AND status = 'pending'", [substr(trim((string) $reason) ?: 'پرداخت گروهی در درگاه تکمیل نشد.', 0, 255), (int) $groupId]);
