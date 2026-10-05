@@ -18,9 +18,13 @@ vendor/bin/pint --test
 
 در اجرای اولیهٔ ۲۰۲۶-۱۰-۰۵، `migrate:fresh --seed` روی SQLite موفق شد؛ ۱۳ تست با ۶۳ assertion، `npm run build`، `composer validate --no-check-publish`، `composer audit` بدون advisory، `vendor/bin/pint --test` و syntax check روی ۶۷ فایل موفق شدند. داشبورد و جزئیات مشتری در مرورگر با اندازه‌های دسکتاپ ۱۴۴۰px و موبایل ۳۷۵×۸۱۲ بازبینی چشمی شدند.
 
-در اجرای فعلی، یک datadir دورریختنی و مستقل MariaDB 10.4.32 روی loopback پورت 3307 استفاده شد. PHPUnit با `phpunit.mariadb.xml` شامل ۷۸ تست/۴۹۶ assertion است و موفق می‌شود؛ سه race دوفرایندی رزرو اعتبار، ثبت هم‌زمان روی یک قسط و اصلاح هم‌زمان یک پرداخت را اجرا می‌کند. suite SQLite نیز ۷۸ تست/۴۶۶ assertion دارد؛ هر سه تست row-lock آن عمداً skip می‌شوند. پوشش اصلاحیه شامل reason اجباری، replay/conflict، رد پیش‌پرداخت، اصلاح تخصیص چندقسطی، branch denial، دفتر reversal و جریان وب فارسی RTL است. جزئیات اتصال دورریختنی در [MYSQL-TESTING.md](MYSQL-TESTING.md) آمده است.
+در اجرای فعلی، suite SQLite شامل ۸۵ تست و ۵۹۳ assertion است: ۸۲ تست موفق و سه تست row-lock عمداً skip شده‌اند. `migrate:fresh --seed --force --database=sqlite` نیز پس از آخرین migration موفق شد. هفت تست جدید receipt، upload خصوصی، MIME/extension/size، idempotency/conflict، branch denial، لینک امضاشده/انقضا، audit، رد بدون پرداخت، تأیید با quote تازه و نمایش RTL را پوشش می‌دهند.
 
-این نتایج فقط نسخهٔ محلی MariaDB 10.4.32 را پوشش می‌دهند. نسخهٔ دیتابیس production نامعلوم است؛ raceهای درگاه/refund/settlement، MySQL 8، browser automation تکرارپذیر در CI، accessibility audit، load test، API contract/OpenAPI و migration-data reconciliation هنوز اجرا نشده‌اند.
+آخرین شواهد MariaDB 10.4.32 مربوط به commit `27be765` و قبل از migration رسید است: ۷۸ تست/۴۹۶ assertion، به‌همراه سه race دوفرایندی و rollback migration. در این برش راه‌اندازی مجدد MariaDB ایزوله با assertion داخلی InnoDB در `os0file.cc` (`slot`) crash کرد؛ بنابراین migration و suite رسید روی MariaDB/MySQL اجرا نشده‌اند و این محدودیت را نباید با شواهد قبلی جایگزین کرد.
+
+`npm run build` و Pint برای PHPهای تغییرکرده موفق‌اند. UI جدید با feature test در RTL ارزیابی شده، اما screenshot و browser accessibility capture تهیه نشده است.
+
+این نتایج SQLite فعلی و MariaDB 10.4.32 در commit قبلی را پوشش می‌دهند؛ هیچ‌کدام موتور production را مشخص نمی‌کنند. raceهای جدید رسید، درگاه/refund/settlement، MySQL 8، browser automation تکرارپذیر در CI، accessibility audit، load test، API contract/OpenAPI و migration-data reconciliation هنوز اجرا نشده‌اند.
 
 ## پوشش لازم پیش از تولید
 

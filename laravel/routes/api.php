@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\KycController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PaymentCorrectionController;
+use App\Http\Controllers\Api\PaymentReceiptController;
 use App\Http\Controllers\Api\SettlementQuoteController;
 use App\Http\Controllers\Api\TokenController;
 use Illuminate\Http\Request;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::post('/tokens', [TokenController::class, 'store'])->middleware('throttle:5,1')->name('tokens.store');
+    Route::get('/payment-receipts/{paymentReceipt}/temporary-file', [PaymentReceiptController::class, 'temporaryFile'])
+        ->middleware('signed')->name('payment-receipts.temporary-file');
 
     Route::middleware(['auth:sanctum', 'active-user', 'abilities:proma-api'])->group(function (): void {
         Route::delete('/tokens/current', [TokenController::class, 'destroy'])->name('tokens.destroy');
@@ -40,6 +43,18 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
         Route::get('/payments', [PaymentController::class, 'index'])
             ->middleware('permission:payments.view')->name('payments.index');
+        Route::get('/payment-receipts', [PaymentReceiptController::class, 'index'])
+            ->middleware('permission:payments.view')->name('payment-receipts.index');
+        Route::get('/payment-receipts/{paymentReceipt}/file', [PaymentReceiptController::class, 'file'])
+            ->middleware('permission:payments.view')->name('payment-receipts.file');
+        Route::get('/payment-receipts/{paymentReceipt}/temporary-url', [PaymentReceiptController::class, 'temporaryUrl'])
+            ->middleware('permission:payments.view')->name('payment-receipts.temporary-url');
+        Route::get('/payment-receipts/{paymentReceipt}', [PaymentReceiptController::class, 'show'])
+            ->middleware('permission:payments.view')->name('payment-receipts.show');
+        Route::post('/payment-receipts/{paymentReceipt}/review', [PaymentReceiptController::class, 'review'])
+            ->middleware('permission:payments.receipt.review')->name('payment-receipts.review');
+        Route::post('/contracts/{contract}/installments/{installment}/payment-receipts', [PaymentReceiptController::class, 'store'])
+            ->middleware(['permission:payments.record', 'throttle:10,1'])->name('contracts.payment-receipts.store');
         Route::post('/payments/{payment}/correction', [PaymentCorrectionController::class, 'store'])
             ->middleware('permission:payments.correct')->name('payments.correction.store');
         Route::post('/payment-intents', [PaymentController::class, 'store'])

@@ -49,4 +49,9 @@ class Payment extends Model
     {
         return $this->hasOne(PaymentCorrection::class);
     }
+
+    public function receipt(): HasOne
+    {
+        return $this->hasOne(PaymentReceipt::class);
+    }
 }

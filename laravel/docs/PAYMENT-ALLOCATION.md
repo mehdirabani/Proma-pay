@@ -32,10 +32,14 @@ Laravel now persists actor-bound, five-minute `SettlementQuote` snapshots for Le
 
 MariaDB two-process tests now prove that only one of two concurrent captures can collect the same installment and only one correction can reverse the same payment.
 
+Laravel also ports the narrow Legacy `PaymentReceipt` review path as staff-assisted evidence intake (there is no customer login/portal in this app). A pending `PaymentReceipt` is not a `Payment`; staff uploads proof for one installment, and only an authorized reviewer can approve or reject it. Approval locks the receipt/contract, creates a fresh selected-installment quote, and calls normal capture for `bank_transfer` inside the decision transaction. Current rules and balance are rechecked; allocation cannot exceed the current payable debt. Rejection stores its reason and creates no payment/allocation. Submission and review request IDs are idempotent, and the database lock permits one terminal decision.
+
+Receipt bytes use a dedicated private local disk and random UUID filename. Uploads require a matching detected MIME/extension pair among JPG, PNG, WebP, and PDF and are capped at 5 MiB. Staff downloads require authentication and branch authorization; API clients may request a signed download URL expiring in 30–600 seconds. Submission, review decisions, and verified downloads are audited. Laravel retains the evidence after review rather than deleting it as Legacy does; retention/backup policy is still undecided. Malware scanning, automatic orphan cleanup, customer self-service, and other document domains are not implemented.
+
 The workflow deliberately does not claim the remainder of the Legacy payment system:
 
 - Laravel has no legal-case/referral tables yet. The loader passes no legal referral date; legal penalties and legal-case costs are therefore excluded from quotes, even if an administrator enters a legal rate.
-- Gateway, wallet, webhook/callback, customer-uploaded transfer proof review, generated receipt issuance, external refunds, legal-cost correction, reconciliation, and merchant settlement are not implemented. The UI distinguishes the available internal correction from an actual bank refund.
+- Gateway, wallet, webhook/callback, customer-authenticated transfer proof submission, generated receipt issuance, external refunds, legal-cost correction, reconciliation, and merchant settlement are not implemented. The UI distinguishes internal correction from an actual bank refund.
 - Captured installment `principal_applied` is the Legacy scheduled-installment debt component (which can include contract finance charges), not a proven decomposition of financed contract principal. Capture does not reduce `credit_accounts.used_toman`; doing so without an evidenced principal allocation would release the wrong credit amount.
 - Eloquent guards reject updates/deletes to allocation and quote snapshots, but a privileged SQL client can bypass those application guards. Database-level immutability still needs an operational/database policy.
 

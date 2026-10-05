@@ -6,6 +6,7 @@ use App\Http\Controllers\CustomerPageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinancialRulesController;
 use App\Http\Controllers\PaymentCorrectionPageController;
+use App\Http\Controllers\PaymentReceiptPageController;
 use App\Http\Controllers\SettlementQuotePageController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,9 @@ Route::middleware(['auth', 'active-user'])->group(function (): void {
     Route::put('/settings/financial-rules', [FinancialRulesController::class, 'update'])
         ->middleware('permission:finance.rules.manage')->name('settings.financial-rules.update');
     Route::get('/customers', [CustomerPageController::class, 'index'])->middleware('permission:customers.view')->name('customers.index');
+    Route::get('/payment-receipts', [PaymentReceiptPageController::class, 'index'])->middleware('permission:payments.view')->name('payment-receipts.index');
+    Route::get('/payment-receipts/{paymentReceipt}/file', [PaymentReceiptPageController::class, 'file'])->middleware('permission:payments.view')->name('payment-receipts.file');
+    Route::post('/payment-receipts/{paymentReceipt}/review', [PaymentReceiptPageController::class, 'review'])->middleware('permission:payments.receipt.review')->name('payment-receipts.review');
     Route::get('/customers/create', [CustomerPageController::class, 'create'])->middleware('permission:customers.create')->name('customers.create');
     Route::get('/customers/{customer}', [CustomerPageController::class, 'show'])->middleware('permission:customers.view')->name('customers.show');
     Route::post('/customers', [CustomerPageController::class, 'store'])->middleware('permission:customers.create')->name('customers.store');
@@ -34,6 +38,8 @@ Route::middleware(['auth', 'active-user'])->group(function (): void {
     Route::put('/kyc-cases/{kycCase}/review', [CustomerActionsController::class, 'reviewKyc'])->middleware('permission:kyc.review')->name('kyc-cases.review');
     Route::post('/customers/{customer}/credit-adjustments', [CustomerActionsController::class, 'adjustCredit'])->middleware('permission:credit.adjust')->name('customers.credit.adjust');
     Route::post('/customers/{customer}/payment-intents', [CustomerActionsController::class, 'registerPayment'])->middleware('permission:payments.record')->name('customers.payments.store');
+    Route::post('/contracts/{contract}/installments/{installment}/payment-receipts', [PaymentReceiptPageController::class, 'store'])
+        ->middleware(['permission:payments.record', 'throttle:10,1'])->name('contracts.payment-receipts.store');
     Route::post('/payments/{payment}/correction', [PaymentCorrectionPageController::class, 'store'])
         ->middleware('permission:payments.correct')->name('payments.correction.store');
     Route::post('/customers/{customer}/contracts/{contract}/settlement-quotes', [SettlementQuotePageController::class, 'store'])

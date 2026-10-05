@@ -107,6 +107,52 @@
                                             </form>
                                         </div>
                                     @endcan
+                                    @can('payments.record')
+                                        <div class="mt-3 rounded-xl border border-indigo-200 bg-indigo-50/60 p-4">
+                                            <div class="flex items-start gap-3">
+                                                <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-white text-indigo-700" aria-hidden="true">▧</span>
+                                                <div><h3 class="text-xs font-bold text-slate-800">ثبت مدرک انتقال بانکی مشتری</h3><p class="mt-1 text-[11px] leading-5 text-slate-600">کارمند شعبه مدرک مشتری را ثبت می‌کند. تا تأیید مدیر، مبلغ پرداخت‌شده محسوب نمی‌شود. فایل خصوصی نگهداری و فقط به‌صورت دانلود مجاز ارائه می‌شود.</p></div>
+                                            </div>
+                                            <div class="mt-3 space-y-2">
+                                                @foreach($contract->installments as $installment)
+                                                    @continue(in_array($installment->status, ['draft', 'paid', 'cancelled'], true))
+                                                    @php($pendingReceipt = $installment->paymentReceipts->firstWhere('status', 'pending'))
+                                                    <details class="rounded-lg border border-indigo-100 bg-white px-3 py-2">
+                                                        <summary class="cursor-pointer text-[11px] font-semibold text-slate-700">قسط {{ \App\Support\PersianNumber::format($installment->installment_number) }} · {{ \App\Support\PersianNumber::toman($installment->amount_toman) }}</summary>
+                                                        @if($pendingReceipt)
+                                                            <p class="mt-2 rounded-md bg-amber-50 px-3 py-2 text-[11px] leading-5 text-amber-900">مدرک این قسط در انتظار بررسی است. تا ثبت نتیجه، مدرک دیگری برای این قسط پذیرفته نمی‌شود.</p>
+                                                            @can('payments.view')
+                                                                <a href="{{ route('payment-receipts.file', $pendingReceipt) }}" class="mt-2 inline-flex min-h-9 items-center rounded-lg border border-slate-200 px-3 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">دانلود امن مدرک فعلی</a>
+                                                            @endcan
+                                                        @else
+                                                            <form method="POST" enctype="multipart/form-data" action="{{ route('contracts.payment-receipts.store', [$contract, $installment]) }}" class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">@csrf
+                                                                <input type="hidden" name="request_id" value="{{ \Illuminate\Support\Str::uuid() }}">
+                                                                <div><label for="receipt-amount-{{ $installment->id }}" class="mb-1 block text-[11px] font-semibold text-slate-700">مبلغ انتقال (تومان)</label><input id="receipt-amount-{{ $installment->id }}" name="amount_toman" required inputmode="numeric" dir="ltr" placeholder="مثلاً ۵۰۰٬۰۰۰" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-left text-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100"></div>
+                                                                <div><label for="receipt-file-{{ $installment->id }}" class="mb-1 block text-[11px] font-semibold text-slate-700">تصویر یا فایل مدرک</label><input id="receipt-file-{{ $installment->id }}" name="receipt" type="file" required accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf" class="block min-h-10 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-[11px] text-slate-600 file:ms-2 file:rounded-md file:border-0 file:bg-indigo-50 file:px-2 file:py-1 file:text-[10px] file:font-semibold file:text-indigo-800"></div>
+                                                                <p class="text-[10px] leading-5 text-slate-500 sm:col-span-2">JPG، PNG، WebP یا PDF تا ۵ مگابایت. مبلغ و وضعیت قسط هنگام ثبت مدرک و دوباره هنگام تأیید کنترل می‌شود.</p>
+                                                                @error('amount_toman')<p role="alert" class="text-xs text-rose-700 sm:col-span-2">{{ $message }}</p>@enderror
+                                                                @error('receipt')<p role="alert" class="text-xs text-rose-700 sm:col-span-2">{{ $message }}</p>@enderror
+                                                                @error('installment')<p role="alert" class="text-xs text-rose-700 sm:col-span-2">{{ $message }}</p>@enderror
+                                                                @error('financial_rules')<p role="alert" class="text-xs text-rose-700 sm:col-span-2">{{ $message }}</p>@enderror
+                                                                @error('request_id')<p role="alert" class="text-xs text-rose-700 sm:col-span-2">{{ $message }}</p>@enderror
+                                                                @error('contract')<p role="alert" class="text-xs text-rose-700 sm:col-span-2">{{ $message }}</p>@enderror
+                                                                <div class="sm:col-span-2"><button type="submit" class="h-10 w-full rounded-lg bg-indigo-700 px-4 text-xs font-semibold text-white hover:bg-indigo-800">ثبت مدرک برای بررسی</button></div>
+                                                            </form>
+                                                        @endif
+                                                        @can('payments.view')
+                                                            @foreach($installment->paymentReceipts->where('status', '!=', 'pending')->take(3) as $reviewedReceipt)
+                                                                <div class="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2 text-[10px]">
+                                                                    <span class="text-slate-600">مدرک {{ $reviewedReceipt->status === 'approved' ? 'تأییدشده' : 'ردشده' }} · {{ \App\Support\PersianNumber::toman($reviewedReceipt->approved_amount_toman ?? $reviewedReceipt->amount_toman) }}</span>
+                                                                    <a href="{{ route('payment-receipts.file', $reviewedReceipt) }}" class="font-semibold text-brand-700 hover:text-brand-900">دانلود امن</a>
+                                                                    @if($reviewedReceipt->review_note)<span class="w-full text-slate-500">شرح بررسی: {{ $reviewedReceipt->review_note }}</span>@endif
+                                                                </div>
+                                                            @endforeach
+                                                        @endcan
+                                                    </details>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endcan
                                 @endif
                             </li>
                         @endforeach

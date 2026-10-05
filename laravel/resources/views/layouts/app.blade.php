@@ -35,9 +35,11 @@
                 <span class="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-500" aria-disabled="true">
                     <span aria-hidden="true" class="text-base">▤</span><span>قراردادها و اقساط</span><span class="ms-auto text-[10px]">به‌زودی</span>
                 </span>
-                <span class="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-500" aria-disabled="true">
-                    <span aria-hidden="true" class="text-base">↗</span><span>پرداخت و وصول</span><span class="ms-auto text-[10px]">به‌زودی</span>
-                </span>
+                @can('payments.view')
+                    <a href="{{ route('payment-receipts.index') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition', 'bg-white/10 font-semibold text-white' => request()->routeIs('payment-receipts.*'), 'text-slate-300 hover:bg-white/5 hover:text-white' => !request()->routeIs('payment-receipts.*')])>
+                        <span aria-hidden="true" class="text-base">↗</span><span>رسیدهای انتقال بانکی</span>
+                    </a>
+                @endcan
                 @can('finance.rules.manage')
                     <a href="{{ route('settings.financial-rules.edit') }}" @class(['flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition', 'bg-white/10 font-semibold text-white' => request()->routeIs('settings.financial-rules.*'), 'text-slate-300 hover:bg-white/5 hover:text-white' => !request()->routeIs('settings.financial-rules.*')])>
                         <span aria-hidden="true" class="text-base">⚙</span><span>قواعد مالی</span>
@@ -63,6 +65,9 @@
                                 <a href="{{ route('dashboard') }}" class="block rounded-lg px-3 py-2.5 hover:bg-slate-50">داشبورد</a>
                                 @can('viewAny', App\Models\Customer::class)
                                     <a href="{{ route('customers.index') }}" class="block rounded-lg px-3 py-2.5 hover:bg-slate-50">مشتریان</a>
+                                @endcan
+                                @can('payments.view')
+                                    <a href="{{ route('payment-receipts.index') }}" class="block rounded-lg px-3 py-2.5 hover:bg-slate-50">رسیدهای انتقال بانکی</a>
                                 @endcan
                                 @can('finance.rules.manage')
                                     <a href="{{ route('settings.financial-rules.edit') }}" class="block rounded-lg px-3 py-2.5 hover:bg-slate-50">قواعد مالی</a>

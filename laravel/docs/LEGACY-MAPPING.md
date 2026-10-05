@@ -45,7 +45,7 @@
 | `payment_requests` | درخواست/دستور پرداخت | `REDESIGNED` | payment intent پایه؛ تطبیق semantics باز |
 | `system_outbox` | outbox و تحویل رویداد | `REDESIGNED` | برنامه فقط |
 | `payment_corrections` | اصلاح تراکنش مالی | `REDESIGNED` | اصلاح داخلی پرداخت قسطی موفق با reason، snapshot، audit و reversal ledger؛ legal cost/down-payment/refund منتقل نشده |
-| `payment_receipts` | رسید پرداخت | `REDESIGNED` | برنامه فقط |
+| `payment_receipts` | رسید پرداخت | `REDESIGNED` | ثبت/بازبینی کارمند-محور مدرک انتقال و metadata/فایل خصوصی؛ Customer portal ندارد و نگهداری فایل باید با سیاست retention و عملیات نهایی شود |
 | `payments` | پرداخت و تخصیص | `REDESIGNED` | intent معلق پایه؛ settlement ندارد |
 | `penalties` | جریمه و بخشودگی | `REDESIGNED` | قواعد استخراج/تطبیق نشده |
 | `profile_update_requests` | تغییر کنترل‌شدهٔ مشخصات | `REDESIGNED` | برنامه فقط |

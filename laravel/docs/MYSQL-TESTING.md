@@ -26,6 +26,6 @@ vendor/bin/phpunit --configuration=phpunit.mariadb.xml --filter=two_concurrent_c
 
 ## شواهد این محیط
 
-در اجرای فعلی، MariaDB 10.4.32 روی پورت 3307 با datadir تازه در `%TEMP%` استفاده شد. suite روی MariaDB ۷۸ تست/۴۹۶ assertion و روی SQLite ۷۸ تست/۴۶۶ assertion دارد؛ سه تست واقعی row-lock روی SQLite skip می‌شوند. MariaDB سه race دوفرایندی رزرو اعتبار، دریافت همان قسط و اصلاح همان پرداخت را اجرا می‌کند و در هر رقابت فقط یک عملیات مؤثر می‌ماند. migration correction و مجوز مدیر، `migrate:fresh --seed --force` و rollback کامل پس از آخرین migration اجرا شدند. raceهای درگاه/refund/settlement، نسخهٔ production و MySQL 8 هنوز باز هستند.
+آخرین اجرای تأییدشدهٔ MariaDB 10.4.32 مربوط به commit `27be765` و قبل از migration receipt است: ۷۸ تست/۴۹۶ assertion، سه race دوفرایندی رزرو اعتبار، دریافت همان قسط و اصلاح همان پرداخت، همراه `migrate:fresh --seed --force` و rollback کامل. در بررسی این برش، MariaDB XAMPP هنگام startup از data-dirهای آزمایشی تازه با assertion داخلی InnoDB در `os0file.cc` (`slot`) crash کرد؛ بنابراین migration رسید و suite فعلی روی MariaDB/MySQL هنوز اجرا نشده‌اند. suite SQLite فعلی ۸۵ تست/۵۹۳ assertion دارد (۸۲ pass، سه skip قفل ردیفی) و `migrate:fresh --seed --force --database=sqlite` موفق است. raceهای رسید/درگاه/refund/settlement، نسخهٔ production و MySQL 8 هنوز باز هستند.
 
 برای موتور دیگری، نسخهٔ آن را جدا ثبت کنید. از `migrate:fresh` فقط روی پایگاه دورریختنی استفاده کنید.

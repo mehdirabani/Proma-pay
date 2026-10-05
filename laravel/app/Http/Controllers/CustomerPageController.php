@@ -40,7 +40,7 @@ class CustomerPageController extends Controller
             'kycCases' => fn ($query) => $query->latest('id'),
             'payments' => fn ($query) => $query->with('correction')->latest('id')->limit(5),
         ]);
-        $contracts = $customer->contracts()->with('installments')->latest('id')->limit(5)->get();
+        $contracts = $customer->contracts()->with(['installments.paymentReceipts' => fn ($query) => $query->latest('id')])->latest('id')->limit(5)->get();
 
         return view('customers.show', [
             'customer' => $customer,

@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             'payments.view' => 'مشاهدهٔ پرداخت‌ها',
             'payments.record' => 'ثبت درخواست پرداخت',
             'payments.correct' => 'ثبت اصلاحیهٔ داخلی پرداخت',
+            'payments.receipt.review' => 'بررسی مدرک انتقال بانکی',
             'finance.rules.manage' => 'مدیریت قواعد مالی',
             'contracts.create' => 'ایجاد پیش‌نویس قرارداد',
             'contracts.submit' => 'ارسال قرارداد برای تأیید',

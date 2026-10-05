@@ -24,4 +24,9 @@ class Contract extends Model
     {
         return $this->hasMany(Installment::class)->orderBy('installment_number');
     }
+
+    public function paymentReceipts(): HasMany
+    {
+        return $this->hasMany(PaymentReceipt::class);
+    }
 }
