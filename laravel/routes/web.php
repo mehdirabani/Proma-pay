@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\WebAuthController;
 use App\Http\Controllers\CustomerActionsController;
 use App\Http\Controllers\CustomerPageController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FinancialRulesController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : redirect()->route('login'));
@@ -15,6 +16,10 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware(['auth', 'active-user'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->middleware('permission:dashboard.view')->name('dashboard');
+    Route::get('/settings/financial-rules', [FinancialRulesController::class, 'edit'])
+        ->middleware('permission:finance.rules.manage')->name('settings.financial-rules.edit');
+    Route::put('/settings/financial-rules', [FinancialRulesController::class, 'update'])
+        ->middleware('permission:finance.rules.manage')->name('settings.financial-rules.update');
     Route::get('/customers', [CustomerPageController::class, 'index'])->middleware('permission:customers.view')->name('customers.index');
     Route::get('/customers/create', [CustomerPageController::class, 'create'])->middleware('permission:customers.create')->name('customers.create');
     Route::get('/customers/{customer}', [CustomerPageController::class, 'show'])->middleware('permission:customers.view')->name('customers.show');

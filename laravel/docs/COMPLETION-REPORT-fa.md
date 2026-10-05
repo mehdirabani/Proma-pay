@@ -14,6 +14,7 @@
 
 - SQLite: ۳۹ تست و ۱۹۲ assertion موفق؛ تست row-lock هم‌زمانی به‌درستی روی SQLite اجرا نمی‌شود و skip است.
 - MariaDB 10.4.32 آزمایشی و جدا: ۴۰ تست و ۲۰۲ assertion موفق، همراه race دوفرایندی و migration rollback.
+- در checkpoint تکمیل فعلی (پس از افزودن قوانین مالی نسخه‌دار): SQLite برابر ۵۷ تست/۲۸۳ assertion (۵۶ موفق، یک skip مورد انتظار)؛ MariaDB 10.4.32 برابر ۵۷ تست/۲۹۳ assertion موفق. `migrate:fresh --seed --force` نیز روی پایگاه ایزولهٔ MariaDB موفق شد.
 - پس از افزودن calculator/planner، SQLite با ۵۰ تست/۲۳۸ assertion و MariaDB با ۵۱ تست/۲۴۸ assertion سبز هستند؛ آزمون row-lock در SQLite skip است.
 - Pint برای PHPهای تغییرکرده و `git diff --check -- laravel` موفق.
 - بخش جدید در تست‌های feature به‌عنوان RTL، با کنترل مجوزها و برچسب فارسی بررسی شد. screenshot مرورگر جدید تهیه نشد چون راه‌اندازی local server در محیط ابزار مسدود بود.

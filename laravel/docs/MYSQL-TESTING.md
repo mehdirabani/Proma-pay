@@ -25,6 +25,6 @@ vendor/bin/phpunit --configuration=phpunit.mariadb.xml --filter=concurrent_contr
 
 ## شواهد این محیط
 
-در اجرای Phase B، MariaDB 10.4.32 روی پورت 3307 با datadir تازه در `%TEMP%` بالا آمد و `migrate:fresh --seed --force` اولیه موفق شد. suite فعلی روی MariaDB شامل ۵۱ تست/۲۴۸ assertion است؛ SQLite نیز ۵۰ تست/۲۳۸ assertion موفق دارد و آزمون row-lock را skip می‌کند. آزمون دو فرایند رزرو دو قرارداد ۷۰۰٬۰۰۰ تومانی از سقف ۱٬۰۰۰٬۰۰۰ را ثابت می‌کند و full migration rollback نیز ایراد FK ستون `users.branch_id` را آشکار کرد که اصلاح شد. ۱۱ تست pure financial state/allocation نیز در هر دو driver اجرا می‌شوند. raceهای ثبت پرداخت/درگاه/refund/settlement، نسخهٔ production و MySQL 8 هنوز باز هستند.
+در اجرای Phase B، MariaDB 10.4.32 روی پورت 3307 با datadir تازه در `%TEMP%` بالا آمد و `migrate:fresh --seed --force` اولیه موفق شد. در checkpoint فعلی، suite روی MariaDB شامل ۵۷ تست/۲۹۳ assertion است؛ SQLite نیز ۵۷ تست/۲۸۳ assertion دارد و آزمون row-lock را یک‌بار skip می‌کند. آزمون دو فرایند رزرو دو قرارداد ۷۰۰٬۰۰۰ تومانی از سقف ۱٬۰۰۰٬۰۰۰ را ثابت می‌کند و full migration rollback نیز ایراد FK ستون `users.branch_id` را آشکار کرد که اصلاح شد. ۱۱ تست pure financial state/allocation و ۶ تست قواعد مالی نیز در هر دو driver اجرا می‌شوند. raceهای ثبت پرداخت/درگاه/refund/settlement، نسخهٔ production و MySQL 8 هنوز باز هستند.
 
 برای موتور دیگری، نسخهٔ آن را جدا ثبت کنید. از `migrate:fresh` فقط روی پایگاه دورریختنی استفاده کنید.

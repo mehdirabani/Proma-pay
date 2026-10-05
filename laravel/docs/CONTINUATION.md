@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase D is in progress. Legacy payment and allocation rules have been mapped; Laravel now has pure, versioned `MoneyMath`, installment-state, and allocation-planner ports. Payment capture, quote persistence, allocation rows, gateway, refund/reversal, and reconciliation are not implemented yet. Do not describe the application as production-ready.
+Phase D is in progress. Legacy payment and allocation rules have been mapped; Laravel now has pure, versioned `MoneyMath`, installment-state, and allocation-planner ports, plus a versioned administrator-only financial rules page. Rule values initialize as null because Legacy default migrations conflict and production policy is not evidenced. Payment capture, quote persistence, allocation rows, gateway, refund/reversal, and reconciliation are not implemented yet. Do not describe the application as production-ready.
 
 ## Completed in this continuation
 
@@ -46,8 +46,8 @@ Laravel 12, Sanctum, Blade/Tailwind RTL. Contract status reaches `active`, and c
 
 ## Validation evidence
 
-- SQLite: 50 passed, 238 assertions; the real-row-lock concurrency proof is intentionally skipped on SQLite.
-- MariaDB 10.4.32 (`127.0.0.1:3307`, disposable `%TEMP%` datadir): 51 passed, 248 assertions, including two-process reservation race and migration rollback. SQLite is 50 passed/238 assertions with one intentional row-lock skip.
+- SQLite: 57 tests/283 assertions (56 passed, one intentional row-lock skip); the real-row-lock concurrency proof is not claimed on SQLite.
+- MariaDB 10.4.32 (`127.0.0.1:3307`, disposable `%TEMP%` datadir): 57 passed, 293 assertions, including two-process reservation race and migration rollback. The latest `migrate:fresh --seed --force` also succeeded on this isolated test database.
 - Pint passes on changed PHP files; `git diff --check -- laravel` is clean.
 - A previous MariaDB command through `artisan test --configuration` emitted a duplicate-option warning; the accepted authoritative run is direct PHPUnit with `--configuration=phpunit.mariadb.xml`.
 - New contract actions render in RTL feature tests. No fresh browser screenshot claim is made because local server/browser setup was blocked.
