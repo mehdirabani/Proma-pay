@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             'credit.adjust' => 'تغییر سقف اعتبار',
             'payments.view' => 'مشاهدهٔ پرداخت‌ها',
             'payments.record' => 'ثبت درخواست پرداخت',
+            'payments.correct' => 'ثبت اصلاحیهٔ داخلی پرداخت',
             'finance.rules.manage' => 'مدیریت قواعد مالی',
             'contracts.create' => 'ایجاد پیش‌نویس قرارداد',
             'contracts.submit' => 'ارسال قرارداد برای تأیید',

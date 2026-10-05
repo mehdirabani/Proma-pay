@@ -38,7 +38,7 @@ class CustomerPageController extends Controller
         $customer->load([
             'creditAccount',
             'kycCases' => fn ($query) => $query->latest('id'),
-            'payments' => fn ($query) => $query->latest('id')->limit(5),
+            'payments' => fn ($query) => $query->with('correction')->latest('id')->limit(5),
         ]);
         $contracts = $customer->contracts()->with('installments')->latest('id')->limit(5)->get();
 

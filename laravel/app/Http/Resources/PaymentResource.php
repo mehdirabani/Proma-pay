@@ -23,6 +23,7 @@ class PaymentResource extends JsonResource
             'payment_type' => $this->payment_type,
             'calculation_version' => $this->calculation_version,
             'financial_rules_version' => $this->financial_rules_version,
+            'corrected_at' => $this->whenLoaded('correction', fn () => $this->correction?->created_at?->toISOString()),
             'allocations' => PaymentAllocationResource::collection($this->whenLoaded('allocations')),
         ];
     }

@@ -5,13 +5,13 @@
 | حوزه | وضعیت | بلوغ در این برش | شاهد در Laravel | کار باقیمانده |
 |---|---|---|---|---|
 | محیط Laravel جدا از Legacy | `REPLACED` | پایهٔ اجرا | `artisan`, `composer.json`, `routes/` | استقرار آزمایشی و CI |
-| UI فارسی، راست‌چین و واکنش‌گرا | `REDESIGNED` | صفحات ورود، داشبورد و مشتری | `resources/views/`, `resources/css/app.css` | آزمون UX با کاربران و صفحات باقی‌مانده |
+| UI فارسی، راست‌چین و واکنش‌گرا | `REDESIGNED` | ورود، داشبورد، مشتری، قرارداد و quote/capture/correction قسط | `resources/views/`, `resources/css/app.css` | آزمون UX با کاربران و صفحات باقی‌مانده |
 | ورود کارکنان و نشست | `REDESIGNED` | پیاده‌سازی | `WebAuthController`, middleware | SSO/سیاست سازمانی در صورت نیاز |
 | نقش، مجوز، شعبه | `REDESIGNED` | پیاده‌سازی پایه | `Role`, `Permission`, `Customer::visibleTo` | ماتریس دسترسی کامل و بازبینی همهٔ مسیرها |
 | مشتری و پروندهٔ KYC | `REDESIGNED` | UI و API پایه | `Customer`, `KycCase`, Actions | انتقال مدارک، اتصال ارائه‌دهنده، retention و تطبیق Legacy |
 | حساب و سقف اعتبار | `REDESIGNED` | افزایش/کاهش سقف و ledger | `AdjustCreditLimit` | قواعد مصرف/رزرو، limitهای منفی، reconciliation و concurrency واقعی |
-| قرارداد و اقساط | `REDESIGNED` | schema و مدل اولیه | `contracts`, `installments` migrations | چرخهٔ قرارداد، ضمانت، فرمول‌ها، زمان‌بندی، اصلاح/ابطال |
-| پرداخت و تسویهٔ اقساط | `REDESIGNED` | فقط payment intent معلق | `RegisterPaymentIntent` | gateway، verify/callback، تخصیص، مرجوعی، مغایرت و idempotency سرتاسری |
+| قرارداد و اقساط | `REDESIGNED` | draft تا activation، برنامهٔ نسخه‌دار و محاسبهٔ حالت قسط | `CreateContractDraft`, `TransitionContract`, `InstallmentFinancialStateCalculator` | لغو/تکمیل قرارداد، ضامن، ضمانت، تغییر زمان‌بندی و ابطال |
+| پرداخت و تسویهٔ اقساط | `REDESIGNED` | payment intent، manual capture و correction داخلی قسط با دفتر append-only | `RegisterPaymentIntent`, `CaptureManualPayment`, `CorrectCapturedPayment` | gateway، upload/review رسید، برگشت بانکی، هزینهٔ حقوقی و reconciliation |
 | جریمه، بخشودگی و هزینهٔ حقوقی | `REDESIGNED` | نگاشت دامنه فقط | [LEGACY-MAPPING](LEGACY-MAPPING.md) | استخراج و تصویب هر قاعده از Legacy با آزمون مرجع |
 | اسناد و تولید قرارداد | `REDESIGNED` | نگاشت دامنه فقط | جدول‌های مقصد آینده در نگاشت | فایل امن، نسخه‌بندی، تولید PDF/قالب و مهاجرت اسناد |
 | پنل/فروشگاه تجارت الکترونیک | `REDESIGNED` | نگاشت دامنه فقط | جدول‌های ecommerce قدیمی در نگاشت | تصمیم محصول و اتصال WooCommerce |

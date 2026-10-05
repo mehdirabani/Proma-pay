@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CreditController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\KycController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PaymentCorrectionController;
 use App\Http\Controllers\Api\SettlementQuoteController;
 use App\Http\Controllers\Api\TokenController;
 use Illuminate\Http\Request;
@@ -39,6 +40,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
         Route::get('/payments', [PaymentController::class, 'index'])
             ->middleware('permission:payments.view')->name('payments.index');
+        Route::post('/payments/{payment}/correction', [PaymentCorrectionController::class, 'store'])
+            ->middleware('permission:payments.correct')->name('payments.correction.store');
         Route::post('/payment-intents', [PaymentController::class, 'store'])
             ->middleware('permission:payments.record')->name('payments.store');
         Route::post('/contracts/{contract}/settlement-quotes', [SettlementQuoteController::class, 'store'])

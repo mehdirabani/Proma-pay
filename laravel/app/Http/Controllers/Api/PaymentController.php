@@ -19,7 +19,7 @@ class PaymentController extends Controller
     {
         abort_unless($request->user()->hasPermissionTo('payments.view'), 403);
         $payments = Payment::query()
-            ->with('customer:id,full_name')
+            ->with(['customer:id,full_name', 'correction:id,payment_id,created_at'])
             ->whereHas('customer', fn ($query) => $query->visibleTo($request->user()))
             ->latest('id')
             ->paginate(min(max((int) $request->query('per_page', 20), 1), 100));

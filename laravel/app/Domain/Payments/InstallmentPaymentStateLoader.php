@@ -76,7 +76,7 @@ final class InstallmentPaymentStateLoader
                 'inconsistent_legal_referral_count' => 0,
             ];
             $state = $this->calculator->state($input, $history, $settings, $asOf);
-            $rows[] = $input + $state + ['payment_allowed' => $state['payment_allowed']];
+            $rows[] = array_merge($input, $state, ['payment_allowed' => $state['payment_allowed']]);
         }
 
         return $rows;

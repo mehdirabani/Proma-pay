@@ -17,6 +17,7 @@
 php artisan migrate:fresh --seed --force --database=mysql
 vendor/bin/phpunit --configuration=phpunit.mariadb.xml
 vendor/bin/phpunit --configuration=phpunit.mariadb.xml --filter=concurrent_contract_submissions_cannot_over_reserve_credit
+vendor/bin/phpunit --configuration=phpunit.mariadb.xml --filter=two_concurrent_corrections_cannot_reverse_the_same_capture_twice
 ```
 
 آزمون هم‌زمانی فقط وقتی اجرا می‌شود که اتصال دقیقاً به `127.0.0.1:3307/proma_pay_laravel_test` اشاره کند. آزمون schema همین DB دورریختنی را تازه‌سازی می‌کند، دو PHP worker مستقل را پشت barrier هم‌زمان می‌کند، و در پایان migrationها را rollback می‌کند. از این آزمون روی دیتابیس دیگری استفاده نکنید.
@@ -25,6 +26,6 @@ vendor/bin/phpunit --configuration=phpunit.mariadb.xml --filter=concurrent_contr
 
 ## شواهد این محیط
 
-در اجرای Phase B، MariaDB 10.4.32 روی پورت 3307 با datadir تازه در `%TEMP%` بالا آمد. checkpoint فعلی suite روی MariaDB ۷۱ تست/۴۳۶ assertion و روی SQLite ۷۱ تست/۴۱۵ assertion دارد؛ دو تست واقعی row-lock روی SQLite skip می‌شوند. MariaDB دو فرایند رزرو اعتبار و دو فرایند دریافت همان قسط را اجرا می‌کند و در هر رقابت دقیقاً یک عملیات مجاز می‌ماند. full migration rollback نیز ایراد FK ستون `users.branch_id` و سپس ترتیب حذف index/FK پرداخت را آشکار کرد؛ هر دو اصلاح و rollback کامل بررسی شد. `migrate:fresh --seed --force` روی همین پایگاه disposable مجدداً موفق شد. raceهای درگاه/refund/settlement، نسخهٔ production و MySQL 8 هنوز باز هستند.
+در اجرای فعلی، MariaDB 10.4.32 روی پورت 3307 با datadir تازه در `%TEMP%` استفاده شد. suite روی MariaDB ۷۸ تست/۴۹۶ assertion و روی SQLite ۷۸ تست/۴۶۶ assertion دارد؛ سه تست واقعی row-lock روی SQLite skip می‌شوند. MariaDB سه race دوفرایندی رزرو اعتبار، دریافت همان قسط و اصلاح همان پرداخت را اجرا می‌کند و در هر رقابت فقط یک عملیات مؤثر می‌ماند. migration correction و مجوز مدیر، `migrate:fresh --seed --force` و rollback کامل پس از آخرین migration اجرا شدند. raceهای درگاه/refund/settlement، نسخهٔ production و MySQL 8 هنوز باز هستند.
 
 برای موتور دیگری، نسخهٔ آن را جدا ثبت کنید. از `migrate:fresh` فقط روی پایگاه دورریختنی استفاده کنید.

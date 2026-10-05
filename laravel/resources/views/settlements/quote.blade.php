@@ -64,7 +64,7 @@
         @if($quote->isOpen() && $quote->expires_at->isFuture())
             <section class="rounded-xl border border-rose-200 bg-rose-50/70 p-4 sm:p-5">
                 <h2 class="text-sm font-bold text-rose-950">ثبت نهایی دریافت</h2>
-                <p class="mt-1 text-xs leading-5 text-rose-900">پس از ثبت، پرداخت به‌صورت نهایی ذخیره و اقساط به‌روزرسانی می‌شوند. مسیر اصلاح یا برگشت پرداخت هنوز در این نسخه پیاده‌سازی نشده است؛ پیش از ادامه، رسید و مبلغ را دوباره کنترل کنید.</p>
+                <p class="mt-1 text-xs leading-5 text-rose-900">پس از ثبت، دریافت نهایی و اقساط به‌روزرسانی می‌شوند. مدیر مجاز می‌تواند بعداً اصلاحیهٔ داخلی با ثبت دلیل ایجاد کند؛ این کار برگشت بانکی نیست. برگشت وجه و اصلاح پرداخت در درگاه در این نسخه پیاده‌سازی نشده‌اند؛ پیش از ادامه مبلغ و تخصیص را بررسی کنید.</p>
                 <form method="POST" action="{{ route('settlement-quotes.capture', $quote) }}" class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">@csrf
                     <input type="hidden" name="idempotency_key" value="{{ \Illuminate\Support\Str::uuid() }}">
                     <div><label for="capture-method" class="mb-1 block text-xs font-semibold text-slate-700">روش دریافت</label><select id="capture-method" name="method" required class="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm"><option value="cash">نقدی</option><option value="card">کارت بانکی</option><option value="pos">کارت‌خوان</option><option value="bank_transfer">انتقال بانکی</option><option value="manual">ثبت دستی</option></select>@error('method')<p role="alert" class="mt-1 text-xs text-rose-700">{{ $message }}</p>@enderror</div>

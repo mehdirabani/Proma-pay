@@ -9,20 +9,21 @@
 - قواعد مالی Legacy برای وضعیت قسط و allocation در `docs/PAYMENT-ALLOCATION.md` مستند شد و `MoneyMath`، `InstallmentFinancialStateCalculator` و `PaymentAllocationPlanner` با نسخه‌های محاسباتی Legacy پورت شدند. قواعد مالی Laravel تا زمان ثبت policy صریحاً پیکربندی‌نشده می‌مانند. Quote نسخه‌دار و ثبت دستی نقدی/کارت/POS/انتقال بانکی با تخصیص immutable، بررسی مجدد تحت row lock، idempotency و API/صفحهٔ RTL اضافه شد.
 - رزرو و مصرف اعتبار در همین برش پیاده شد. چون Legacy جدول یا مدل سقف اعتبار و رزرو قرارداد ندارد، exposure برابر `principal - down_payment` یک تصمیم جدید و استنباط فنی است، نه قاعدهٔ پورت‌شده. سیاست این فرض باید پیش از production با مالک محصول/مالی تأیید و در ادامه قابلیت آزادسازی/تسویهٔ اعتبار تکمیل شود.
 - ثبت قسط، ماندهٔ `used_toman` را کم نمی‌کند: مبلغ debt component قسط می‌تواند شامل هزینهٔ مالی باشد و تجزیهٔ آن به بازپرداخت اصل اعتبار از Legacy قابل اثبات نیست. تخصیص حقوقی/هزینهٔ پرونده هم تا پیاده‌شدن مدل legal Laravel حذف است.
+- correction محدود Legacy برای دریافت قسطی موفق اضافه شد: مدیر دارای مجوز باید دلیل ثبت کند؛ پرداخت و اقساط قفل می‌شوند، وضعیت و مانده بازپخش می‌شود و ردیف reversal و snapshot/audit جداگانه می‌ماند. این اصلاح داخلی است و وجه بانکی را برنمی‌گرداند؛ پیش‌پرداخت، هزینهٔ حقوقی و refund درگاه از این مسیر پشتیبانی نمی‌شوند.
 - آزمون واقعی دو فرایند MariaDB نشان می‌دهد دو قرارداد ۷۰۰٬۰۰۰ تومانی نمی‌توانند هم‌زمان از حسابی با سقف ۱٬۰۰۰٬۰۰۰ بیش‌رزرو کنند. rollback یک migration نیز بررسی شد و FK جاافتادهٔ `users.branch_id` پیش از حذف ستون اصلاح شد.
 
 ## اعتبارسنجی این برش
 
 - SQLite: ۳۹ تست و ۱۹۲ assertion موفق؛ تست row-lock هم‌زمانی به‌درستی روی SQLite اجرا نمی‌شود و skip است.
 - MariaDB 10.4.32 آزمایشی و جدا: ۴۰ تست و ۲۰۲ assertion موفق، همراه race دوفرایندی و migration rollback.
-- در checkpoint فعلی پس از quote/capture: SQLite برابر ۷۱ تست/۴۱۵ assertion (۶۹ موفق، دو skip قفل ردیفی مورد انتظار)؛ MariaDB 10.4.32 برابر ۷۱ تست/۴۳۶ assertion موفق، همراه دو race دوفرایندی رزرو اعتبار و ثبت پرداخت روی یک قسط. `migrate:fresh --seed --force` روی پایگاه ایزولهٔ MariaDB موفق شد.
+- پس از quote/capture و correction: SQLite برابر ۷۸ تست/۴۶۶ assertion (۷۵ موفق، سه skip قفل ردیفی مورد انتظار)؛ MariaDB 10.4.32 برابر ۷۸ تست/۴۹۶ assertion موفق، همراه سه race دوفرایندی رزرو اعتبار، ثبت همان قسط و اصلاح همان پرداخت. `migrate:fresh --seed --force` و rollback کامل بعد از migration correction موفق شدند.
 - پس از افزودن calculator/planner، SQLite با ۵۰ تست/۲۳۸ assertion و MariaDB با ۵۱ تست/۲۴۸ assertion سبز هستند؛ آزمون row-lock در SQLite skip است.
 - Pint برای PHPهای تغییرکرده و `git diff --check -- laravel` موفق.
 - بخش جدید در تست‌های feature به‌عنوان RTL، با کنترل مجوزها و برچسب فارسی بررسی شد. screenshot مرورگر جدید تهیه نشد چون راه‌اندازی local server در محیط ابزار مسدود بود.
 
 ## محدودیت و وضعیت تولید
 
-این گزارش گواهی production readiness نیست. پرداخت دستی و تخصیص قسط در یک دامنهٔ محدود پیاده شد، اما رسید، اصلاح/برگشت/refund، درگاه و webhook، پرونده و هزینهٔ حقوقی، تسویهٔ پذیرنده، reconciliation، تکمیل/لغو قرارداد، وصول، تعمیرات، فایل امن، انتقال دادهٔ Legacy، OpenAPI، WordPress/WooCommerce، عملیات و بازیابی کامل نشده‌اند. تست فقط MariaDB 10.4.32 را پوشش می‌دهد؛ نسخهٔ production نامعلوم است و MySQL 8/محیط هدف تأیید نشده‌اند.
+این گزارش گواهی production readiness نیست. دریافت دستی، تخصیص قسط و correction داخلی در دامنه‌ای محدود پیاده شده‌اند، اما آپلود/بازبینی رسید مشتری، برگشت بانکی/refund، درگاه و webhook، پرونده و هزینهٔ حقوقی، تسویهٔ پذیرنده، reconciliation، تکمیل/لغو قرارداد، وصول، تعمیرات، فایل امن، انتقال دادهٔ Legacy، OpenAPI، WordPress/WooCommerce، عملیات و بازیابی کامل نشده‌اند. تست فقط MariaDB 10.4.32 را پوشش می‌دهد؛ نسخهٔ production نامعلوم است و MySQL 8/محیط هدف تأیید نشده‌اند.
 
 ## تاریخچهٔ گیت
 

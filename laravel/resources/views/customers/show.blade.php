@@ -173,8 +173,28 @@
                     <ul class="divide-y divide-slate-100">
                         @foreach($customer->payments as $payment)
                             @php($paymentMethodLabel = match($payment->method->value) {'cash' => 'نقدی', 'card' => 'کارت', 'pos' => 'کارت‌خوان', 'bank_transfer' => 'انتقال بانکی', 'online_gateway' => 'درگاه آنلاین', 'wallet' => 'کیف پول', default => 'ثبت دستی'})
-                            @php($paymentStatusLabel = match($payment->status->value) {'paid' => 'پرداخت‌شده', 'failed' => 'ناموفق', 'reversed' => 'برگشت‌خورده', default => 'در انتظار'})
-                            <li class="flex flex-wrap items-center justify-between gap-2 px-5 py-3.5"><span class="text-xs font-medium text-slate-700">{{ $paymentMethodLabel }} · {{ $paymentStatusLabel }}</span><span class="text-sm font-bold text-slate-800">{{ \App\Support\PersianNumber::toman($payment->amount_toman) }}</span><time class="w-full text-[11px] text-slate-500" data-persian-date="{{ $payment->requested_at->toIso8601String() }}">{{ $payment->requested_at->format('Y-m-d') }}</time></li>
+                            @php($paymentStatusLabel = match($payment->status->value) {'paid' => 'پرداخت‌شده', 'failed' => 'ناموفق', 'reversed' => 'برگشت‌خورده', 'corrected' => 'اصلاح‌شده', default => 'در انتظار'})
+                            <li class="space-y-2 px-5 py-3.5">
+                                <div class="flex flex-wrap items-center justify-between gap-2"><span class="text-xs font-medium text-slate-700">{{ $paymentMethodLabel }} · {{ $paymentStatusLabel }}</span><span class="text-sm font-bold text-slate-800">{{ \App\Support\PersianNumber::toman($payment->amount_toman) }}</span><time class="w-full text-[11px] text-slate-500" data-persian-date="{{ $payment->requested_at->toIso8601String() }}">{{ $payment->requested_at->format('Y-m-d') }}</time></div>
+                                @if($payment->status === \App\Enums\PaymentStatus::Corrected && $payment->correction && auth()->user()->hasPermissionTo('payments.view'))
+                                    <p class="rounded-lg bg-amber-50 px-3 py-2 text-[11px] leading-5 text-amber-900">علت اصلاح: {{ $payment->correction->reason }} · این ثبت به معنی برگشت وجه بانکی نیست.</p>
+                                @endif
+                                @if($payment->status === \App\Enums\PaymentStatus::Paid && $payment->payment_type === 'installment')
+                                    @can('payments.correct')
+                                        <details class="rounded-lg border border-rose-100 bg-rose-50/50 px-3 py-2">
+                                            <summary class="cursor-pointer text-[11px] font-semibold text-rose-800">ثبت اصلاحیهٔ داخلی</summary>
+                                            <form method="POST" action="{{ route('payments.correction.store', $payment) }}" class="mt-3 space-y-2">@csrf
+                                                <input type="hidden" name="request_id" value="{{ \Illuminate\Support\Str::uuid() }}">
+                                                <label class="sr-only" for="payment-correction-reason-{{ $payment->id }}">دلیل اصلاح پرداخت {{ $payment->id }}</label>
+                                                <textarea id="payment-correction-reason-{{ $payment->id }}" name="reason" required minlength="5" maxlength="500" rows="2" placeholder="دلیل اصلاح را بنویسید" class="w-full rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs focus:border-rose-500 focus:outline-none focus:ring-4 focus:ring-rose-100"></textarea>
+                                                @error('reason')<p role="alert" class="text-xs text-rose-700">{{ $message }}</p>@enderror
+                                                <p class="text-[10px] leading-5 text-rose-800">این اقدام فقط ثبت مالی داخلی را اصلاح می‌کند و برگشت وجه بانکی انجام نمی‌دهد.</p>
+                                                <button type="submit" class="h-9 rounded-lg border border-rose-300 bg-white px-3 text-[11px] font-semibold text-rose-800 hover:bg-rose-100">ثبت اصلاحیه</button>
+                                            </form>
+                                        </details>
+                                    @endcan
+                                @endif
+                            </li>
                         @endforeach
                     </ul>
                 @endif

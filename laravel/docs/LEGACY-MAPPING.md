@@ -44,7 +44,7 @@
 | `password_resets` | بازنشانی گذرواژه | `REDESIGNED` | سازوکار Laravel موجود، توکن‌ها منتقل نشده |
 | `payment_requests` | درخواست/دستور پرداخت | `REDESIGNED` | payment intent پایه؛ تطبیق semantics باز |
 | `system_outbox` | outbox و تحویل رویداد | `REDESIGNED` | برنامه فقط |
-| `payment_corrections` | اصلاح تراکنش مالی | `REDESIGNED` | برنامه فقط |
+| `payment_corrections` | اصلاح تراکنش مالی | `REDESIGNED` | اصلاح داخلی پرداخت قسطی موفق با reason، snapshot، audit و reversal ledger؛ legal cost/down-payment/refund منتقل نشده |
 | `payment_receipts` | رسید پرداخت | `REDESIGNED` | برنامه فقط |
 | `payments` | پرداخت و تخصیص | `REDESIGNED` | intent معلق پایه؛ settlement ندارد |
 | `penalties` | جریمه و بخشودگی | `REDESIGNED` | قواعد استخراج/تطبیق نشده |
@@ -68,7 +68,7 @@
 | `contract_document_versions` | نسخهٔ سند قرارداد | `REDESIGNED` | برنامه فقط |
 | `settlement_quotes` | مبلغ تسویهٔ پیشنهادی | `REDESIGNED` | قواعد قیمت‌گذاری استخراج نشده |
 | `payment_groups` | گروه‌بندی پرداخت | `REDESIGNED` | برنامه فقط |
-| `payment_allocations` | تخصیص پرداخت به بدهی | `REDESIGNED` | قواعد Legacy استخراج نشده |
+| `payment_allocations` | تخصیص پرداخت به بدهی | `REDESIGNED` | تخصیص قسطی نسخه‌دار و manual capture؛ legal cost/gateway/reconciliation باز |
 | `installment_bulk_operations` | عملیات گروهی قسط | `REDESIGNED` | برنامه فقط |
 | `medal_definitions` | تعریف نشان | `REDESIGNED` | برنامه فقط |
 | `user_medals` | نشان کاربر | `REDESIGNED` | برنامه فقط |

@@ -27,6 +27,7 @@ class PaymentLabels
             PaymentStatus::Paid => 'پرداخت‌شده',
             PaymentStatus::Failed => 'ناموفق',
             PaymentStatus::Reversed => 'برگشت‌خورده',
+            PaymentStatus::Corrected => 'اصلاح‌شده',
         };
     }
 }
