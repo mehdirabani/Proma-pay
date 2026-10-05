@@ -1,6 +1,6 @@
 # Payment allocation source map
 
-This document records verified behavior in the current Legacy tree before the Laravel payment workflow is built. It does not claim that Laravel captures or allocates payments yet.
+This document records verified Legacy behavior and the current limits of the Laravel settlement slice. It distinguishes the pure calculator port from the newly persisted manual capture flow.
 
 ## Source evidence
 
@@ -22,10 +22,21 @@ This document records verified behavior in the current Legacy tree before the La
 7. Contract-wide settlement may add approved, chargeable, non-reversed, unreimbursed legal-case costs only when they are linked to a formal court referral. Costs are ordered by cost date then ID. `selected`, `schedule`, and `forward` exclude these costs. `contract` pays installment debt first then costs; `contract_legal_first` pays eligible costs first.
 8. Successful group commit writes immutable child payment/allocation records and requires their amount sum to equal the received group amount. Legacy correction appends negative reversal allocations rather than editing the original allocation.
 
-## Laravel port status
+## Laravel implementation status
 
-`App\Domain\Payments\PaymentAllocationPlanner` ports deterministic row ordering and the within-installment split for already-calculated financial state. Laravel does not yet calculate penalty/reward state, persist settlement quotes/groups/allocations, allocate legal-case costs, capture manual payments, or reconcile/reverse them. Do not call this planner directly with materialized display balances; its input contract is a canonical financial state from the not-yet-ported installment calculator.
+`App\Domain\Payments\PaymentAllocationPlanner` ports deterministic row ordering and within-installment splitting. `InstallmentPaymentStateLoader` now replays paid, immutable allocation components from the database into the versioned calculator. An admin-configured `FinancialRule` snapshot is mandatory; rates start as `NULL` and quotes fail closed until values are explicitly set.
+
+Laravel now persists actor-bound, five-minute `SettlementQuote` snapshots for Legacy `selected`, `schedule`, and `forward` scopes, and exposes both API and Persian RTL web flows. Capture supports manual, cash, card, POS, and bank transfer records only. In one transaction it locks the contract, rule row, installments, and prior allocation ledger; recomputes the canonical state/plan; checks the rule version, quote date, expiry, actor, snapshot hash, idempotency payload, component equation, and exact parent/allocation amount; then writes a paid `Payment`, append-only `PaymentAllocation` rows, materialized installment principal/status, quote consumption, and an audit event. A two-process MariaDB test proves that only one of two simultaneous captures against the same installment can succeed.
+
+The workflow deliberately does not claim the remainder of the Legacy payment system:
+
+- Laravel has no legal-case/referral tables yet. The loader passes no legal referral date; legal penalties and legal-case costs are therefore excluded from quotes, even if an administrator enters a legal rate.
+- Gateway, wallet, webhook/callback, receipt issuance, refunds, reversal/correction, reconciliation, and merchant settlement are not implemented. The UI warns before final manual capture that correction/refund is unavailable.
+- Captured installment `principal_applied` is the Legacy scheduled-installment debt component (which can include contract finance charges), not a proven decomposition of financed contract principal. Capture does not reduce `credit_accounts.used_toman`; doing so without an evidenced principal allocation would release the wrong credit amount.
+- Eloquent guards reject updates/deletes to allocation and quote snapshots, but a privileged SQL client can bypass those application guards. Database-level immutability still needs an operational/database policy.
+
+Do not call the planner directly with materialized display balances; its input must be the canonical state replayed from paid allocation rows and a versioned rules snapshot.
 
 ## Explicit unresolved scope
 
-The source supports several payment modes and both manual/gateway flows. Provider behavior, callbacks, refund/reversal caps, and legal-cost reconciliation each need a separate source map and real MariaDB tests. The v150 concurrency script demonstrates an InnoDB row lock, while the Laravel proof currently covers only contract credit reservation; payment-specific concurrent submissions remain open.
+The source supports several payment modes and both manual/gateway flows. Provider behavior, callbacks, refund/reversal caps, and legal-cost reconciliation each need a separate source map and real MariaDB tests. Laravel now has a two-process same-installment capture proof in addition to the credit-reservation race; gateway/refund/settlement races remain open.

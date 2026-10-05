@@ -5,6 +5,7 @@ use App\Http\Controllers\CustomerActionsController;
 use App\Http\Controllers\CustomerPageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinancialRulesController;
+use App\Http\Controllers\SettlementQuotePageController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : redirect()->route('login'));
@@ -32,5 +33,11 @@ Route::middleware(['auth', 'active-user'])->group(function (): void {
     Route::put('/kyc-cases/{kycCase}/review', [CustomerActionsController::class, 'reviewKyc'])->middleware('permission:kyc.review')->name('kyc-cases.review');
     Route::post('/customers/{customer}/credit-adjustments', [CustomerActionsController::class, 'adjustCredit'])->middleware('permission:credit.adjust')->name('customers.credit.adjust');
     Route::post('/customers/{customer}/payment-intents', [CustomerActionsController::class, 'registerPayment'])->middleware('permission:payments.record')->name('customers.payments.store');
+    Route::post('/customers/{customer}/contracts/{contract}/settlement-quotes', [SettlementQuotePageController::class, 'store'])
+        ->middleware('permission:payments.record')->name('customers.contracts.settlement-quotes.store');
+    Route::get('/settlement-quotes/{settlementQuote}', [SettlementQuotePageController::class, 'show'])
+        ->middleware('permission:payments.record')->name('settlement-quotes.show');
+    Route::post('/settlement-quotes/{settlementQuote}/capture', [SettlementQuotePageController::class, 'capture'])
+        ->middleware('permission:payments.record')->name('settlement-quotes.capture');
     Route::post('/logout', [WebAuthController::class, 'destroy'])->name('logout');
 });

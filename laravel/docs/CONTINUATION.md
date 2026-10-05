@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase D is in progress. Legacy payment and allocation rules have been mapped; Laravel now has pure, versioned `MoneyMath`, installment-state, and allocation-planner ports, plus a versioned administrator-only financial rules page. Rule values initialize as null because Legacy default migrations conflict and production policy is not evidenced. Payment capture, quote persistence, allocation rows, gateway, refund/reversal, and reconciliation are not implemented yet. Do not describe the application as production-ready.
+Phase D is in progress. Legacy payment/allocation rules are mapped. Laravel now persists short-lived actor-bound quotes and append-only allocation rows, captures only manual/cash/card/POS/bank-transfer receipts, and revalidates rules/state under MariaDB row locks. Financial policy starts unconfigured because Legacy defaults conflict and current production values are unknown. Legal referral/cost facts, corrections/refunds, gateways, reconciliation, and settlement remain open. Do not describe the application as production-ready.
 
 ## Completed in this continuation
 
@@ -17,11 +17,17 @@ Phase D is in progress. Legacy payment and allocation rules have been mapped; La
 - Mapped Legacy `payment-allocation-v2`, installment financial-state v4, settlement quote scopes, legal-case cost eligibility/order, and correction reversal semantics in `docs/PAYMENT-ALLOCATION.md`.
 - Added integer-only Laravel `MoneyMath`, `InstallmentFinancialStateCalculator`, and `PaymentAllocationPlanner`. The pure ports replay effective payments by date/ID, fail closed for missing actual legal rate/inconsistent referral, calculate due-date-origin penalties and reward eligibility, order rows by Legacy financial priority, apply partial receipts legal penalty → normal penalty → principal, and use reward only for a full settlement.
 - Added 11 unit tests/46 assertions over v150/v156 source-backed cases. The corresponding Legacy DB-free v150 settlement, v156 legal-penalty, and v136 pricing scripts still pass.
+- Added nullable-by-default, administrator-only versioned financial rule controls with Persian numeric input handling, idempotency, history, and audit. Rates are never inferred from conflicting Legacy migration defaults.
+- Added a database-backed settlement quote builder for `selected`, `schedule`, and `forward` scopes, with persisted settings/version and financial-plan snapshots, actor binding, expiry, stale-state rechecks, and server-side API/web access control.
+- Added final manual capture for cash/card/POS/bank-transfer/manual methods. Capture creates one paid payment parent and append-only allocation components in the same transaction, validates the net component equation and exact allocated total, consumes the quote once, and updates installment materialized status.
+- Added a Persian RTL quote review/confirmation page and customer installment selection UI; the existing payment-intent path remains pending and separate. The page clearly states that legal costs, gateways, refunds, and correction are not available in this slice.
+- Added unit/feature coverage for scope expansion, quote/capture snapshots, replay conflicts, settings changes, expiry, branch denial, RTL, and a real two-process MariaDB same-installment payment race. Only one of two competing receipts is accepted.
+- Captured installment debt amounts can include finance charges, while the new credit exposure is financed principal. For that reason manual capture does not decrement used credit until a source-backed principal/repayment allocation policy exists.
 - Browser setup for a new visual capture was blocked by command execution policy. Feature tests assert Persian labels, RTL direction, validation, and role-gated controls; new-section visual/browser accessibility review remains unverified.
 
 ## Current architecture and limitations
 
-Laravel 12, Sanctum, Blade/Tailwind RTL. Contract status reaches `active`, and credit is reserved/consumed for that inferred exposure. The new payment calculators are standalone and require caller-provided canonical history/settings; they do not mutate or capture money. Credit release/repayment/freeze/expiry reconciliation, contract cancellation/completion/legal transitions, persisted quotes/allocations, payment capture, gateway callbacks, refund/reversal, settlement, migration/import, and other master-prompt domains remain open. Production database version is unknown; test evidence is MariaDB 10.4.32, not MySQL 8 or the production target.
+Laravel 12, Sanctum, Blade/Tailwind RTL. Contract status reaches `active`, and credit is reserved/consumed for the inferred exposure. Manual payment capture now consumes a verified quote and records installment allocations; credit remains unchanged because installment allocations do not prove repayment of financed principal. Quote/capture excludes legal referral penalties and legal costs because the Laravel legal domain is absent. Gateway callbacks, receipt, correction/refund/reversal, contract completion/cancellation, reconciliation, credit release/repayment/freeze/expiry, merchant settlement, data migration/import, and other master-prompt domains remain open. Production database version is unknown; test evidence is MariaDB 10.4.32, not MySQL 8 or the production target.
 
 ## Phase C files added or extended
 
@@ -41,21 +47,25 @@ Laravel 12, Sanctum, Blade/Tailwind RTL. Contract status reaches `active`, and c
 - `app/Domain/Payments/MoneyMath.php`
 - `app/Domain/Payments/InstallmentFinancialStateCalculator.php`
 - `app/Domain/Payments/PaymentAllocationPlanner.php`
+- `app/Domain/Payments/InstallmentPaymentStateLoader.php`, `SettlementQuotePlanner.php`, `SettlementQuoteSnapshot.php`
+- `app/Actions/Payments/CreateSettlementQuote.php`, `CaptureManualPayment.php`, `UpdateFinancialRules.php`
+- Settlement quote/payment allocation schema, API resources/controllers, Persian RTL views
 - `tests/Unit/InstallmentFinancialStateCalculatorTest.php`
 - `tests/Unit/PaymentAllocationPlannerTest.php`
+- `tests/Unit/SettlementQuotePlannerTest.php`, `tests/Feature/PaymentSettlementTest.php`, `tests/Feature/PaymentCaptureConcurrencyTest.php`
 
 ## Validation evidence
 
-- SQLite: 57 tests/283 assertions (56 passed, one intentional row-lock skip); the real-row-lock concurrency proof is not claimed on SQLite.
-- MariaDB 10.4.32 (`127.0.0.1:3307`, disposable `%TEMP%` datadir): 57 passed, 293 assertions, including two-process reservation race and migration rollback. The latest `migrate:fresh --seed --force` also succeeded on this isolated test database.
+- SQLite: 71 tests/415 assertions (69 passed, two intentional row-lock skips); the real-row-lock concurrency proofs are not claimed on SQLite.
+- MariaDB 10.4.32 (`127.0.0.1:3307`, disposable `%TEMP%` datadir): 71 passed, 436 assertions, including two-process credit reservation and same-installment payment capture races plus migration rollback. The latest `migrate:fresh --seed --force` also succeeded on this isolated test database.
 - Pint passes on changed PHP files; `git diff --check -- laravel` is clean.
 - A previous MariaDB command through `artisan test --configuration` emitted a duplicate-option warning; the accepted authoritative run is direct PHPUnit with `--configuration=phpunit.mariadb.xml`.
 - New contract actions render in RTL feature tests. No fresh browser screenshot claim is made because local server/browser setup was blocked.
-- The isolated MariaDB process was stopped after validation.
+- A new browser screenshot was not produced; feature tests verify the Persian RTL quote view and role-gated controls.
 
 ## Next exact task
 
-Continue Phase D by persisting a short-lived settlement quote and implementing manual captured-payment recording with immutable allocation rows, actor/branch policy, idempotency, atomic recomputation under installment locks, and Persian RTL UI/API. Load governed penalty/reward settings explicitly; do not silently use zero rates. Keep contract/schedule scopes distinct and defer legal-cost allocation until its Laravel legal-case model exists. Then add MariaDB two-process payment races. Gateway, refund, settlement, and reconciliation each need their own source-backed states and evidence.
+Continue Phase D with source-backed payment correction/refund and receipt semantics, legal referral/cost models, credit repayment policy, and reconciliation before expanding gateway capture. Then implement merchant settlement and the remaining master-prompt modules. Confirm the production DB target and validate on its exact engine/version; MariaDB 10.4.32 alone is insufficient.
 
 ## Relevant commits
 

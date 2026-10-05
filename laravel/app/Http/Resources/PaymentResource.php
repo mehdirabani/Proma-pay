@@ -19,6 +19,11 @@ class PaymentResource extends JsonResource
             'method' => $this->method->value,
             'status' => $this->status->value,
             'requested_at' => $this->requested_at?->toISOString(),
+            'payment_date' => $this->payment_date?->toDateString(),
+            'payment_type' => $this->payment_type,
+            'calculation_version' => $this->calculation_version,
+            'financial_rules_version' => $this->financial_rules_version,
+            'allocations' => PaymentAllocationResource::collection($this->whenLoaded('allocations')),
         ];
     }
 }

@@ -71,6 +71,43 @@
                                         </form>
                                     @endcan
                                 @endif
+                                @if($contract->status === 'active')
+                                    @can('payments.record')
+                                        <div class="rounded-xl border border-sky-200 bg-sky-50/60 p-4">
+                                            <div class="flex items-start gap-3">
+                                                <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-white text-sky-700" aria-hidden="true">↙</span>
+                                                <div><h3 class="text-xs font-bold text-slate-800">محاسبه و ثبت دریافت قسط</h3><p class="mt-1 text-[11px] leading-5 text-slate-600">مبلغ ابتدا پیش‌فاکتور می‌شود؛ ثبت نهایی فقط پس از بازبینی تخصیص‌ها انجام می‌گیرد.</p></div>
+                                            </div>
+                                            @if($contract->installments->isNotEmpty())
+                                                <details class="mt-3 rounded-lg border border-sky-100 bg-white px-3 py-2">
+                                                    <summary class="cursor-pointer text-[11px] font-semibold text-slate-700">مشاهدهٔ برنامهٔ اقساط</summary>
+                                                    <div class="mt-2 max-h-56 space-y-2 overflow-y-auto border-t border-slate-100 pt-2">
+                                                        @foreach($contract->installments as $installment)
+                                                            @php($installmentLabel = match($installment->status) {'draft' => 'پیش‌نویس', 'pending' => 'در انتظار پرداخت', 'overdue' => 'سررسید گذشته', 'partial' => 'پرداخت ناقص', 'paid' => 'پرداخت‌شده', 'cancelled' => 'لغوشده', default => 'نامشخص'})
+                                                            <label class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[11px] hover:bg-slate-50">
+                                                                <input form="settlement-quote-{{ $contract->id }}" type="checkbox" name="installment_ids[]" value="{{ $installment->id }}" class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                                                                <span class="min-w-0 flex-1">قسط {{ \App\Support\PersianNumber::format($installment->installment_number) }} · <time data-persian-date="{{ $installment->due_date->toIso8601String() }}">{{ $installment->due_date->format('Y-m-d') }}</time></span>
+                                                                <span class="text-slate-500">{{ $installmentLabel }}</span>
+                                                                <span class="font-semibold text-slate-700">{{ \App\Support\PersianNumber::toman($installment->amount_toman) }}</span>
+                                                            </label>
+                                                        @endforeach
+                                                    </div>
+                                                </details>
+                                            @endif
+                                            <form id="settlement-quote-{{ $contract->id }}" method="POST" action="{{ route('customers.contracts.settlement-quotes.store', [$customer, $contract]) }}" class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">@csrf
+                                                <input type="hidden" name="request_id" value="{{ \Illuminate\Support\Str::uuid() }}">
+                                                <div><label for="settlement-scope-{{ $contract->id }}" class="mb-1 block text-[11px] font-semibold text-slate-700">دامنهٔ تخصیص</label><select id="settlement-scope-{{ $contract->id }}" name="scope" required class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs"><option value="selected">فقط اقساط انتخاب‌شده</option><option value="schedule">کل اقساط قابل پرداخت قرارداد</option><option value="forward">از قدیمی‌ترین قسط انتخاب‌شده به بعد</option></select></div>
+                                                <div><label for="settlement-amount-{{ $contract->id }}" class="mb-1 block text-[11px] font-semibold text-slate-700">مبلغ دریافتی (تومان)</label><input id="settlement-amount-{{ $contract->id }}" name="amount_toman" required inputmode="numeric" dir="ltr" placeholder="مثلاً ۵۰۰٬۰۰۰" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-left text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100"></div>
+                                                <p class="text-[10px] leading-5 text-slate-500 sm:col-span-2">برای دامنهٔ «فقط انتخاب‌شده» یا «از قسط انتخاب‌شده به بعد»، از فهرست بالا قسط انتخاب کنید. دامنهٔ کل برنامه همهٔ اقساط باز را در نظر می‌گیرد. به‌دلیل نبود مدل پرونده و ارجاع حقوقی، جریمه و هزینهٔ حقوقی در این پیش‌فاکتور محاسبه نمی‌شود.</p>
+                                                @error('amount_toman')<p role="alert" class="text-xs text-rose-700 sm:col-span-2">{{ $message }}</p>@enderror
+                                                @error('installment_ids')<p role="alert" class="text-xs text-rose-700 sm:col-span-2">{{ $message }}</p>@enderror
+                                                @error('financial_rules')<p role="alert" class="text-xs text-rose-700 sm:col-span-2">{{ $message }}</p>@enderror
+                                                @error('request_id')<p role="alert" class="text-xs text-rose-700 sm:col-span-2">{{ $message }}</p>@enderror
+                                                <div class="sm:col-span-2"><button type="submit" class="h-10 w-full rounded-lg bg-brand-600 px-4 text-xs font-semibold text-white hover:bg-brand-700">محاسبهٔ پیش‌فاکتور و بازبینی</button></div>
+                                            </form>
+                                        </div>
+                                    @endcan
+                                @endif
                             </li>
                         @endforeach
                     </ul>

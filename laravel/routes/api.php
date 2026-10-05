@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CreditController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\KycController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\SettlementQuoteController;
 use App\Http\Controllers\Api\TokenController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -40,5 +41,11 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->middleware('permission:payments.view')->name('payments.index');
         Route::post('/payment-intents', [PaymentController::class, 'store'])
             ->middleware('permission:payments.record')->name('payments.store');
+        Route::post('/contracts/{contract}/settlement-quotes', [SettlementQuoteController::class, 'store'])
+            ->middleware('permission:payments.record')->name('contracts.settlement-quotes.store');
+        Route::get('/settlement-quotes/{settlementQuote}', [SettlementQuoteController::class, 'show'])
+            ->middleware('permission:payments.record')->name('settlement-quotes.show');
+        Route::post('/settlement-quotes/{settlementQuote}/capture', [SettlementQuoteController::class, 'capture'])
+            ->middleware('permission:payments.record')->name('settlement-quotes.capture');
     });
 });
