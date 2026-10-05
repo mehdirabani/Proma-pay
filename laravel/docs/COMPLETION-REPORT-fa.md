@@ -13,7 +13,7 @@
 
 ## کنترل‌های اجراشده
 
-`migrate:fresh --seed` روی SQLite موفق شد؛ `php artisan test --compact` با ۱۳ تست/۶۳ assertion، `npm run build`، `composer validate --no-check-publish`، `composer audit` و PHP syntax check (۶۷ فایل) موفق شدند. Pint برای رعایت قالب پروژه روی ۱۰ فایل اجرا شد و آزمون قالب‌بندی نهایی پس از آن تکرار می‌شود. UI روی desktop و mobile بازبینی چشمی شد.
+`migrate:fresh --seed` روی SQLite موفق شد؛ `php artisan test --compact` با ۱۳ تست/۶۳ assertion، `npm run build`، `composer validate --no-check-publish`، `composer audit` بدون advisory، `vendor/bin/pint --test` پس از قالب‌بندی و PHP syntax check (۶۷ فایل) موفق شدند. UI روی desktop و mobile بازبینی چشمی شد.
 
 ## گیت
 

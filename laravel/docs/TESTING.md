@@ -16,7 +16,7 @@ vendor/bin/pint --test
 
 ## شواهد این برش
 
-نتیجهٔ نهایی این برش در روز ۲۰۲۶-۱۰-۰۵: `php artisan migrate:fresh --seed --force` روی SQLite محلی موفق بود؛ `php artisan test --compact` با ۱۳ تست و ۶۳ assertion موفق شد؛ `npm run build` موفق بود؛ `composer validate --no-check-publish` معتبر و `composer audit` بدون advisory گزارش شد. `vendor/bin/pint --test` ابتدا ۱۰ فایل را علامت زد؛ Pint اعمال شد و کنترل دوباره اجرا می‌شود. PHP syntax check روی ۶۷ فایل موفق بود. داشبورد و جزئیات مشتری روی مرورگر در اندازهٔ دسکتاپ ۱۴۴۰px و اندازهٔ موبایل ۳۷۵×۸۱۲ بازبینی چشمی شدند.
+نتیجهٔ نهایی این برش در روز ۲۰۲۶-۱۰-۰۵: `php artisan migrate:fresh --seed --force` روی SQLite محلی موفق بود؛ `php artisan test --compact` با ۱۳ تست و ۶۳ assertion موفق شد؛ `npm run build` موفق بود؛ `composer validate --no-check-publish` معتبر و `composer audit` بدون advisory گزارش شد؛ `vendor/bin/pint --test` پس از قالب‌بندی ۱۰ فایل موفق شد. PHP syntax check روی ۶۷ فایل موفق بود. داشبورد و جزئیات مشتری روی مرورگر در اندازهٔ دسکتاپ ۱۴۴۰px و اندازهٔ موبایل ۳۷۵×۸۱۲ بازبینی چشمی شدند.
 
 این شواهد فقط تا همین برش و SQLite معتبر است. تست MySQL، concurrency، browser automation تکرارپذیر در CI، accessibility audit، load test، API contract test/OpenAPI و migration-data reconciliation اجرا نشده‌اند.
 
