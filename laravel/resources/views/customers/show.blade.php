@@ -37,16 +37,40 @@
             </section>
 
             <section class="rounded-xl border border-slate-200 bg-white">
-                <div class="border-b border-slate-100 px-5 py-4"><h2 class="text-sm font-bold text-slate-900">قراردادها</h2><p class="mt-1 text-xs text-slate-500">پیش‌نویس با شرایط و اقساط محاسبه‌شده ذخیره می‌شود.</p></div>
+                <div class="border-b border-slate-100 px-5 py-4"><h2 class="text-sm font-bold text-slate-900">قراردادها</h2><p class="mt-1 text-xs text-slate-500">پیش‌نویس، تأیید و فعال‌سازی هرکدام مرحله و سابقهٔ جدا دارند.</p></div>
                 @if($contracts->isEmpty())
                     <div class="px-5 py-7 text-center text-xs text-slate-500">هنوز قراردادی برای این مشتری ثبت نشده است.</div>
                 @else
                     <ul class="divide-y divide-slate-100">
                         @foreach($contracts as $contract)
                             @php($contractStatusLabel = match($contract->status) {'draft' => 'پیش‌نویس', 'pending_approval' => 'در انتظار تأیید', 'approved' => 'تأییدشده', 'active' => 'فعال', 'completed' => 'تسویه‌شده', 'overdue' => 'معوق', 'legal' => 'حقوقی', 'cancelled' => 'لغوشده', default => 'نامشخص'})
-                            <li class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-                                <div><p class="text-sm font-bold text-slate-800" dir="ltr">{{ $contract->contract_number }}</p><p class="mt-1 text-xs text-slate-500">{{ \App\Support\PersianNumber::format($contract->installment_count) }} قسط · {{ \App\Support\PersianNumber::toman($contract->total_amount_toman) }}</p></div>
-                                <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800">{{ $contractStatusLabel }}</span>
+                            <li class="space-y-3 px-5 py-4">
+                                <div class="flex flex-wrap items-center justify-between gap-3">
+                                    <div><p class="text-sm font-bold text-slate-800" dir="ltr">{{ $contract->contract_number }}</p><p class="mt-1 text-xs text-slate-500">{{ \App\Support\PersianNumber::format($contract->installment_count) }} قسط · {{ \App\Support\PersianNumber::toman($contract->total_amount_toman) }}</p></div>
+                                    <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800">{{ $contractStatusLabel }}</span>
+                                </div>
+                                @if($contract->status === 'draft')
+                                    @can('contracts.submit')
+                                        <form method="POST" action="{{ route('contracts.submit', $contract) }}" class="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">@csrf<input type="hidden" name="request_id" value="{{ \Illuminate\Support\Str::uuid() }}">
+                                            <label class="sr-only" for="contract-submit-reason-{{ $contract->id }}">دلیل ارسال قرارداد {{ $contract->contract_number }}</label><input id="contract-submit-reason-{{ $contract->id }}" name="reason" required minlength="5" maxlength="500" placeholder="شرح کوتاه برای ارسال به بررسی" class="h-10 rounded-lg border border-slate-200 px-3 text-xs focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100">
+                                            <button type="submit" class="h-10 rounded-lg border border-brand-200 bg-brand-50 px-3 text-xs font-semibold text-brand-800 hover:bg-brand-100">ارسال برای تأیید و رزرو اعتبار</button>
+                                        </form>
+                                    @endcan
+                                @elseif($contract->status === 'pending_approval')
+                                    @can('contracts.approve')
+                                        <form method="POST" action="{{ route('contracts.approve', $contract) }}" class="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">@csrf @method('PUT')<input type="hidden" name="request_id" value="{{ \Illuminate\Support\Str::uuid() }}">
+                                            <label class="sr-only" for="contract-approve-reason-{{ $contract->id }}">دلیل تأیید قرارداد {{ $contract->contract_number }}</label><input id="contract-approve-reason-{{ $contract->id }}" name="reason" required minlength="5" maxlength="500" placeholder="دلیل بررسی و تأیید" class="h-10 rounded-lg border border-slate-200 px-3 text-xs focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100">
+                                            <button type="submit" class="h-10 rounded-lg bg-emerald-700 px-3 text-xs font-semibold text-white hover:bg-emerald-800">تأیید قرارداد</button>
+                                        </form>
+                                    @endcan
+                                @elseif($contract->status === 'approved')
+                                    @can('contracts.activate')
+                                        <form method="POST" action="{{ route('contracts.activate', $contract) }}" class="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">@csrf<input type="hidden" name="request_id" value="{{ \Illuminate\Support\Str::uuid() }}">
+                                            <label class="sr-only" for="contract-activate-reason-{{ $contract->id }}">دلیل فعال‌سازی قرارداد {{ $contract->contract_number }}</label><input id="contract-activate-reason-{{ $contract->id }}" name="reason" required minlength="5" maxlength="500" placeholder="شرح کوتاه برای فعال‌سازی" class="h-10 rounded-lg border border-slate-200 px-3 text-xs focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100">
+                                            <button type="submit" class="h-10 rounded-lg bg-brand-600 px-3 text-xs font-semibold text-white hover:bg-brand-700">فعال‌سازی و انتشار اقساط</button>
+                                        </form>
+                                    @endcan
+                                @endif
                             </li>
                         @endforeach
                     </ul>

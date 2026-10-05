@@ -18,9 +18,9 @@ vendor/bin/pint --test
 
 در اجرای اولیهٔ ۲۰۲۶-۱۰-۰۵، `migrate:fresh --seed` روی SQLite موفق شد؛ ۱۳ تست با ۶۳ assertion، `npm run build`، `composer validate --no-check-publish`، `composer audit` بدون advisory، `vendor/bin/pint --test` و syntax check روی ۶۷ فایل موفق شدند. داشبورد و جزئیات مشتری در مرورگر با اندازه‌های دسکتاپ ۱۴۴۰px و موبایل ۳۷۵×۸۱۲ بازبینی چشمی شدند.
 
-در Phase B همان روز، یک datadir دورریختنی و مستقل MariaDB 10.4.32 روی loopback پورت 3307 ساخته شد. روی آن `migrate:fresh --seed --force` و PHPUnit با `phpunit.mariadb.xml` اجرا شدند؛ نسخهٔ فعلی suite شامل ۳۳ تست و ۱۳۹ assertion است و روی هر دو تنظیم SQLite و MariaDB موفق شده است. جزئیات اتصال و محدودیت این شواهد در [MYSQL-TESTING.md](MYSQL-TESTING.md) ثبت شده است.
+در Phase B همان روز، یک datadir دورریختنی و مستقل MariaDB 10.4.32 روی loopback پورت 3307 ساخته شد. اکنون PHPUnit مستقیم با `phpunit.mariadb.xml` شامل ۴۰ تست/۲۰۲ assertion است و موفق می‌شود. روی SQLite ۳۹ تست/۱۹۲ assertion موفق است و آزمون هم‌زمانی یک‌بار skip می‌شود، چون SQLite row lock واقعی ندارد. آزمون هم‌زمانی دو worker مستقل را روی MariaDB اجرا می‌کند و migration rollback را نیز بررسی می‌کند. جزئیات و قفل‌شدن آزمون به DB دورریختنی در [MYSQL-TESTING.md](MYSQL-TESTING.md) ثبت شده است.
 
-این نتایج فقط نسخهٔ محلی MariaDB 10.4.32 را پوشش می‌دهند. نسخهٔ دیتابیس production نامعلوم است؛ تست race/concurrency مالی، MySQL 8، browser automation تکرارپذیر در CI، accessibility audit، load test، API contract/OpenAPI و migration-data reconciliation هنوز اجرا نشده‌اند.
+این نتایج فقط نسخهٔ محلی MariaDB 10.4.32 را پوشش می‌دهند و فقط race رزرو اعتبار قرارداد را ثابت می‌کنند. نسخهٔ دیتابیس production نامعلوم است؛ raceهای پرداخت/درگاه/refund/settlement، MySQL 8، browser automation تکرارپذیر در CI، accessibility audit، load test، API contract/OpenAPI و migration-data reconciliation هنوز اجرا نشده‌اند.
 
 ## پوشش لازم پیش از تولید
 

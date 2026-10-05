@@ -14,7 +14,8 @@ class SubmitKycCase
     public function handle(Customer $customer, User $actor, ?string $identityProvider, ?string $requestId, ?string $ipAddress): KycCase
     {
         return DB::transaction(function () use ($customer, $actor, $identityProvider, $requestId, $ipAddress): KycCase {
-            $case = $customer->kycCases()->create([
+            $lockedCustomer = Customer::query()->whereKey($customer->id)->lockForUpdate()->firstOrFail();
+            $case = $lockedCustomer->kycCases()->create([
                 'status' => KycStatus::Pending,
                 'identity_provider' => $identityProvider ?: 'manual',
                 'submitted_at' => now(),
@@ -26,7 +27,7 @@ class SubmitKycCase
                 'event_name' => 'kyc.submitted',
                 'subject_type' => KycCase::class,
                 'subject_id' => $case->id,
-                'metadata' => ['customer_id' => $customer->id],
+                'metadata' => ['customer_id' => $lockedCustomer->id],
                 'ip_address' => $ipAddress,
                 'created_at' => now(),
             ]);

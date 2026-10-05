@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Contracts\CreateContractDraft;
+use App\Actions\Contracts\TransitionContract;
 use App\Actions\Credit\AdjustCreditLimit;
 use App\Actions\Kyc\ReviewKycCase;
 use App\Actions\Kyc\SubmitKycCase;
 use App\Actions\Payments\RegisterPaymentIntent;
 use App\Enums\KycStatus;
 use App\Http\Requests\ContractDraftRequest;
+use App\Http\Requests\ContractTransitionRequest;
 use App\Http\Requests\CreditLimitAdjustmentRequest;
 use App\Http\Requests\KycReviewRequest;
 use App\Http\Requests\KycSubmissionRequest;
@@ -20,6 +22,30 @@ use Illuminate\Http\RedirectResponse;
 
 class CustomerActionsController extends Controller
 {
+    public function submitContractForApproval(ContractTransitionRequest $request, Contract $contract, TransitionContract $transitionContract): RedirectResponse
+    {
+        return $this->transitionContract($request, $contract, $transitionContract, 'submit', 'قرارداد برای بررسی ارسال شد.');
+    }
+
+    public function approveContract(ContractTransitionRequest $request, Contract $contract, TransitionContract $transitionContract): RedirectResponse
+    {
+        return $this->transitionContract($request, $contract, $transitionContract, 'approve', 'قرارداد تأیید شد و اعتبار آن از رزرو به مصرف‌شده منتقل شد.');
+    }
+
+    public function activateContract(ContractTransitionRequest $request, Contract $contract, TransitionContract $transitionContract): RedirectResponse
+    {
+        return $this->transitionContract($request, $contract, $transitionContract, 'activate', 'قرارداد فعال و برنامهٔ اقساط آن منتشر شد.');
+    }
+
+    private function transitionContract(ContractTransitionRequest $request, Contract $contract, TransitionContract $transitionContract, string $transition, string $successMessage): RedirectResponse
+    {
+        $this->authorize('view', $contract->customer);
+        $input = $request->validated();
+        $transitionContract->handle($contract->id, $transition, $input['request_id'], $input['reason'], $request->user());
+
+        return redirect()->route('customers.show', $contract->customer_id)->with('success', $successMessage);
+    }
+
     public function createContractDraft(ContractDraftRequest $request, Customer $customer, CreateContractDraft $createContractDraft): RedirectResponse
     {
         $this->authorize('view', $customer);

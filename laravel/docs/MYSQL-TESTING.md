@@ -16,12 +16,15 @@
 ```powershell
 php artisan migrate:fresh --seed --force --database=mysql
 vendor/bin/phpunit --configuration=phpunit.mariadb.xml
+vendor/bin/phpunit --configuration=phpunit.mariadb.xml --filter=concurrent_contract_submissions_cannot_over_reserve_credit
 ```
+
+آزمون هم‌زمانی فقط وقتی اجرا می‌شود که اتصال دقیقاً به `127.0.0.1:3307/proma_pay_laravel_test` اشاره کند. آزمون schema همین DB دورریختنی را تازه‌سازی می‌کند، دو PHP worker مستقل را پشت barrier هم‌زمان می‌کند، و در پایان migrationها را rollback می‌کند. از این آزمون روی دیتابیس دیگری استفاده نکنید.
 
 اگر سرویس از مقادیر پیش‌فرض test config استفاده نمی‌کند، متغیرهای `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` را فقط به سرویس آزمایشی اشاره دهید. `DB_DATABASE` باید یک پایگاه disposable با پسوند/نام test باشد.
 
 ## شواهد این محیط
 
-در اجرای Phase B، MariaDB 10.4.32 روی پورت 3307 با datadir تازه در `%TEMP%` بالا آمد و `migrate:fresh --seed --force` اولیه موفق شد. پس از migration افزودهٔ پیش‌نویس، `RefreshDatabase` هنگام اجرای suite، schema فعلی را روی همین MySQL connection مهاجرت داد؛ ۳۳ تست و ۱۳۹ assertion موفق شدند. این نتیجه صحت migrationهای فعلی و رفتار همین تست‌ها روی MariaDB را نشان می‌دهد، نه صحت concurrency مالی یا سازگاری با نسخهٔ production نامعلوم. هنوز آزمون race واقعی روی مسیرهای مالی Laravel، MySQL 8، یا اتصال به نسخهٔ production اجرا نشده است.
+در اجرای Phase B، MariaDB 10.4.32 روی پورت 3307 با datadir تازه در `%TEMP%` بالا آمد و `migrate:fresh --seed --force` اولیه موفق شد. suite فعلی شامل ۴۰ تست و ۲۰۲ assertion است و روی SQLite و همین MariaDB موفق است؛ SQLite یک آزمون را به‌دلیل نداشتن row lock واقعی skip می‌کند. آزمون MariaDB دو فرایند مستقل را برای رزرو دو قرارداد ۷۰۰٬۰۰۰ تومانی از سقف ۱٬۰۰۰٬۰۰۰ آزاد می‌کند و یک پذیرش/یک رد اعتبار ناکافی، تنها یک ledger entry و ماندهٔ صحیح را بررسی می‌کند. همین مسیر migration rollback را هم اجرا کرد و یک rollback معیوب در حذف FK ستون `users.branch_id` را آشکار کرد؛ migration اصلاح شد. این شواهد فقط MariaDB 10.4.32 دورریختنی را پوشش می‌دهد؛ نسخهٔ production و raceهای پرداخت/درگاه/refund/settlement هنوز باز است.
 
 برای موتور دیگری، نسخهٔ آن را جدا ثبت کنید. از `migrate:fresh` فقط روی پایگاه دورریختنی استفاده کنید.

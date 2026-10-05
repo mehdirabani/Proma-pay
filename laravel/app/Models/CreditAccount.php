@@ -24,4 +24,9 @@ class CreditAccount extends Model
     {
         return $this->hasMany(CreditLedgerEntry::class);
     }
+
+    public function availableToman(): string
+    {
+        return bcsub((string) $this->limit_toman, bcadd((string) $this->used_toman, (string) $this->reserved_toman, 0), 0);
+    }
 }

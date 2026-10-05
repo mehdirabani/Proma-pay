@@ -28,6 +28,9 @@ class DatabaseSeeder extends Seeder
             'payments.view' => 'مشاهدهٔ پرداخت‌ها',
             'payments.record' => 'ثبت درخواست پرداخت',
             'contracts.create' => 'ایجاد پیش‌نویس قرارداد',
+            'contracts.submit' => 'ارسال قرارداد برای تأیید',
+            'contracts.approve' => 'تأیید قرارداد',
+            'contracts.activate' => 'فعال‌سازی قرارداد تأییدشده',
             'access.manage' => 'مدیریت دسترسی‌ها',
         ];
 
@@ -45,7 +48,7 @@ class DatabaseSeeder extends Seeder
 
         $finance = Role::updateOrCreate(['slug' => 'finance'], ['name' => 'کارشناس مالی']);
         $finance->permissions()->sync($permissions->only([
-            'dashboard.view', 'customers.view', 'customers.view_all', 'credit.view', 'credit.adjust', 'payments.view', 'payments.record',
+            'dashboard.view', 'customers.view', 'customers.view_all', 'credit.view', 'credit.adjust', 'payments.view', 'payments.record', 'contracts.approve',
         ])->pluck('id'));
     }
 }

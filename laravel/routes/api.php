@@ -22,6 +22,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         });
         Route::post('/customers', [CustomerController::class, 'store'])->middleware('permission:customers.create')->name('customers.store');
         Route::post('/contracts', [ContractController::class, 'store'])->middleware(['permission:contracts.create', 'throttle:10,1'])->name('contracts.store');
+        Route::post('/contracts/{contract}/submit', [ContractController::class, 'submit'])->middleware('permission:contracts.submit')->name('contracts.submit');
+        Route::put('/contracts/{contract}/approve', [ContractController::class, 'approve'])->middleware('permission:contracts.approve')->name('contracts.approve');
+        Route::post('/contracts/{contract}/activate', [ContractController::class, 'activate'])->middleware('permission:contracts.activate')->name('contracts.activate');
 
         Route::post('/customers/{customer}/kyc-cases', [KycController::class, 'store'])
             ->middleware('permission:customers.update')->name('customers.kyc.store');
