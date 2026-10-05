@@ -14,11 +14,13 @@ vendor/bin/pint --test
 
 برای محیط میزبان این repo، PHP/Composer باید از مسیر نصب‌شده فراخوانی شوند؛ PHP در PATH نیست. نتیجه‌ها را با version ابزار ثبت کنید.
 
-## شواهد این برش
+## شواهد اجراشده
 
-نتیجهٔ نهایی این برش در روز ۲۰۲۶-۱۰-۰۵: `php artisan migrate:fresh --seed --force` روی SQLite محلی موفق بود؛ `php artisan test --compact` با ۱۳ تست و ۶۳ assertion موفق شد؛ `npm run build` موفق بود؛ `composer validate --no-check-publish` معتبر و `composer audit` بدون advisory گزارش شد؛ `vendor/bin/pint --test` پس از قالب‌بندی ۱۰ فایل موفق شد. PHP syntax check روی ۶۷ فایل موفق بود. داشبورد و جزئیات مشتری روی مرورگر در اندازهٔ دسکتاپ ۱۴۴۰px و اندازهٔ موبایل ۳۷۵×۸۱۲ بازبینی چشمی شدند.
+در اجرای اولیهٔ ۲۰۲۶-۱۰-۰۵، `migrate:fresh --seed` روی SQLite موفق شد؛ ۱۳ تست با ۶۳ assertion، `npm run build`، `composer validate --no-check-publish`، `composer audit` بدون advisory، `vendor/bin/pint --test` و syntax check روی ۶۷ فایل موفق شدند. داشبورد و جزئیات مشتری در مرورگر با اندازه‌های دسکتاپ ۱۴۴۰px و موبایل ۳۷۵×۸۱۲ بازبینی چشمی شدند.
 
-این شواهد فقط تا همین برش و SQLite معتبر است. تست MySQL، concurrency، browser automation تکرارپذیر در CI، accessibility audit، load test، API contract test/OpenAPI و migration-data reconciliation اجرا نشده‌اند.
+در Phase B همان روز، یک datadir دورریختنی و مستقل MariaDB 10.4.32 روی loopback پورت 3307 ساخته شد. روی آن `migrate:fresh --seed --force` و PHPUnit با `phpunit.mariadb.xml` اجرا شدند؛ ۱۳ تست و ۶۳ assertion موفق شدند. جزئیات اتصال و محدودیت این شواهد در [MYSQL-TESTING.md](MYSQL-TESTING.md) ثبت شده است.
+
+این نتایج فقط نسخهٔ محلی MariaDB 10.4.32 را پوشش می‌دهند. نسخهٔ دیتابیس production نامعلوم است؛ تست race/concurrency مالی، MySQL 8، browser automation تکرارپذیر در CI، accessibility audit، load test، API contract/OpenAPI و migration-data reconciliation هنوز اجرا نشده‌اند.
 
 ## پوشش لازم پیش از تولید
 

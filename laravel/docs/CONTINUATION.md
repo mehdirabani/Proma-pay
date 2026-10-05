@@ -2,37 +2,41 @@
 
 ## Current phase
 
-Phase A — repository/commit/skill/domain audit. Gap matrix created; implementation remains active.
+Phase B — isolated MariaDB validation recorded; moving to core authorization/idempotency regression coverage and a source-verified contract slice. The application remains incomplete and broader domain work remains active.
 
 ## Completed work
 
-- Confirmed `HEAD=43fecd6`, preceded by foundation `c4c0017`; `laravel/` was clean at audit start.
+- Confirmed the foundation commits `c4c0017` and `43fecd6`; Phase A assessment checkpoint is `7530ddd`. `laravel/` was clean at audit start for this continuation.
 - Read both commit summaries, Laravel routes/models/migrations/tests and current completion/architecture/data docs.
 - Scanned skills and read PHPForge Laravel/fintech/database/API/security/legacy/testing/performance/WP/Woo modules, MySQL Architect core + fintech/concurrency/migration material, PHP/Laravel security notes, and UI Styling.
 - Compared current Legacy SQL table inventory with the committed map: current SQL has 73 tables; the old map has 72 and omits `customer_automation_events`.
 - Ran three DB-free Legacy financial regression scripts: installment settlement v150, legal-penalty projection v156, and financial precision v136; all passed.
+- Initialized a new disposable MariaDB 10.4.32 datadir under `%TEMP%`, bound the process to loopback port 3307, and ran Laravel migrations/seed plus the 13 feature tests successfully.
+- Added `phpunit.mariadb.xml` and `docs/MYSQL-TESTING.md` so database-driver validation is repeatable and separate from SQLite defaults; updated test and completion evidence with the verified MariaDB run.
 - Added `PRODUCTION-GAP-MATRIX.md`.
 
 ## Current architecture
 
 Laravel 12 + Sanctum + Blade/Tailwind RTL. SQLite is the configured test default. Customer/KYC/credit-limit adjustment/payment intent are thin foundations; contracts/installments have schema/models only; payment intent remains pending. Legacy is separate lightweight PHP MVC under repository root.
 
-## Files changed this phase
+## Files changed in Phase A and the MariaDB checkpoint
 
 - `docs/PRODUCTION-GAP-MATRIX.md`
 - `docs/CONTINUATION.md`
 - `docs/PROGRESS.md`
 - `docs/LEGACY-MAPPING.md` (refresh current inventory from 72 to 73)
+- `docs/TESTING.md` and `docs/COMPLETION-REPORT-fa.md` (append MariaDB evidence)
+- `phpunit.mariadb.xml` and `docs/MYSQL-TESTING.md`
 
-No runtime code or database migration has been changed in Phase A.
+No runtime code or database migration has been changed in Phase A or the MariaDB validation checkpoint.
 
 ## Database changes and environment
 
-None. Observed local PHP 8.2; MariaDB 10.4.32 binaries exist, but no server process/service was observed. Laravel tests are SQLite-only. Production DB version is unknown.
+No committed Laravel schema change. A disposable test database was created under `%TEMP%`; it contains only Laravel test tables and the database service is temporary. Local PHP 8.2 and MariaDB 10.4.32 were used. Production DB version is unknown.
 
 ## Commands/tests
 
-Read-only `git status`, `git log`, `git diff --stat`; `laravel/` had zero dirty paths. Root had extensive prior worktree changes and remains out of scope. Prior commit records 13 feature tests/63 assertions on SQLite; no tests were run during this audit checkpoint.
+Read-only `git status`, `git log`, `git diff --stat`; `laravel/` was clean at audit start. Root has extensive prior worktree changes and remains out of scope. Three Legacy DB-free financial regression scripts passed. Laravel `migrate:fresh --seed --force` passed on MariaDB 10.4.32; 13 feature tests/63 assertions passed on both SQLite (previous checkpoint) and MariaDB.
 
 ## Unresolved financial evidence
 
@@ -40,7 +44,7 @@ Legacy `InstallmentFinancialStateService` is versioned and replays dated paid/no
 
 ## Next exact task
 
-Complete source/fixture review of money/allocation/contract rules; refresh the 73-table map; then initialize a disposable isolated database using local MariaDB 10.4.32 and test Laravel migrations against it without touching XAMPP data. Next, address any demonstrated authorization/idempotency gaps, then implement a narrow contract/credit/installment vertical slice.
+Complete source/fixture review of money/allocation/legal-cost/contract rules. Add authorization and idempotency regression coverage for the Laravel API, then implement a narrow contract/credit/installment vertical slice with MariaDB tests. Confirm the production database version before any readiness claim.
 
 ## Relevant commits
 

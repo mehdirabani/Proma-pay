@@ -11,9 +11,13 @@
 
 این تحویل مهاجرت کامل پروژه یا محصول آمادهٔ production نیست. داده منتقل نشده؛ ایجاد و چرخهٔ قرارداد/قسط، تخصیص و تسویهٔ پرداخت، درگاه و webhook، قوانین جریمه/بخشش، import، اسناد، WordPress/WooCommerce و observability کامل باقی مانده‌اند. schema/app فقط روی SQLite محلی بازبینی شده؛ MySQL واقعی و قواعد مالی Legacy تطبیق نشده‌اند. پیش از استفاده برای حساب واقعی این کارها و بازبینی امنیت لازم‌اند.
 
-## کنترل‌های اجراشده
+## کنترل‌های اجراشده در برش اولیه
 
 `migrate:fresh --seed` روی SQLite موفق شد؛ `php artisan test --compact` با ۱۳ تست/۶۳ assertion، `npm run build`، `composer validate --no-check-publish`، `composer audit` بدون advisory، `vendor/bin/pint --test` پس از قالب‌بندی و PHP syntax check (۶۷ فایل) موفق شدند. UI روی desktop و mobile بازبینی چشمی شد.
+
+## شواهد افزوده‌شده در ادامهٔ کار
+
+در ۲۰۲۶-۱۰-۰۵، migration و seed و همان ۱۳ تست/۶۳ assertion روی MariaDB 10.4.32 در یک datadir آزمایشی جدا و فقط روی loopback هم موفق شدند. این نتیجه نسخهٔ production را تأیید نمی‌کند و تست هم‌زمانی یا گردش مالی کامل نیست؛ جزئیات در [MYSQL-TESTING.md](MYSQL-TESTING.md) آمده است.
 
 ## گیت
 
