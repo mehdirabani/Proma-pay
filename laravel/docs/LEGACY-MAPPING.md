@@ -2,7 +2,7 @@
 
 ## دامنهٔ بررسی
 
-فایل نصب `../database/proma-pay-install.sql` شامل ۷۲ دستور ایجاد جدول بود؛ فایل‌های اصلی در `../controllers/`, `../models/`, `../helpers/` و `../core/` هستند. نمونه‌های شاخص: `controllers/AuthController.php`, `CustomersController.php`, `ContractsController.php`, `InstallmentsController.php`, `PaymentsController.php`, `OverdueController.php`, `LegalController.php`, `LawyerController.php`, `EcommerceController.php`, `ImportsController.php`, `UsersController.php`; مدل‌های `models/User.php`, `Contract.php`, `Installment.php`, `Payment.php`, `PaymentRequest.php`, `PaymentReceipt.php`, `IdentityDocument.php`, `LegalCase.php`, `OperatorCall.php`; و قواعد مالی در `helpers/MoneyMath.php`, `FinanceHelper.php`, `PaymentAllocationService.php`, `InstallmentSettlementService.php`, `ZibalClient.php` و `ZibalGatewayProvider.php`.
+فایل نصب موجود در working tree (`../database/proma-pay-install.sql`) شامل ۷۳ دستور ایجاد جدول است؛ نسخهٔ قبلی این نگاشت ۷۲ جدول داشت و `customer_automation_events` را جا انداخته بود. فایل‌های اصلی در `../controllers/`, `../models/`, `../helpers/` و `../core/` هستند. نمونه‌های شاخص: `controllers/AuthController.php`, `CustomersController.php`, `ContractsController.php`, `InstallmentsController.php`, `PaymentsController.php`, `OverdueController.php`, `LegalController.php`, `LawyerController.php`, `EcommerceController.php`, `ImportsController.php`, `UsersController.php`; مدل‌های `models/User.php`, `Contract.php`, `Installment.php`, `Payment.php`, `PaymentRequest.php`, `PaymentReceipt.php`, `IdentityDocument.php`, `LegalCase.php`, `OperatorCall.php`; و قواعد مالی در `helpers/MoneyMath.php`, `FinanceHelper.php`, `PaymentAllocationService.php`, `InstallmentSettlementService.php`, `ZibalClient.php` و `ZibalGatewayProvider.php`.
 
 این فهرست آغاز کشف است، نه فهرست کامل قابلیت‌ها. شمارش schema به جداول تعریف‌شده در SQL نصب محدود است و ممکن است migrations/runtime/pluginها جداول دیگری بسازند. پیش از انتقال باید schema واقعی هر محیط، نسخهٔ برنامه، داده‌ها، تنظیمات و extensionهای نصب‌شده inventory شوند.
 
@@ -86,6 +86,7 @@
 | `installment_change_requests` | درخواست تغییر قسط | `REDESIGNED` | برنامه فقط |
 | `installment_voids` | ابطال قسط | `REDESIGNED` | برنامه فقط |
 | `portal_banners` | بنر پورتال | `REDESIGNED` | برنامه فقط |
+| `customer_automation_events` | رخدادهای خودکارسازی timeline مشتری | `REDESIGNED` | Legacy موجود؛ در Laravel نیست |
 
 ## روش تکمیل نگاشت
 
