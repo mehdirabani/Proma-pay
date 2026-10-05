@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -52,5 +53,24 @@ class PaymentIdempotencyTest extends TestCase
         $this->postJson('/api/v1/payment-intents', [...$request, 'amount_toman' => '260000'])
             ->assertUnprocessable()->assertJsonValidationErrors('idempotency_key');
         $this->assertDatabaseCount('payments', 1);
+    }
+
+    public function test_branch_scoped_payment_recorder_cannot_create_intent_for_another_branch(): void
+    {
+        $branchA = $this->createBranch('A');
+        $branchB = $this->createBranch('B');
+        $operator = $this->createActor('operator', $branchA);
+        $operator->roles()->firstOrFail()->permissions()->attach(Permission::query()->where('slug', 'payments.record')->firstOrFail());
+        $customer = $this->createCustomer($branchB);
+        Sanctum::actingAs($operator, ['proma-api']);
+
+        $this->postJson('/api/v1/payment-intents', [
+            'customer_id' => $customer->id,
+            'idempotency_key' => '2e83d0c5-ea03-4a91-9e15-95af2d453b02',
+            'amount_toman' => '250000',
+            'method' => 'cash',
+        ])->assertForbidden();
+
+        $this->assertDatabaseCount('payments', 0);
     }
 }

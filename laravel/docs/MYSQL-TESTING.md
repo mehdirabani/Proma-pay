@@ -22,6 +22,6 @@ vendor/bin/phpunit --configuration=phpunit.mariadb.xml
 
 ## شواهد این محیط
 
-در اجرای Phase B، MariaDB 10.4.32 روی پورت 3307 با datadir تازه در `%TEMP%` بالا آمد؛ `migrate:fresh --seed --force` روی MySQL connection موفق شد؛ همان ۱۳ feature test و ۶۳ assertion با `DB_CONNECTION=mysql` موفق شدند. این نتیجه صحت مهاجرت و رفتار تست‌های فعلی روی همین MariaDB را نشان می‌دهد، نه صحت concurrency مالی یا سازگاری با نسخهٔ production نامعلوم. هنوز آزمون race واقعی روی مسیرهای مالی Laravel، MySQL 8، یا اتصال به نسخهٔ production اجرا نشده است.
+در اجرای Phase B، MariaDB 10.4.32 روی پورت 3307 با datadir تازه در `%TEMP%` بالا آمد؛ `migrate:fresh --seed --force` روی MySQL connection موفق شد؛ suite فعلی با ۲۵ تست و ۹۱ assertion هم با `DB_CONNECTION=mysql` موفق است. این نتیجه صحت مهاجرت و رفتار همین تست‌ها روی MariaDB را نشان می‌دهد، نه صحت concurrency مالی یا سازگاری با نسخهٔ production نامعلوم. هنوز آزمون race واقعی روی مسیرهای مالی Laravel، MySQL 8، یا اتصال به نسخهٔ production اجرا نشده است.
 
 برای موتور دیگری، نسخهٔ آن را جدا ثبت کنید. از `migrate:fresh` فقط روی پایگاه دورریختنی استفاده کنید.

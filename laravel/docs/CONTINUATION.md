@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase B — isolated MariaDB validation recorded; moving to core authorization/idempotency regression coverage and a source-verified contract slice. The application remains incomplete and broader domain work remains active.
+Phase C — source-verified contract pricing slice and authorization/idempotency regression coverage. The application remains incomplete and broader domain work remains active.
 
 ## Completed work
 
@@ -13,6 +13,9 @@ Phase B — isolated MariaDB validation recorded; moving to core authorization/i
 - Ran three DB-free Legacy financial regression scripts: installment settlement v150, legal-penalty projection v156, and financial precision v136; all passed.
 - Initialized a new disposable MariaDB 10.4.32 datadir under `%TEMP%`, bound the process to loopback port 3307, and ran Laravel migrations/seed plus the 13 feature tests successfully.
 - Added `phpunit.mariadb.xml` and `docs/MYSQL-TESTING.md` so database-driver validation is repeatable and separate from SQLite defaults; updated test and completion evidence with the verified MariaDB run.
+- Added `Domain\Contracts\ContractPricingCalculator`, an integer-only port of the current Legacy simple/compound installment quote, down-payment, upward rounding, and month-end due-date rules. The current source golden case is `tests/financial_precision_v136.php`; Legacy date behavior was checked directly against `FinanceHelper::addMonths` for a January 31 anchor.
+- Added branch-scoped denial tests for KYC review, credit adjustment, and payment intent, plus a changed-payload credit idempotency test.
+- Current Laravel suite: 25 tests / 91 assertions on SQLite and MariaDB 10.4.32; Pint passes on all changed PHP files.
 - Added `PRODUCTION-GAP-MATRIX.md`.
 
 ## Current architecture
@@ -30,13 +33,22 @@ Laravel 12 + Sanctum + Blade/Tailwind RTL. SQLite is the configured test default
 
 No runtime code or database migration has been changed in Phase A or the MariaDB validation checkpoint.
 
+## Phase C implementation files
+
+- `app/Domain/Contracts/ContractPricingCalculator.php`
+- `tests/Unit/ContractPricingCalculatorTest.php`
+- `tests/Feature/CreditLimitAdjustmentTest.php`
+- `tests/Feature/CustomerManagementTest.php`
+- `tests/Feature/PaymentIdempotencyTest.php`
+- Matrix, progress, test, and completion evidence docs
+
 ## Database changes and environment
 
 No committed Laravel schema change. A disposable test database was created under `%TEMP%`; it contains only Laravel test tables and the database service is temporary. Local PHP 8.2 and MariaDB 10.4.32 were used. Production DB version is unknown.
 
 ## Commands/tests
 
-Read-only `git status`, `git log`, `git diff --stat`; `laravel/` was clean at audit start. Root has extensive prior worktree changes and remains out of scope. Three Legacy DB-free financial regression scripts passed. Laravel `migrate:fresh --seed --force` passed on MariaDB 10.4.32; 13 feature tests/63 assertions passed on both SQLite (previous checkpoint) and MariaDB.
+Read-only `git status`, `git log`, `git diff --stat`; `laravel/` was clean at audit start. Root has extensive prior worktree changes and remains out of scope. Three Legacy DB-free financial regression scripts passed. Laravel `migrate:fresh --seed --force` passed on MariaDB 10.4.32; current suite has 25 tests/91 assertions passing on both SQLite and MariaDB.
 
 ## Unresolved financial evidence
 
@@ -44,7 +56,7 @@ Legacy `InstallmentFinancialStateService` is versioned and replays dated paid/no
 
 ## Next exact task
 
-Complete source/fixture review of money/allocation/legal-cost/contract rules. Add authorization and idempotency regression coverage for the Laravel API, then implement a narrow contract/credit/installment vertical slice with MariaDB tests. Confirm the production database version before any readiness claim.
+Implement persisted contract draft/approval boundaries and Persian RTL contract UI around the source-verified quote without posting money or reserving credit until the business exposure basis is resolved from Legacy evidence. Add MySQL tests for the persisted lifecycle. Continue into installment allocation only after its historical rows/legal-cost semantics have been mapped. Confirm the production database version before any readiness claim.
 
 ## Relevant commits
 

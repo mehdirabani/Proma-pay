@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\KycCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -58,6 +59,19 @@ class CustomerManagementTest extends TestCase
 
         $this->putJson('/api/v1/kyc-cases/'.$caseId.'/review', ['status' => 'rejected'])
             ->assertUnprocessable()->assertJsonValidationErrors('review_note');
+    }
+
+    public function test_branch_scoped_reviewer_cannot_review_another_branch_kyc_case(): void
+    {
+        $branchA = $this->createBranch('A');
+        $branchB = $this->createBranch('B');
+        $operator = $this->createActor('operator', $branchA);
+        $customer = $this->createCustomer($branchB);
+        $kycCase = KycCase::create(['customer_id' => $customer->id, 'status' => 'pending', 'identity_provider' => 'manual', 'submitted_at' => now()]);
+        Sanctum::actingAs($operator, ['proma-api']);
+        $this->putJson('/api/v1/kyc-cases/'.$kycCase->id.'/review', ['status' => 'approved'])->assertForbidden();
+
+        $this->assertDatabaseHas('kyc_cases', ['id' => $kycCase->id, 'status' => 'pending', 'reviewed_by' => null]);
     }
 
     public function test_customer_detail_page_renders_kyc_credit_and_payment_sections(): void
