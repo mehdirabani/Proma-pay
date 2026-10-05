@@ -6,6 +6,7 @@
 @section('content')
     @php
         $latestKycCase = $customer->kycCases->first();
+        $contractKycApproved = $latestKycCase?->status === \App\Enums\KycStatus::Approved;
         $creditAccount = $customer->creditAccount;
         $committedCredit = $creditAccount ? bcadd((string) $creditAccount->used_toman, (string) $creditAccount->reserved_toman, 0) : '0';
         $availableCredit = $creditAccount ? bcsub((string) $creditAccount->limit_toman, $committedCredit, 0) : '0';
@@ -33,6 +34,44 @@
                     <div><dt class="text-xs text-slate-500">ایمیل</dt><dd class="mt-1.5 text-sm text-slate-700" dir="ltr">{{ $customer->email ?: 'ثبت نشده' }}</dd></div>
                     <div><dt class="text-xs text-slate-500">تاریخ تولد</dt><dd class="mt-1.5 text-sm text-slate-700">@if($customer->birth_date)<time data-persian-date="{{ $customer->birth_date->toIso8601String() }}">{{ $customer->birth_date->format('Y-m-d') }}</time>@else ثبت نشده @endif</dd></div>
                 </dl>
+            </section>
+
+            <section class="rounded-xl border border-slate-200 bg-white">
+                <div class="border-b border-slate-100 px-5 py-4"><h2 class="text-sm font-bold text-slate-900">قراردادها</h2><p class="mt-1 text-xs text-slate-500">پیش‌نویس با شرایط و اقساط محاسبه‌شده ذخیره می‌شود.</p></div>
+                @if($contracts->isEmpty())
+                    <div class="px-5 py-7 text-center text-xs text-slate-500">هنوز قراردادی برای این مشتری ثبت نشده است.</div>
+                @else
+                    <ul class="divide-y divide-slate-100">
+                        @foreach($contracts as $contract)
+                            @php($contractStatusLabel = match($contract->status) {'draft' => 'پیش‌نویس', 'pending_approval' => 'در انتظار تأیید', 'approved' => 'تأییدشده', 'active' => 'فعال', 'completed' => 'تسویه‌شده', 'overdue' => 'معوق', 'legal' => 'حقوقی', 'cancelled' => 'لغوشده', default => 'نامشخص'})
+                            <li class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                                <div><p class="text-sm font-bold text-slate-800" dir="ltr">{{ $contract->contract_number }}</p><p class="mt-1 text-xs text-slate-500">{{ \App\Support\PersianNumber::format($contract->installment_count) }} قسط · {{ \App\Support\PersianNumber::toman($contract->total_amount_toman) }}</p></div>
+                                <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800">{{ $contractStatusLabel }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+                @can('contracts.create')
+                    @if($contractKycApproved)
+                        <form method="POST" action="{{ route('customers.contracts.store', $customer) }}" class="border-t border-slate-100 bg-slate-50/60 p-5">@csrf
+                            <input type="hidden" name="customer_id" value="{{ $customer->id }}"><input type="hidden" name="request_uuid" value="{{ old('request_uuid', $contractRequestUuid) }}">
+                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div><label for="principal_toman" class="mb-1.5 block text-xs font-medium text-slate-700">اصل قرارداد (تومان)</label><input id="principal_toman" name="principal_toman" required inputmode="numeric" dir="ltr" value="{{ old('principal_toman') }}" placeholder="۱٬۲۰۰٬۰۰۰" class="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-left text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100">@error('principal_toman')<p role="alert" class="mt-1 text-xs text-rose-700">{{ $message }}</p>@enderror</div>
+                                <div><label for="down_payment_toman" class="mb-1.5 block text-xs font-medium text-slate-700">پیش‌پرداخت (تومان)</label><input id="down_payment_toman" name="down_payment_toman" required inputmode="numeric" dir="ltr" value="{{ old('down_payment_toman', '۰') }}" placeholder="۰" class="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-left text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100">@error('down_payment_toman')<p role="alert" class="mt-1 text-xs text-rose-700">{{ $message }}</p>@enderror</div>
+                                <div><label for="monthly_interest_rate" class="mb-1.5 block text-xs font-medium text-slate-700">نرخ سود ماهانه (درصد)</label><input id="monthly_interest_rate" name="monthly_interest_rate" required inputmode="decimal" dir="ltr" value="{{ old('monthly_interest_rate', '۰') }}" placeholder="۵" class="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-left text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100">@error('monthly_interest_rate')<p role="alert" class="mt-1 text-xs text-rose-700">{{ $message }}</p>@enderror</div>
+                                <div><label for="interest_type" class="mb-1.5 block text-xs font-medium text-slate-700">روش محاسبهٔ سود</label><select id="interest_type" name="interest_type" class="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm"><option value="simple" @selected(old('interest_type', 'simple') === 'simple')>ساده</option><option value="compound" @selected(old('interest_type') === 'compound')>مرکب</option></select></div>
+                                <div><label for="installment_count" class="mb-1.5 block text-xs font-medium text-slate-700">تعداد اقساط</label><input id="installment_count" name="installment_count" required inputmode="numeric" dir="ltr" value="{{ old('installment_count', '۶') }}" class="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-left text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100">@error('installment_count')<p role="alert" class="mt-1 text-xs text-rose-700">{{ $message }}</p>@enderror</div>
+                                <div><label for="start_date" class="mb-1.5 block text-xs font-medium text-slate-700">تاریخ قرارداد</label><input id="start_date" name="start_date" type="date" required dir="ltr" value="{{ old('start_date', $contractStartDate) }}" class="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-left text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100">@error('start_date')<p role="alert" class="mt-1 text-xs text-rose-700">{{ $message }}</p>@enderror</div>
+                                <div><label for="first_due_date" class="mb-1.5 block text-xs font-medium text-slate-700">اولین سررسید</label><input id="first_due_date" name="first_due_date" type="date" required dir="ltr" value="{{ old('first_due_date', $contractFirstDueDate) }}" class="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-left text-sm focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100">@error('first_due_date')<p role="alert" class="mt-1 text-xs text-rose-700">{{ $message }}</p>@enderror</div>
+                            </div>
+                            @error('request_uuid')<p role="alert" class="mt-3 text-xs text-rose-700">{{ $message }}</p>@enderror
+                            <p class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">این عملیات فقط پیش‌نویس و اقساط پیشنهادی را ثبت می‌کند؛ اعتبار رزرو یا پرداختی ثبت نمی‌شود. سقف فنی این فرم ۶۰۰ قسط است.</p>
+                            <div class="mt-4 flex justify-end"><button type="submit" class="h-10 rounded-lg bg-brand-600 px-4 text-xs font-semibold text-white hover:bg-brand-700">ذخیرهٔ پیش‌نویس قرارداد</button></div>
+                        </form>
+                    @else
+                        <div class="border-t border-slate-100 bg-amber-50/60 px-5 py-4 text-xs leading-5 text-amber-900">ساخت پیش‌نویس پس از تأیید آخرین پروندهٔ احراز هویت در دسترس است.</div>
+                    @endif
+                @endcan
             </section>
 
             <section class="rounded-xl border border-slate-200 bg-white">

@@ -15,13 +15,16 @@ class ContractPricingCalculatorTest extends TestCase
 
         $simple = $calculator->quote('1,000,000', '0', '۵٪', 2, 'simple');
         $compound = $calculator->quote('۱٬۰۰۰٬۰۰۰', '۰', '۵', 2, 'compound');
+        $persianDecimal = $calculator->quote('۱٬۰۰۰٬۰۰۰', '۰', '۲٫۵٪', 2, 'simple');
 
         $this->assertSame('legacy-contract-finance-v1', $simple['calculation_version']);
         $this->assertSame(50_000, $simple['monthly_rate_units']);
+        $this->assertSame('5', $simple['monthly_rate_percent']);
         $this->assertSame('600000', $simple['installment_amount_toman']);
         $this->assertSame('1200000', $simple['total_installments_toman']);
         $this->assertSame('600000', $compound['installment_amount_toman']);
         $this->assertSame('1200000', $compound['total_installments_toman']);
+        $this->assertSame(25_000, $persianDecimal['monthly_rate_units']);
     }
 
     public function test_down_payment_is_removed_before_financing_and_zero_rate_rounds_each_installment_up(): void

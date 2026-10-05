@@ -23,7 +23,7 @@ final class ContractPricingCalculator
     private const MAX_INSTALLMENTS = 65_535;
 
     /**
-     * @return array{calculation_version:string,principal_toman:string,down_payment_toman:string,financed_toman:string,monthly_rate_units:int,interest_type:string,installment_count:int,installment_amount_toman:string,total_installments_toman:string}
+     * @return array{calculation_version:string,principal_toman:string,down_payment_toman:string,financed_toman:string,monthly_rate_percent:string,monthly_rate_units:int,interest_type:string,installment_count:int,installment_amount_toman:string,total_installments_toman:string}
      */
     public function quote(
         string|int $principalToman,
@@ -60,6 +60,7 @@ final class ContractPricingCalculator
             'principal_toman' => (string) $principal,
             'down_payment_toman' => (string) $downPayment,
             'financed_toman' => (string) $financed,
+            'monthly_rate_percent' => $this->rateLabel($rateUnits),
             'monthly_rate_units' => $rateUnits,
             'interest_type' => $interestType,
             'installment_count' => $installmentCount,
@@ -153,6 +154,7 @@ final class ContractPricingCalculator
     {
         $normalized = PersianDigits::toEnglish((string) $value);
         $normalized = str_replace(['٪', '%', 'درصد', ',', '،', '٬', ' ', "\u{00A0}"], '', $normalized);
+        $normalized = str_replace('٫', '.', $normalized);
 
         if (! preg_match('/^\+?(\d+)(?:\.(\d{0,4}))?$/', $normalized, $matches)) {
             throw new InvalidArgumentException('نرخ سود باید عددی با حداکثر چهار رقم اعشار باشد.');
@@ -163,6 +165,14 @@ final class ContractPricingCalculator
         $units = ($whole * self::RATE_SCALE) + (int) substr($fraction, 0, 4);
 
         return max(0, min(self::PERCENT_DENOMINATOR, $units));
+    }
+
+    private function rateLabel(int $units): string
+    {
+        $whole = intdiv($units, self::RATE_SCALE);
+        $fraction = str_pad((string) ($units % self::RATE_SCALE), 4, '0', STR_PAD_LEFT);
+
+        return rtrim(rtrim($whole.'.'.$fraction, '0'), '.');
     }
 
     private function ceilMultiplyDivide(int $amount, int $multiplier, int $denominator): int

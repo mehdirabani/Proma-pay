@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Contracts\CreateContractDraft;
 use App\Actions\Credit\AdjustCreditLimit;
 use App\Actions\Kyc\ReviewKycCase;
 use App\Actions\Kyc\SubmitKycCase;
 use App\Actions\Payments\RegisterPaymentIntent;
 use App\Enums\KycStatus;
+use App\Http\Requests\ContractDraftRequest;
 use App\Http\Requests\CreditLimitAdjustmentRequest;
 use App\Http\Requests\KycReviewRequest;
 use App\Http\Requests\KycSubmissionRequest;
@@ -18,6 +20,17 @@ use Illuminate\Http\RedirectResponse;
 
 class CustomerActionsController extends Controller
 {
+    public function createContractDraft(ContractDraftRequest $request, Customer $customer, CreateContractDraft $createContractDraft): RedirectResponse
+    {
+        $this->authorize('view', $customer);
+        $input = $request->validated();
+        abort_unless((int) $input['customer_id'] === (int) $customer->id, 422, 'مشتری فرم با پروندهٔ بازشده یکسان نیست.');
+
+        $createContractDraft->handle($customer, $input, $request->user());
+
+        return redirect()->route('customers.show', $customer)->with('success', 'پیش‌نویس قرارداد و برنامهٔ اقساط آن ذخیره شد. پرداخت یا رزرو اعتبار انجام نشده است.');
+    }
+
     public function submitKyc(KycSubmissionRequest $request, Customer $customer, SubmitKycCase $submitKycCase): RedirectResponse
     {
         $this->authorize('update', $customer);

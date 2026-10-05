@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ContractController;
 use App\Http\Controllers\Api\CreditController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\KycController;
@@ -20,6 +21,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
         });
         Route::post('/customers', [CustomerController::class, 'store'])->middleware('permission:customers.create')->name('customers.store');
+        Route::post('/contracts', [ContractController::class, 'store'])->middleware(['permission:contracts.create', 'throttle:10,1'])->name('contracts.store');
 
         Route::post('/customers/{customer}/kyc-cases', [KycController::class, 'store'])
             ->middleware('permission:customers.update')->name('customers.kyc.store');

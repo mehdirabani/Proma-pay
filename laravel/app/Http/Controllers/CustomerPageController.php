@@ -40,11 +40,16 @@ class CustomerPageController extends Controller
             'kycCases' => fn ($query) => $query->latest('id'),
             'payments' => fn ($query) => $query->latest('id')->limit(5),
         ]);
+        $contracts = $customer->contracts()->latest('id')->limit(5)->get();
 
         return view('customers.show', [
             'customer' => $customer,
+            'contracts' => $contracts,
             'creditRequestId' => (string) Str::uuid(),
             'paymentIdempotencyKey' => (string) Str::uuid(),
+            'contractRequestUuid' => (string) Str::uuid(),
+            'contractStartDate' => now()->toDateString(),
+            'contractFirstDueDate' => now()->addMonthNoOverflow()->toDateString(),
         ]);
     }
 

@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase C — source-verified contract pricing slice and authorization/idempotency regression coverage. The application remains incomplete and broader domain work remains active.
+Phase C — KYC-gated contract draft and source-verified schedule are implemented through Persian RTL web/API entry points. Approval/activation, credit reservation, and payment/allocation remain open.
 
 ## Completed work
 
@@ -15,12 +15,15 @@ Phase C — source-verified contract pricing slice and authorization/idempotency
 - Added `phpunit.mariadb.xml` and `docs/MYSQL-TESTING.md` so database-driver validation is repeatable and separate from SQLite defaults; updated test and completion evidence with the verified MariaDB run.
 - Added `Domain\Contracts\ContractPricingCalculator`, an integer-only port of the current Legacy simple/compound installment quote, down-payment, upward rounding, and month-end due-date rules. The current source golden case is `tests/financial_precision_v136.php`; Legacy date behavior was checked directly against `FinanceHelper::addMonths` for a January 31 anchor.
 - Added branch-scoped denial tests for KYC review, credit adjustment, and payment intent, plus a changed-payload credit idempotency test.
-- Current Laravel suite: 25 tests / 91 assertions on SQLite and MariaDB 10.4.32; Pint passes on all changed PHP files.
+- Added persisted draft creation: `PR-000001` sequence is row-locked; duplicate request UUID with the same canonical payload replays, changed terms reject; only the latest approved KYC permits draft creation; terms and a calculation hash are stored; generated installments are `draft`; an audit event is recorded.
+- Added API `POST /api/v1/contracts` and a Persian RTL form on the authorized customer's page. The page says clearly that draft creation does not reserve credit or register a payment. This is deliberate while credit exposure and approval semantics remain unresolved.
+- Added an additive migration for contract pricing/idempotency snapshot fields and the contract sequence row; the 600-installment request cap is a technical write-bound, not a Legacy financial rule.
+- Current Laravel suite: 33 tests / 139 assertions on SQLite and MariaDB 10.4.32; Pint passes on all changed PHP files.
 - Added `PRODUCTION-GAP-MATRIX.md`.
 
 ## Current architecture
 
-Laravel 12 + Sanctum + Blade/Tailwind RTL. SQLite is the configured test default. Customer/KYC/credit-limit adjustment/payment intent are thin foundations; contracts/installments have schema/models only; payment intent remains pending. Legacy is separate lightweight PHP MVC under repository root.
+Laravel 12 + Sanctum + Blade/Tailwind RTL. SQLite is the configured test default. Customer/KYC/credit-limit adjustment/payment intent are thin foundations. Contract draft creation now has a versioned schedule, KYC gate, audit, idempotency and Persian RTL/API entry points; approval, credit reservation, active lifecycle and payment allocation remain unimplemented. Legacy is separate lightweight PHP MVC under repository root.
 
 ## Files changed in Phase A and the MariaDB checkpoint
 
@@ -36,7 +39,13 @@ No runtime code or database migration has been changed in Phase A or the MariaDB
 ## Phase C implementation files
 
 - `app/Domain/Contracts/ContractPricingCalculator.php`
+- `app/Actions/Contracts/CreateContractDraft.php`
+- `app/Http/Requests/ContractDraftRequest.php`
+- `app/Http/Controllers/Api/ContractController.php` and `app/Http/Resources/ContractResource.php`
+- `database/migrations/2026_10_05_170000_create_contract_draft_workflow.php`
+- RTL web entry point in `app/Http/Controllers/CustomerActionsController.php`, `app/Http/Controllers/CustomerPageController.php`, `routes/web.php`, `routes/api.php`, and `resources/views/customers/show.blade.php`
 - `tests/Unit/ContractPricingCalculatorTest.php`
+- `tests/Feature/ContractDraftTest.php`
 - `tests/Feature/CreditLimitAdjustmentTest.php`
 - `tests/Feature/CustomerManagementTest.php`
 - `tests/Feature/PaymentIdempotencyTest.php`
@@ -44,11 +53,11 @@ No runtime code or database migration has been changed in Phase A or the MariaDB
 
 ## Database changes and environment
 
-No committed Laravel schema change. A disposable test database was created under `%TEMP%`; it contains only Laravel test tables and the database service is temporary. Local PHP 8.2 and MariaDB 10.4.32 were used. Production DB version is unknown.
+Phase C adds an additive migration for draft terms/idempotency and a contract sequence table. The disposable MariaDB test database contains only Laravel test tables; service is loopback-only. Local PHP 8.2 and MariaDB 10.4.32 were used. Production DB version is unknown. A separate attempt to prepare an interactive browser fixture was blocked by command policy when local server/setup commands were issued; feature tests still render and assert the RTL form, but new-section visual capture is not claimed.
 
 ## Commands/tests
 
-Read-only `git status`, `git log`, `git diff --stat`; `laravel/` was clean at audit start. Root has extensive prior worktree changes and remains out of scope. Three Legacy DB-free financial regression scripts passed. Laravel `migrate:fresh --seed --force` passed on MariaDB 10.4.32; current suite has 25 tests/91 assertions passing on both SQLite and MariaDB.
+Read-only `git status`, `git log`, `git diff --stat`; `laravel/` was clean at audit start. Root has extensive prior worktree changes and remains out of scope. Three Legacy DB-free financial regression scripts passed. Initial Laravel migration+seed passed on MariaDB 10.4.32; after the additive draft migration, `RefreshDatabase` applied the current schema and the suite passed with 33 tests/139 assertions on both SQLite and MariaDB.
 
 ## Unresolved financial evidence
 
@@ -56,7 +65,7 @@ Legacy `InstallmentFinancialStateService` is versioned and replays dated paid/no
 
 ## Next exact task
 
-Implement persisted contract draft/approval boundaries and Persian RTL contract UI around the source-verified quote without posting money or reserving credit until the business exposure basis is resolved from Legacy evidence. Add MySQL tests for the persisted lifecycle. Continue into installment allocation only after its historical rows/legal-cost semantics have been mapped. Confirm the production database version before any readiness claim.
+Inspect Legacy credit/exposure and approval policy evidence. Then implement audited, append-only reservation/use/release entries and a double-control approval boundary that consumes a draft only if sufficient available credit can be reserved atomically. Do not activate or post payments until those invariants and source semantics have MySQL race tests. Continue into installment allocation only after historical rows/legal-cost semantics are mapped; confirm the production DB version before any readiness claim.
 
 ## Relevant commits
 

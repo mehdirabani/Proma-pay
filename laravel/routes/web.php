@@ -19,6 +19,7 @@ Route::middleware(['auth', 'active-user'])->group(function (): void {
     Route::get('/customers/create', [CustomerPageController::class, 'create'])->middleware('permission:customers.create')->name('customers.create');
     Route::get('/customers/{customer}', [CustomerPageController::class, 'show'])->middleware('permission:customers.view')->name('customers.show');
     Route::post('/customers', [CustomerPageController::class, 'store'])->middleware('permission:customers.create')->name('customers.store');
+    Route::post('/customers/{customer}/contracts', [CustomerActionsController::class, 'createContractDraft'])->middleware('permission:contracts.create')->name('customers.contracts.store');
     Route::post('/customers/{customer}/kyc-cases', [CustomerActionsController::class, 'submitKyc'])->middleware('permission:customers.update')->name('customers.kyc.store');
     Route::put('/kyc-cases/{kycCase}/review', [CustomerActionsController::class, 'reviewKyc'])->middleware('permission:kyc.review')->name('kyc-cases.review');
     Route::post('/customers/{customer}/credit-adjustments', [CustomerActionsController::class, 'adjustCredit'])->middleware('permission:credit.adjust')->name('customers.credit.adjust');
