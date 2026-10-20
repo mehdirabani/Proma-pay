@@ -96,7 +96,10 @@ final class InstallmentFinancialStateService
         }
 
         self::accrueTo($normalPenalty, $legalPenalty, $remainingPrincipal, $penaltyCursor, $asOf, $dueDate, $graceEnd, $normalRate, $legalRate, $legalStartedAt);
-        $reward = self::eligibleReward($installment, $remainingPrincipal, $settings, $asOf);
+        // A formally referred contract is not eligible for an early-settlement
+        // reward, including on installments whose contractual due date is still
+        // in the future. Internal legal review alone does not set this date.
+        $reward = self::eligibleReward($installment, $remainingPrincipal, $settings, $asOf, $legalStartedAt);
         $comparison = PenaltyComparisonService::projectedLegalPenalty(
             $installment,
             $effectivePayments,
@@ -307,9 +310,11 @@ final class InstallmentFinancialStateService
         $legal += MoneyMath::rateForDays($principal, $legalRate, self::daysBetween($from, $target));
     }
 
-    private static function eligibleReward(array $installment, $remainingPrincipal, array $settings, $asOf)
+    private static function eligibleReward(array $installment, $remainingPrincipal, array $settings, $asOf, $legalStartedAt = null)
     {
-        if ($remainingPrincipal <= 0 || $asOf >= self::date($installment['due_date'] ?? $asOf)) {
+        if ($remainingPrincipal <= 0
+            || ($legalStartedAt && $legalStartedAt <= $asOf)
+            || $asOf >= self::date($installment['due_date'] ?? $asOf)) {
             return 0;
         }
         $days = max(1, self::daysBetween($asOf, self::date($installment['due_date'])));

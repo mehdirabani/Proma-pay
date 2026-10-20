@@ -1,1 +1,0 @@
-import HeavyWidget30 from './HeavyWidget30'; export default function Page30(){return <HeavyWidget30/>}

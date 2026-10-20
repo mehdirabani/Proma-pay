@@ -14,9 +14,9 @@ $eligible = $eligible ?? [];
       <label>وضعیت
         <select name="status">
           <option value="">همه</option>
-          <option value="open"<?= selected($_GET['status'] ?? '', 'open') ?>>باز</option>
-          <option value="referred"<?= selected($_GET['status'] ?? '', 'referred') ?>>ارجاع‌شده</option>
-          <option value="closed"<?= selected($_GET['status'] ?? '', 'closed') ?>>بسته</option>
+          <?php foreach (['open', 'referred', 'under_legal_review', 'warning_prepared', 'draft_prepared', 'external_submission_confirmed', 'closed', 'archived'] as $status): ?>
+            <option value="<?= e($status) ?>"<?= selected($_GET['status'] ?? '', $status) ?>><?= e(status_label($status)) ?></option>
+          <?php endforeach; ?>
         </select>
       </label>
       <label>مرتب‌سازی
@@ -29,13 +29,12 @@ $eligible = $eligible ?? [];
       </label>
       <div class="actions">
         <button class="btn secondary" type="submit">اعمال</button>
-        <a class="btn small secondary" href="<?= e(url('lawyer/export', ['q' => $_GET['q'] ?? null, 'status' => $_GET['status'] ?? null, 'sort' => $_GET['sort'] ?? null])) ?>">خروجی</a>
+        <a class="btn small secondary" data-xlsx-export href="<?= e(url('lawyer/export')) ?>"><?= proma_icon('download') ?> خروجی Excel</a>
         <span class="proma-ajax-status" data-ajax-status></span>
       </div>
     </form>
   </div>
 </section>
-</div>
 
 <div class="proma-lawyer-workflow">
   <section class="card">
@@ -73,7 +72,7 @@ $eligible = $eligible ?? [];
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>قرارداد</th><th>مشتری</th><th>قدیمی‌ترین سررسید</th><th>روز تاخیر</th><th>اقساط معوق</th><th>مانده موثر</th><th>سیاست</th><th>اقدام</th></tr></thead>
+      <thead><tr><th scope="col">قرارداد</th><th scope="col">مشتری</th><th scope="col">قدیمی‌ترین سررسید</th><th scope="col">روز تاخیر</th><th scope="col">اقساط معوق</th><th scope="col">مانده موثر</th><th scope="col">سیاست</th><th scope="col">اقدام</th></tr></thead>
       <tbody>
       <?php foreach ($eligible as $item): ?>
         <tr>
@@ -98,7 +97,7 @@ $eligible = $eligible ?? [];
   <div class="card-header"><h2>پرونده‌های حقوقی</h2></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>قرارداد</th><th>مشتری</th><th>مرحله</th><th>شماره شکایت</th><th>هزینه</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+      <thead><tr><th scope="col">قرارداد</th><th scope="col">مشتری</th><th scope="col">مرحله</th><th scope="col">شماره شکایت</th><th scope="col">هزینه</th><th scope="col">وضعیت</th><th scope="col">عملیات</th></tr></thead>
       <tbody>
       <?php foreach ($cases as $case): ?>
         <tr>
@@ -109,7 +108,7 @@ $eligible = $eligible ?? [];
           <td><?= money_toman($case['expense_amount']) ?></td>
           <td><span class="badge <?= e(badge_class($case['status'])) ?>"><?= e(status_label($case['status'])) ?></span></td>
           <td class="actions">
-            <a class="btn small info" href="<?= e(url('legal/show/' . (int) $case['id'])) ?>">جزئیات</a>
+            <a class="btn small info" href="<?= e(url('legal/show/' . (int) $case['id'])) ?>">مدیریت پرونده</a>
             <button class="btn small secondary" type="button" data-open-modal="case-<?= (int) $case['id'] ?>">به‌روزرسانی</button>
           </td>
         </tr>
@@ -144,3 +143,4 @@ $eligible = $eligible ?? [];
     </table>
   </div>
 </section>
+</div>

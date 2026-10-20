@@ -38,10 +38,10 @@ try {
     $_SERVER['REMOTE_ADDR'] = '198.51.100.151';
     require dirname(__DIR__) . '/bootstrap.php';
     $modelPdo = new ReflectionProperty(Model::class, 'pdo');
-    $modelPdo->setAccessible(true);
+
     $modelPdo->setValue(null, $pdo);
     $schema = new ReflectionMethod(ScriptUpdateService::class, 'ensureMigrationSchema');
-    $schema->setAccessible(true);
+
     $schema->invoke(null);
     Model::execute(
         "INSERT INTO migrations (migration_name, batch, source_type, source_id, status, started_at, finished_at, error_message)
@@ -50,7 +50,7 @@ try {
         ['database/migrations/2026_07_26_installment_settlement_engine.sql', 'database/migrations/2026_07_26_installment_settlement_engine.sql']
     );
     $runner = new ReflectionMethod(ScriptUpdateService::class, 'runUpdateMigration');
-    $runner->setAccessible(true);
+
     $runner->invoke(null, 'database/migrations/2026_07_26_installment_settlement_engine.sql', $migration);
     $status = Model::fetch('SELECT status FROM migrations WHERE migration_name = ? LIMIT 1', ['database/migrations/2026_07_26_installment_settlement_engine.sql']);
     if (($status['status'] ?? '') !== 'success') {

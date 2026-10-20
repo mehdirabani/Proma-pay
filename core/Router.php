@@ -21,7 +21,15 @@ class Router
             $health->respond($route === 'health/live');
             return;
         }
-        if (strpos($route, 'auth/') !== 0) {
+        // The update screen creates a session-bound confirmation code while it
+        // renders, and the install action consumes that code before starting the
+        // long-running backup and file swap. Keep this one operator session open
+        // for those two requests so shared-host session handlers do not need to
+        // reopen it after Router has closed it.
+        $needsWritableConfirmationSession = $route === 'updates'
+            || $route === 'updates/index'
+            || strpos($route, 'updates/install/') === 0;
+        if (strpos($route, 'auth/') !== 0 && !$needsWritableConfirmationSession) {
             Auth::releaseSessionLock();
         }
         // The financial preview is a tiny core-only JSON calculation. Avoid booting
@@ -32,8 +40,11 @@ class Router
                     RequestTelemetry::recordSpan('route.plugin', $requestStartedAt, ['route' => $route]);
                     return;
                 }
+            } catch (HttpException $e) {
+                throw $e;
             } catch (Throwable $e) {
                 ErrorHandler::log('plugin_route', $e, 500);
+                ErrorHandler::abort(500);
             }
         }
         $parts = array_values(array_filter(explode('/', $route), 'strlen'));
@@ -41,9 +52,13 @@ class Router
         $action = $parts[1] ?? 'index';
         $params = array_slice($parts, 2);
 
-        $controllerName = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $controllerPart))) . 'Controller';
+        $controllerTarget = $this->controllerTarget($controllerPart);
+        if ($controllerTarget === null) {
+            $this->notFound();
+            return;
+        }
+        [$controllerName, $controllerFile] = $controllerTarget;
         $actionName = preg_replace('/[^a-zA-Z0-9_]/', '', $action);
-        $controllerFile = __DIR__ . '/../controllers/' . $controllerName . '.php';
 
         if (!is_file($controllerFile)) {
             $this->notFound();
@@ -61,6 +76,18 @@ class Router
         }
         call_user_func_array([$controller, $actionName], $params);
         RequestTelemetry::recordSpan('route.core', $requestStartedAt, ['controller' => $controllerName, 'action' => $actionName]);
+    }
+
+    /** Resolve only ordinary route slugs; never let route data add path separators. */
+    protected function controllerTarget($controllerPart)
+    {
+        $controllerPart = (string) $controllerPart;
+        if (!preg_match('/\A[a-zA-Z0-9_-]+\z/', $controllerPart)) {
+            return null;
+        }
+
+        $controllerName = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $controllerPart))) . 'Controller';
+        return [$controllerName, __DIR__ . '/../controllers/' . $controllerName . '.php'];
     }
 
     protected function resolveSafeActionAlias($route)

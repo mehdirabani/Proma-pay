@@ -10,7 +10,7 @@ if ($baseUrl === '' || $username === '' || $password === '') {
     exit(2);
 }
 $cookie = tempnam(sys_get_temp_dir(), 'proma-acc-http-');
-$request = static function ($route, $cookie, array $post = null) use ($baseUrl) {
+$request = static function ($route, $cookie, ?array $post = null) use ($baseUrl) {
     $ch = curl_init($baseUrl . '/index.php?route=' . rawurlencode($route));
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,

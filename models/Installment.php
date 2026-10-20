@@ -150,6 +150,10 @@ class Installment extends Model
                 $params[] = '%' . to_english_digits($filters[$key]) . '%';
             }
         }
+        if (!empty($filters['customer_id'])) {
+            $where[] = 'c.customer_id = ?';
+            $params[] = (int) $filters['customer_id'];
+        }
         if (!empty($filters['status'])) {
             $where[] = 'i.status = ?';
             $params[] = $filters['status'];

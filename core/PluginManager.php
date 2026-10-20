@@ -4,9 +4,11 @@ class PluginManager
 {
     protected static $instance;
     protected static $booted = false;
+    protected static $availableRoleCache;
     protected $providers = [];
     protected $routes = [];
     protected $menus = [];
+    protected $roles = [];
     protected $failedRouteClaims = [];
 
     public static function instance()
@@ -24,7 +26,8 @@ class PluginManager
             return $manager;
         }
         self::$booted = true;
-        foreach (PluginRegistry::all() as $plugin) {
+        foreach (PluginRegistry::all() as $registeredPlugin) {
+            $plugin = self::resolveRuntimePlugin($registeredPlugin);
             if (($plugin['status'] ?? '') !== 'active') {
                 continue;
             }
@@ -49,6 +52,48 @@ class PluginManager
             }
         }
         return $manager;
+    }
+
+    protected static function resolveRuntimePlugin(array $registered)
+    {
+        $pluginId = trim((string) ($registered['plugin_id'] ?? ''));
+        $pluginsRoot = realpath(self::rootPath());
+        if ($pluginId === '' || $pluginsRoot === false) {
+            return $registered;
+        }
+
+        $registeredPath = realpath((string) ($registered['path'] ?? ''));
+        $rootPrefix = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $pluginsRoot), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        if ($registeredPath !== false) {
+            $normalizedPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $registeredPath);
+            $normalizedPrefix = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $rootPrefix);
+            $isWindows = DIRECTORY_SEPARATOR === '\\';
+            $isLocalPlugin = $isWindows
+                ? strncasecmp($normalizedPath, $normalizedPrefix, strlen($normalizedPrefix)) === 0
+                : str_starts_with($normalizedPath, $normalizedPrefix);
+            if ($isLocalPlugin) {
+                return $registered;
+            }
+        }
+
+        foreach (glob($pluginsRoot . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR) ?: [] as $directory) {
+            try {
+                $manifest = PluginManifest::read($directory);
+            } catch (Throwable $error) {
+                continue;
+            }
+            if (($manifest['id'] ?? '') !== $pluginId) {
+                continue;
+            }
+            // A restored registry can point at another host. Resolve the current
+            // runtime in memory; booting must not rewrite historical metadata or
+            // move an active restored plugin into update_available.
+            $registered['path'] = $directory;
+            $registered['manifest_json'] = json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            return $registered;
+        }
+
+        return $registered;
     }
 
     public static function discover()
@@ -134,13 +179,18 @@ class PluginManager
             return false;
         }
         $permission = trim((string) $permission);
+        if (strpos($permission, 'plugin.') === 0) {
+            $parts = explode('.', $permission, 3);
+            if (count($parts) !== 3 || !self::isActive($parts[1])) {
+                return false;
+            }
+        }
         if (Auth::role() === 'admin') {
             return true;
         }
         if (strpos($permission, 'plugin.') !== 0) {
             return false;
         }
-        $parts = explode('.', $permission, 3);
         return count($parts) === 3 && PluginRegistry::roleCan($parts[1], $permission, Auth::role());
     }
 
@@ -170,7 +220,14 @@ class PluginManager
         try {
             $this->assertRequirements($manifest);
             $this->runMigrations($manifest);
-            $provider = $this->providerFor($manifest);
+            $registeredForInstall = PluginRegistry::find($manifest['id']);
+            if (!$registeredForInstall) {
+                throw new RuntimeException('ثبت افزونه پیش از راه‌اندازی provider انجام نشد.');
+            }
+            // Register the provider before lifecycle hooks. Providers commonly
+            // install their autoloader and routes here; skipping register()
+            // makes install-time health checks fail for namespaced services.
+            $provider = $this->loadProvider($registeredForInstall, false);
             $provider->install($this, $manifest);
             $this->registerManifestPermissions($manifest);
             $this->assertProviderHealth($provider, $manifest);
@@ -206,6 +263,7 @@ class PluginManager
             }
             $this->assertProviderHealth($provider, $manifest);
             PluginRegistry::setStatus($manifest['id'], PluginStatus::ACTIVE);
+            self::$availableRoleCache = null;
         } catch (Throwable $e) {
             PluginRegistry::setStatus($manifest['id'], PluginStatus::ERROR, $e->getMessage());
             throw $e;
@@ -232,6 +290,7 @@ class PluginManager
                 $provider->deactivate($this, $manifest);
             }
             PluginRegistry::setStatus($manifest['id'], PluginStatus::INACTIVE);
+            self::$availableRoleCache = null;
         } catch (Throwable $e) {
             PluginRegistry::setStatus($manifest['id'], PluginStatus::ACTIVE, $e->getMessage());
             throw $e;
@@ -268,6 +327,7 @@ class PluginManager
             }
             $this->removePluginFiles($registered['path']);
             PluginRegistry::setStatus($manifest['id'], PluginStatus::REMOVED);
+            self::$availableRoleCache = null;
         } catch (Throwable $e) {
             PluginRegistry::setStatus($manifest['id'], PluginStatus::RECOVERY_REQUIRED, $e->getMessage());
             throw $e;
@@ -306,6 +366,7 @@ class PluginManager
             if (method_exists($provider, 'update')) {
                 $provider->update($this, $manifest);
             }
+            $this->registerManifestPermissions($manifest);
             if ($resumeStatus === 'active' && !empty($storedManifest['_update_previous_version']) && method_exists($provider, 'activate')) {
                 $provider->activate($this, $manifest);
             }
@@ -313,6 +374,7 @@ class PluginManager
             $this->assertProviderHealth($provider, $manifest);
             PluginRegistry::updateManifest($manifest);
             PluginRegistry::setStatus($manifest['id'], $resumeStatus);
+            self::$availableRoleCache = null;
             $backupPath = trim((string) ($storedManifest['_update_backup_path'] ?? ''));
             if ($backupPath !== '' && is_dir($backupPath)) {
                 try {
@@ -384,7 +446,10 @@ class PluginManager
         try {
             $manifest = $this->manifestFromRegistered($registered);
             $this->assertRequirements($manifest);
-            $provider = $this->providerFor($manifest);
+            // Health checks may call plugin-owned namespaced services. Resolve
+            // the provider through loadProvider so its register() hook runs and
+            // its autoloader is available even when the plugin is not active.
+            $provider = $this->loadProvider($registered, false);
             $result = method_exists($provider, 'healthCheck') ? $provider->healthCheck($this, $manifest) : true;
             return ['ok' => $result !== false, 'message' => $result === false ? 'بررسی provider ناموفق بود.' : 'افزونه سالم است.'];
         } catch (Throwable $e) {
@@ -604,6 +669,11 @@ class PluginManager
         foreach ($this->routes as $route) {
             $registeredMethod = strtoupper(trim((string) ($route['options']['method'] ?? 'GET')));
             if (($route['path'] ?? '') === $path && $registeredMethod === $method) {
+                if (($route['plugin_id'] ?? '') === (string) $pluginId
+                    && ($route['handler'] ?? '') === $handler
+                    && ($route['options'] ?? []) === array_merge($options, ['method' => $method])) {
+                    return;
+                }
                 throw new InvalidArgumentException('تعارض route افزونه شناسایی شد.');
             }
         }
@@ -620,7 +690,14 @@ class PluginManager
         if (empty($item['route']) || empty($item['label'])) {
             return;
         }
-        $this->menus[] = [
+        $roles = (array) ($item['roles'] ?? []);
+        foreach ($roles as $role) {
+            if (!is_string($role) || !preg_match('/^[a-z][a-z0-9_]{1,29}$/', $role)) {
+                throw new InvalidArgumentException('نقش منوی افزونه معتبر نیست.');
+            }
+        }
+        $roles = array_values(array_unique($roles));
+        $menu = [
             'plugin_id' => (string) $pluginId,
             'route' => trim((string) $item['route'], '/'),
             'label' => trim((string) $item['label']),
@@ -628,7 +705,118 @@ class PluginManager
             'permission' => trim((string) ($item['permission'] ?? '')),
             'group_label' => trim((string) ($item['group_label'] ?? '')),
             'group_icon' => trim((string) ($item['group_icon'] ?? '')),
+            'roles' => $roles,
         ];
+        foreach ($this->menus as $existing) {
+            if ($existing === $menu) {
+                return;
+            }
+        }
+        $this->menus[] = $menu;
+    }
+
+    /** Register a plugin-owned role during provider::register; no user rows are changed. */
+    public function registerRole($pluginId, $role, array $definition)
+    {
+        $role = trim((string) $role);
+        $label = trim((string) ($definition['label'] ?? ''));
+        $landing = trim((string) ($definition['landing_route'] ?? ''), '/');
+        $loginGuard = $definition['login_guard'] ?? null;
+        if (!preg_match('/^[a-z][a-z0-9_]{1,29}$/', $role) || $label === ''
+            || $landing === '' || strpos($landing, '..') !== false
+            || ($loginGuard !== null && (!is_string($loginGuard) || !is_callable($loginGuard)))
+            || isset(app_config('roles', [])[$role])) {
+            throw new InvalidArgumentException('تعریف نقش افزونه معتبر نیست.');
+        }
+        $entry = ['plugin_id' => (string) $pluginId, 'label' => $label,
+            'landing_route' => $landing, 'login_guard' => $loginGuard];
+        if (isset($this->roles[$role]) && $this->roles[$role] !== $entry) {
+            throw new InvalidArgumentException('تعارض نقش افزونه شناسایی شد.');
+        }
+        $this->roles[$role] = $entry;
+        self::$availableRoleCache = null;
+    }
+
+    public static function availableRoles()
+    {
+        if (self::$availableRoleCache !== null) {
+            return self::$availableRoleCache;
+        }
+        $manager = self::boot();
+        $roles = app_config('roles', []);
+        foreach ($manager->roles as $key => $definition) {
+            if (self::isActive($definition['plugin_id'])) {
+                $roles[$key] = $definition['label'];
+            }
+        }
+        self::$availableRoleCache = $roles;
+        return $roles;
+    }
+
+    public static function roleAvailable($role)
+    {
+        return isset(self::availableRoles()[(string) $role]);
+    }
+
+    /**
+     * Roles owned by plugins that have completed installation may be assigned
+     * before activation. Login, routes and permissions still use roleAvailable()
+     * and remain unavailable until the plugin is active.
+     */
+    public static function assignableRoles()
+    {
+        $manager = self::boot();
+        $eligiblePlugins = [];
+        foreach (PluginRegistry::all() as $plugin) {
+            $pluginId = trim((string) ($plugin['plugin_id'] ?? ''));
+            $status = PluginRegistry::normalizeStatus($plugin['status'] ?? 'discovered');
+            if ($pluginId === '' || !in_array($status, ['installed', 'active'], true)) {
+                continue;
+            }
+            $eligiblePlugins[$pluginId] = true;
+            if (isset($manager->providers[$pluginId])) {
+                continue;
+            }
+            try {
+                $manager->loadProvider($plugin, false);
+            } catch (Throwable $error) {
+                unset($eligiblePlugins[$pluginId], $manager->providers[$pluginId]);
+                $manager->roles = array_filter($manager->roles, static fn (array $role): bool => ($role['plugin_id'] ?? '') !== $pluginId);
+                $manager->routes = array_values(array_filter($manager->routes, static fn (array $route): bool => ($route['plugin_id'] ?? '') !== $pluginId));
+                $manager->menus = array_values(array_filter($manager->menus, static fn (array $menu): bool => ($menu['plugin_id'] ?? '') !== $pluginId));
+                PluginRegistry::logRuntimeError('plugin_role_registration:' . $pluginId, $error);
+            }
+        }
+
+        $roles = app_config('roles', []);
+        foreach ($manager->roles as $key => $definition) {
+            if (isset($eligiblePlugins[$definition['plugin_id'] ?? ''])) {
+                $roles[$key] = $definition['label'];
+            }
+        }
+        return $roles;
+    }
+
+    public static function roleAssignable($role)
+    {
+        return isset(self::assignableRoles()[(string) $role]);
+    }
+
+    public static function roleCanLogin($role, array $user)
+    {
+        if (!self::roleAvailable($role)) {
+            return false;
+        }
+        $definition = self::boot()->roles[(string) $role] ?? null;
+        return !$definition || $definition['login_guard'] === null
+            || (bool) call_user_func($definition['login_guard'], $user);
+    }
+
+    public static function roleLandingRoute($role)
+    {
+        $manager = self::boot();
+        $definition = $manager->roles[(string) $role] ?? null;
+        return $definition && self::isActive($definition['plugin_id']) ? $definition['landing_route'] : null;
     }
 
     public function registerHook($pluginId, $hook, callable $listener, $priority = 10)
@@ -642,7 +830,14 @@ class PluginManager
 
     public function menus()
     {
-        return $this->menus;
+        $active = [];
+        return array_values(array_filter($this->menus, static function ($menu) use (&$active) {
+            $pluginId = $menu['plugin_id'];
+            if (!array_key_exists($pluginId, $active)) {
+                $active[$pluginId] = self::isActive($pluginId);
+            }
+            return $active[$pluginId];
+        }));
     }
 
     public function assetsForRoute($route)
@@ -719,9 +914,17 @@ class PluginManager
         $route = trim((string) $route, '/');
         $requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
         $matched = [];
+        $activePlugins = [];
         foreach ($this->routes as $item) {
             $parameters = $this->matchRoute($item['path'], $route);
             if ($parameters === false) {
+                continue;
+            }
+            $pluginId = $item['plugin_id'];
+            if (!array_key_exists($pluginId, $activePlugins)) {
+                $activePlugins[$pluginId] = self::isActive($pluginId);
+            }
+            if (!$activePlugins[$pluginId]) {
                 continue;
             }
             $matched[] = [$item, $parameters];
@@ -760,6 +963,9 @@ class PluginManager
             [$item, $parameters] = $match;
             $options = $item['options'];
             try {
+                if (!self::isActive($item['plugin_id'])) {
+                    continue;
+                }
                 if (($options['method'] ?? '') !== '' && strtoupper((string) $options['method']) !== $requestMethod) {
                     continue;
                 }
@@ -892,6 +1098,18 @@ class PluginManager
         if ($requiredApi !== '' && version_compare(plugin_api_version(), $requiredApi, '<')) {
             throw new RuntimeException('نسخه API افزونه‌ها سازگار نیست.');
         }
+        foreach ((array) ($manifest['dependencies'] ?? []) as $dependency) {
+            $dependencyId = is_array($dependency) ? trim((string) ($dependency['id'] ?? '')) : trim((string) $dependency);
+            $minimumVersion = is_array($dependency) ? trim((string) ($dependency['version'] ?? '0.0.0')) : '0.0.0';
+            if ($dependencyId === '' || $dependencyId === (string) ($manifest['id'] ?? '')) {
+                throw new RuntimeException('شناسه وابستگی افزونه معتبر نیست.');
+            }
+            $registeredDependency = class_exists('PluginRegistry') ? PluginRegistry::find($dependencyId) : null;
+            if (!$registeredDependency || PluginRegistry::normalizeStatus($registeredDependency['status'] ?? '') !== PluginStatus::ACTIVE
+                || version_compare((string) ($registeredDependency['version'] ?? '0.0.0'), $minimumVersion, '<')) {
+                throw new RuntimeException('وابستگی فعال و سازگار افزونه پیدا نشد: ' . $dependencyId);
+            }
+        }
     }
 
     protected function loadProvider(array $registered, $boot = true)
@@ -963,7 +1181,16 @@ class PluginManager
 
     protected function executeMigrationStatement($sql)
     {
-        $statement = Model::db()->prepare((string) $sql);
+        $sql = (string) $sql;
+        $connection = Model::db();
+        // SQL-level prepared-statement commands are not valid inside PDO's
+        // COM_STMT_PREPARE protocol. Affiliate migrations use these commands
+        // to add columns conditionally, so dispatch them through PDO::exec.
+        if (preg_match('/^\s*(?:PREPARE|EXECUTE|DEALLOCATE\s+PREPARE)\b/i', $sql)) {
+            $connection->exec($sql);
+            return;
+        }
+        $statement = $connection->prepare($sql);
         try {
             $statement->execute();
             do {

@@ -21,7 +21,7 @@ $pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_
     PDO::ATTR_EMULATE_PREPARES => false,
 ]);
 $property = new ReflectionProperty(Model::class, 'pdo');
-$property->setAccessible(true);
+
 $property->setValue(null, $pdo);
 
 $assert = static function ($condition, string $message): void {
@@ -54,7 +54,7 @@ $customerId = User::create([
     'status' => 'active',
 ]);
 
-$assert(Auth::unifiedLogin($customerNationalId, substr($customerMobile, -4)), 'Customer last-four mobile login failed.');
+$assert(Auth::unifiedLogin($customerNationalId, substr($customerMobile, -4)), 'Customer last-four-mobile login failed.');
 $assert((int) Auth::id() === (int) $customerId, 'Customer login opened the wrong account.');
 $_SESSION = [];
 

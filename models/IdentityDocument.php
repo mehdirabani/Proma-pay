@@ -59,15 +59,17 @@ class IdentityDocument extends Model
         }
     }
 
-    public static function forUser($userId)
+    public static function forUser($userId, $limit = 50)
     {
         self::ensureSchema();
+        $limit = max(1, min(100, (int) $limit));
         return self::fetchAll(
             'SELECT d.*, r.full_name AS reviewer_name
              FROM identity_documents d
              LEFT JOIN users r ON r.id = d.reviewed_by
              WHERE d.user_id = ?
-             ORDER BY d.id DESC',
+             ORDER BY d.id DESC
+             LIMIT ' . $limit,
             [(int) $userId]
         );
     }
@@ -122,6 +124,13 @@ class IdentityDocument extends Model
                 self::execute('DELETE FROM identity_documents WHERE id = ?', [(int) $old['id']]);
             }
             Notification::create((int) $document['user_id'], 'مدرک هویتی تأیید شد', 'مدرک «' . self::typeLabel($document['document_type']) . '» تأیید شد.', 'identity', url('profile'));
+            if (class_exists('SystemOutbox')) {
+                SystemOutbox::safeEnqueuePluginHook('identity.verified', [
+                    'customer_id' => (int) $document['user_id'],
+                    'actor_user_id' => (int) $adminId,
+                ], 'customer', (int) $document['user_id']);
+                SystemOutbox::safeEnqueueMedalEvaluation((int) $document['user_id']);
+            }
             self::commit();
             try {
                 Chat::botMessage((int) $document['user_id'], 'مدرک هویتی شما تایید شد.', url('profile'));

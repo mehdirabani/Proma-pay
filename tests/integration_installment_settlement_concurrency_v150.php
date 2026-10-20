@@ -21,21 +21,22 @@ $pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_
     PDO::ATTR_EMULATE_PREPARES => false,
 ]);
 $property = new ReflectionProperty(Model::class, 'pdo');
-$property->setAccessible(true);
+
 $property->setValue(null, $pdo);
 $assert = static function ($condition, string $message): void {
     if (!$condition) throw new RuntimeException($message);
 };
 
 $suffix = substr(hash('sha256', (string) hrtime(true)), 0, 10);
+$customerMobile = '0935' . substr(preg_replace('/[^0-9]/', '8', $suffix . '8888888'), 0, 7);
 $customerId = User::create([
     'role' => 'customer',
     'username' => substr(preg_replace('/[^0-9]/', '6', hash('sha256', $suffix)), 0, 10),
     'full_name' => 'مشتری آزمون هم‌زمانی',
     'national_id' => substr(preg_replace('/[^0-9]/', '7', hash('sha256', 'n' . $suffix)), 0, 10),
-    'mobile' => '0935' . substr(preg_replace('/[^0-9]/', '8', $suffix . '8888888'), 0, 7),
+    'mobile' => $customerMobile,
     'email' => 'qa-lock-' . $suffix . '@example.test',
-    'password' => '1234',
+    'password' => substr($customerMobile, -4),
     'status' => 'active',
 ]);
 $contractId = Contract::createWithInstallments([

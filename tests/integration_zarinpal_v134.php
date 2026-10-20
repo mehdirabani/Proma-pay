@@ -20,7 +20,7 @@ $pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_
     PDO::ATTR_EMULATE_PREPARES => false,
 ]);
 $property = new ReflectionProperty(Model::class, 'pdo');
-$property->setAccessible(true);
+
 $property->setValue(null, $pdo);
 $_SESSION['user_id'] = 1;
 $_SESSION['role'] = 'admin';
@@ -71,6 +71,10 @@ if (!PluginManager::isActive('proma-zarinpal')) {
 $pdo->exec("UPDATE proma_zarinpal_transactions SET status='cancelled_by_customer' WHERE status IN ('created','request_uncertain','pending','callback_received','verifying','manual_review')");
 
 $settings = new Proma\Plugins\Zarinpal\Services\ZarinpalSettingsService();
+// This integration test uses a disposable QA encryption key. Remove any
+// restored production ciphertext first so the deterministic test key cannot
+// accidentally be used to decrypt unrelated backup settings.
+$pdo->exec('DELETE FROM proma_zarinpal_settings');
 $settings->save([
     'enabled' => '1',
     'environment' => 'sandbox',

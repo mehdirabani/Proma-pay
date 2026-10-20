@@ -38,6 +38,7 @@ foreach ([
 
 $paymentRequest = (string) file_get_contents($root . '/models/PaymentRequest.php');
 $installmentsController = (string) file_get_contents($root . '/controllers/InstallmentsController.php');
+$paymentGroupService = (string) file_get_contents($root . '/helpers/PaymentGroupService.php');
 $contractRequest = (string) file_get_contents($root . '/models/ContractRequest.php');
 $contractsController = (string) file_get_contents($root . '/controllers/ContractsController.php');
 $contractModel = (string) file_get_contents($root . '/models/Contract.php');
@@ -59,7 +60,7 @@ $releaseBuilder = (string) file_get_contents($root . '/scripts/build_release.php
 
 $assert(strpos($paymentRequest, 'public static function beginRequest') !== false, 'Payment request API was not renamed safely.');
 $assert(strpos($paymentRequest, 'public static function begin(') === false, 'PaymentRequest still overrides Model::begin with an incompatible signature.');
-$assert(strpos($installmentsController, 'PaymentRequest::beginRequest') !== false, 'Manual payment does not use the corrected request API.');
+$assert(strpos($installmentsController, 'payment_request_uuid') !== false && strpos($paymentGroupService, 'PaymentRequest::beginSettlement') !== false, 'Manual payment does not use the corrected request API.');
 $assert(strpos($contractDetail, 'data-payment-preview') !== false && strpos($contractDetail, 'data-disable-on-submit') !== false, 'Contract-detail payment form lacks preview or duplicate-submit protection.');
 
 foreach (['beginRequest', 'request_hash', "status = 'completed'", "status = 'failed'"] as $needle) {
@@ -81,7 +82,7 @@ $assert(strpos($profileController, "'password' =>") === false, 'Profile requests
 
 $assert(strpos($authController, 'LoginThrottle::inspect') !== false && strpos($authController, 'LoginThrottle::recordFailure') !== false, 'Login rate limiting is not enforced.');
 $assert(substr_count($authController, 'اطلاعات ورود صحیح نیست یا امکان ورود موقتاً محدود شده است.') >= 2, 'Login failure messages are not generic.');
-$assert(strpos($auth, 'substr($mobileDigits, -4)') !== false, 'Customer last-four mobile login compatibility was changed.');
+$assert(strpos($auth, 'return self::login($identifier, $password);') !== false && strpos($auth, 'return self::customerLogin($identifier, $password);') === false, 'Customer login must use the submitted password only.');
 $assert(strpos($auth, 'session_regenerate_id(true)') !== false, 'Successful login does not regenerate the session identifier.');
 $assert(strpos($appJs, 'event.stopImmediatePropagation()') !== false, 'Duplicate form submissions are not blocked client-side.');
 

@@ -12,7 +12,7 @@ class ZarinpalTransactionService
     private $logs;
     private $settings;
 
-    public function __construct(ZarinpalTransactionRepository $transactions = null, ZarinpalLogRepository $logs = null, ZarinpalSettingsService $settings = null)
+    public function __construct(?ZarinpalTransactionRepository $transactions = null, ?ZarinpalLogRepository $logs = null, ?ZarinpalSettingsService $settings = null)
     {
         $this->transactions = $transactions ?: new ZarinpalTransactionRepository();
         $this->logs = $logs ?: new ZarinpalLogRepository();

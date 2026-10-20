@@ -79,6 +79,7 @@ class Auth
         return true;
     }
 
+
     public static function commitSessionWrite()
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -128,7 +129,6 @@ class Auth
         $user = Model::fetch(
             "SELECT * FROM users
              WHERE status = 'active'
-             AND role IN ('admin','operator','lawyer','customer')
              AND (username = :username OR mobile = :mobile OR national_id = :national_id OR email = :email)
              LIMIT 1",
             [
@@ -138,74 +138,70 @@ class Auth
                 'email' => $identifier,
             ]
         );
-        if (!$user || !password_verify((string) $password, $user['password_hash'])) {
+        if (!$user) {
+            return false;
+        }
+        if (!self::verifyPasswordForUser($user, (string) $password)
+            || !PluginManager::roleCanLogin($user['role'] ?? '', $user)) {
             return false;
         }
         if (($user['role'] ?? '') === 'customer') {
+            // Preserve the customer PIN rule without rewriting existing password hashes during login.
             User::syncCustomerLoginDefaults((int) $user['id'], $user);
         }
         self::setSession($user);
         return true;
     }
 
+    public static function verifyPasswordForUser(array $user, $password)
+    {
+        $submittedPassword = (string) $password;
+        $normalizedPassword = to_english_digits($submittedPassword);
+        if (($user['role'] ?? '') === 'customer') {
+            if (($user['customer_password_mode'] ?? 'pin') === 'custom') {
+                $passwordHash = (string) ($user['password_hash'] ?? '');
+                return $passwordHash !== '' && password_verify($submittedPassword, $passwordHash);
+            }
+            $customerPassword = User::customerPasswordFromMobile($user['mobile'] ?? '');
+            return $customerPassword !== '' && hash_equals($customerPassword, $normalizedPassword);
+        }
+
+        $passwordHash = (string) ($user['password_hash'] ?? '');
+        return $passwordHash !== '' && (
+            password_verify($submittedPassword, $passwordHash)
+            || ($normalizedPassword !== $submittedPassword && password_verify($normalizedPassword, $passwordHash))
+        );
+    }
+
+    /** Keep the current session valid after a verified self-service password change. */
+    public static function refreshPasswordFingerprint()
+    {
+        if (!self::ensureSessionWritable() || empty($_SESSION['user_id'])) {
+            return false;
+        }
+        $user = Model::fetch('SELECT password_hash FROM users WHERE id = ? LIMIT 1', [(int) $_SESSION['user_id']]);
+        $passwordHash = (string) ($user['password_hash'] ?? '');
+        if ($passwordHash === '') {
+            return false;
+        }
+        session_regenerate_id(true);
+        $_SESSION['auth_password_fingerprint'] = hash('sha256', $passwordHash);
+        return true;
+    }
+
     public static function unifiedLogin($identifier, $password)
     {
         $identifier = trim(to_english_digits($identifier));
-        $password = trim(to_english_digits((string) $password));
+        $password = (string) $password;
         if ($identifier === '' || $password === '') {
             return false;
         }
-        if (self::login($identifier, $password)) {
-            return true;
-        }
-        return self::customerLogin($identifier, $password);
+        return self::login($identifier, $password);
     }
 
-    public static function customerLogin($nationalId, $mobileLast4)
+    public static function customerLogin($identifier, $password)
     {
-        $nationalId = trim(to_english_digits($nationalId));
-        $identifierDigits = preg_replace('/\D+/', '', $nationalId);
-        if (strlen($identifierDigits) < 4) {
-            $identifierDigits = '__no_numeric_identifier__';
-        }
-        $mobileLast4 = preg_replace('/\D+/', '', to_english_digits($mobileLast4));
-        if (strlen($mobileLast4) !== 4) {
-            return false;
-        }
-        $users = Model::fetchAll(
-            "SELECT * FROM users
-             WHERE status = 'active' AND role = 'customer'
-             AND (
-                username = :identifier_username
-                OR national_id = :identifier_national
-                OR mobile = :identifier_mobile
-                OR email = :identifier_email
-                OR username = :digits_username
-                OR national_id = :digits_national
-                OR mobile = :digits_mobile
-             )
-             ORDER BY id DESC
-             LIMIT 5",
-            [
-                'identifier_username' => $nationalId,
-                'identifier_national' => $nationalId,
-                'identifier_mobile' => $nationalId,
-                'identifier_email' => $nationalId,
-                'digits_username' => $identifierDigits,
-                'digits_national' => $identifierDigits,
-                'digits_mobile' => $identifierDigits,
-            ]
-        );
-        foreach ($users as $user) {
-            $mobileDigits = preg_replace('/\D+/', '', to_english_digits($user['mobile'] ?? ''));
-            if (strlen($mobileDigits) < 4 || substr($mobileDigits, -4) !== $mobileLast4) {
-                continue;
-            }
-            User::syncCustomerLoginDefaults((int) $user['id'], $user, true);
-            self::setSession($user);
-            return true;
-        }
-        return false;
+        return self::unifiedLogin($identifier, $password);
     }
 
     protected static function setSession(array $user)
@@ -216,6 +212,11 @@ class Auth
         session_regenerate_id(true);
         $_SESSION['user_id'] = (int) $user['id'];
         $_SESSION['role'] = $user['role'];
+        $authState = Model::fetch('SELECT password_hash FROM users WHERE id = ? LIMIT 1', [(int) $user['id']]);
+        if (!$authState || trim((string) ($authState['password_hash'] ?? '')) === '') {
+            throw new RuntimeException('وضعیت امنیتی حساب کاربری قابل بارگذاری نیست.');
+        }
+        $_SESSION['auth_password_fingerprint'] = hash('sha256', (string) $authState['password_hash']);
         Model::execute('UPDATE users SET last_login_at = NOW() WHERE id = ?', [$user['id']]);
     }
 
@@ -232,11 +233,31 @@ class Auth
 
     public static function requireLogin()
     {
+        if (!empty($_SESSION['user_id']) && !PluginManager::roleAvailable(self::role())) {
+            self::logout();
+            ErrorHandler::abort(403);
+        }
         if (!self::check()) {
             if (is_post()) {
                 ErrorHandler::abort(419);
             }
             redirect('auth/login');
+        }
+
+        $user = Model::fetch(
+            'SELECT role, status, password_hash FROM users WHERE id = ? LIMIT 1',
+            [(int) $_SESSION['user_id']]
+        );
+        $passwordHash = (string) ($user['password_hash'] ?? '');
+        $sessionFingerprint = $_SESSION['auth_password_fingerprint'] ?? '';
+        $passwordSessionValid = $passwordHash !== ''
+            && is_string($sessionFingerprint)
+            && hash_equals(hash('sha256', $passwordHash), $sessionFingerprint);
+        if (!$user || ($user['status'] ?? '') !== 'active'
+            || ($user['role'] ?? '') !== (string) ($_SESSION['role'] ?? '')
+            || !$passwordSessionValid) {
+            self::logout();
+            ErrorHandler::abort(403);
         }
     }
 

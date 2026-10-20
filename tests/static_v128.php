@@ -29,7 +29,8 @@ foreach ($requiredFiles as $file) {
 }
 
 $printView = (string) file_get_contents($root . '/views/contracts/print.php');
-$assert(strpos($printView, 'proma-contract-letterhead') !== false, 'Professional contract letterhead is missing.');
+$letterhead = (string) file_get_contents($root . '/views/contracts/letterhead.php');
+$assert(strpos($printView, "require __DIR__ . '/letterhead.php'") !== false && strpos($letterhead, 'proma-contract-letterhead') !== false, 'Professional contract letterhead is missing.');
 $assert(strpos($printView, 'technical_path') === false, 'Contract view unexpectedly contains plugin technical path.');
 
 $pluginView = (string) file_get_contents($root . '/views/plugins/index.php');

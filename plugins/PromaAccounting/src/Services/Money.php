@@ -39,7 +39,24 @@ class Money
 
     public static function signedDecimal($value)
     {
-        return number_format((int) $value, 2, '.', '');
+        return number_format(self::signedInteger($value), 2, '.', '');
+    }
+
+    /** Parse ledger balances as whole currency units without floating point. */
+    public static function signedInteger($value)
+    {
+        $value = trim(str_replace(['٬', ',', '،', 'تومان', 'ریال', ' '], '', self::englishDigits($value)));
+        if (!preg_match('/^([+-]?)(\d+)(?:\.(0+))?$/D', $value, $matches)) {
+            throw new \InvalidArgumentException('Balance must be a whole currency amount.');
+        }
+        $digits = ltrim($matches[2], '0');
+        $digits = $digits === '' ? '0' : $digits;
+        $limit = (string) PHP_INT_MAX;
+        if (strlen($digits) > strlen($limit) || (strlen($digits) === strlen($limit) && strcmp($digits, $limit) > 0)) {
+            throw new \OverflowException('Balance exceeds the supported integer range.');
+        }
+        $amount = (int) $digits;
+        return ($matches[1] ?? '') === '-' ? -$amount : $amount;
     }
 
     protected static function englishDigits($value)

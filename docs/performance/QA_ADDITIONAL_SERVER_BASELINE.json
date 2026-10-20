@@ -1,0 +1,20 @@
+[
+  {
+    "role": "admin",
+    "route": "plugin/accounting/dashboard",
+    "n": 30,
+    "php_p95_ms": 88.01,
+    "sql_count_p95": 47,
+    "sql_p95_ms": 53.62,
+    "memory_p95_bytes": 4194304
+  },
+  {
+    "role": "customer",
+    "route": "dashboard",
+    "n": 30,
+    "php_p95_ms": 105.56,
+    "sql_count_p95": 29,
+    "sql_p95_ms": 68.73,
+    "memory_p95_bytes": 4194304
+  }
+]

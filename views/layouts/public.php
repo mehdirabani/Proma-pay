@@ -45,7 +45,7 @@ $publicHomeRoute = 'auth/login';
 
   <main class="proma-public-main">
   <div class="proma-public-content">
-    <?php if ($success = flash('success')): ?><div class="alert alert-light-success" role="alert"><?= e($success) ?></div><?php endif; ?>
+    <?php if ($success = flash('success')): ?><div class="alert alert-light-success" role="status" aria-live="polite" aria-atomic="true"><?= e($success) ?></div><?php endif; ?>
     <?php if ($error = flash('error')): ?><div class="alert alert-light-danger" role="alert"><?= e($error) ?></div><?php endif; ?>
     <?= $content ?>
   </div>

@@ -21,7 +21,7 @@
         <?= csrf_field() ?>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>محصول</th><th>قیمت واحد</th><th>تعداد</th><th>جمع</th></tr></thead>
+            <thead><tr><th scope="col">محصول</th><th scope="col">قیمت واحد</th><th scope="col">تعداد</th><th scope="col">جمع</th></tr></thead>
             <tbody>
             <?php foreach ($items as $item): ?>
               <tr>

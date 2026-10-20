@@ -9,7 +9,7 @@ class ZarinpalReconciliationService
     private $transactions;
     private $verification;
 
-    public function __construct(ZarinpalTransactionRepository $transactions = null, ZarinpalVerificationService $verification = null)
+    public function __construct(?ZarinpalTransactionRepository $transactions = null, ?ZarinpalVerificationService $verification = null)
     {
         $this->transactions = $transactions ?: new ZarinpalTransactionRepository();
         $this->verification = $verification ?: new ZarinpalVerificationService(null, $this->transactions);

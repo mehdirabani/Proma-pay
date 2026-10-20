@@ -18,7 +18,7 @@ $pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false,
 ]);
 $property = new ReflectionProperty(Model::class, 'pdo');
-$property->setAccessible(true);
+
 $property->setValue(null, $pdo);
 $assert = static function ($condition, string $message): void { if (!$condition) throw new RuntimeException($message); };
 $suffix = substr(hash('sha256', (string) hrtime(true)), 0, 9);
@@ -26,7 +26,8 @@ $number = static function (string $prefix) use ($suffix): string { return substr
 
 $adminId = User::create(['role' => 'admin', 'username' => 'qa-legal-admin-' . $suffix, 'full_name' => 'مدیر آزمون حقوقی', 'national_id' => $number('a'), 'mobile' => '0912' . substr($number('am'), 0, 7), 'email' => 'qa-legal-admin-' . $suffix . '@example.test', 'password' => 'Admin#Legal150', 'status' => 'active']);
 $lawyerId = User::create(['role' => 'lawyer', 'username' => 'qa-legal-lawyer-' . $suffix, 'full_name' => 'وکیل آزمون حقوقی', 'national_id' => $number('l'), 'mobile' => '0935' . substr($number('lm'), 0, 7), 'email' => 'qa-legal-lawyer-' . $suffix . '@example.test', 'password' => 'Lawyer#Legal150', 'status' => 'active']);
-$customerId = User::create(['role' => 'customer', 'username' => $number('c'), 'full_name' => 'مشتری آزمون حقوقی', 'national_id' => $number('c'), 'mobile' => '0991' . substr($number('cm'), 0, 7), 'email' => 'qa-legal-customer-' . $suffix . '@example.test', 'password' => '1234', 'status' => 'active']);
+$customerMobile = '0991' . substr($number('cm'), 0, 7);
+$customerId = User::create(['role' => 'customer', 'username' => $number('c'), 'full_name' => 'مشتری آزمون حقوقی', 'national_id' => $number('c'), 'mobile' => $customerMobile, 'email' => 'qa-legal-customer-' . $suffix . '@example.test', 'password' => substr($customerMobile, -4), 'status' => 'active']);
 
 Settings::saveMany([
     'legal_delay_value' => '20', 'legal_delay_unit' => 'day', 'legal_overdue_count_threshold' => '1',

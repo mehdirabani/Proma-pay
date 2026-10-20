@@ -3,6 +3,7 @@
 $criteria = $criteria ?? OverdueFilterCriteria::fromRequest($_GET);
 $overdueContracts = $overdueContracts ?? [];
 $contractContacts = $contractContacts ?? [];
+$followupHistoryByContract = $followupHistoryByContract ?? [];
 $pagination = $pagination ?? ['total' => 0, 'page' => 1, 'pages' => 1, 'per_page' => 25, 'from' => 0, 'to' => 0, 'summary' => []];
 $summary = $pagination['summary'] ?? [];
 $pageUrl = static function (int $page) use ($criteria): string {
@@ -43,7 +44,7 @@ foreach ([
       <h2>سررسیدهای گذشته</h2>
       <p>هر قرارداد فقط یک‌بار نمایش داده می‌شود؛ تعداد اقساط، مبلغ و تاخیر در همان سطح تجمیع شده‌اند.</p>
     </div>
-    <a class="btn secondary" href="<?= e(url('contracts')) ?>"><?= proma_icon('file') ?><span>قراردادها</span></a>
+    <div class="actions"><a class="btn secondary" data-xlsx-export href="<?= e(url('overdue/export')) ?>"><?= proma_icon('download') ?><span>خروجی Excel</span></a><a class="btn secondary" href="<?= e(url('contracts')) ?>"><?= proma_icon('file') ?><span>قراردادها</span></a></div>
   </header>
 
   <div class="proma-kpi-grid proma-overdue-kpis" aria-label="خلاصه سررسیدها">
@@ -68,6 +69,7 @@ foreach ([
         <label class="proma-filter-check"><input type="checkbox" name="exclude_legal_cases" value="1"<?= checked($criteria->excludeLegalCases) ?>><span>قراردادهای دارای پروندهٔ حقوقی فعال نمایش داده نشوند</span></label>
         <label><span>مرتب‌سازی</span><select name="sort">
           <option value="oldest"<?= selected($criteria->sort, 'oldest') ?>>قدیمی‌ترین سررسید</option>
+          <option value="newest"<?= selected($criteria->sort, 'newest') ?>>جدیدترین سررسید</option>
           <option value="overdue_count_desc"<?= selected($criteria->sort, 'overdue_count_desc') ?>>بیشترین تعداد اقساط معوق</option>
           <option value="overdue_count_asc"<?= selected($criteria->sort, 'overdue_count_asc') ?>>کمترین تعداد اقساط معوق</option>
           <option value="delay_desc"<?= selected($criteria->sort, 'delay_desc') ?>>بیشترین روز تاخیر</option>
@@ -123,21 +125,21 @@ foreach ([
         <?php else: ?>
           <div class="table-responsive proma-overdue-table">
             <table class="table table-bordernone">
-              <thead><tr><th>مشتری و قرارداد</th><th>شاخص تاخیر</th><th>مبلغ قابل پیگیری</th><th>حقوقی و آخرین پیگیری</th><th>اقدام</th></tr></thead>
-              <tbody><?php foreach ($overdueContracts as $item): ?><?php [$legalLabel, $legalClass] = $statusLabel($item); $installmentUrl = url('installments', ['tab' => 'overdue', 'contract_number' => $item['contract_number']]); $phone = normalize_iran_phone($item['mobile'] ?? ''); $contactDirectory = $contractContacts[(int) ($item['contract_id'] ?? 0)] ?? []; $contactDirectoryJson = json_encode($contactDirectory, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?: '[]'; $primaryInstallmentId = (int) (($item['installment_ids'][0] ?? 0) ?: 0); $hasActivePromise = !empty($item['latest_promise_date']) && (string) $item['latest_promise_date'] >= date('Y-m-d'); ?>
+              <thead><tr><th scope="col">مشتری و قرارداد</th><th scope="col">شاخص تاخیر</th><th scope="col">مبلغ قابل پیگیری</th><th scope="col">حقوقی و آخرین پیگیری</th><th scope="col">اقدام</th></tr></thead>
+              <tbody><?php foreach ($overdueContracts as $item): ?><?php [$legalLabel, $legalClass] = $statusLabel($item); $contractId = (int) ($item['contract_id'] ?? 0); $installmentUrl = url('installments', ['tab' => 'overdue', 'contract_number' => $item['contract_number']]); $phone = normalize_iran_phone($item['mobile'] ?? ''); $contactDirectory = $contractContacts[$contractId] ?? []; $contactDirectoryJson = json_encode($contactDirectory, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?: '[]'; $primaryInstallmentId = (int) (($item['installment_ids'][0] ?? 0) ?: 0); $hasActivePromise = !empty($item['latest_promise_date']) && (string) $item['latest_promise_date'] >= date('Y-m-d'); $recentFollowups = $followupHistoryByContract[$contractId] ?? []; $hasRecordedFollowup = !empty($recentFollowups); $lastFollowup = $recentFollowups[0] ?? null; $followupButtonTitle = $hasActivePromise ? 'پیگیری فعال تا ' . jdate($item['latest_promise_date']) : ($lastFollowup ? 'آخرین پیگیری: ' . jdatetime($lastFollowup['created_at'] ?? '') : 'ثبت پیگیری'); ?>
                 <tr>
-                  <td><strong><?= e($item['customer_name']) ?></strong><small><?= e($item['contract_number']) ?> · <?= to_persian_digits(format_iran_phone($phone)) ?></small></td>
+                  <td><strong><?= e($item['customer_name']) ?></strong><small><?= e($item['contract_number']) ?> · <?php if ($phone !== ''): ?><button class="proma-phone-link" type="button" data-open-modal="contact-directory" data-contact-directory="<?= e($contactDirectoryJson) ?>" data-contact-title="تماس‌های قرارداد <?= e($item['contract_number']) ?>" aria-label="انتخاب شماره برای تماس با <?= e($item['customer_name']) ?>"><?= to_persian_digits(format_iran_phone($phone)) ?></button><?php else: ?><?= to_persian_digits(format_iran_phone($phone)) ?><?php endif; ?></small></td>
                   <td><div class="proma-metric-pair"><strong><?= to_persian_digits($item['overdue_count']) ?> قسط</strong><span><?= to_persian_digits($item['max_overdue_days']) ?> روز بیشترین تاخیر</span><small>قدیمی‌ترین: <?= e(jdate($item['oldest_due_date'])) ?></small></div></td>
-                  <td><div class="proma-metric-pair"><strong><?= money_toman($item['total_overdue_amount'] ?? $item['estimated_payable']) ?></strong><span>جریمه <?= money_toman($item['total_penalty'] ?? $item['estimated_penalty']) ?></span></div></td>
+                  <td><div class="proma-metric-pair"><strong><?= money_toman($item['total_overdue_amount'] ?? $item['estimated_payable']) ?></strong><span>اقساط <?= money_toman($item['overdue_installments_total'] ?? $item['remaining_principal']) ?> · جریمه <?= money_toman($item['total_penalty'] ?? $item['estimated_penalty']) ?></span><small>هزینه حقوقی <?= money_toman($item['outstanding_legal_costs'] ?? 0) ?></small></div></td>
                   <td><span class="badge <?= e($legalClass) ?>"><?= e($legalLabel) ?></span><small><?= !empty($item['last_contact_at']) ? 'آخرین پیگیری: ' . e(jdatetime($item['last_contact_at'])) : 'پیگیری ثبت نشده' ?></small></td>
-                  <td><div class="proma-row-actions"><a class="btn small" href="<?= e(url('contracts/show/' . (int) $item['contract_id'] . '#contract-summary')) ?>">مشاهده قرارداد</a><?php if ($primaryInstallmentId): ?><button class="icon-btn<?= $hasActivePromise ? ' proma-followup-active' : '' ?>" type="button" data-open-modal="overdue-followup-<?= $primaryInstallmentId ?>" aria-label="ثبت پیگیری <?= e($item['contract_number']) ?>" title="<?= $hasActivePromise ? 'پیگیری فعال تا ' . e(jdate($item['latest_promise_date'])) : 'ثبت پیگیری' ?>"><?= proma_icon('history') ?></button><?php endif; ?><button class="icon-btn" type="button" data-open-modal="contact-directory" data-contact-directory="<?= e($contactDirectoryJson) ?>" data-contact-title="تماس‌های قرارداد <?= e($item['contract_number']) ?>" aria-label="تماس با مشتری و ضامن‌های <?= e($item['customer_name']) ?>" title="تماس با مشتری و ضامن‌ها"><?= proma_icon('phone') ?></button><?php if ($primaryInstallmentId && empty($item['legal_case_count'])): ?><button class="icon-btn" type="button" data-open-modal="overdue-legal-<?= $primaryInstallmentId ?>" aria-label="ارجاع مستقیم به حقوقی" title="ارجاع به حقوقی"><?= proma_icon('file') ?></button><?php endif; ?><a class="icon-btn" href="<?= e(url('chat', ['contact' => $item['customer_id']])) ?>" aria-label="گفت‌وگو با <?= e($item['customer_name']) ?>" title="گفت‌وگو"><?= proma_icon('history') ?></a><details class="proma-action-menu"><summary aria-label="عملیات بیشتر <?= e($item['contract_number']) ?>"><?= proma_icon('more') ?></summary><div><a href="<?= e($installmentUrl) ?>">اقساط معوق</a><a href="<?= e(url('contracts/show/' . (int) $item['contract_id'] . '#contract-installments')) ?>">ثبت پرداخت</a><a href="<?= e(url('contracts/booklet/' . (int) $item['contract_id'])) ?>" target="_blank" rel="noopener">دفترچه اقساط</a></div></details></div></td>
+                  <td><div class="proma-row-actions"><?php if ($contactDirectory): ?><button class="btn small success proma-call-action" type="button" data-open-modal="contact-directory" data-contact-directory="<?= e($contactDirectoryJson) ?>" data-contact-title="تماس‌های قرارداد <?= e($item['contract_number']) ?>" aria-label="انتخاب شماره برای تماس با <?= e($item['customer_name']) ?>"><?= proma_icon('phone') ?><span>تماس</span></button><?php endif; ?><button class="btn small secondary" type="button" data-open-modal="overdue-debt-<?= $contractId ?>">جزئیات بدهی</button><a class="btn small" href="<?= e(url('contracts/show/' . $contractId . '#contract-summary')) ?>">مشاهده قرارداد</a><?php if ($primaryInstallmentId): ?><button class="btn small <?= $hasRecordedFollowup ? 'success proma-followup-recorded' : 'secondary' ?><?= $hasActivePromise ? ' proma-followup-active' : '' ?>" type="button" data-open-modal="overdue-followup-<?= $primaryInstallmentId ?>" aria-label="<?= $hasRecordedFollowup ? 'پیگیری ثبت‌شده' : 'ثبت پیگیری' ?> <?= e($item['contract_number']) ?>" title="<?= e($followupButtonTitle) ?>"><?= proma_icon($hasRecordedFollowup ? 'check-circle' : 'history') ?><span><?= $hasRecordedFollowup ? 'پیگیری ثبت شد' : 'ثبت پیگیری' ?></span></button><?php endif; ?><?php if ($primaryInstallmentId && empty($item['legal_case_count'])): ?><button class="icon-btn" type="button" data-open-modal="overdue-legal-<?= $primaryInstallmentId ?>" aria-label="ارجاع مستقیم به حقوقی" title="ارجاع به حقوقی"><?= proma_icon('file') ?></button><?php endif; ?><a class="icon-btn" href="<?= e(url('chat', ['contact' => $item['customer_id']])) ?>" aria-label="گفت‌وگو با <?= e($item['customer_name']) ?>" title="گفت‌وگو"><?= proma_icon('history') ?></a><details class="proma-action-menu"><summary aria-label="عملیات بیشتر <?= e($item['contract_number']) ?>"><?= proma_icon('more') ?></summary><div><a href="<?= e($installmentUrl) ?>">اقساط معوق</a><a href="<?= e(url('contracts/show/' . $contractId . '#contract-installments')) ?>">ثبت پرداخت</a><a href="<?= e(url('contracts/booklet/' . $contractId)) ?>" target="_blank" rel="noopener">دفترچه اقساط</a></div></details></div></td>
                 </tr>
               <?php endforeach; ?></tbody>
             </table>
           </div>
           <div class="proma-overdue-mobile-list">
-            <?php foreach ($overdueContracts as $item): ?><?php [$legalLabel, $legalClass] = $statusLabel($item); $contactDirectory = $contractContacts[(int) ($item['contract_id'] ?? 0)] ?? []; $contactDirectoryJson = json_encode($contactDirectory, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?: '[]'; $primaryInstallmentId = (int) (($item['installment_ids'][0] ?? 0) ?: 0); ?>
-              <article class="proma-overdue-mobile-card"><header><div><strong><?= e($item['customer_name']) ?></strong><small><?= e($item['contract_number']) ?></small></div><span class="badge <?= e($legalClass) ?>"><?= e($legalLabel) ?></span></header><div class="proma-overdue-mobile-card__metrics"><span><small>اقساط معوق</small><strong><?= to_persian_digits($item['overdue_count']) ?></strong></span><span><small>بیشترین تاخیر</small><strong><?= to_persian_digits($item['max_overdue_days']) ?> روز</strong></span><span><small>قابل پیگیری</small><strong><?= money_toman($item['total_overdue_amount'] ?? $item['estimated_payable']) ?></strong></span></div><footer><a class="btn small" href="<?= e(url('contracts/show/' . (int) $item['contract_id'] . '#contract-summary')) ?>">مشاهده قرارداد</a><?php if ($primaryInstallmentId): ?><button class="btn small secondary" type="button" data-open-modal="overdue-followup-<?= $primaryInstallmentId ?>">پیگیری</button><?php endif; ?><button class="btn small secondary" type="button" data-open-modal="contact-directory" data-contact-directory="<?= e($contactDirectoryJson) ?>" data-contact-title="تماس‌های قرارداد <?= e($item['contract_number']) ?>">تماس</button></footer></article>
+            <?php foreach ($overdueContracts as $item): ?><?php [$legalLabel, $legalClass] = $statusLabel($item); $contractId = (int) ($item['contract_id'] ?? 0); $contactDirectory = $contractContacts[$contractId] ?? []; $contactDirectoryJson = json_encode($contactDirectory, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?: '[]'; $primaryInstallmentId = (int) (($item['installment_ids'][0] ?? 0) ?: 0); $recentFollowups = $followupHistoryByContract[$contractId] ?? []; $hasRecordedFollowup = !empty($recentFollowups); $hasActivePromise = !empty($item['latest_promise_date']) && (string) $item['latest_promise_date'] >= date('Y-m-d'); $phone = normalize_iran_phone($item['mobile'] ?? ''); ?>
+              <article class="proma-overdue-mobile-card"><header><div><strong><?= e($item['customer_name']) ?></strong><small><?= e($item['contract_number']) ?></small><?php if ($phone !== ''): ?><button class="proma-overdue-mobile-card__phone" type="button" data-open-modal="contact-directory" data-contact-directory="<?= e($contactDirectoryJson) ?>" data-contact-title="تماس‌های قرارداد <?= e($item['contract_number']) ?>" aria-label="انتخاب شماره برای تماس با <?= e($item['customer_name']) ?>"><?= proma_icon('phone') ?> <?= to_persian_digits(format_iran_phone($phone)) ?></button><?php endif; ?></div><span class="badge <?= e($legalClass) ?>"><?= e($legalLabel) ?></span></header><div class="proma-overdue-mobile-card__metrics"><span><small>اقساط معوق</small><strong><?= to_persian_digits($item['overdue_count']) ?></strong></span><span><small>بیشترین تاخیر</small><strong><?= to_persian_digits($item['max_overdue_days']) ?> روز</strong></span><span><small>قابل پیگیری</small><strong><?= money_toman($item['total_overdue_amount'] ?? $item['estimated_payable']) ?></strong></span></div><footer><?php if ($contactDirectory): ?><button class="btn small success proma-call-action" type="button" data-open-modal="contact-directory" data-contact-directory="<?= e($contactDirectoryJson) ?>" data-contact-title="تماس‌های قرارداد <?= e($item['contract_number']) ?>" aria-label="انتخاب شماره برای تماس با <?= e($item['customer_name']) ?>"><?= proma_icon('phone') ?><span>تماس</span></button><?php endif; ?><?php if ($primaryInstallmentId): ?><button class="btn small <?= $hasRecordedFollowup ? 'success proma-followup-recorded' : 'secondary' ?><?= $hasActivePromise ? ' proma-followup-active' : '' ?>" type="button" data-open-modal="overdue-followup-<?= $primaryInstallmentId ?>" aria-label="<?= $hasRecordedFollowup ? 'پیگیری ثبت‌شده' : 'ثبت پیگیری' ?> <?= e($item['contract_number']) ?>" title="<?= $hasRecordedFollowup ? 'آخرین پیگیری: ' . e(jdatetime($recentFollowups[0]['created_at'] ?? '')) : 'ثبت پیگیری' ?>"><?= proma_icon($hasRecordedFollowup ? 'check-circle' : 'history') ?> <?= $hasRecordedFollowup ? 'پیگیری ثبت شد' : 'ثبت پیگیری' ?></button><?php endif; ?><button class="btn small secondary" type="button" data-open-modal="overdue-debt-<?= $contractId ?>">تفکیک بدهی</button><a class="btn small" href="<?= e(url('contracts/show/' . $contractId . '#contract-summary')) ?>">مشاهده قرارداد</a></footer></article>
             <?php endforeach; ?>
           </div>
           <?= render_pagination($pagination, $pageUrl) ?>
@@ -148,11 +150,33 @@ foreach ([
 </section>
 
 <?php foreach ($overdueContracts as $item): ?>
-  <?php $primaryInstallmentId = (int) (($item['installment_ids'][0] ?? 0) ?: 0); if (!$primaryInstallmentId) continue; ?>
+  <?php $breakdown = $item['financial_breakdown'] ?? []; $contractId = (int) ($item['contract_id'] ?? 0); ?>
+  <div class="modal" id="overdue-debt-<?= $contractId ?>">
+    <div class="modal-content">
+      <div class="modal-header"><h3>تفکیک بدهی قرارداد <?= e($item['contract_number']) ?></h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن"><?= proma_icon('close') ?></button></div>
+      <div class="modal-body">
+        <?php if (!empty($item['calculation_warnings'])): ?><div class="notice warning">محاسبهٔ یک یا چند قسط نیازمند بررسی است؛ مبالغ را پیش از دریافت با جزئیات قرارداد تطبیق دهید.</div><?php endif; ?>
+        <dl class="proma-overdue-debt-breakdown">
+          <div><dt>ماندهٔ اصل اقساط معوق</dt><dd><?= money_toman($breakdown['overdue_installments_total'] ?? $item['overdue_installments_total'] ?? 0) ?></dd></div>
+          <div><dt>ماندهٔ جریمهٔ دیرکرد عادی</dt><dd><?= money_toman($breakdown['outstanding_normal_late_fees'] ?? 0) ?></dd></div>
+          <div><dt>ماندهٔ جریمهٔ دیرکرد حقوقی</dt><dd><?= money_toman($breakdown['outstanding_legal_late_fees'] ?? 0) ?></dd></div>
+          <div><dt>ماندهٔ هزینه‌های حقوقی قابل وصول</dt><dd><?= money_toman($breakdown['outstanding_legal_costs'] ?? 0) ?></dd></div>
+          <div class="total"><dt>مجموع بدهی سررسیدشده</dt><dd><?= money_toman($breakdown['total_overdue_debt'] ?? $item['total_overdue_amount'] ?? 0) ?></dd></div>
+        </dl>
+        <div class="notice info">هزینهٔ حقوقی در این جمع فقط یک بار برای قرارداد محاسبه شده است. بدهی اقساط آینده در این مبلغ نیست.</div>
+      </div>
+      <div class="modal-footer"><a class="btn" href="<?= e(url('contracts/show/' . $contractId . '#contract-summary')) ?>">سابقه و جزئیات قرارداد</a><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
+    </div>
+  </div>
+<?php endforeach; ?>
+
+<?php foreach ($overdueContracts as $item): ?>
+  <?php $contractId = (int) ($item['contract_id'] ?? 0); $recentFollowups = $followupHistoryByContract[$contractId] ?? []; $primaryInstallmentId = (int) (($item['installment_ids'][0] ?? 0) ?: 0); $contactDirectory = $contractContacts[$contractId] ?? []; $contactDirectoryJson = json_encode($contactDirectory, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?: '[]'; if (!$primaryInstallmentId) continue; ?>
   <div class="modal" id="overdue-followup-<?= $primaryInstallmentId ?>">
     <div class="modal-content">
       <div class="modal-header">
         <h3><?= proma_icon('history') ?> ثبت پیگیری <?= e($item['contract_number']) ?></h3>
+        <?php if ($contactDirectory): ?><button class="btn small success" type="button" data-open-modal="contact-directory" data-contact-directory="<?= e($contactDirectoryJson) ?>" data-contact-title="تماس‌های قرارداد <?= e($item['contract_number']) ?>" aria-label="انتخاب شماره برای تماس با <?= e($item['customer_name']) ?>"><i data-feather="phone-call"></i><span>انتخاب شماره</span></button><?php endif; ?>
         <button class="icon-btn" type="button" data-close-modal aria-label="بستن"><?= proma_icon('close') ?></button>
       </div>
       <form method="post" action="<?= e(url('overdue/followup/' . $primaryInstallmentId)) ?>">
@@ -170,6 +194,17 @@ foreach ([
           <?php if (!empty($item['latest_promise_date']) && (string) $item['latest_promise_date'] >= date('Y-m-d')): ?>
             <div class="notice warning full">برای این قرارداد تا <?= e(jdate($item['latest_promise_date'])) ?> پیگیری فعال ثبت شده است.</div>
           <?php endif; ?>
+          <section class="proma-followup-history full" aria-label="آخرین پیگیری‌های قرارداد">
+            <div class="proma-followup-history__heading"><strong>آخرین پیگیری‌ها</strong><small><?= to_persian_digits(count($recentFollowups)) ?> از ۵ مورد</small></div>
+            <?php foreach ($recentFollowups as $recentFollowup): ?>
+              <article class="proma-followup-history__item">
+                <header><strong><?= e(trim((string) ($recentFollowup['call_result'] ?? '')) ?: 'پیگیری اپراتور') ?></strong><time><?= e(jdatetime($recentFollowup['created_at'] ?? '')) ?></time></header>
+                <?php if (trim((string) ($recentFollowup['notes'] ?? '')) !== ''): ?><p><?= nl2br(e($recentFollowup['notes'])) ?></p><?php endif; ?>
+                <small>ثبت‌کننده: <?= e($recentFollowup['operator_name'] ?? 'اپراتور نامشخص') ?><?php if (!empty($recentFollowup['promise_payment_date'])): ?> · وعده پرداخت: <?= e(jdate($recentFollowup['promise_payment_date'])) ?><?php endif; ?></small>
+              </article>
+            <?php endforeach; ?>
+            <?php if (!$recentFollowups): ?><p class="proma-followup-history__empty">هنوز پیگیری‌ای ثبت نشده است.</p><?php endif; ?>
+          </section>
         </div>
         <div class="modal-footer">
           <button class="btn" type="submit">ثبت پیگیری</button>

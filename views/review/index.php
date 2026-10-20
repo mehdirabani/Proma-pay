@@ -11,19 +11,24 @@ $receiptPendingCount = (int) ($receiptPendingCount ?? count($receiptRequests ?? 
     </div>
   </div>
   <div class="card-body">
-    <nav class="proma-settings-tabs">
+    <nav class="proma-settings-tabs" aria-label="نوع موارد ارسالی">
       <a class="tab-link <?= $activeTab === 'identity' ? 'active' : '' ?>" href="<?= e(url('review', ['tab' => 'identity'])) ?>">مدارک هویتی مشتریان <span class="badge badge-light-danger"><?= to_persian_digits($identityPendingCount) ?></span></a>
       <a class="tab-link <?= $activeTab === 'receipts' ? 'active' : '' ?>" href="<?= e(url('review', ['tab' => 'receipts'])) ?>">رسیدهای اقساط مشتریان <span class="badge badge-light-danger"><?= to_persian_digits($receiptPendingCount) ?></span></a>
     </nav>
   </div>
 </section>
 
+<div class="proma-review-summary" aria-label="موارد در انتظار بررسی">
+  <article><span class="proma-review-summary__icon is-identity"><?= proma_icon('user') ?></span><span><small>مدارک هویتی در انتظار بررسی</small><strong><?= to_persian_digits($identityPendingCount) ?></strong></span></article>
+  <article><span class="proma-review-summary__icon is-receipt"><?= proma_icon('file') ?></span><span><small>رسیدهای پرداخت در انتظار بررسی</small><strong><?= to_persian_digits($receiptPendingCount) ?></strong></span></article>
+</div>
+
 <?php if ($activeTab === 'identity'): ?>
 <section class="card" style="margin-top:16px">
   <div class="card-header card-no-border"><h2>مدارک هویتی در انتظار بررسی</h2></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>مشتری</th><th>نوع مدرک</th><th>زمان بارگذاری</th><th>فایل</th><th>توضیح مدیریت</th><th>عملیات</th></tr></thead>
+      <thead><tr><th scope="col">مشتری</th><th scope="col">نوع مدرک</th><th scope="col">زمان بارگذاری</th><th scope="col">فایل</th><th scope="col">توضیح مدیریت</th><th scope="col">عملیات</th></tr></thead>
       <tbody>
       <?php foreach ($identityRequests as $document): ?>
         <tr>
@@ -59,7 +64,7 @@ $receiptPendingCount = (int) ($receiptPendingCount ?? count($receiptRequests ?? 
   <div class="card-header card-no-border"><h2>رسیدهای کارت به کارت در انتظار بررسی</h2></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>مشتری</th><th>قرارداد</th><th>قسط</th><th>مبلغ اعلامی</th><th>مبلغ تأییدشده</th><th>تاریخ ارسال</th><th>رسید</th><th>توضیح مدیریت</th><th>عملیات</th></tr></thead>
+      <thead><tr><th scope="col">مشتری</th><th scope="col">قرارداد</th><th scope="col">قسط</th><th scope="col">مبلغ اعلامی</th><th scope="col">مبلغ تأییدشده</th><th scope="col">تاریخ ارسال</th><th scope="col">رسید</th><th scope="col">توضیح مدیریت</th><th scope="col">عملیات</th></tr></thead>
       <tbody>
       <?php foreach ($receiptRequests as $receipt): ?>
         <tr>

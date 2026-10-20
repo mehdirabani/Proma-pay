@@ -21,6 +21,7 @@ $pageUrl = function ($page) use ($viewMode) {
     <div class="header-top">
       <h2>فهرست مشتریان</h2>
       <div class="actions">
+        <a class="btn small secondary" data-xlsx-export href="<?= e(url('customers/export')) ?>"><?= proma_icon('download') ?><span>خروجی Excel</span></a>
         <a class="btn small <?= $viewMode === 'cards' ? '' : 'secondary' ?>" href="<?= e(url('customers', array_filter(['q' => $_GET['q'] ?? null, 'status' => $_GET['status'] ?? null, 'view' => 'cards', 'page' => $_GET['page'] ?? null]))) ?>">کارت‌ها</a>
         <a class="btn small <?= $viewMode === 'list' ? '' : 'secondary' ?>" href="<?= e(url('customers', array_filter(['q' => $_GET['q'] ?? null, 'status' => $_GET['status'] ?? null, 'view' => 'list', 'page' => $_GET['page'] ?? null]))) ?>">لیست</a>
         <button class="btn secondary" type="button" data-open-modal="merge-customers">ادغام مشتریان</button>
@@ -57,13 +58,13 @@ $pageUrl = function ($page) use ($viewMode) {
     <article class="card proma-profile-tile proma-customer-index-card" data-card-href="<?= e(url('customers/show/' . $item['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده پرونده مشتری <?= e($item['full_name']) ?>">
       <div class="card-body">
         <div class="proma-profile-head">
-          <span class="proma-progress-avatar" style="--progress: <?= (int) ($item['good_score'] ?? 0) ?>">
+          <span class="proma-progress-avatar" data-progress="<?= max(0, min(100, (int) ($item['good_score'] ?? 0))) ?>">
             <?php $customerAvatar = avatar_key_for($item['avatar_key'] ?? null, $item['id'] ?? $item['full_name']); ?>
             <span class="proma-avatar-choice <?= e($customerAvatar) ?>" aria-label="<?= e($item['full_name']) ?>"><img data-avatar-image src="<?= e(user_avatar_asset_url($item)) ?>" alt="آواتار <?= e($item['full_name']) ?>" loading="lazy"></span>
           </span>
           <div>
-            <h5><?= e($item['full_name']) ?> <?php if (!empty($item['identity_verified'])): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓</span><?php endif; ?></h5>
-            <p><?= to_persian_digits($item['mobile']) ?> · <?= to_persian_digits($item['national_id']) ?></p>
+            <h5><?= e($item['full_name']) ?> <?php if (!empty($item['identity_verified'])): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓</span><?php endif; ?><?php if (!empty($item['credit_profile'])): $credit = $item['credit_profile']; ?><span class="badge <?= ($credit['risk_level'] ?? '') === 'low' ? 'success' : (($credit['risk_level'] ?? '') === 'medium' ? 'warning' : 'danger') ?>" title="رتبهٔ اعتباری مشتری">اعتبار <?= to_persian_digits($credit['score'] ?? 0) ?> · <?= e(($credit['risk_level'] ?? '') === 'low' ? 'کم‌ریسک' : (($credit['risk_level'] ?? '') === 'medium' ? 'متوسط' : 'پرریسک')) ?></span><?php endif; ?></h5>
+            <p><a class="proma-call-button" href="tel:<?= e(to_english_digits(preg_replace('/[^0-9۰-۹٠-٩+]/u', '', (string) $item['mobile']))) ?>"><?= proma_icon('phone') ?> <?= to_persian_digits($item['mobile']) ?></a> · <?= to_persian_digits($item['national_id']) ?></p>
           </div>
           <span class="badge <?= e(badge_class($item['status'])) ?>"><?= e(status_label($item['status'])) ?></span>
         </div>
@@ -71,21 +72,21 @@ $pageUrl = function ($page) use ($viewMode) {
         <div class="proma-customer-card-metrics">
           <span><strong><?= to_persian_digits($item['contract_count'] ?? 0) ?></strong><small>قرارداد</small></span>
           <span><strong><?= to_persian_digits($item['overdue_installments'] ?? 0) ?></strong><small>قسط معوق</small></span>
-          <span><strong><?= to_persian_digits($item['good_score'] ?? 0) ?>٪</strong><small>خوش‌حسابی</small></span>
+          <span><strong><?= to_persian_digits($item['loyalty']['points'] ?? 0) ?></strong><small>امتیاز باشگاه</small></span>
         </div>
 
         <div class="proma-medal-row">
           <?php foreach (array_slice($item['medals'] ?? [], 0, 3) as $medal): ?>
-            <span class="badge badge-light-warning proma-medal-badge" title="<?= e($medal['description'] ?? '') ?>"><i data-feather="<?= e($medal['icon_key'] ?: 'award') ?>"></i><?= e($medal['title']) ?></span>
+            <span class="badge badge-light-warning proma-medal-badge" title="<?= e($medal['description'] ?? '') ?>"><i data-feather="<?= e($medal['icon_key'] ?: 'award') ?>"></i><?= e($medal['medal_title'] ?? $medal['title']) ?></span>
           <?php endforeach; ?>
-          <?php if (empty($item['medals'])): ?><span class="badge muted">بدون مدال</span><?php endif; ?>
+          <span class="badge info">سطح: <?= e($item['loyalty']['tier']['title'] ?? 'تازه‌وارد') ?></span>
         </div>
 
         <div class="actions proma-card-actions" aria-label="عملیات مشتری">
           <a class="btn small secondary" href="<?= e(url('customers/show/' . $item['id'])) ?>"><?= proma_icon('eye') ?>مشاهده</a>
           <button class="proma-icon-button info" type="button" data-open-modal="customer-chart-<?= (int) $item['id'] ?>" title="مشاهده نمودار پرداخت مشتری" aria-label="مشاهده نمودار پرداخت مشتری"><?= proma_icon('chart') ?></button>
           <button class="proma-icon-button warning" type="button" data-open-modal="customer-timeline-<?= (int) $item['id'] ?>" title="مشاهده تایم‌لاین پرداخت مشتری" aria-label="مشاهده تایم‌لاین پرداخت مشتری"><?= proma_icon('history') ?></button>
-          <button class="proma-icon-button secondary" type="button" data-open-modal="customer-medals-<?= (int) $item['id'] ?>" title="مدال‌های مشتری" aria-label="مدال‌های مشتری"><?= proma_icon('award') ?></button>
+          <a class="proma-icon-button secondary" href="<?= e(url('customers/tab/' . $item['id'] . '/loyalty')) ?>" title="امتیاز و سطح مشتری" aria-label="امتیاز و سطح مشتری"><?= proma_icon('award') ?></a>
           <button class="proma-icon-button" type="button" data-open-modal="edit-customer-<?= (int) $item['id'] ?>" title="ویرایش مشتری" aria-label="ویرایش مشتری"><?= proma_icon('edit') ?></button>
           <button class="proma-icon-button danger" type="button" data-open-modal="delete-customer-<?= (int) $item['id'] ?>" title="حذف مشتری" aria-label="حذف مشتری"><?= proma_icon('trash') ?></button>
         </div>
@@ -101,26 +102,25 @@ $pageUrl = function ($page) use ($viewMode) {
   <div class="card-header card-no-border"><h2>نمای جدولی مشتریان</h2></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>نام</th><th>کد ملی</th><th>موبایل</th><th>تلفن دوم</th><th>قرارداد</th><th>معوقه</th><th>مدال‌ها</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+      <thead><tr><th scope="col">نام</th><th scope="col">کد ملی</th><th scope="col">موبایل</th><th scope="col">تلفن دوم</th><th scope="col">قرارداد</th><th scope="col">معوقه</th><th scope="col">باشگاه مشتریان</th><th scope="col">وضعیت</th><th scope="col">عملیات</th></tr></thead>
       <tbody>
       <?php foreach ($customers as $item): ?>
         <tr>
-          <td><a href="<?= e(url('customers/show/' . $item['id'])) ?>"><?= e($item['full_name']) ?></a> <?php if (!empty($item['identity_verified'])): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓</span><?php endif; ?></td>
+          <td><a href="<?= e(url('customers/show/' . $item['id'])) ?>"><?= e($item['full_name']) ?></a> <?php if (!empty($item['identity_verified'])): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓</span><?php endif; ?><?php if (!empty($item['credit_profile'])): $credit = $item['credit_profile']; ?><span class="badge <?= ($credit['risk_level'] ?? '') === 'low' ? 'success' : (($credit['risk_level'] ?? '') === 'medium' ? 'warning' : 'danger') ?>" title="رتبهٔ اعتباری مشتری">اعتبار <?= to_persian_digits($credit['score'] ?? 0) ?> · <?= e(($credit['risk_level'] ?? '') === 'low' ? 'کم‌ریسک' : (($credit['risk_level'] ?? '') === 'medium' ? 'متوسط' : 'پرریسک')) ?></span><?php endif; ?></td>
           <td><?= to_persian_digits($item['national_id']) ?></td>
-          <td><?= to_persian_digits($item['mobile']) ?></td>
+          <td><a class="proma-call-button" href="tel:<?= e(to_english_digits(preg_replace('/[^0-9۰-۹٠-٩+]/u', '', (string) $item['mobile']))) ?>"><?= proma_icon('phone') ?> تماس</a> <?= to_persian_digits($item['mobile']) ?></td>
           <td><?= to_persian_digits($item['secondary_phone']) ?></td>
           <td><?= to_persian_digits($item['contract_count'] ?? 0) ?></td>
           <td><?= to_persian_digits($item['overdue_installments'] ?? 0) ?></td>
           <td>
-            <?php foreach (array_slice($item['medals'] ?? [], 0, 2) as $medal): ?><span class="badge badge-light-warning"><?= e($medal['title']) ?></span><?php endforeach; ?>
-            <?php if (empty($item['medals'])): ?><span class="badge muted">بدون مدال</span><?php endif; ?>
+            <a class="badge badge-light-warning" href="<?= e(url('customers/tab/' . $item['id'] . '/loyalty')) ?>"><?= e($item['loyalty']['tier']['title'] ?? 'تازه‌وارد') ?> · <?= to_persian_digits($item['loyalty']['points'] ?? 0) ?> امتیاز</a>
           </td>
           <td><span class="badge <?= e(badge_class($item['status'])) ?>"><?= e(status_label($item['status'])) ?></span></td>
           <td class="actions">
             <a class="btn small secondary" href="<?= e(url('customers/show/' . $item['id'])) ?>">مشاهده</a>
             <button class="btn small info" type="button" data-open-modal="customer-chart-<?= (int) $item['id'] ?>">نمودار</button>
             <button class="btn small warning" type="button" data-open-modal="customer-timeline-<?= (int) $item['id'] ?>">تایم‌لاین</button>
-            <button class="btn small secondary" type="button" data-open-modal="customer-medals-<?= (int) $item['id'] ?>">مدال‌ها</button>
+            <a class="btn small secondary" href="<?= e(url('customers/tab/' . $item['id'] . '/loyalty')) ?>">امتیازها</a>
             <button class="btn small icon-only" type="button" data-open-modal="edit-customer-<?= (int) $item['id'] ?>" title="ویرایش" aria-label="ویرایش"><i data-feather="edit-2"></i></button>
             <button class="btn small danger icon-only" type="button" data-open-modal="delete-customer-<?= (int) $item['id'] ?>" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button>
           </td>
@@ -141,7 +141,7 @@ $pageUrl = function ($page) use ($viewMode) {
     <form method="post" action="<?= e(url('customers/merge')) ?>">
       <div class="modal-body form-grid two">
         <?= csrf_field() ?>
-        <div class="notice info full">پرونده اصلی باقی می‌ماند و قراردادها، پرونده‌های حقوقی، رسیدها، پیام‌ها، اعلان‌ها و مدال‌های مشتری تکراری به آن منتقل می‌شود. مشتری تکراری غیرفعال می‌شود.</div>
+        <div class="notice info full">پرونده اصلی باقی می‌ماند و قراردادها، پرونده‌های حقوقی، رسیدها، پیام‌ها، اعلان‌ها، دفترکل امتیاز و مدال‌های سطحی مشتری تکراری به آن منتقل می‌شود. مشتری تکراری غیرفعال می‌شود.</div>
         <label>پرونده اصلی که باقی بماند
           <span class="proma-live-search" data-customer-live-search data-search-url="<?= e(url('contracts/search-customers')) ?>">
             <input data-customer-search-input autocomplete="off" placeholder="نام، موبایل یا کد ملی مشتری اصلی">
@@ -162,25 +162,7 @@ $pageUrl = function ($page) use ($viewMode) {
   </div>
 </div>
 
-<div class="modal" id="create-customer">
-  <div class="modal-content proma-modal-lg">
-    <div class="modal-header"><h3>افزودن مشتری</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-    <form method="post" action="<?= e(url('customers/store')) ?>">
-      <div class="modal-body form-grid three">
-        <?= csrf_field() ?>
-        <label>نام کامل<input name="full_name" required></label>
-        <label>نام پدر<input name="father_name"></label>
-        <label>محل صدور<input name="issued_from"></label>
-        <label>کد ملی<input name="national_id" required inputmode="numeric"></label>
-        <label>موبایل<input name="mobile" required inputmode="tel"></label>
-        <label>تلفن دوم<input name="secondary_phone" inputmode="tel"></label>
-        <label>وضعیت<select name="status"><option value="active">فعال</option><option value="inactive">غیرفعال</option></select></label>
-        <label class="full">آدرس<textarea name="address" rows="3"></textarea></label>
-      </div>
-      <div class="modal-footer"><button class="btn" type="submit">ثبت مشتری</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
-    </form>
-  </div>
-</div>
+<?php require __DIR__ . '/_create_modal.php'; ?>
 
 <?php foreach ($customers as $item): ?>
   <div class="modal" id="customer-chart-<?= (int) $item['id'] ?>">
@@ -213,48 +195,6 @@ $pageUrl = function ($page) use ($viewMode) {
           <?php endforeach; ?>
           <?php if (empty($item['payment_timeline'])): ?><div class="empty">پرداخت موفقی ثبت نشده است.</div><?php endif; ?>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal" id="customer-medals-<?= (int) $item['id'] ?>">
-    <div class="modal-content">
-      <div class="modal-header"><h3>مدال‌های <?= e($item['full_name']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <div class="modal-body">
-        <div class="proma-medal-list">
-          <?php foreach (($item['medals'] ?? []) as $medal): ?>
-            <div class="proma-medal-item">
-              <form method="post" action="<?= e(url('customers/medalUpdate/' . $medal['id'])) ?>" class="form-grid three">
-                <?= csrf_field() ?>
-                <label>عنوان<input name="title" value="<?= e($medal['title']) ?>" required></label>
-                <label>امتیاز<input name="points" value="<?= e(to_persian_digits($medal['points'])) ?>" inputmode="numeric"></label>
-                <label>توضیح<input name="description" value="<?= e($medal['description']) ?>"></label>
-                <label>آیکن<input name="icon_key" value="<?= e($medal['icon_key'] ?: 'award') ?>" placeholder="award, star, shield"></label>
-                <div>
-                  <span class="field-title">وضعیت</span>
-                  <div class="switch-options">
-                    <label><input type="checkbox" name="is_active" value="1"<?= checked((int) ($medal['is_active'] ?? 1), 1) ?>><span>فعال</span></label>
-                  </div>
-                </div>
-                <div class="actions full">
-                  <button class="btn small secondary icon-only" type="submit" title="ویرایش" aria-label="ویرایش"><i data-feather="edit-2"></i></button>
-                </div>
-              </form>
-              <form method="post" action="<?= e(url('customers/retireMedal/' . $medal['id'])) ?>" onsubmit="return confirm('حذف مدال تایید شود؟')">
-                <?= csrf_field() ?>
-                <button class="btn small danger icon-only" type="submit" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button>
-              </form>
-            </div>
-          <?php endforeach; ?>
-          <?php if (empty($item['medals'])): ?><div class="empty">مدالی ثبت نشده است.</div><?php endif; ?>
-        </div>
-        <form method="post" action="<?= e(url('customers/medalStore/' . $item['id'])) ?>" class="form-grid three" style="margin-top:16px">
-          <?= csrf_field() ?>
-          <label>عنوان مدال<input name="title" required></label>
-          <label>امتیاز<input name="points" inputmode="numeric" value="0"></label>
-          <label>توضیح<input name="description"></label>
-          <div class="full"><button class="btn warning" type="submit">افزودن مدال</button></div>
-        </form>
       </div>
     </div>
   </div>

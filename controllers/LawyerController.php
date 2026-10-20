@@ -5,59 +5,21 @@ class LawyerController extends Controller
     public function index()
     {
         $this->requireRole('lawyer');
-        $filters = [
-            'lawyer_id' => Auth::id(),
-            'search' => $_GET['q'] ?? null,
-            'status' => in_array($_GET['status'] ?? '', ['open', 'referred', 'under_legal_review', 'warning_prepared', 'draft_prepared', 'external_submission_confirmed', 'closed'], true) ? $_GET['status'] : null,
-            'sort' => $_GET['sort'] ?? 'created',
-            'dir' => $_GET['dir'] ?? 'desc',
-            'limit' => 50,
-        ];
-        $cases = LegalCase::all(array_filter($filters, function ($value) {
-            return $value !== null && $value !== '';
-        }));
-        $this->render('lawyer/index', [
-            'title' => 'پنل حقوقی',
-            'cases' => $cases,
-            'readyCases' => [],
-            'filedCases' => array_values(array_filter($cases, function ($case) {
-                return ($case['status'] ?? '') !== 'referred';
-            })),
-            'referredCases' => array_values(array_filter($cases, function ($case) {
-                return ($case['status'] ?? '') === 'referred';
-            })),
-            'eligible' => LegalEligibilityService::queue($_GET['eligible_q'] ?? null, 60),
-        ], is_ajax_request() ? null : 'app');
+        $params = array_filter([
+            'q' => trim((string) ($_GET['q'] ?? '')),
+            'status' => in_array($_GET['status'] ?? '', ['open', 'closed'], true) ? $_GET['status'] : '',
+            'page' => max(1, (int) ($_GET['page'] ?? 1)),
+        ], static fn ($value) => $value !== '' && $value !== 1);
+        redirect('legal', $params);
     }
 
     public function export()
     {
         $this->requireRole('lawyer');
-        $cases = LegalCase::all([
-            'lawyer_id' => Auth::id(),
-            'search' => $_GET['q'] ?? null,
-            'status' => in_array($_GET['status'] ?? '', ['open', 'referred', 'closed'], true) ? $_GET['status'] : null,
-            'sort' => $_GET['sort'] ?? 'created',
-            'dir' => $_GET['dir'] ?? 'desc',
-        ]);
-        header('Content-Type: text/csv; charset=UTF-8');
-        header('Content-Disposition: attachment; filename="lawyer-cases.csv"');
-        $out = fopen('php://output', 'w');
-        fwrite($out, "\xEF\xBB\xBF");
-        fputcsv($out, ['contract', 'customer', 'mobile', 'stage', 'complaint_number', 'status', 'created_at']);
-        foreach ($cases as $case) {
-            fputcsv($out, [
-                $case['contract_number'],
-                $case['customer_name'],
-                $case['mobile'],
-                $case['stage'],
-                $case['complaint_number'],
-                $case['status'],
-                $case['created_at'],
-            ]);
-        }
-        fclose($out);
-        exit;
+        redirect('legal/export', array_filter([
+            'q' => trim((string) ($_GET['q'] ?? '')),
+            'status' => in_array($_GET['status'] ?? '', ['open', 'closed'], true) ? $_GET['status'] : '',
+        ], static fn ($value) => $value !== ''));
     }
 
     public function create()
@@ -79,7 +41,7 @@ class LawyerController extends Controller
         $this->requireRole('lawyer');
         $this->onlyPost();
         $case = LegalCase::find((int) $id);
-        if (!$case || !LegalCase::contractIsEligible((int) $case['contract_id']) || ($case['lawyer_id'] && (int) $case['lawyer_id'] !== (int) Auth::id())) {
+        if (!$case || !LegalCase::canAccess($case, Auth::user())) {
             set_flash('error', 'دسترسی به این پرونده مجاز نیست.');
             redirect('lawyer');
         }
@@ -90,6 +52,6 @@ class LawyerController extends Controller
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'به‌روزرسانی پرونده انجام نشد.');
         }
-        redirect('lawyer');
+        redirect('legal/show/' . (int) $id);
     }
 }

@@ -11,7 +11,7 @@ $assert = static function ($condition, string $message): void {
 
 $version = require $root . '/config/version.php';
 $assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.4.9', '>='), 'Core version must not regress below V1.4.9.');
-$assert(($version['release_channel'] ?? '') === 'stable', 'Current core release channel must be stable.');
+$assert(in_array(($version['release_channel'] ?? ''), ['stable', 'candidate'], true), 'Current core release channel is invalid.');
 $assert(trim((string) file_get_contents($root . '/health-static.txt')) === 'proma-static-ok', 'Static health probe is missing.');
 
 $router = (string) file_get_contents($root . '/core/Router.php');
@@ -95,14 +95,34 @@ foreach (['`delivered_at`', '`seen_at`', '`archived_at`', '`deleted_at`', '`acti
 
 $releaseBuilder = (string) file_get_contents($root . '/scripts/build_release.php');
 $releaseVerifier = (string) file_get_contents($root . '/tools/verify-release.php');
+$releaseGate = (string) file_get_contents($root . '/tools/release-gate.php');
 foreach ([$releaseBuilder, $releaseVerifier] as $releaseTool) {
     $assert(strpos($releaseTool, "'/dist/updates") !== false, 'Release update artifacts must use dist/updates.');
 }
 $assert(strpos($releaseBuilder, "'html/RTL/assets'") !== false, 'Release packaging must include the RTL theme runtime assets.');
 $assert(strpos($releaseVerifier, 'required UI runtime asset') !== false, 'Release verification must require the RTL theme runtime assets.');
 $assert(strpos($releaseBuilder, 'PROMA_UPDATE_BASELINE_ARCHIVE') !== false && strpos($releaseBuilder, 'release-manifest.json') !== false, 'Release builder does not calculate the update against a verified core baseline.');
-$assert(strpos($releaseBuilder, 'legacy duplicate release alias') !== false, 'Release builder still creates duplicate dashed aliases.');
+$assert(strpos($releaseBuilder, 'proma-pay_v*.zip') === false
+    && strpos($releaseBuilder, 'proma-update_v*.zip') === false
+    && strpos($releaseBuilder, 'immutable') !== false,
+    'Release builder must preserve existing archives and reject a same-version rebuild.');
+$assert(strpos($releaseBuilder, '$legacyPluginPath') !== false
+    && strpos($releaseBuilder, 'An immutable Proma Accounting archive for this version already exists') !== false,
+    'Release builder must reject same-version Accounting archives in the legacy plugin directory.');
 $assert(strpos($releaseVerifier, 'Legacy duplicate release alias remains') !== false, 'Release verification does not reject duplicate dashed aliases.');
+$assert(strpos($releaseGate, 'tests/static_v204_payment_scope_and_signature.php') !== false
+    && strpos($releaseGate, 'tests/static_v204_mobile_customer_installments.php') !== false
+    && strpos($releaseGate, 'tests/integration_payment_overflow_allocation_v204.php') !== false
+    && strpos($releaseGate, 'tests/integration_gateway_reconciliation_v204.php') !== false,
+    'Release gate does not include the latest payment, gateway, and responsive customer regressions.');
+$assert(strpos($releaseGate, 'tests/integration_outbox_delivery.php') !== false
+    && strpos($releaseGate, 'tests/integration_customer_trend_batch.php') !== false
+    && strpos($releaseGate, 'tests/integration_plugin_role_extension.php') !== false,
+    'Release gate does not include the recently added outbox, customer batch, and plugin role integrations.');
+$assert(strpos($releaseGate, 'PROMA_TEST_ALLOW_DESTRUCTIVE') !== false
+    && strpos($releaseGate, 'dbname=proma_qa_v204') !== false
+    && strpos($releaseGate, "['localhost', '127.0.0.1', '::1']") !== false,
+    'Release integration and HTTP tests are not restricted to the opted-in disposable QA database and loopback host.');
 
 $generatedActionPattern = '/action\s*=\s*["\'][^"\']*(?:delete|purge|destroy|truncate)/i';
 foreach (['views', 'plugins'] as $directory) {

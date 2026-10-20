@@ -127,6 +127,13 @@ class LegalCaseLog extends Model
     {
         self::ensureSchema();
         $payload = self::normalizePayload($data);
+        if (!empty($payload['legal_case_id'])) {
+            $case = LegalCase::find((int) $payload['legal_case_id']);
+            $priorAction = self::fetch('SELECT id FROM legal_case_logs WHERE legal_case_id = ? LIMIT 1', [(int) $payload['legal_case_id']]);
+            if ($case && ($case['status'] ?? '') === 'referred' && !$priorAction) {
+                $payload['next_status'] = 'open';
+            }
+        }
         $attachmentPath = null;
         try {
             $attachmentPath = UploadHelper::storeSecureFile($upload, 'legal_case_logs/' . (int) $payload['contract_id']);

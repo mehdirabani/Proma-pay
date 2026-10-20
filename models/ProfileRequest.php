@@ -141,7 +141,7 @@ class ProfileRequest extends Model
             $where[] = 'pr.status = ?';
             $params[] = $status;
         }
-        if (!empty($filters['role']) && in_array($filters['role'], ['admin', 'operator', 'lawyer', 'customer'], true)) {
+        if (!empty($filters['role']) && preg_match('/^[a-z][a-z0-9_]{1,29}$/', (string) $filters['role'])) {
             $where[] = 'u.role = ?';
             $params[] = trim((string) $filters['role']);
         }

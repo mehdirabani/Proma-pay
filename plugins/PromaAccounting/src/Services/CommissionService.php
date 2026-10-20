@@ -154,7 +154,7 @@ class CommissionService
         }
     }
 
-    protected static function postApprovedRow(array $row, $actorId, array $sale = null, $amount = null)
+    protected static function postApprovedRow(array $row, $actorId, ?array $sale = null, $amount = null)
     {
         if (!empty($row['posted_ledger_entry_id']) || ($row['status'] ?? '') === 'posted') {
             return (int) ($row['posted_ledger_entry_id'] ?? 0);

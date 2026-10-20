@@ -38,6 +38,11 @@ $assert(strpos($pluginsController, '$e->getMessage()') === false, 'Plugin contro
 $assert(strpos($pluginManager, "ErrorHandler::log('plugin_health:") !== false, 'Plugin health failures must be logged.');
 $assert(strpos($pluginManager, "return ['ok' => false, 'message' => \$e->getMessage()]") === false, 'Plugin health still returns raw exception messages.');
 $assert(strpos($pluginsView, 'آخرین خطای افزونه در گزارش امن سامانه ثبت شده است.') !== false, 'Plugin manager still renders raw last_error.');
+$assert(strpos($pluginsView, 'data-feather="tool"') === false && strpos($pluginsView, 'data-feather="refresh-cw"') !== false, 'Plugin recovery action uses an icon supported by the bundled Feather set.');
+$layoutView = file_get_contents(dirname(__DIR__) . '/views/layouts/app.php');
+$assert(strpos($layoutView, "label'], 'package'") !== false && strpos($layoutView, "label'], 'tool'") === false, 'Plugin mobile navigation uses a supported default icon.');
+$adminDashboard = file_get_contents(dirname(__DIR__) . '/views/dashboard/admin.php');
+$assert(strpos($adminDashboard, "'icon' => 'package'") !== false && strpos($adminDashboard, "'icon' => 'tool'") === false, 'Repair dashboard shortcut uses a supported Feather icon.');
 $assert(strpos($formsCss, '.proma-plugin-warning__content') !== false, 'Plugin warning spacing component CSS is missing.');
 $assert(strpos($formsCss, 'overflow-wrap: anywhere') !== false, 'Plugin warning must safely wrap mixed RTL/LTR text.');
 

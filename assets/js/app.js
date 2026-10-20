@@ -690,6 +690,118 @@
     });
   };
 
+  const initCustomer360 = function () {
+    document.querySelectorAll('[data-customer-360]').forEach(function (root) {
+      if (root.dataset.customer360Bound === '1') return;
+      root.dataset.customer360Bound = '1';
+      const panel = root.querySelector('[data-customer-tab-panel]');
+      const buttons = Array.from(root.querySelectorAll('[data-customer-tab-btn]'));
+      if (!panel || !buttons.length) return;
+      const loaded = Object.create(null);
+      loaded[panel.dataset.activeTab || 'overview'] = panel.innerHTML;
+      let sequence = 0;
+
+      const setActive = function (button) {
+        buttons.forEach(function (item) {
+          const active = item === button;
+          item.classList.toggle('is-active', active);
+          item.setAttribute('aria-selected', active ? 'true' : 'false');
+          item.setAttribute('tabindex', active ? '0' : '-1');
+        });
+        panel.setAttribute('aria-labelledby', button.id);
+      };
+
+      const load = function (button, href, force) {
+        const tab = button.dataset.customerTabBtn;
+        const requestSequence = ++sequence;
+        setActive(button);
+        if (typeof loaded[tab] === 'string' && !force) {
+          panel.innerHTML = loaded[tab];
+          panel.dataset.activeTab = tab;
+          return;
+        }
+        panel.innerHTML = '<div class="proma-customer-360__loading" role="status">در حال بارگذاری…</div>';
+        fetch(href || button.dataset.tabUrl, {
+          credentials: 'same-origin',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }).then(function (response) {
+          if (response.redirected) {
+            window.location.assign(response.url);
+            throw new Error('نشست شما پایان یافته است.');
+          }
+          if (!response.ok) throw new Error('بارگذاری این بخش انجام نشد.');
+          return response.text();
+        }).then(function (html) {
+          if (requestSequence !== sequence) return;
+          panel.innerHTML = html;
+          panel.dataset.activeTab = tab;
+          loaded[tab] = html;
+        }).catch(function (error) {
+          if (requestSequence === sequence) {
+            panel.innerHTML = '<div class="notice warning">' + (error.message || 'بارگذاری این بخش انجام نشد.') + '</div>';
+          }
+        });
+      };
+
+      buttons.forEach(function (button) {
+        button.addEventListener('keydown', function (event) {
+          const direction = getComputedStyle(root).direction === 'rtl' ? -1 : 1;
+          const index = buttons.indexOf(button);
+          let next = null;
+          if (event.key === 'ArrowRight') next = (index + direction + buttons.length) % buttons.length;
+          else if (event.key === 'ArrowLeft') next = (index - direction + buttons.length) % buttons.length;
+          else if (event.key === 'Home') next = 0;
+          else if (event.key === 'End') next = buttons.length - 1;
+          if (next === null) return;
+          event.preventDefault();
+          buttons[next].focus();
+          load(buttons[next]);
+        });
+      });
+
+      root.addEventListener('click', function (event) {
+        const tabButton = event.target.closest('[data-customer-tab-btn]');
+        if (tabButton && root.contains(tabButton)) {
+          event.preventDefault();
+          load(tabButton);
+          return;
+        }
+        const openTabButton = event.target.closest('[data-customer-open-tab]');
+        if (openTabButton && root.contains(openTabButton)) {
+          event.preventDefault();
+          const menu = openTabButton.closest('details');
+          if (menu) menu.open = false;
+          const target = root.querySelector('[data-customer-tab-btn="' + openTabButton.dataset.customerOpenTab + '"]');
+          if (target) {
+            load(target);
+            target.focus();
+            target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+          return;
+        }
+        const pageLink = event.target.closest('a[data-customer-tab-page]');
+        if (!pageLink || !root.contains(pageLink)) return;
+        event.preventDefault();
+        const active = root.querySelector('[data-customer-tab-btn].is-active');
+        if (active) load(active, pageLink.href, true);
+      });
+
+      document.addEventListener('click', function (event) {
+        root.querySelectorAll('.proma-customer-360__actions details[open]').forEach(function (menu) {
+          if (!menu.contains(event.target)) menu.open = false;
+        });
+      });
+      document.addEventListener('keydown', function (event) {
+        if (event.key !== 'Escape') return;
+        const opened = root.querySelector('.proma-customer-360__actions details[open]');
+        if (!opened) return;
+        opened.open = false;
+        const trigger = opened.querySelector('summary');
+        if (trigger) trigger.focus();
+      });
+    });
+  };
+
   const fallbackCopy = function (value, onSuccess) {
     const input = document.createElement('textarea');
     input.value = value;
@@ -712,7 +824,6 @@
     initModals();
     initFilters();
     initCustomerLiveSearch();
-    initCustomerCreateForms();
     initGuarantorLiveSearch();
     initUserLiveSearch();
     initRepeaters();
@@ -723,14 +834,33 @@
     initJalaliDateInputs();
     initCalendarReminderFields();
     initLoadingForms();
+    initUpdateUploadFeedback();
     initSubmitGuards();
     initRequiredLabels();
     initCharts();
     initCardLinks();
     initContactActions();
+    initCustomer360();
     if (window.feather && typeof window.feather.replace === 'function') {
       window.feather.replace();
     }
+  };
+
+  const initXlsxExportLinks = function () {
+    if (document.documentElement.dataset.xlsxExportBound === '1') return;
+    document.documentElement.dataset.xlsxExportBound = '1';
+    document.addEventListener('click', function (event) {
+      const link = event.target && event.target.closest ? event.target.closest('a[data-xlsx-export]') : null;
+      if (!link) return;
+      const target = new URL(link.href, window.location.href);
+      const current = new URL(window.location.href);
+      current.searchParams.forEach(function (value, key) {
+        if (key !== 'route' && key !== 'page' && key !== 'ajax') target.searchParams.set(key, value);
+      });
+      target.searchParams.delete('page');
+      target.searchParams.delete('ajax');
+      link.href = target.toString();
+    });
   };
 
   const initAjaxFilters = function () {
@@ -739,6 +869,11 @@
       form.dataset.ajaxFilterBound = '1';
       const targetSelector = form.getAttribute('data-ajax-target');
       const status = form.querySelector('[data-ajax-status]');
+      if (status) {
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-live', 'polite');
+        status.setAttribute('aria-atomic', 'true');
+      }
       const delay = parseInt(form.getAttribute('data-ajax-delay') || '1200', 10);
       const liveFilter = form.getAttribute('data-live-filter') === '1';
       let timer = null;
@@ -788,6 +923,7 @@
           const next = doc.querySelector(targetSelector);
           if (!next) throw new Error('بخش نتیجه در پاسخ پیدا نشد.');
           target.innerHTML = next.innerHTML;
+          initContactActions();
           target.classList.remove('proma-ajax-loading');
           setStatus('نتایج به‌روزرسانی شد.', '');
           const cleanUrl = new URL(requestUrl.toString());
@@ -909,7 +1045,6 @@
         box.dispatchEvent(new CustomEvent('proma:customer-selected', { bubbles: true, detail: item }));
         close();
       };
-      box.__promaChooseCustomer = choose;
 
       const render = function (items) {
         results.innerHTML = '';
@@ -999,53 +1134,6 @@
 
       document.addEventListener('click', function (event) {
         if (!box.contains(event.target)) close();
-      });
-    });
-  };
-
-  const initCustomerCreateForms = function () {
-    document.querySelectorAll('[data-customer-create-open]').forEach(function (button) {
-      if (button.dataset.customerCreateReturnBound === '1') return;
-      button.dataset.customerCreateReturnBound = '1';
-      button.addEventListener('click', function () {
-        window.__promaCustomerReturnBox = button.closest('form')?.querySelector('[data-customer-live-search]') || null;
-      });
-    });
-    document.querySelectorAll('[data-customer-create-form]').forEach(function (form) {
-      if (form.dataset.customerCreateBound === '1') return;
-      form.dataset.customerCreateBound = '1';
-      form.addEventListener('submit', function (event) {
-        event.preventDefault();
-        const submit = form.querySelector('[type="submit"]');
-        const error = form.querySelector('[data-customer-create-error]');
-        if (error) { error.hidden = true; error.textContent = ''; }
-        if (submit) submit.disabled = true;
-        fetch(form.action, {
-          method: 'POST',
-          body: new FormData(form),
-          credentials: 'same-origin',
-          headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-        }).then(function (response) {
-          return response.json().then(function (payload) {
-            if (!response.ok || !payload.ok) throw new Error(payload.message || 'ثبت مشتری انجام نشد.');
-            return payload;
-          });
-        }).then(function (payload) {
-          const customer = payload.customer || {};
-          const target = window.__promaCustomerReturnBox;
-          if (target && typeof target.__promaChooseCustomer === 'function') {
-            target.__promaChooseCustomer(customer);
-            target.dispatchEvent(new CustomEvent('proma:customer-created', { bubbles: true, detail: customer }));
-            window.__promaCustomerReturnBox = null;
-          }
-          form.reset();
-          form.closest('.modal')?.querySelector('[data-close-modal]')?.click();
-          if (typeof showToast === 'function') showToast('مشتری ثبت شد و به فرم بازگشت.', 'success');
-          if (!target) window.location.reload();
-        }).catch(function (failure) {
-          if (error) { error.textContent = failure.message || 'ثبت مشتری انجام نشد.'; error.hidden = false; }
-          else if (typeof showToast === 'function') showToast(failure.message || 'ثبت مشتری انجام نشد.', 'error');
-        }).finally(function () { if (submit) submit.disabled = false; });
       });
     });
   };
@@ -1456,6 +1544,10 @@
       const guarantorChips = form.querySelector('[data-guarantor-chips]');
       const newCustomerFields = form.querySelector('[data-new-customer-fields]');
       const newCustomerSummary = form.querySelector('[data-new-customer-summary]');
+      const customerCreditSummary = form.querySelector('[data-customer-credit-summary]');
+      const customerCreditSummaryText = customerCreditSummary ? customerCreditSummary.querySelector('[data-credit-summary-text]') : null;
+      const createCustomerInContract = form.querySelector('[data-create-customer-in-contract]');
+      const createCustomerError = form.querySelector('[data-new-customer-create-error]');
       const customerModeTabs = Array.from(form.querySelectorAll('[data-customer-mode-tab]'));
       const customerModePanels = Array.from(form.querySelectorAll('[data-customer-mode-panel]'));
       const identityStatus = form.querySelector('[data-customer-identity-status]');
@@ -1485,6 +1577,40 @@
         if (!error) return;
         error.hidden = !message;
         error.textContent = message || '';
+      };
+
+      let creditSummarySequence = 0;
+      const refreshCustomerCreditSummary = function () {
+        if (!customerCreditSummary || !customerSelect) return;
+        const customerId = String(customerSelect.value || '');
+        const sequence = ++creditSummarySequence;
+        if (!customerId) {
+          customerCreditSummary.hidden = true;
+          if (customerCreditSummaryText) customerCreditSummaryText.textContent = '';
+          return;
+        }
+        customerCreditSummary.hidden = false;
+        if (customerCreditSummaryText) customerCreditSummaryText.textContent = 'در حال دریافت رتبهٔ اعتباری مشتری…';
+        const endpoint = (customerCreditSummary.getAttribute('data-summary-url') || '').replace('__ID__', encodeURIComponent(customerId));
+        fetch(endpoint, { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+          .then(function (response) { return response.json().then(function (json) { return { ok: response.ok, json: json }; }); })
+          .then(function (result) {
+            if (sequence !== creditSummarySequence) return;
+            if (!result.ok || !result.json || !result.json.ok || !result.json.summary) throw new Error((result.json && result.json.message) || 'رتبهٔ اعتباری فعلاً در دسترس نیست.');
+            const summary = result.json.summary;
+            const riskLabels = { low: 'کم‌ریسک', medium: 'ریسک متوسط', high: 'پرریسک' };
+            const recommendation = summary.recommendation || {};
+            const recommendationText = recommendation.down_payment_percent ? ' · پیش‌پرداخت پیشنهادی ' + recommendation.down_payment_percent + '٪' : '';
+            if (customerCreditSummaryText) customerCreditSummaryText.textContent = 'رتبهٔ اعتباری: Proma Score ' + (summary.score || 0) + ' · ' + (riskLabels[summary.risk_level] || 'نامشخص') + recommendationText + ' (پیشنهادی)';
+            customerCreditSummary.classList.remove('warning', 'danger');
+            customerCreditSummary.classList.add(summary.risk_level === 'high' ? 'danger' : (summary.risk_level === 'medium' ? 'warning' : 'success'));
+          })
+          .catch(function (requestError) {
+            if (sequence !== creditSummarySequence) return;
+            customerCreditSummary.classList.remove('success', 'info');
+            customerCreditSummary.classList.add('warning');
+            if (customerCreditSummaryText) customerCreditSummaryText.textContent = requestError.message || 'رتبهٔ اعتباری فعلاً در دسترس نیست.';
+          });
       };
 
       const syncCustomerChip = function () {
@@ -1528,8 +1654,9 @@
           panel.hidden = panel.getAttribute('data-customer-mode-panel') !== mode;
         });
         if (newCustomerFields) {
-          const nameField = newCustomerFields.querySelector('[name="new_customer_full_name"]');
-          if (nameField) nameField.required = mode === 'new';
+          newCustomerFields.querySelectorAll('[data-new-customer-required]').forEach(function (field) {
+            field.required = mode === 'new';
+          });
         }
         if (customerSelect) {
           customerSelect.required = mode === 'existing';
@@ -1543,6 +1670,14 @@
             if (liveInput) liveInput.value = '';
             customerSelect.dispatchEvent(new Event('change', { bubbles: true }));
           }
+        }
+        if (mode === 'new' && customerCreditSummary && customerCreditSummaryText) {
+          customerCreditSummary.hidden = false;
+          customerCreditSummary.classList.remove('success', 'warning', 'danger');
+          customerCreditSummary.classList.add('info');
+          customerCreditSummaryText.textContent = 'مشتری تازه سابقهٔ اعتباری ندارد؛ رتبه پس از ثبت، بر اساس سوابق واقعی ساخته می‌شود.';
+        } else if (!customerSelect || !customerSelect.value) {
+          if (customerCreditSummary) customerCreditSummary.hidden = true;
         }
       };
 
@@ -1561,6 +1696,65 @@
         syncGuarantorChips();
         syncLiveGuarantorChips();
       };
+
+      if (createCustomerInContract) {
+        createCustomerInContract.addEventListener('click', function () {
+          if (!newCustomerFields || !customerSelect) return;
+          const getField = function (name) { return newCustomerFields.querySelector('[name="new_customer_' + name + '"]'); };
+          const fullName = getField('full_name');
+          const nationalId = getField('national_id');
+          const mobile = getField('mobile');
+          const message = !fullName || !fullName.value.trim()
+            ? 'نام کامل مشتری را وارد کنید.'
+            : (!nationalId || !nationalId.value.trim() ? 'کد ملی مشتری را وارد کنید.' : (!mobile || !mobile.value.trim() ? 'شمارهٔ موبایل مشتری را وارد کنید.' : ''));
+          if (message) {
+            if (createCustomerError) { createCustomerError.textContent = message; createCustomerError.hidden = false; }
+            else showToast(message, 'error');
+            return;
+          }
+          const csrf = form.querySelector('[name="_csrf"]');
+          const data = new FormData();
+          if (csrf) data.append('_csrf', csrf.value);
+          ['full_name', 'father_name', 'issued_from', 'national_id', 'mobile', 'secondary_phone', 'address'].forEach(function (name) {
+            const field = getField(name);
+            data.append(name, field ? field.value.trim() : '');
+          });
+          data.append('status', 'active');
+          const endpoint = createCustomerInContract.getAttribute('data-create-url');
+          createCustomerInContract.disabled = true;
+          const oldLabel = createCustomerInContract.textContent;
+          createCustomerInContract.textContent = 'در حال ثبت مشتری…';
+          if (createCustomerError) createCustomerError.hidden = true;
+          fetch(endpoint, { method: 'POST', body: data, headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+            .then(function (response) { return response.json().then(function (json) { return { ok: response.ok, json: json }; }); })
+            .then(function (result) {
+              const customer = result.json && result.json.customer;
+              if (!result.ok || !result.json || !result.json.ok || !customer || !customer.id) throw new Error((result.json && result.json.message) || 'ثبت مشتری انجام نشد.');
+              customerSelect.value = String(customer.id);
+              customerSelect.dataset.customerLabel = customer.full_name || '';
+              customerSelect.dataset.customerName = customer.full_name || '';
+              customerSelect.dataset.customerMobile = customer.mobile || '';
+              customerSelect.dataset.customerNationalId = customer.national_id || '';
+              const searchInput = form.querySelector('[data-customer-search-input]');
+              if (searchInput) searchInput.value = customer.full_name || '';
+              setCustomerMode('existing', false);
+              if (newCustomerFields) newCustomerFields.querySelectorAll('[name^="new_customer_"]').forEach(function (field) { field.value = ''; });
+              customerSelect.dispatchEvent(new Event('change', { bubbles: true }));
+              syncCustomerChip();
+              syncGuarantorChips();
+              syncLiveGuarantorChips();
+              showToast('مشتری ثبت شد؛ فرم قرارداد باز است و می‌توانید ادامه دهید.', 'success');
+            })
+            .catch(function (requestError) {
+              if (createCustomerError) { createCustomerError.textContent = requestError.message || 'ثبت مشتری انجام نشد.'; createCustomerError.hidden = false; }
+              else showToast(requestError.message || 'ثبت مشتری انجام نشد.', 'error');
+            })
+            .finally(function () {
+              createCustomerInContract.disabled = false;
+              createCustomerInContract.textContent = oldLabel;
+            });
+        });
+      }
 
       const syncGuarantorChips = function () {
         if (!guarantorSelect || !guarantorChips) return;
@@ -1716,7 +1910,9 @@
           syncCustomerChip();
           syncGuarantorChips();
           syncLiveGuarantorChips();
+          refreshCustomerCreditSummary();
         });
+        if (customerSelect.value) refreshCustomerCreditSummary();
       }
       if (guarantorSelect) {
         guarantorSelect.addEventListener('change', syncGuarantorChips);
@@ -1751,6 +1947,17 @@
         if (customerMode === 'new' && (!newName || !newName.value.trim())) {
           event.preventDefault();
           showError('مشتری موجود را انتخاب کنید یا اطلاعات مشتری تازه را وارد کنید.');
+          return;
+        }
+        if (customerMode === 'new' && newCustomerFields) {
+          const missingIdentity = ['new_customer_national_id', 'new_customer_mobile'].some(function (name) {
+            const field = newCustomerFields.querySelector('[name="' + name + '"]');
+            return !field || !field.value.trim();
+          });
+          if (missingIdentity) {
+            event.preventDefault();
+            showError('کد ملی و شمارهٔ موبایل مشتری جدید را وارد کنید.');
+          }
         }
       });
 
@@ -2245,13 +2452,56 @@
     document.querySelectorAll('[data-loading-form]').forEach(function (form) {
       if (form.dataset.loadingFormBound === '1') return;
       form.dataset.loadingFormBound = '1';
-      form.addEventListener('submit', function () {
-        const button = form.querySelector('[type="submit"]');
+      form.addEventListener('submit', function (event) {
+        const submitter = event.submitter && event.submitter.form === form ? event.submitter : null;
+        const associatedButton = Array.from(document.querySelectorAll('button[type="submit"]')).find(function (candidate) {
+          return candidate.form === form;
+        });
+        const button = submitter || associatedButton || form.querySelector('button[type="submit"]');
         if (!button) return;
         button.dataset.originalText = button.textContent;
         button.textContent = button.getAttribute('data-loading-text') || 'در حال پردازش...';
         button.disabled = true;
       });
+    });
+  };
+
+  const initUpdateUploadFeedback = function () {
+    const input = document.querySelector('[data-update-upload-file]');
+    const form = document.querySelector('[data-update-upload-form]');
+    if (!input || !form || input.dataset.uploadFeedbackBound === '1') return;
+    input.dataset.uploadFeedbackBound = '1';
+    const feedback = document.querySelector('[data-update-upload-feedback]');
+    const maxBytes = Number(input.getAttribute('data-max-bytes') || 0);
+    const maxLabel = input.getAttribute('data-max-label') || '';
+    const setMessage = function (message, invalid) {
+      if (feedback) feedback.textContent = message;
+      input.setCustomValidity(invalid ? ('حجم فایل از سقف موثر ' + maxLabel + ' بیشتر است.') : '');
+    };
+    const validateFile = function () {
+      const file = input.files && input.files[0];
+      if (!file) {
+        setMessage('PHP: upload_max_filesize و post_max_size را بررسی کنید؛ سقف موثر این فرم ' + maxLabel + ' است.', false);
+        return true;
+      }
+      if (file.size > maxBytes) {
+        setMessage('حجم فایل انتخاب‌شده (' + (file.size / (1024 * 1024)).toLocaleString('fa-IR', { maximumFractionDigits: 1 }) + ' MB) از سقف موثر ' + maxLabel + ' بیشتر است.', true);
+        return false;
+      }
+      setMessage('فایل «' + file.name + '» آماده ارسال است (' + (file.size / (1024 * 1024)).toLocaleString('fa-IR', { maximumFractionDigits: 1 }) + ' MB).', false);
+      return true;
+    };
+    input.addEventListener('change', validateFile);
+    form.addEventListener('submit', function (event) {
+      if (!validateFile()) {
+        event.preventDefault();
+        input.reportValidity();
+        return;
+      }
+      const file = input.files && input.files[0];
+      if (file && feedback) {
+        feedback.textContent = 'در حال ارسال «' + file.name + '» (' + (file.size / (1024 * 1024)).toLocaleString('fa-IR', { maximumFractionDigits: 1 }) + ' MB)؛ تا نمایش نتیجه صفحه را نبندید.';
+      }
     });
   };
 
@@ -2341,6 +2591,91 @@
         });
       });
     });
+  };
+
+  const initQuickPaymentModal = function () {
+    const modal = document.querySelector('[data-quick-payment-modal]');
+    if (!modal) return;
+    const input = modal.querySelector('[data-quick-payment-search]');
+    const status = modal.querySelector('[data-quick-payment-status]');
+    const results = modal.querySelector('[data-quick-payment-results]');
+    let timer = null;
+    let sequence = 0;
+    const render = function (contracts) {
+      results.replaceChildren();
+      if (!contracts.length) {
+        status.textContent = 'قسط قابل پرداختی برای این جستجو پیدا نشد.';
+        return;
+      }
+      status.textContent = toPersianDigits(String(contracts.length)) + ' قرارداد پیدا شد.';
+      contracts.forEach(function (contract) {
+        const section = document.createElement('section');
+        section.className = 'proma-quick-payment-contract';
+        const heading = document.createElement('h4');
+        heading.textContent = (contract.contract_number || 'قرارداد') + ' · ' + (contract.customer_name || 'مشتری') + (contract.mobile ? ' · ' + contract.mobile : '');
+        section.appendChild(heading);
+        (contract.installments || []).forEach(function (installment) {
+          const form = document.createElement('form');
+          form.method = 'post';
+          form.action = modal.dataset.paymentUrl + encodeURIComponent(String(installment.id));
+          form.className = 'proma-quick-payment-row';
+          const info = document.createElement('div');
+          const label = document.createElement('strong');
+          label.textContent = 'قسط ' + toPersianDigits(String(installment.number || '')) + ' · سررسید ' + (installment.due_date || '—');
+          const payable = document.createElement('small');
+          payable.textContent = 'مبلغ قابل پرداخت: ' + formatMoney(installment.payable || 0);
+          info.append(label, payable);
+          form.appendChild(info);
+          const hidden = function (name, value) {
+            const field = document.createElement('input');
+            field.type = 'hidden'; field.name = name; field.value = value;
+            form.appendChild(field);
+          };
+          hidden('_csrf', modal.dataset.csrf || '');
+          hidden('redirect_to', 'contract');
+          hidden('contract_id', String(contract.contract_id));
+          hidden('description', 'پرداخت دستی از سربرگ');
+          const paid = document.createElement('label');
+          paid.className = 'proma-quick-payment-amount';
+          paid.textContent = 'مبلغ دریافتی (تومان)';
+          const amountInput = document.createElement('input');
+          amountInput.type = 'text'; amountInput.name = 'amount'; amountInput.inputMode = 'numeric'; amountInput.required = true;
+          amountInput.placeholder = 'مبلغ'; amountInput.setAttribute('data-money', '');
+          paid.appendChild(amountInput);
+          form.appendChild(paid);
+          const uuid = document.createElement('input');
+          uuid.type = 'hidden'; uuid.name = 'payment_request_uuid';
+          uuid.value = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : (Date.now().toString(16) + Math.random().toString(16).slice(2)).padEnd(32, '0').slice(0, 32);
+          form.appendChild(uuid);
+          const submit = document.createElement('button');
+          submit.className = 'btn small success'; submit.type = 'submit'; submit.textContent = 'ثبت پرداخت';
+          form.appendChild(submit);
+          section.appendChild(form);
+        });
+        results.appendChild(section);
+      });
+      initMoneyInputs();
+      initSubmitGuards();
+    };
+    const search = function () {
+      const query = input.value.trim();
+      const requestId = ++sequence;
+      if (query.length < 3) {
+        results.replaceChildren();
+        status.textContent = 'برای نمایش اقساط، حداقل سه نویسه وارد کنید.';
+        return;
+      }
+      status.textContent = 'در حال جستجو…';
+      const endpoint = new URL(modal.dataset.searchUrl, window.location.href);
+      endpoint.searchParams.set('q', query);
+      fetchWithDeadline(endpoint.toString(), { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }, 10000)
+        .then(function (response) { if (!response.ok) throw new Error('search'); return response.json(); })
+        .then(function (payload) { if (requestId === sequence) render(payload.contracts || []); })
+        .catch(function () { if (requestId === sequence) status.textContent = 'جستجو انجام نشد؛ دوباره تلاش کنید.'; });
+    };
+    input.addEventListener('input', function () { window.clearTimeout(timer); timer = window.setTimeout(search, 350); });
+    input.addEventListener('keydown', function (event) { if (event.key === 'Enter') { event.preventDefault(); window.clearTimeout(timer); search(); } });
+    modal.addEventListener('proma:modal-opened', function () { window.setTimeout(function () { input.focus(); }, 40); });
   };
 
   const initAiConnectionTest = function () {
@@ -3003,84 +3338,6 @@
     });
   };
 
-  const initInstallmentOverflowScope = function () {
-    const form = document.getElementById('installment-bulk-form');
-    if (!form || form.dataset.overflowScopeBound === '1') return;
-    form.dataset.overflowScopeBound = '1';
-    const scope = form.querySelector('[data-installment-payment-scope]');
-    const amount = form.querySelector('[data-installment-group-amount]');
-    const hint = form.querySelector('[data-installment-overflow-hint]');
-    if (!scope || !amount) return;
-    const parseDigits = function (value) {
-      const persian = '۰۱۲۳۴۵۶۷۸۹';
-      const arabic = '٠١٢٣٤٥٦٧٨٩';
-      return parseInt(String(value || '').replace(/[۰-۹]/g, function (char) { return String(persian.indexOf(char)); }).replace(/[٠-٩]/g, function (char) { return String(arabic.indexOf(char)); }).replace(/[^0-9]/g, ''), 10) || 0;
-    };
-    const update = function () {
-      const checked = Array.prototype.filter.call(form.querySelectorAll('[data-installment-payable]:checked'), function () { return true; });
-      const selectedTotal = checked.reduce(function (sum, item) { return sum + parseDigits(item.getAttribute('data-installment-payable')); }, 0);
-      const overflowsSelection = selectedTotal > 0 && parseDigits(amount.value) > selectedTotal;
-      scope.value = overflowsSelection ? 'schedule' : 'selected';
-      if (hint) {
-        hint.textContent = overflowsSelection
-          ? 'مازاد بر اقساط انتخاب‌شده، به اقساط باز بعدی همین قرارداد تخصیص می‌یابد؛ مبلغ بالاتر از کل بدهی رد می‌شود.'
-          : 'تا سقف جمع اقساط انتخاب‌شده تخصیص انجام می‌شود؛ مبلغ بیشتر به اقساط باز بعدی همین قرارداد می‌رود.';
-      }
-    };
-    amount.addEventListener('input', update);
-    form.querySelectorAll('[data-installment-payable]').forEach(function (item) { item.addEventListener('change', update); });
-    update();
-  };
-
-  const initContractActionPortals = function () {
-    document.querySelectorAll('.proma-contract-action-menu').forEach(function (details) {
-      if (details.dataset.portalBound === '1') return;
-      const summary = details.querySelector(':scope > summary');
-      const menu = details.querySelector(':scope > .actions');
-      if (!summary || !menu) return;
-      details.dataset.portalBound = '1';
-      let placeholder = null;
-      const position = function () {
-        if (!details.open || menu.parentNode !== document.body) return;
-        const rect = summary.getBoundingClientRect();
-        const width = Math.min(280, window.innerWidth - 16);
-        menu.style.width = width + 'px';
-        const left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.right - width));
-        const height = menu.offsetHeight;
-        const below = window.innerHeight - rect.bottom - 8;
-        const top = below >= Math.min(height, window.innerHeight * .7) ? rect.bottom + 8 : Math.max(8, rect.top - Math.min(height, window.innerHeight * .7) - 8);
-        menu.style.left = left + 'px';
-        menu.style.top = top + 'px';
-      };
-      const portal = function () {
-        if (!details.open || menu.parentNode === document.body) return;
-        placeholder = document.createComment('proma-contract-action-menu');
-        menu.parentNode.insertBefore(placeholder, menu);
-        menu.classList.add('proma-contract-action-menu__portal');
-        document.body.appendChild(menu);
-        position();
-      };
-      const restore = function () {
-        if (menu.parentNode !== document.body) return;
-        menu.classList.remove('proma-contract-action-menu__portal');
-        menu.style.removeProperty('left'); menu.style.removeProperty('top'); menu.style.removeProperty('width');
-        if (placeholder && placeholder.parentNode) placeholder.parentNode.insertBefore(menu, placeholder);
-        if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
-        placeholder = null;
-      };
-      details.addEventListener('toggle', function () { details.open ? portal() : restore(); });
-      document.addEventListener('pointerdown', function (event) {
-        if (details.open && !details.contains(event.target) && !menu.contains(event.target)) details.open = false;
-      });
-      document.addEventListener('keydown', function (event) {
-        if (event.key === 'Escape' && details.open) { details.open = false; summary.focus(); }
-      });
-      window.addEventListener('resize', position);
-      window.addEventListener('scroll', position, true);
-      summary.addEventListener('click', function () { window.requestAnimationFrame(position); });
-    });
-  };
-
   document.addEventListener('error', function (event) {
     const image = event.target;
     if (!image || !image.matches || !image.matches('[data-avatar-image]')) return;
@@ -3254,23 +3511,124 @@
   };
 
   const initServiceWorker = function () {
-    if (!('serviceWorker' in navigator)) return;
+    const widget = document.querySelector('[data-web-push-widget][data-enabled="1"]');
+    if (!widget || !('serviceWorker' in navigator)) return;
+    const workerUrl = widget.dataset.workerUrl;
+    if (!workerUrl) return;
     window.addEventListener('load', function () {
-      navigator.serviceWorker.getRegistrations().then(function (registrations) {
-        registrations.forEach(function (registration) {
-          registration.unregister();
-        });
-      }).catch(function () {});
-      if ('caches' in window) {
-        caches.keys().then(function (keys) {
-          keys.filter(function (key) {
-            return key.indexOf('proma-pay-') === 0;
-          }).forEach(function (key) {
-            caches.delete(key);
-          });
-        }).catch(function () {});
-      }
+      navigator.serviceWorker.register(workerUrl).catch(function () {
+        const status = widget.querySelector('[data-web-push-status]');
+        if (status) status.textContent = 'ثبت سرویس اعلان مرورگر انجام نشد؛ اتصال امن سامانه و پشتیبانی مرورگر را بررسی کنید.';
+      });
     });
+  };
+
+  const initWebPush = function () {
+    const widget = document.querySelector('[data-web-push-widget][data-enabled="1"]');
+    if (!widget) return;
+    const enableButton = widget.querySelector('[data-web-push-enable]');
+    const disableButton = widget.querySelector('[data-web-push-disable]');
+    const status = widget.querySelector('[data-web-push-status]');
+    const post = function (url, values) {
+      const form = new URLSearchParams();
+      form.set('_csrf', widget.dataset.csrf || '');
+      Object.keys(values).forEach(function (key) { form.set(key, values[key]); });
+      return fetch(url, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: form.toString()
+      }).then(function (response) {
+        return response.json().catch(function () { return {}; }).then(function (payload) {
+          if (!response.ok || !payload.ok) throw new Error(payload.message || 'ثبت اعلان انجام نشد.');
+          return payload;
+        });
+      });
+    };
+    const setState = function (active, message) {
+      widget.dataset.subscribed = active ? '1' : '0';
+      if (enableButton) enableButton.hidden = active;
+      if (disableButton) disableButton.hidden = !active;
+      if (status && message) status.textContent = message;
+    };
+    const decodeKey = function (value) {
+      const padded = (value || '').replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((value || '').length % 4);
+      const raw = atob(padded);
+      const output = new Uint8Array(raw.length);
+      for (let index = 0; index < raw.length; index += 1) output[index] = raw.charCodeAt(index);
+      return output;
+    };
+    const checkRegistration = function () {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
+      navigator.serviceWorker.getRegistration(widget.dataset.workerUrl).then(function (registration) {
+        return registration ? registration.pushManager.getSubscription() : null;
+      }).then(function (subscription) {
+        if (subscription && widget.dataset.subscribed !== '1') {
+          const key = subscription.getKey('p256dh');
+          const auth = subscription.getKey('auth');
+          if (!key || !auth) return;
+          const toBase64Url = function (buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            bytes.forEach(function (byte) { binary += String.fromCharCode(byte); });
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+          };
+          return post(widget.dataset.subscribeUrl, { endpoint: subscription.endpoint, p256dh: toBase64Url(key), auth: toBase64Url(auth) }).then(function () {
+            setState(true, 'این دستگاه برای دریافت اعلان فعال است.');
+          }).catch(function () {});
+        }
+        if (!subscription && widget.dataset.subscribed === '1') setState(false, 'اشتراک مرورگر این دستگاه غیرفعال شده است. برای اتصال دوباره دکمه را بزنید.');
+      }).catch(function () {});
+    };
+    if (enableButton) enableButton.addEventListener('click', function () {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+        setState(false, 'این مرورگر اعلان وب را پشتیبانی نمی‌کند.');
+        return;
+      }
+      enableButton.disabled = true;
+      const previousText = enableButton.textContent;
+      enableButton.textContent = 'در حال فعال‌سازی…';
+      const permission = Notification.permission === 'granted' ? Promise.resolve('granted') : Notification.requestPermission();
+      permission.then(function (result) {
+        if (result !== 'granted') throw new Error(result === 'denied' ? 'اجازهٔ اعلان در تنظیمات مرورگر رد شده است؛ آن را از تنظیمات سایت فعال کنید.' : 'برای دریافت اعلان، اجازهٔ مرورگر لازم است.');
+        return navigator.serviceWorker.register(widget.dataset.workerUrl);
+      }).then(function (registration) {
+        return registration.pushManager.getSubscription().then(function (subscription) {
+          return subscription || registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: decodeKey(widget.dataset.publicKey) });
+        });
+      }).then(function (subscription) {
+        const toBase64Url = function (buffer) {
+          const bytes = new Uint8Array(buffer);
+          let binary = '';
+          bytes.forEach(function (byte) { binary += String.fromCharCode(byte); });
+          return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        };
+        const key = subscription.getKey('p256dh');
+        const auth = subscription.getKey('auth');
+        if (!key || !auth) throw new Error('اطلاعات امنیتی اشتراک مرورگر قابل دریافت نیست.');
+        return post(widget.dataset.subscribeUrl, { endpoint: subscription.endpoint, p256dh: toBase64Url(key), auth: toBase64Url(auth) });
+      }).then(function (result) {
+        setState(true, result.message || 'اعلان این دستگاه فعال شد.');
+      }).catch(function (error) {
+        setState(false, error.message || 'فعال‌سازی اعلان این دستگاه انجام نشد.');
+      }).finally(function () {
+        enableButton.disabled = false;
+        enableButton.textContent = previousText;
+      });
+    });
+    if (disableButton) disableButton.addEventListener('click', function () {
+      disableButton.disabled = true;
+      navigator.serviceWorker.getRegistration(widget.dataset.workerUrl).then(function (registration) {
+        return registration ? registration.pushManager.getSubscription() : null;
+      }).then(function (subscription) {
+        if (!subscription) return null;
+        return post(widget.dataset.unsubscribeUrl, { endpoint: subscription.endpoint }).then(function () { return subscription.unsubscribe(); });
+      }).then(function () {
+        setState(false, 'اعلان این دستگاه غیرفعال شد.');
+      }).catch(function () {
+        setState(false, 'غیرفعال‌سازی اعلان انجام نشد؛ دوباره تلاش کنید.');
+      }).finally(function () { disableButton.disabled = false; });
+    });
+    checkRegistration();
   };
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -3314,6 +3672,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initMoneyInputs();
     initModals();
     initFilters();
+    initXlsxExportLinks();
     initAjaxFilters();
     initSettingsTabs();
     initCustomerLiveSearch();
@@ -3327,20 +3686,22 @@ document.addEventListener('DOMContentLoaded', function () {
     initJalaliDateInputs();
     initCalendarReminderFields();
     initLoadingForms();
+    initUpdateUploadFeedback();
     initSubmitGuards();
     initRequiredLabels();
     initCheckAll();
+    initQuickPaymentModal();
     initAiConnectionTest();
     initSidebarCollapse();
     initNotificationCenter();
+    initWebPush();
     initCharts();
     initChat();
     initCardLinks();
     initContractDetailWorkspace();
     initContractSettlement();
-    initInstallmentOverflowScope();
-    initContractActionPortals();
     initContactActions();
+    initCustomer360();
     initCopyShortcodes();
     initSettingResets();
     initPromaRichEditors();

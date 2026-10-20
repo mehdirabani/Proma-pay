@@ -53,6 +53,44 @@
     if (route) document.body.classList.add('proma-v2-route-' + route);
   }
 
+  function headerControls() {
+    var search = document.getElementById('proma-global-search');
+    var searchTrigger = document.querySelector('.page-header .header-search');
+    var searchClose = search && search.querySelector('.close-search');
+    var searchInput = search && search.querySelector('input[name="q"]');
+    if (search && searchTrigger && !search.dataset.accessibilityBound) {
+      search.dataset.accessibilityBound = '1';
+      function syncSearchState() {
+        searchTrigger.setAttribute('aria-expanded', String(search.classList.contains('open')));
+      }
+      new MutationObserver(syncSearchState).observe(search, { attributes: true, attributeFilter: ['class'] });
+      searchTrigger.addEventListener('click', function () {
+        window.requestAnimationFrame(function () { if (searchInput) searchInput.focus(); });
+      });
+      if (searchClose) {
+        searchClose.addEventListener('click', function () {
+          window.requestAnimationFrame(function () { searchTrigger.focus(); });
+        });
+      }
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && search.classList.contains('open')) {
+          window.requestAnimationFrame(function () { searchTrigger.focus(); });
+        }
+      }, true);
+      syncSearchState();
+    }
+
+    var themeToggle = document.querySelector('.page-header .mode');
+    if (themeToggle && !themeToggle.dataset.accessibilityBound) {
+      themeToggle.dataset.accessibilityBound = '1';
+      function syncThemeState() {
+        themeToggle.setAttribute('aria-pressed', String(document.body.classList.contains('dark-only')));
+      }
+      new MutationObserver(syncThemeState).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      syncThemeState();
+    }
+  }
+
   function navigation() {
     var sidebar = document.getElementById('proma-navigation');
     if (!sidebar) return;
@@ -70,7 +108,10 @@
       sidebar.classList.toggle('open', open && mobile.matches);
       sidebar.inert = mobile.matches && !open;
       backdrop.hidden = !mobile.matches || !open;
-      buttons.forEach(function (button) { button.setAttribute('aria-expanded', String(!mobile.matches || open)); });
+      buttons.forEach(function (button) {
+        button.setAttribute('aria-expanded', String(!mobile.matches || open));
+        button.setAttribute('aria-label', mobile.matches && open ? 'بستن منو' : 'باز کردن منو');
+      });
       if (restore && opener) opener.focus();
     }
     buttons.forEach(function (button) {
@@ -122,6 +163,7 @@
 
   function init() {
     addShellState();
+    headerControls();
     enhanceTables();
     enhanceBannerRails();
     navigation();

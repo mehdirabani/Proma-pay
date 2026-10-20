@@ -5,7 +5,7 @@ $hasSelection = $isChannel || (int) $contactId > 0;
 $threadTitle = $isChannel ? $selectedChannel['title'] : 'رشته پیام';
 $threadBadge = $isChannel ? 'کانال رسمی' : 'گفتگوی خصوصی';
 ?>
-<div class="chat-layout messenger-layout">
+<div class="chat-layout messenger-layout<?= (!$isChannel && !empty($selectedContact)) ? ' has-contact-profile' : '' ?>">
   <section class="card messenger-contacts">
     <div class="card-header card-no-border"><h2>گفت‌وگوها</h2></div>
     <?php if (Auth::role() !== 'customer'): ?>
@@ -112,14 +112,26 @@ $threadBadge = $isChannel ? 'کانال رسمی' : 'گفتگوی خصوصی';
       <?php endif; ?>
     <?php endif; ?>
   </section>
+  <?php if (!$isChannel && !empty($selectedContact)): $contactProfile = $contactProfile ?? null; ?>
+    <aside class="card chat-contact-profile" aria-label="اطلاعات مخاطب">
+      <div class="chat-contact-profile__identity">
+        <span class="proma-risk-avatar"><?= e(mb_substr((string) ($contactProfile['full_name'] ?? $selectedContact['full_name'] ?? 'م'), 0, 1, 'UTF-8')) ?></span>
+        <div><small>مخاطب گفتگو</small><strong><?= e($contactProfile['full_name'] ?? $selectedContact['full_name'] ?? '') ?></strong><span><?= e(role_label($contactProfile['role'] ?? $selectedContact['role'] ?? '')) ?></span></div>
+      </div>
+      <?php if (!empty($contactProfile['mobile'])): ?><a class="chat-contact-profile__detail" href="tel:<?= e(normalize_iran_phone($contactProfile['mobile'])) ?>"><?= proma_icon('phone') ?><span><small>شماره تماس</small><bdi><?= to_persian_digits(format_iran_phone($contactProfile['mobile'])) ?></bdi></span></a><?php endif; ?>
+      <?php if (!empty($contactProfile['email'])): ?><div class="chat-contact-profile__detail"><?= proma_icon('file') ?><span><small>ایمیل</small><bdi><?= e($contactProfile['email']) ?></bdi></span></div><?php endif; ?>
+      <?php if (!empty($contactProfile['department'])): ?><div class="chat-contact-profile__detail"><?= proma_icon('package') ?><span><small>واحد</small><strong><?= e(department_label($contactProfile['department'])) ?></strong></span></div><?php endif; ?>
+      <?php if (($contactProfile['role'] ?? '') === 'customer' && in_array(Auth::role(), ['admin', 'operator', 'lawyer'], true)): ?><a class="btn secondary chat-contact-profile__link" href="<?= e(url('customers/show/' . (int) $contactProfile['id'])) ?>">مشاهدهٔ پروفایل مشتری</a><?php endif; ?>
+    </aside>
+  <?php endif; ?>
 </div>
 
 <?php if (Auth::role() === 'admin' && !empty($pendingAttachments)): ?>
-<section class="card" style="margin-top:16px">
+<section class="card proma-chat-review-queue">
   <div class="card-header card-no-border"><h2>پیوست‌های چت در انتظار بررسی</h2></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>فرستنده</th><th>گیرنده</th><th>پیام</th><th>فایل</th><th>عملیات</th></tr></thead>
+      <thead><tr><th scope="col">فرستنده</th><th scope="col">گیرنده</th><th scope="col">پیام</th><th scope="col">فایل</th><th scope="col">عملیات</th></tr></thead>
       <tbody>
       <?php foreach ($pendingAttachments as $attachment): ?>
         <tr>

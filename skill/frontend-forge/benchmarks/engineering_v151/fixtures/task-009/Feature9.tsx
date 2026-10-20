@@ -1,1 +1,0 @@
-export function Data9({loading}){ if (loading) return null; return <div>Data</div> }

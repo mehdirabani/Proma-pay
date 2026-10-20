@@ -26,6 +26,46 @@ class PaymentsController extends Controller
         ], is_ajax_request() ? null : 'app');
     }
 
+    public function export()
+    {
+        $this->requireRole('admin');
+        $filters = [
+            'date_from' => parse_jalali_date($_GET['date_from'] ?? '') ?: null,
+            'date_to' => parse_jalali_date($_GET['date_to'] ?? '') ?: null,
+            'contract_number' => trim((string) ($_GET['contract_number'] ?? '')),
+            'customer' => trim((string) ($_GET['customer'] ?? '')),
+        ];
+        $total = null;
+        SpreadsheetHelper::downloadPaginatedXlsx(
+            'پرداخت‌ها.xlsx',
+            'پرداخت‌ها',
+            ['تاریخ پرداخت', 'شماره قرارداد', 'مشتری', 'شماره قسط', 'نوع پرداخت', 'مبلغ (تومان)', 'وضعیت', 'شناسه پیگیری درگاه', 'شناسه مرجع درگاه'],
+            static function (int $page, int $perPage) use ($filters, &$total): array {
+                if ($total === null) {
+                    $countFilters = $filters;
+                    $countFilters['count_only'] = true;
+                    $total = Payment::logs($countFilters);
+                }
+                $pageFilters = $filters;
+                $pageFilters['limit'] = min(200, $perPage);
+                $pageFilters['offset'] = ($page - 1) * min(200, $perPage);
+                return [
+                    'items' => Payment::logs($pageFilters),
+                    'total' => $total,
+                    'pages' => max(1, (int) ceil($total / max(1, $perPage))),
+                ];
+            },
+            static fn (array $payment): array => [
+                jdatetime($payment['paid_at'] ?: ($payment['payment_date'] ?: ($payment['created_at'] ?? ''))),
+                (string) ($payment['contract_number'] ?? ''), (string) ($payment['customer_name'] ?? ''),
+                (int) ($payment['installment_number'] ?? 0), payment_type_label($payment['payment_type'] ?? 'installment'),
+                normalize_money($payment['amount'] ?? 0), status_label($payment['status'] ?? ''),
+                (string) ($payment['gateway_track_id'] ?? ''), (string) ($payment['gateway_ref_id'] ?? ''),
+            ],
+            100
+        );
+    }
+
     public function zibal()
     {
         $_POST['gateway_id'] = 'zibal';
@@ -99,9 +139,9 @@ class PaymentsController extends Controller
         $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['installment_ids'] ?? [])))));
         $selectedIds = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['selected_installment_ids'] ?? [])))));
         $amount = normalize_money($_POST['amount'] ?? 0);
-        $scope = in_array(($_POST['settlement_scope'] ?? 'selected'), ['contract', 'schedule'], true) ? (string) $_POST['settlement_scope'] : 'selected';
-        if (!$ids || $amount <= 0) {
-            set_flash('error', 'حداقل یک قسط و مبلغ معتبر انتخاب کنید.');
+        $scope = in_array(($_POST['settlement_scope'] ?? 'selected'), ['contract', 'contract_legal_first', 'schedule'], true) ? (string) $_POST['settlement_scope'] : 'selected';
+        if ((!$ids && !in_array($scope, ['contract', 'contract_legal_first'], true)) || $amount <= 0) {
+            set_flash('error', 'مبلغ و محدوده پرداخت را کامل انتخاب کنید.');
             redirect('installments/panel');
         }
         try {
@@ -110,15 +150,16 @@ class PaymentsController extends Controller
             if ($this->hasUnresolvedGatewayReview($contractId, (int) Auth::id())) {
                 throw new InvalidArgumentException('یک پرداخت تأییدشدهٔ این قرارداد در حال بررسی مالی است. پیش از پرداخت دوباره، نتیجهٔ آن را پیگیری کنید.', 409);
             }
-            $installments = SettlementQuoteService::loadInstallments($contractId, $scope === 'schedule' ? $selectedIds : $ids);
+            $installments = $ids ? SettlementQuoteService::loadInstallments($contractId, $scope === 'schedule' ? $selectedIds : $ids) : [];
             $states = InstallmentFinancialStateService::statesForRows($installments);
             foreach ($installments as $installment) {
                 $state = $states[(int) $installment['id']] ?? [];
                 if (empty($state['payment_allowed'])) throw new InvalidArgumentException(InstallmentSettlementService::SETTLED_MESSAGE, 409);
             }
             if ($scope === 'schedule' && (!$selectedIds || !$ids)) throw new InvalidArgumentException('یک قسط برای شروع تخصیص انتخاب کنید.', 422);
-            $quote = SettlementQuoteService::create($contractId, in_array($scope, ['contract', 'schedule'], true) ? [] : $ids, Auth::id(), $scope);
+            $quote = SettlementQuoteService::create($contractId, in_array($scope, ['contract', 'contract_legal_first', 'schedule'], true) ? [] : $ids, Auth::id(), $scope);
             $quotedIds = array_values(array_unique(array_map('intval', json_decode((string) ($quote['selected_installment_ids_json'] ?? '[]'), true) ?: [])));
+            if (in_array($scope, ['contract', 'contract_legal_first'], true)) $ids = $quotedIds;
             if ($scope === 'schedule' && (array_diff($ids, $quotedIds) || array_diff($selectedIds, $quotedIds))) {
                 throw new InvalidArgumentException('پیش‌فاکتور تخصیص اقساط تغییر کرده است؛ صفحه را تازه‌سازی کنید.', 409);
             }
@@ -134,16 +175,16 @@ class PaymentsController extends Controller
             $result = $gateway->createPayment([
                 'type' => 'group',
                 'contract_id' => $contractId,
-                'contract_number' => (string) ($installments[0]['contract_number'] ?? $contractId),
+                'contract_number' => (string) ($installments[0]['contract_number'] ?? $contract['contract_number'] ?? $contractId),
                 'installment_ids' => $ids,
                 'customer_id' => (int) Auth::id(),
-                'customer_name' => (string) ($installments[0]['customer_name'] ?? ''),
+                'customer_name' => (string) ($installments[0]['customer_name'] ?? $contract['customer_name'] ?? ''),
                 'customer_mobile' => (string) ($user['mobile'] ?? ''),
                 'customer_email' => (string) ($user['email'] ?? ''),
                 'amount_toman' => (int) $amount,
                 'quote_uuid' => (string) ($quote['quote_uuid'] ?? ''),
                 'settlement_scope' => $scope,
-                'description' => 'پرداخت چندقسطی قرارداد ' . ($installments[0]['contract_number'] ?? $contractId),
+                'description' => 'پرداخت قرارداد ' . ($installments[0]['contract_number'] ?? $contract['contract_number'] ?? $contractId),
                 'idempotency_key' => $this->paymentIdempotencyKey($_POST['idempotency_key'] ?? '', 'group', $contractId),
             ]);
             if (empty($result['redirect_url'])) {

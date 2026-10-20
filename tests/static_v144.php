@@ -11,7 +11,7 @@ $assert = static function ($condition, string $message): void {
 
 $version = require $root . '/config/version.php';
 $assert(version_compare((string) ($version['application'] ?? ''), '1.4.4', '>='), 'Core version must be V1.4.4 or newer.');
-$assert(($version['release_channel'] ?? '') === 'stable', 'V1.4.4 release channel must be stable.');
+$assert(in_array(($version['release_channel'] ?? ''), ['stable', 'candidate'], true), 'Current release channel is invalid.');
 
 foreach ([
     'database/migrations/2026_07_23_release_v144.sql',
@@ -37,7 +37,7 @@ $feedStart = strpos($notification, 'public static function feed');
 $feedEnd = strpos($notification, 'public static function markAllRead', $feedStart);
 $feedSource = substr($notification, $feedStart, $feedEnd - $feedStart);
 $assert(strpos($feedSource, 'UPDATE notifications') === false, 'Notification polling must remain read-only.');
-$assert(substr_count($feedSource, 'self::') <= 2, 'Notification feed performs too many model operations.');
+$assert(substr_count($feedSource, 'self::') <= 3 && strpos($feedSource, 'self::latestId') !== false, 'Notification feed must keep the cross-source cursor while remaining bounded.');
 
 $appJs = (string) file_get_contents($root . '/assets/js/app.js');
 foreach (['fetchWithDeadline', 'proma-poller-lease:', "leaseKey: 'notifications:'", 'navigator.onLine === false'] as $token) {
@@ -84,7 +84,7 @@ $assert(!preg_match('/\bDELETE\s+FROM\b/i', $v143Migration), 'V1.4.3 migration s
 foreach (['backups', 'cache', 'logs', 'releases', 'sessions', 'updates'] as $volatileDirectory) {
     $assert(strpos($backupService, "'" . $volatileDirectory . "'") !== false, 'Safety backups do not exclude volatile storage/' . $volatileDirectory . ' data.');
 }
-$assert(strpos($backupService, 'if (!$zip->close())') !== false, 'Backup ZIP finalization errors are ignored.');
+$assert(preg_match('/if\s*\(\s*!\s*\$[A-Za-z_][A-Za-z0-9_]*->close\(\)\s*\)/', $backupService) === 1, 'Backup ZIP finalization errors are ignored.');
 
 $migration = (string) file_get_contents($root . '/database/migrations/2026_07_23_release_v144.sql');
 $assert(strpos($migration, 'idx_notification_active_user') !== false, 'Notification polling index is missing.');

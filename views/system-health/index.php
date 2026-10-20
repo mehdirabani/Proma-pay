@@ -33,7 +33,7 @@ $systemHealthy = !empty($database['ok']) && !empty($storage['ok']) && !$hasQueue
     <div class="card-header"><div><h2>افزونه‌های سامانه</h2><p><?= to_persian_digits($activePluginCount) ?> افزونه فعال از <?= to_persian_digits(count($plugins ?? [])) ?> افزونه ثبت‌شده</p></div><a class="btn small secondary" href="<?= e(url('plugins')) ?>">مدیریت افزونه‌ها</a></div>
     <div class="card-body">
       <?php if (empty($plugins)): ?><div class="empty">افزونه ثبت‌شده‌ای وجود ندارد یا رجیستری در دسترس نیست.</div><?php else: ?>
-        <div class="table-responsive"><table><thead><tr><th>افزونه</th><th>نسخه</th><th>وضعیت</th></tr></thead><tbody>
+        <div class="table-responsive"><table><thead><tr><th scope="col">افزونه</th><th scope="col">نسخه</th><th scope="col">وضعیت</th></tr></thead><tbody>
         <?php foreach ($plugins as $plugin): ?><tr><td><strong><?= e($plugin['name']) ?></strong><?php if ($plugin['last_error']): ?><small class="proma-health-error-text"><?= e($plugin['last_error']) ?></small><?php endif; ?></td><td dir="ltr"><?= e($plugin['version']) ?></td><td><span class="badge <?= $plugin['status'] === 'active' ? 'success' : 'muted' ?>"><?= e(PluginStatus::label($plugin['status'])) ?></span></td></tr><?php endforeach; ?>
         </tbody></table></div>
       <?php endif; ?>
@@ -45,7 +45,7 @@ $systemHealthy = !empty($database['ok']) && !empty($storage['ok']) && !$hasQueue
     <div class="card-body">
       <?php if (!$telemetry['available']): ?><div class="empty">برای امروز هنوز داده تله‌متری قابل نمایش ثبت نشده است.</div><?php else: ?>
         <div class="proma-health-counters"><div><span>درخواست کند</span><strong><?= to_persian_digits(count($telemetry['slow'])) ?></strong></div><div><span>خطاهای اخیر</span><strong><?= to_persian_digits(count($telemetry['errors'])) ?></strong></div><div><span>خطای سرویس بیرونی</span><strong><?= to_persian_digits($telemetry['external_failures']) ?></strong></div></div>
-        <?php if (!empty($telemetry['slow'])): ?><div class="table-responsive"><table><thead><tr><th>مسیر</th><th>مدت</th><th>شناسه پیگیری</th></tr></thead><tbody><?php foreach (array_reverse($telemetry['slow']) as $item): ?><tr><td dir="ltr"><?= e($item['route']) ?></td><td><?= to_persian_digits($item['duration_ms']) ?> ms</td><td dir="ltr"><small><?= e($item['request_id']) ?></small></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
+        <?php if (!empty($telemetry['slow'])): ?><div class="table-responsive"><table><thead><tr><th scope="col">مسیر</th><th scope="col">مدت</th><th scope="col">شناسه پیگیری</th></tr></thead><tbody><?php foreach (array_reverse($telemetry['slow']) as $item): ?><tr><td dir="ltr"><?= e($item['route']) ?></td><td><?= to_persian_digits($item['duration_ms']) ?> ms</td><td dir="ltr"><small><?= e($item['request_id']) ?></small></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
       <?php endif; ?>
     </div>
   </section>

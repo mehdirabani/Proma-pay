@@ -2,8 +2,8 @@
 
 /**
  * Commits a quoted payment as one parent payment_group and immutable child
- * allocations. Selected scope stays within the selected rows; schedule scope
- * explicitly expands to all eligible installments in the same contract.
+ * allocations. Selected scope stays within the selected rows; schedule and
+ * contract scopes expand only to rows covered by their settlement policy.
  */
 class PaymentGroupService
 {
@@ -32,7 +32,7 @@ class PaymentGroupService
         $amount = self::moneyInteger($amount);
         $ids = self::ids($installmentIds);
         $scope = self::allocationScope($scope);
-        if ($contractId <= 0 || !$ids || $amount <= 0) throw new InvalidArgumentException('اطلاعات پرداخت آنلاین چندقسطی معتبر نیست.');
+        if ($contractId <= 0 || (!$ids && !in_array($scope, ['contract', 'contract_legal_first'], true)) || $amount <= 0) throw new InvalidArgumentException('اطلاعات پرداخت آنلاین چندقسطی معتبر نیست.');
         $started = !Model::db()->inTransaction();
         if ($started) Model::begin();
         try {
@@ -40,9 +40,10 @@ class PaymentGroupService
                 if ($started) Model::commit();
                 return $existing;
             }
-            $contract = self::lockedContract($contractId, $userId, true);
+            $contract = self::lockedContract($contractId, $userId, true, self::scopeCanCollectLegalCosts($scope));
             $rows = SettlementQuoteService::loadInstallments($contractId, $ids, true);
             $verified = SettlementQuoteService::verifyLocked($quoteUuid, $contract, $rows, $ids, $amount, $userId, $scope);
+            self::assertClosedContractLegalOnly($contract, $verified['plan']);
             $groupNumber = self::number('PG-' . strtoupper(substr((string) $gatewayId, 0, 3)));
             Model::execute(
                 'INSERT INTO payment_groups (group_number, contract_id, customer_id, created_by, requested_amount, method, status, gateway_track_id, idempotency_key, quote_uuid, allocation_scope, description, selection_json, allocation_json, created_at)
@@ -86,10 +87,11 @@ class PaymentGroupService
                 throw new InvalidArgumentException('مبلغ یا وضعیت پرداخت گروهی درگاه معتبر نیست.', 409);
             }
             $ids = self::ids(json_decode((string) ($group['selection_json'] ?? '[]'), true) ?: []);
-            $contract = self::lockedContract((int) $group['contract_id'], (int) $group['customer_id'], true);
-            $rows = SettlementQuoteService::loadInstallments((int) $group['contract_id'], $ids, true);
             $scope = self::allocationScope($group['allocation_scope'] ?? 'selected');
+            $contract = self::lockedContract((int) $group['contract_id'], (int) $group['customer_id'], true, self::scopeCanCollectLegalCosts($scope));
+            $rows = SettlementQuoteService::loadInstallments((int) $group['contract_id'], $ids, true);
             $verified = SettlementQuoteService::verifyLocked((string) ($group['quote_uuid'] ?? ''), $contract, $rows, $ids, $amount, (int) $group['customer_id'], $scope);
+            self::assertClosedContractLegalOnly($contract, $verified['plan']);
             $result = self::writeAllocations($group, $verified['plan'], date('Y-m-d'), date('H:i'), $refId, $actorId ?: (int) $group['customer_id']);
             Model::execute('UPDATE payment_groups SET gateway_verified_amount = ?, gateway_ref_id = ? WHERE id = ?', [self::moneyInteger($amount), substr((string) $refId, 0, 100), $groupId]);
             SettlementQuoteService::markUsed((string) ($group['quote_uuid'] ?? ''), (int) $group['id']);
@@ -176,12 +178,14 @@ class PaymentGroupService
                 || !hash_equals((string) ($group['gateway_ref_id'] ?? ''), trim((string) $confirmedRefId))) {
                 throw new InvalidArgumentException('مبلغ یا شناسه مرجع با دریافت تأییدشدهٔ درگاه یکسان نیست. ابتدا گزارش بانکی بررسی شود.', 409);
             }
-            $contract = self::lockedContract((int) $group['contract_id'], (int) $adminId, false);
+            $storedScope = (string) ($group['allocation_scope'] ?? '');
+            $scope = in_array($storedScope, ['contract', 'contract_legal_first'], true) ? $storedScope : 'schedule';
+            $contract = self::lockedContract((int) $group['contract_id'], (int) $adminId, false, self::scopeCanCollectLegalCosts($scope));
             $rows = SettlementQuoteService::loadInstallments((int) $group['contract_id'], [], true);
-            $scope = ($group['allocation_scope'] ?? '') === 'contract' ? 'contract' : 'schedule';
             $quote = SettlementQuoteService::persistQuote($contract, $rows, $adminId, $scope, date('Y-m-d'));
             $ids = self::ids(json_decode((string) ($quote['selected_installment_ids_json'] ?? '[]'), true) ?: []);
             $verified = SettlementQuoteService::verifyLocked((string) $quote['quote_uuid'], $contract, $rows, $ids, $amount, $adminId, $scope, date('Y-m-d'));
+            self::assertClosedContractLegalOnly($contract, $verified['plan']);
             Model::execute('UPDATE payment_groups SET quote_uuid = ?, selection_json = ?, allocation_json = ?, allocation_scope = ?, reconciliation_reason = ? WHERE id = ?', [
                 (string) $quote['quote_uuid'], json_encode($ids), json_encode($verified['plan']['allocations'], JSON_UNESCAPED_UNICODE), $scope,
                 function_exists('mb_substr') ? mb_substr('تطبیق توسط مدیر: ' . $reason, 0, 255, 'UTF-8') : substr('تطبیق توسط مدیر: ' . $reason, 0, 255), $groupId,
@@ -213,11 +217,11 @@ class PaymentGroupService
         $ids = self::ids($installmentIds);
         $amount = self::moneyInteger($amount);
         $scope = self::allocationScope($scope);
-        if ($contractId <= 0 || !$ids || $amount <= 0) throw new InvalidArgumentException('قرارداد، اقساط و مبلغ پرداخت را کامل کنید.');
+        if ($contractId <= 0 || (!$ids && !in_array($scope, ['contract', 'contract_legal_first'], true)) || $amount <= 0) throw new InvalidArgumentException('قرارداد، اقساط و مبلغ پرداخت را کامل کنید.');
         $requestUuid = PaymentRequest::normalizeUuid($requestUuid ?: '');
         $requestHash = PaymentRequest::hash([
             'contract_id' => (int) $contractId, 'installment_ids' => $ids, 'amount' => $amount,
-            'method' => self::method($method), 'quote_uuid' => trim((string) $quoteUuid), 'payment_date' => $paymentDate, 'scope' => $scope,
+            'method' => self::method($method), 'quote_uuid' => trim((string) $quoteUuid), 'payment_date' => $paymentDate, 'payment_time' => $paymentTime, 'scope' => $scope,
         ]);
         $request = PaymentRequest::beginSettlement($requestUuid, $userId, $contractId, $ids, $quoteUuid, $requestHash);
         if (($request['status'] ?? '') === 'completed') {
@@ -225,24 +229,41 @@ class PaymentGroupService
         }
         Model::begin();
         try {
-            $contract = self::lockedContract($contractId, $userId, false);
+            $contract = self::lockedContract($contractId, $userId, false, self::scopeCanCollectLegalCosts($scope));
             $submittedIds = $ids;
-            if ($scope === 'schedule') {
-                // Overflow is a contract-schedule policy, not an instruction to
-                // trust client-supplied future rows. Expand while holding the
-                // contract lock, then persist the exact eligible row set in the
-                // quote and payment group.
+            if (in_array($scope, ['schedule', 'forward', 'contract', 'contract_legal_first'], true)) {
+                // Schedule, forward-overflow, and contract settlement scopes
+                // expand under the contract lock; never trust client row lists.
                 $allRows = SettlementQuoteService::loadInstallments($contractId, [], true);
                 $allIds = array_map(static function ($row) { return (int) $row['id']; }, $allRows);
                 if (array_diff($submittedIds, $allIds)) {
                     throw new InvalidArgumentException('یکی از اقساط انتخاب‌شده به این قرارداد تعلق ندارد.', 409);
                 }
                 if (trim((string) $quoteUuid) === '') {
-                    $generatedQuote = SettlementQuoteService::persistQuote($contract, $allRows, $userId, $scope, $paymentDate);
+                    $quoteRows = $allRows;
+                    if ($scope === 'forward') {
+                        usort($quoteRows, static function ($left, $right) {
+                            $due = strcmp((string) ($left['due_date'] ?? ''), (string) ($right['due_date'] ?? ''));
+                            if ($due !== 0) return $due;
+                            $number = (int) ($left['installment_number'] ?? 0) <=> (int) ($right['installment_number'] ?? 0);
+                            return $number !== 0 ? $number : ((int) ($left['id'] ?? 0) <=> (int) ($right['id'] ?? 0));
+                        });
+                        $positions = [];
+                        foreach ($quoteRows as $position => $row) $positions[(int) $row['id']] = $position;
+                        $startAt = null;
+                        foreach ($submittedIds as $submittedId) {
+                            if (isset($positions[$submittedId])) $startAt = $startAt === null ? $positions[$submittedId] : min($startAt, $positions[$submittedId]);
+                        }
+                        if ($startAt === null) throw new InvalidArgumentException('قسط شروع تخصیص پیدا نشد.', 409);
+                        $quoteRows = array_slice($quoteRows, $startAt);
+                    }
+                    $generatedQuote = SettlementQuoteService::persistQuote($contract, $quoteRows, $userId, $scope, $paymentDate);
                     $quoteUuid = (string) ($generatedQuote['quote_uuid'] ?? '');
                     $ids = array_values(array_unique(array_map('intval', json_decode((string) ($generatedQuote['selected_installment_ids_json'] ?? '[]'), true) ?: [])));
                     if (!array_intersect($submittedIds, $ids)) {
-                        throw new InvalidArgumentException('از اقساط انتخاب‌شده مورد قابل پرداختی باقی نمانده است.', 409);
+                        if ($scope !== 'contract' && $scope !== 'contract_legal_first') {
+                            throw new InvalidArgumentException('از اقساط انتخاب‌شده مورد قابل پرداختی باقی نمانده است.', 409);
+                        }
                     }
                 }
             }
@@ -254,6 +275,7 @@ class PaymentGroupService
                 $rows = SettlementQuoteService::loadInstallments($contractId, $ids, true);
             }
             $verified = SettlementQuoteService::verifyLocked($quoteUuid, $contract, $rows, $ids, $amount, $userId, $scope, $paymentDate);
+            self::assertClosedContractLegalOnly($contract, $verified['plan']);
             $groupNumber = self::number('PG');
             Model::execute(
                 'INSERT INTO payment_groups (group_number, contract_id, customer_id, created_by, requested_amount, method, status, idempotency_key, quote_uuid, payment_request_uuid, allocation_scope, description, selection_json, allocation_json, created_at, completed_at)
@@ -291,6 +313,7 @@ class PaymentGroupService
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())',
                 [(int) $group['id'], $paymentId, (int) $group['contract_id'], (int) $allocation['installment_id'], self::moneyDecimal($allocation['allocated_amount']), self::moneyDecimal($allocation['principal_applied']), self::moneyDecimal($allocation['normal_penalty_applied']), self::moneyDecimal($allocation['legal_penalty_applied']), self::moneyDecimal($allocation['reward_applied']), self::moneyDecimal($allocation['remaining_before']), self::moneyDecimal($allocation['remaining_after']), $allocation['final_status'], $group['quote_uuid'] ?? null]
             );
+            FinancialLedgerService::payment($paymentId, (int) $actorId);
             $allocated += normalize_money($allocation['allocated_amount']);
         }
         foreach ($plan['legal_cost_allocations'] ?? [] as $allocation) {
@@ -321,6 +344,7 @@ class PaymentGroupService
                 $amount,
                 (int) $actorId
             );
+            FinancialLedgerService::payment($paymentId, (int) $actorId);
             $allocated += $amount;
         }
         if ($allocated !== normalize_money($group['requested_amount'])) throw new RuntimeException('تخصیص کامل مبلغ پرداخت انجام نشد.');
@@ -328,16 +352,39 @@ class PaymentGroupService
         return Model::fetch('SELECT * FROM payment_groups WHERE id = ?', [(int) $group['id']]);
     }
 
-    private static function lockedContract($contractId, $userId, $customerOnly)
+    private static function lockedContract($contractId, $userId, $customerOnly, $allowClosedLegalCosts = false)
     {
         $contract = Model::fetch('SELECT * FROM contracts WHERE id = ? FOR UPDATE', [(int) $contractId]);
-        if (!$contract || in_array((string) ($contract['status'] ?? ''), ['cancelled', 'closed'], true)) {
+        $status = (string) ($contract['status'] ?? '');
+        if (!$contract || $status === 'cancelled' || ($status === 'closed' && !$allowClosedLegalCosts)) {
             throw new InvalidArgumentException('قرارداد برای پرداخت معتبر نیست.', 409);
         }
         if ($customerOnly && (int) $contract['customer_id'] !== (int) $userId) {
             throw new InvalidArgumentException('دسترسی پرداخت این قرارداد را ندارید.', 403);
         }
         return $contract;
+    }
+
+    private static function scopeCanCollectLegalCosts(string $scope): bool
+    {
+        return in_array($scope, ['contract', 'contract_legal_first'], true);
+    }
+
+    /** A closed contract can only accept a payment allocated entirely to legal costs. */
+    private static function assertClosedContractLegalOnly(array $contract, array $plan): void
+    {
+        if (($contract['status'] ?? '') !== 'closed') return;
+        $installmentAmount = 0;
+        foreach ($plan['allocations'] ?? [] as $allocation) {
+            $installmentAmount += normalize_money($allocation['allocated_amount'] ?? 0);
+        }
+        $legalCostAmount = 0;
+        foreach ($plan['legal_cost_allocations'] ?? [] as $allocation) {
+            $legalCostAmount += normalize_money($allocation['allocated_amount_toman'] ?? 0);
+        }
+        if ($installmentAmount > 0 || $legalCostAmount <= 0) {
+            throw new InvalidArgumentException('برای قرارداد بسته فقط دریافت ماندهٔ هزینه‌های حقوقی مجاز است.', 409);
+        }
     }
 
     private static function afterCommit(array $group, $actorId)
@@ -375,7 +422,7 @@ class PaymentGroupService
     private static function allocationScope($scope)
     {
         $scope = strtolower(trim((string) $scope));
-        return in_array($scope, ['selected', 'contract', 'schedule'], true) ? $scope : 'selected';
+        return in_array($scope, ['selected', 'contract', 'contract_legal_first', 'schedule', 'forward'], true) ? $scope : 'selected';
     }
 
     private static function number($prefix)

@@ -57,6 +57,13 @@ class ChatController extends Controller
                 $selectedContact = Chat::botContact(Auth::id());
             }
         }
+        $contactProfile = null;
+        if ($selectedContact && (int) ($selectedContact['id'] ?? 0) > 0) {
+            $contactProfile = Model::fetch(
+                'SELECT id, full_name, mobile, email, department, role FROM users WHERE id = ? LIMIT 1',
+                [(int) $selectedContact['id']]
+            );
+        }
         $messages = $selectedChannel
             ? Chat::channelMessages((int) $selectedChannel['id'])
             : ($contactId ? Chat::messages(Auth::id(), $contactId) : []);
@@ -65,6 +72,7 @@ class ChatController extends Controller
             'contacts' => $contacts,
             'contactId' => $contactId,
             'selectedContact' => $selectedContact,
+            'contactProfile' => $contactProfile,
             'selectedChannel' => $selectedChannel,
             'channelSlug' => $channelSlug,
             'canSendChannel' => $selectedChannel ? Chat::canSendToChannel(Auth::id(), $selectedChannel) : false,

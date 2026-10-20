@@ -28,8 +28,18 @@ CREATE TABLE IF NOT EXISTS legal_case_costs (
   KEY idx_legal_case_cost_case_date (legal_case_id, cost_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-ALTER TABLE legal_case_costs
-  ADD COLUMN IF NOT EXISTS paid_amount_toman BIGINT NOT NULL DEFAULT 0 AFTER amount_toman;
+SET @paid_amount_column_exists := (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'legal_case_costs' AND COLUMN_NAME = 'paid_amount_toman'
+);
+SET @paid_amount_column_sql := IF(
+  @paid_amount_column_exists = 0,
+  'ALTER TABLE legal_case_costs ADD COLUMN paid_amount_toman BIGINT NOT NULL DEFAULT 0 AFTER amount_toman',
+  'SET @migration_noop = 1'
+);
+PREPARE paid_amount_column_stmt FROM @paid_amount_column_sql;
+EXECUTE paid_amount_column_stmt;
+DEALLOCATE PREPARE paid_amount_column_stmt;
 
 CREATE TABLE IF NOT EXISTS legal_cost_payment_allocations (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

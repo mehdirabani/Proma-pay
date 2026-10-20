@@ -36,7 +36,7 @@ class RequestTelemetry
         self::$status = max(100, min(599, (int) $status));
     }
 
-    public static function recordQuery($sql, $durationMs, Throwable $error = null)
+    public static function recordQuery($sql, $durationMs, ?Throwable $error = null)
     {
         $durationMs = max(0.0, (float) $durationMs);
         self::$queries++;

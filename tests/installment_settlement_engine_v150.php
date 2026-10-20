@@ -53,6 +53,14 @@ $settled = InstallmentFinancialStateService::state(
 );
 $assert($settled['status'] === 'paid' && !$settled['payment_allowed'] && $settled['final_payable'] === 0, 'Settled installment remains payable.');
 
+$futureRewardSettings = array_merge($settings, ['monthly_reward_rate' => '1']);
+$futureLegalInstallment = array_merge($rows[0], ['due_date' => '2026-08-25', 'legal_started_at' => '2026-07-26']);
+$futureLegalState = InstallmentFinancialStateService::state($futureLegalInstallment, [], $futureRewardSettings, '2026-07-26');
+$assert($futureLegalState['eligible_reward'] === 0 && $futureLegalState['final_payable'] === 1500000, 'A formal legal referral must suppress the early-settlement reward on future installments.');
+$futureReviewInstallment = array_merge($futureLegalInstallment, ['legal_started_at' => null]);
+$futureReviewState = InstallmentFinancialStateService::state($futureReviewInstallment, [], $futureRewardSettings, '2026-07-26');
+$assert($futureReviewState['eligible_reward'] > 0, 'Internal review without a formal referral must retain the configured early-settlement reward.');
+
 $stalePartial = $rows[2];
 $stalePartial['status'] = 'paid';
 $stalePartial['contract_status'] = 'completed';

@@ -12,7 +12,7 @@ $assert = static function ($condition, string $message): void {
 $version = require $root . '/config/version.php';
 $applicationVersion = (string) ($version['application'] ?? '');
 $assert(version_compare($applicationVersion, '1.4.3', '>='), 'Core version must be V1.4.3 or newer.');
-$assert(($version['release_channel'] ?? '') === 'stable', 'V1.4.3 release channel must be stable.');
+$assert(in_array(($version['release_channel'] ?? ''), ['stable', 'candidate'], true), 'Current release channel is invalid.');
 
 foreach ([
     'controllers/ProfileReviewsController.php',

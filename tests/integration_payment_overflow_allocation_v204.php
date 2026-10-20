@@ -21,7 +21,7 @@ $pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_
     PDO::ATTR_EMULATE_PREPARES => false,
 ]);
 $property = new ReflectionProperty(Model::class, 'pdo');
-$property->setAccessible(true);
+
 $property->setValue(null, $pdo);
 
 $assert = static function ($condition, string $message): void {
@@ -62,11 +62,26 @@ $seedSchedule = static function () use ($customerId, $adminId): array {
 
 [$manualContractId, $manualRows] = $seedSchedule();
 $costUuid = 'QA-LCC-' . strtoupper($suffix);
+$legalCase = Model::fetch(
+    "SELECT id FROM legal_cases WHERE contract_id = ? ORDER BY id DESC LIMIT 1",
+    [$manualContractId]
+);
+if (!$legalCase) {
+    Model::execute(
+        "INSERT INTO legal_cases (customer_id, contract_id, status, stage, created_at, updated_at, legal_referred_at)
+         VALUES (?, ?, 'active', 'legal', NOW(), NOW(), NOW())",
+        [$customerId, $manualContractId]
+    );
+    $legalCaseId = (int) Model::lastInsertId();
+} else {
+    $legalCaseId = (int) $legalCase['id'];
+}
 Model::execute(
     "INSERT INTO legal_case_costs (cost_uuid, contract_id, category, title, amount_toman, cost_date, payment_status, approval_status, chargeable_to_customer, created_by, approved_by, created_at, approved_at)
      VALUES (?, ?, 'هزینه آزمون', 'هزینه حقوقی تأییدشده آزمون', 500000, '2026-10-01', 'pending', 'approved', 1, ?, ?, NOW(), NOW())",
     [$costUuid, $manualContractId, $adminId, $adminId]
 );
+Model::execute('UPDATE legal_case_costs SET legal_case_id = ? WHERE cost_uuid = ?', [$legalCaseId, $costUuid]);
 $scheduleQuote = SettlementQuoteService::create($manualContractId, [], $adminId, 'schedule', '2026-10-01');
 $contractQuote = SettlementQuoteService::create($manualContractId, [], $adminId, 'contract', '2026-10-01');
 $assert(normalize_money($scheduleQuote['legal_cost_total'] ?? 0) === 0, 'Schedule overflow quote incorrectly included legal costs.');

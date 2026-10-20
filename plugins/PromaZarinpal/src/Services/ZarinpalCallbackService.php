@@ -12,7 +12,7 @@ class ZarinpalCallbackService
     private $logs;
     private $verification;
 
-    public function __construct(ZarinpalTransactionRepository $transactions = null, ZarinpalLogRepository $logs = null, ZarinpalVerificationService $verification = null)
+    public function __construct(?ZarinpalTransactionRepository $transactions = null, ?ZarinpalLogRepository $logs = null, ?ZarinpalVerificationService $verification = null)
     {
         $this->transactions = $transactions ?: new ZarinpalTransactionRepository();
         $this->logs = $logs ?: new ZarinpalLogRepository();

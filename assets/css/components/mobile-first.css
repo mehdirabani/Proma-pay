@@ -1,0 +1,328 @@
+/* Shared mobile-first application shell and role workspaces. */
+body.proma-v2 {
+  --pp-mobile-gutter: 16px;
+  --pp-mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.proma-v2 :is(.proma-page-content, .proma-role-dashboard, .proma-admin-dashboard, .proma-overdue-page, .proma-operator-contracts) {
+  min-width: 0;
+}
+
+body.proma-v2 .proma-page-content {
+  padding-bottom: 28px;
+}
+
+body.proma-v2 .proma-page-content :is(h1, h2, h3, h4, h5) {
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+body.proma-v2 .proma-page-content :is(.card, .proma-overdue-mobile-card, .proma-operator-contract, .proma-role-kpi, .proma-admin-kpi) {
+  min-width: 0;
+}
+
+body.proma-v2 .proma-page-content :is(.btn, button, .icon-btn, .proma-icon-button, summary) {
+  touch-action: manipulation;
+}
+
+body.proma-v2 .proma-header-contract-btn :is(svg, i),
+body.proma-v2 .proma-header-quick-action .btn :is(svg, i) {
+  color: #fff !important;
+  stroke: currentColor;
+}
+
+body.proma-v2 .proma-phone-link,
+body.proma-v2 .proma-overdue-mobile-card__phone {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--pp-primary-700);
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+body.proma-v2 .proma-phone-link:hover,
+body.proma-v2 .proma-overdue-mobile-card__phone:hover { text-decoration: underline; }
+body.proma-v2 .proma-overdue-mobile-card__phone svg { width: 15px; height: 15px; }
+
+body.proma-v2 .proma-call-action {
+  color: #fff !important;
+  background: #08794f !important;
+  border-color: #08794f !important;
+}
+body.proma-v2 .proma-call-action :is(svg, i) { color: #fff !important; }
+
+body.proma-v2 .proma-role-dashboard .proma-role-hero,
+body.proma-v2 .proma-admin-dashboard .proma-workspace-intro {
+  border-radius: 24px;
+  box-shadow: 0 18px 44px rgba(35, 43, 95, .16);
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-hero-actions .btn {
+  min-height: 46px;
+  color: #fff;
+  border-color: rgba(255, 255, 255, .25);
+  background: rgba(255, 255, 255, .13);
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-kpi,
+body.proma-v2 .proma-admin-dashboard .proma-admin-kpi {
+  border-color: var(--pp-line);
+  box-shadow: 0 8px 25px rgba(28, 39, 83, .06);
+}
+
+body.proma-v2 .proma-overdue-page { gap: 16px; }
+body.proma-v2 .proma-overdue-mobile-list { gap: 14px; }
+body.proma-v2 .proma-overdue-mobile-card {
+  padding: 17px;
+  gap: 15px;
+  border-radius: 18px;
+  background: var(--pp-surface);
+  box-shadow: 0 8px 22px rgba(27, 35, 72, .055);
+}
+
+body.proma-v2 .proma-overdue-mobile-card header {
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--pp-line);
+}
+body.proma-v2 .proma-overdue-mobile-card header > div { gap: 4px; }
+body.proma-v2 .proma-overdue-mobile-card header strong { color: var(--pp-ink); font-size: 16px; }
+body.proma-v2 .proma-overdue-mobile-card header .badge { max-width: 42%; white-space: normal; text-align: center; }
+body.proma-v2 .proma-overdue-mobile-card__phone { justify-self: start; margin-top: 3px; font-size: 13px; }
+body.proma-v2 .proma-overdue-mobile-card__metrics { gap: 8px; }
+body.proma-v2 .proma-overdue-mobile-card__metrics span {
+  min-height: 68px;
+  align-content: center;
+  padding: 9px 8px;
+  border: 1px solid var(--pp-line);
+  border-radius: 12px;
+  background: var(--pp-surface-subtle);
+}
+body.proma-v2 .proma-overdue-mobile-card__metrics strong { color: var(--pp-ink); font-size: 12px; }
+body.proma-v2 .proma-overdue-mobile-card footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--pp-line);
+}
+body.proma-v2 .proma-overdue-mobile-card footer > * { min-width: 0; width: 100%; justify-content: center; }
+body.proma-v2 .proma-overdue-mobile-card footer .proma-call-action { grid-column: 1 / -1; }
+body.proma-v2 .proma-followup-recorded {
+  color: #08794f !important;
+  border-color: #a8e7c5 !important;
+  background: #e9fbf3 !important;
+  font-weight: 850;
+}
+body.proma-v2 .proma-followup-active { color: #9b6200 !important; border-color: #f8d38a !important; background: #fff6df !important; }
+
+body.proma-v2 .proma-operator-contracts { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+body.proma-v2 .proma-operator-contract {
+  display: grid;
+  gap: 15px;
+  padding: 17px;
+  border-radius: 18px;
+  box-shadow: 0 8px 22px rgba(27, 35, 72, .055);
+}
+body.proma-v2 .proma-operator-contract__main { min-width: 0; gap: 14px; }
+body.proma-v2 .proma-operator-contract__main h3 { margin: 4px 0; font-size: 17px; }
+body.proma-v2 .proma-operator-contract__main p { margin: 0; overflow-wrap: anywhere; }
+body.proma-v2 .proma-operator-contract__amount { align-items: flex-start; text-align: start; }
+body.proma-v2 .proma-operator-contract__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 13px;
+  border-top: 1px solid var(--pp-line);
+}
+body.proma-v2 .proma-operator-contract__actions > * { width: 100%; min-width: 0; justify-content: center; }
+body.proma-v2 .proma-operator-contract__actions .proma-call-action { grid-column: 1 / -1; }
+
+body.proma-v2 .proma-followup-history {
+  max-height: min(34dvh, 300px);
+  padding-top: 14px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+body.proma-v2 .proma-followup-history__item { padding: 12px; border-radius: 13px; background: var(--pp-surface-subtle); }
+body.proma-v2 .proma-followup-history__item header { align-items: flex-start; }
+body.proma-v2 .proma-followup-history__item time { flex: 0 0 auto; text-align: end; }
+
+body.proma-v2 .proma-page-content .table-wrap,
+body.proma-v2 .proma-page-content .table-responsive,
+body.proma-v2 .proma-page-content .table-responsive-md {
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.proma-v2 .proma-page-content :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+  min-height: 48px;
+  font-size: 16px;
+}
+body.proma-v2 .proma-page-content textarea { min-height: 104px; }
+body.proma-v2 .proma-page-content :is(input, select, textarea):focus-visible {
+  border-color: var(--pp-primary-600);
+  box-shadow: 0 0 0 3px rgba(91, 47, 232, .14);
+}
+
+@media (max-width: 991.98px) {
+  body.proma-v2 { --pp-header: 66px; }
+  body.proma-v2 .page-wrapper.compact-wrapper .page-body-wrapper .page-body { min-height: calc(100dvh - var(--pp-header)); }
+  body.proma-v2 .proma-page-content { padding-bottom: calc(102px + var(--pp-mobile-safe-bottom)); }
+  body.proma-v2 .proma-v2-mobile-nav {
+    right: max(12px, env(safe-area-inset-right));
+    left: max(12px, env(safe-area-inset-left));
+    bottom: calc(8px + var(--pp-mobile-safe-bottom));
+    min-height: 72px;
+    padding: 7px;
+    border-color: rgba(221, 222, 235, .84);
+    border-radius: 21px;
+    box-shadow: 0 12px 34px rgba(23, 16, 79, .17);
+  }
+  body.proma-v2 .proma-v2-mobile-nav a { min-height: 54px; font-size: 10px; }
+  body.proma-v2 .proma-v2-mobile-nav a.active { box-shadow: inset 0 0 0 1px var(--pp-primary-100); }
+  body.proma-v2 .proma-v2-mobile-nav a svg { width: 20px; height: 20px; }
+  body.proma-v2 .page-body > .container-fluid,
+  body.proma-v2 .footer > .container-fluid { padding-inline: var(--pp-mobile-gutter); }
+  body.proma-v2 .proma-overdue-table { display: none; }
+  body.proma-v2 .proma-overdue-mobile-list { display: grid; }
+  body.proma-v2 .page-title { padding-block: 16px 9px; }
+  body.proma-v2 .proma-page-content > .proma-page-intro { margin-bottom: 16px; }
+  body.proma-v2 .proma-role-dashboard .proma-role-hero .card-body,
+  body.proma-v2 .proma-admin-dashboard .proma-workspace-intro { padding: 24px; }
+}
+
+@media (max-width: 767.98px) {
+  body.proma-v2 { --pp-mobile-gutter: 12px; }
+  body.proma-v2 .page-body > .container-fluid { padding-inline: 12px; }
+  body.proma-v2 .page-title h1 { font-size: 21px; }
+  body.proma-v2 .proma-page-content > :is(.card, .notice, .alert) { margin-bottom: 14px; }
+  body.proma-v2 .proma-page-content .card-header { padding: 16px 15px 9px; }
+  body.proma-v2 .proma-page-content .card-body { padding: 15px; }
+  body.proma-v2 .proma-page-content .card-header + .card-body { padding-top: 8px; }
+  body.proma-v2 .proma-page-intro h2 { font-size: 22px; }
+  body.proma-v2 .proma-page-intro p { line-height: 1.8; }
+
+  body.proma-v2 .proma-role-dashboard,
+  body.proma-v2 .proma-admin-dashboard { --bs-gutter-x: 10px; row-gap: 2px; }
+  body.proma-v2 .proma-role-dashboard .proma-dashboard-metric,
+  body.proma-v2 .proma-admin-dashboard .proma-dashboard-metric {
+    flex: 0 0 50%;
+    width: 50%;
+    max-width: 50%;
+    padding: 0 5px 10px;
+  }
+  body.proma-v2 .proma-role-dashboard .proma-role-kpi,
+  body.proma-v2 .proma-admin-dashboard .proma-admin-kpi { min-height: 122px; border-radius: 16px; }
+  body.proma-v2 .proma-role-dashboard .proma-role-kpi .card-body,
+  body.proma-v2 .proma-admin-dashboard .proma-admin-kpi .card-body { min-height: 120px; padding: 13px; gap: 8px; }
+  body.proma-v2 .proma-role-dashboard .proma-role-kpi strong,
+  body.proma-v2 .proma-admin-dashboard .proma-admin-kpi strong { font-size: 16px; line-height: 1.45; }
+  body.proma-v2 .proma-role-dashboard .proma-role-kpi small,
+  body.proma-v2 .proma-role-dashboard .proma-role-kpi em,
+  body.proma-v2 .proma-admin-dashboard .proma-admin-kpi small,
+  body.proma-v2 .proma-admin-dashboard .proma-admin-kpi em { font-size: 11px; line-height: 1.5; }
+  body.proma-v2 .proma-role-dashboard .proma-role-hero,
+  body.proma-v2 .proma-admin-dashboard .proma-workspace-intro { border-radius: 20px; }
+  body.proma-v2 .proma-role-dashboard .proma-role-hero .card-body { padding: 20px 18px; gap: 16px; }
+  body.proma-v2 .proma-role-dashboard .proma-role-hero h4,
+  body.proma-v2 .proma-admin-dashboard .proma-workspace-intro h2 { font-size: 22px; }
+  body.proma-v2 .proma-role-dashboard .proma-role-hero-actions { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  body.proma-v2 .proma-role-dashboard .proma-role-hero-actions > .btn { min-width: 0; width: 100%; padding-inline: 9px; font-size: 12px; }
+  body.proma-v2 .proma-admin-dashboard .proma-workspace-intro { align-items: stretch; padding: 20px 18px; }
+  body.proma-v2 .proma-admin-dashboard .proma-workspace-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  body.proma-v2 .proma-admin-dashboard .proma-workspace-shortcuts a { min-height: 90px; justify-content: center; }
+  body.proma-v2 .proma-customer-banner { min-height: 0; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 176px; }
+  body.proma-v2 .proma-customer-banner-copy { padding: 22px 18px; }
+  body.proma-v2 .proma-customer-banner-copy p { margin-bottom: 12px; font-size: 13px; }
+  body.proma-v2 .proma-customer-banner-art { min-height: 176px; grid-row: 2; }
+  body.proma-v2 .proma-role-dashboard .proma-role-panel,
+  body.proma-v2 .proma-admin-dashboard .proma-admin-panel { height: auto; }
+  body.proma-v2 .proma-role-dashboard .proma-role-panel .card-body,
+  body.proma-v2 .proma-admin-dashboard .proma-admin-panel .card-body { padding: 12px; }
+
+  body.proma-v2 .proma-overdue-page { gap: 13px; }
+  body.proma-v2 .proma-overdue-page > .card { margin-bottom: 0; }
+  body.proma-v2 .proma-overdue-mobile-card { padding: 14px; border-radius: 16px; }
+  body.proma-v2 .proma-overdue-mobile-card__metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  body.proma-v2 .proma-overdue-mobile-card footer > .btn { min-height: 46px; padding-inline: 8px; white-space: normal; font-size: 12px; line-height: 1.45; }
+  body.proma-v2 .proma-overdue-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  body.proma-v2 .proma-status-tabs { display: flex; gap: 7px; overflow-x: auto; padding: 3px 1px 7px; scroll-snap-type: x proximity; }
+  body.proma-v2 .proma-status-tabs > * { flex: 0 0 auto; scroll-snap-align: start; }
+  body.proma-v2 .proma-operational-filter { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.proma-v2 .proma-operational-filter .proma-filter-search,
+  body.proma-v2 .proma-operational-filter .proma-filter-submit,
+  body.proma-v2 .proma-operational-filter .proma-filter-drawer { grid-column: 1 / -1; }
+  body.proma-v2 .proma-filter-drawer__content { grid-template-columns: minmax(0, 1fr); }
+
+  body.proma-v2 .proma-operator-contract__main { flex-direction: column; align-items: stretch; }
+  body.proma-v2 .proma-operator-contract__amount { flex-direction: row; align-items: center; justify-content: space-between; }
+  body.proma-v2 .proma-operator-contract__actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  body.proma-v2 .proma-page-content :is(.form-grid, .form-grid.two, .form-grid.three, .form-grid.four) { grid-template-columns: minmax(0, 1fr); }
+  body.proma-v2 .proma-page-content .form-grid > .full { grid-column: 1; }
+  body.proma-v2 .proma-page-content :is(.table-wrap, .table-responsive, .table-responsive-md) { border-radius: 12px; }
+  body.proma-v2 .proma-page-content table:not(.proma-v2-data-table) { min-width: 620px; }
+  body.proma-v2 .proma-page-content .proma-overdue-table table { min-width: 990px; }
+
+  body.proma-v2 .modal { padding: 0; align-items: flex-end; }
+  body.proma-v2 .modal-content {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(var(--proma-visual-height, 100dvh) - 8px - var(--pp-mobile-safe-bottom));
+    border-radius: 22px 22px 0 0;
+    padding-bottom: var(--pp-mobile-safe-bottom);
+  }
+  body.proma-v2 .modal-header { position: sticky; top: 0; z-index: 3; gap: 9px; min-height: 62px; padding: 12px 15px; background: var(--pp-surface); }
+  body.proma-v2 .modal-header h3 { flex: 1 1 auto; min-width: 0; font-size: 16px; }
+  body.proma-v2 .modal-header > .btn { flex: 0 0 auto; min-height: 42px; }
+  body.proma-v2 .modal-body { padding: 14px 15px; }
+  body.proma-v2 .modal-footer { position: sticky; bottom: 0; z-index: 2; display: flex; gap: 8px; padding: 10px 15px calc(12px + var(--pp-mobile-safe-bottom)); background: var(--pp-surface); }
+  body.proma-v2 .modal-footer > .btn { flex: 1 1 0; min-width: 0; justify-content: center; }
+}
+
+@media (max-width: 390px) {
+  body.proma-v2 { --pp-mobile-gutter: 10px; }
+  body.proma-v2 .proma-v2-mobile-nav { right: 8px; left: 8px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  body.proma-v2 .proma-v2-mobile-nav a { font-size: 9px; }
+  body.proma-v2 .proma-overdue-mobile-card__metrics { gap: 5px; }
+  body.proma-v2 .proma-overdue-mobile-card__metrics span { padding-inline: 5px; }
+  body.proma-v2 .proma-overdue-mobile-card__metrics small { font-size: 9px; }
+  body.proma-v2 .proma-overdue-mobile-card footer { gap: 6px; }
+  body.proma-v2 .proma-overdue-mobile-card footer > .btn { font-size: 11px; }
+  body.proma-v2 .proma-role-dashboard .proma-role-hero-actions { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  body.proma-v2 .proma-operator-contracts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.proma-v2 .proma-overdue-mobile-card footer { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  body.proma-v2 .proma-overdue-mobile-card footer .proma-call-action { grid-column: auto; }
+}
+
+@media (min-width: 992px) {
+  body.proma-v2 .proma-page-content { padding-bottom: 40px; }
+  body.proma-v2 .proma-operator-contracts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  body.proma-v2 .proma-operator-contract { padding: 20px; }
+  body.proma-v2 .proma-operator-contract__actions { display: flex; flex-wrap: wrap; }
+  body.proma-v2 .proma-operator-contract__actions .proma-call-action { margin-inline-start: auto; }
+  body.proma-v2 .proma-overdue-mobile-list { display: none; }
+  body.proma-v2 .proma-overdue-table { display: block; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.proma-v2 .proma-overdue-mobile-card,
+  body.proma-v2 .proma-role-dashboard .card,
+  body.proma-v2 .proma-admin-dashboard .card { transition: none; }
+}

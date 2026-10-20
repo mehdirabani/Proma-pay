@@ -1,9 +1,15 @@
 <?php
 
+require_once __DIR__ . '/FilesystemPathGuard.php';
+
 class ScriptUpdateService
 {
     public const CONFIRM_TEXT = 'بروزرسانی را تایید می‌کنم';
     protected const MAX_PACKAGE_SIZE = 167772160;
+    protected const MAX_PACKAGE_ENTRIES = 20000;
+    protected const MAX_PACKAGE_ENTRY_SIZE = 67108864;
+    protected const MAX_PACKAGE_UNCOMPRESSED_SIZE = 536870912;
+    protected const MAX_MANIFEST_SIZE = 4194304;
 
     public static function baseDir()
     {
@@ -12,6 +18,66 @@ class ScriptUpdateService
             mkdir($dir, 0755, true);
         }
         return $dir;
+    }
+
+    /** Effective file size limit after accounting for PHP's request and file limits. */
+    public static function uploadLimits()
+    {
+        $uploadLimit = self::iniSizeBytes(ini_get('upload_max_filesize'));
+        $postLimit = self::iniSizeBytes(ini_get('post_max_size'));
+        $limits = [self::MAX_PACKAGE_SIZE];
+        if ($uploadLimit !== null) {
+            $limits[] = $uploadLimit;
+        }
+        if ($postLimit !== null) {
+            // Leave room for multipart boundaries, CSRF data, and request fields.
+            $limits[] = max(0, $postLimit - 1024 * 1024);
+        }
+
+        return [
+            'max_bytes' => max(0, min($limits)),
+            'application_limit' => self::formatBytes(self::MAX_PACKAGE_SIZE),
+            'upload_limit' => $uploadLimit === null ? 'بدون محدودیت' : self::formatBytes($uploadLimit),
+            'post_limit' => $postLimit === null ? 'بدون محدودیت' : self::formatBytes($postLimit),
+            'post_limit_bytes' => $postLimit,
+        ];
+    }
+
+    public static function postLimitExceeded($contentLength)
+    {
+        $limits = self::uploadLimits();
+        $contentLength = trim((string) $contentLength);
+        return $limits['post_limit_bytes'] !== null
+            && preg_match('/^\d+$/', $contentLength)
+            && (int) $contentLength > $limits['post_limit_bytes'];
+    }
+
+    protected static function iniSizeBytes($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '' || $value === '-1' || $value === '0') {
+            return null;
+        }
+        if (!preg_match('/^([0-9]+(?:\.[0-9]+)?)\s*([kmgt]?)b?$/i', $value, $matches)) {
+            return null;
+        }
+        $power = ['' => 0, 'k' => 1, 'm' => 2, 'g' => 3, 't' => 4][strtolower($matches[2])];
+        return (int) floor((float) $matches[1] * (1024 ** $power));
+    }
+
+    protected static function formatBytes($bytes)
+    {
+        $bytes = max(0, (int) $bytes);
+        if ($bytes >= 1024 * 1024 * 1024) {
+            return number_format($bytes / (1024 * 1024 * 1024), 1) . ' GB';
+        }
+        if ($bytes >= 1024 * 1024) {
+            return number_format($bytes / (1024 * 1024), 1) . ' MB';
+        }
+        if ($bytes >= 1024) {
+            return number_format($bytes / 1024, 1) . ' KB';
+        }
+        return $bytes . ' B';
     }
 
     public static function packages()
@@ -64,11 +130,25 @@ class ScriptUpdateService
         if (!class_exists('ZipArchive')) {
             throw new RuntimeException('افزونه ZipArchive روی PHP فعال نیست.');
         }
-        if (!$upload || empty($upload['tmp_name']) || !is_uploaded_file($upload['tmp_name'])) {
-            throw new RuntimeException('فایل بروزرسانی انتخاب نشده است.');
+        if (!is_array($upload)) {
+            throw new RuntimeException('فایل بروزرسانی به سرور نرسیده است؛ صفحه را تازه‌سازی و دوباره تلاش کنید.');
         }
-        if ((int) ($upload['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
-            throw new RuntimeException('بارگذاری فایل بروزرسانی کامل نشد.');
+        $uploadError = (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($uploadError !== UPLOAD_ERR_OK) {
+            $limits = self::uploadLimits();
+            $messages = [
+                UPLOAD_ERR_INI_SIZE => 'حجم فایل از سقف upload_max_filesize هاست (' . $limits['upload_limit'] . ') بیشتر است. سقف موثر این فرم ' . self::formatBytes($limits['max_bytes']) . ' است؛ محدودیت PHP را در تنظیمات هاست افزایش دهید یا بسته کوچک‌تر آپلود کنید.',
+                UPLOAD_ERR_FORM_SIZE => 'حجم فایل از سقف مجاز فرم بیشتر است.',
+                UPLOAD_ERR_PARTIAL => 'فایل فقط بخشی از مسیر آپلود شد؛ اتصال را بررسی و دوباره تلاش کنید.',
+                UPLOAD_ERR_NO_FILE => 'ابتدا فایل ZIP بروزرسانی را انتخاب کنید.',
+                UPLOAD_ERR_NO_TMP_DIR => 'پوشه موقت آپلود PHP در هاست موجود نیست؛ تنظیمات PHP را بررسی کنید.',
+                UPLOAD_ERR_CANT_WRITE => 'هاست نتوانست فایل موقت آپلود را روی دیسک بنویسد؛ فضای دیسک و مجوزها را بررسی کنید.',
+                UPLOAD_ERR_EXTENSION => 'یکی از افزونه‌های PHP جلوی آپلود فایل را گرفت؛ لاگ PHP هاست را بررسی کنید.',
+            ];
+            throw new RuntimeException($messages[$uploadError] ?? 'بارگذاری فایل بروزرسانی کامل نشد (کد ' . $uploadError . ').');
+        }
+        if (empty($upload['tmp_name']) || !is_uploaded_file($upload['tmp_name'])) {
+            throw new RuntimeException('فایل موقت آپلود معتبر نیست؛ دوباره فایل را انتخاب کنید.');
         }
         if ((int) ($upload['size'] ?? 0) > self::MAX_PACKAGE_SIZE) {
             throw new RuntimeException('حجم بسته بروزرسانی بیش از حد مجاز است.');
@@ -100,11 +180,40 @@ class ScriptUpdateService
             throw $e;
         }
 
-        BackupService::log('update_upload', $name, 'success', 'update package uploaded; full validation deferred to install');
+        try {
+            BackupService::log('update_upload', $name, 'success', 'update package uploaded; full validation deferred to install');
+        } catch (Throwable $e) {
+            // A nonessential audit-log failure must not hide a package that was saved successfully.
+            error_log('[PromaPay][update_upload] Package saved but backup log failed: ' . $e->getMessage());
+        }
         return $name;
     }
 
     public static function install($fileName)
+    {
+        $lock = fopen(self::baseDir() . DIRECTORY_SEPARATOR . '.install.lock', 'c');
+        if ($lock === false) {
+            throw new RuntimeException('قفل نصب بروزرسانی قابل ایجاد نیست.');
+        }
+        if (!flock($lock, LOCK_EX | LOCK_NB)) {
+            fclose($lock);
+            throw new RuntimeException('نصب بروزرسانی دیگری در حال اجرا است.');
+        }
+        $maintenance = false;
+        try {
+            if (class_exists('RequestMaintenanceLock')) {
+                RequestMaintenanceLock::exclusive();
+                $maintenance = true;
+            }
+            return self::installLocked($fileName);
+        } finally {
+            if ($maintenance) RequestMaintenanceLock::shared();
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+
+    protected static function installLocked($fileName)
     {
         self::relaxRuntimeLimits();
         $path = self::findPackage($fileName);
@@ -122,6 +231,7 @@ class ScriptUpdateService
             throw new RuntimeException('manifest بسته هیچ فایل یا migration برای نصب معرفی نکرده است.');
         }
 
+        self::preflightPackage($path, $files, $migrations);
         $safety = BackupService::create('before-update');
         $zip = new ZipArchive();
         if ($zip->open($path) !== true) {
@@ -129,34 +239,89 @@ class ScriptUpdateService
         }
 
         $installed = [];
-        foreach ($files as $fileSpec) {
-            $source = self::safePackagePath($fileSpec['source']);
-            $target = self::safeTargetPath($fileSpec['target']);
-            $expectedPrevious = strtolower(trim((string) ($fileSpec['expected_previous_sha256'] ?? '')));
-            $targetPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $target);
-            if ($expectedPrevious !== '' && is_file($targetPath) && !hash_equals($expectedPrevious, hash_file('sha256', $targetPath))) {
-                throw new RuntimeException('نسخه فایل فعلی با مبنای این بروزرسانی یکسان نیست: ' . $target . '. ابتدا بسته سازگار با نسخه نصب‌شده را انتخاب کنید.');
+        $originals = [];
+        $keepSnapshots = false;
+        $migrationStarted = false;
+        try {
+            foreach ($files as $fileSpec) {
+                $source = self::safePackagePath($fileSpec['source']);
+                $target = self::safeTargetPath($fileSpec['target']);
+                $expectedPrevious = strtolower(trim((string) ($fileSpec['expected_previous_sha256'] ?? '')));
+                $targetPath = self::checkedUpdateTargetPath($target);
+                if ($expectedPrevious !== '' && (!is_file($targetPath) || !hash_equals($expectedPrevious, hash_file('sha256', $targetPath)))) {
+                    throw new RuntimeException('نسخه فایل فعلی با مبنای این بروزرسانی یکسان نیست: ' . $target . '. ابتدا بسته سازگار با نسخه نصب‌شده را انتخاب کنید.');
+                }
+                $originals[] = self::snapshotUpdateTarget($targetPath);
+                $actualHash = self::writeRootFileFromZip(
+                    $zip,
+                    $source,
+                    $target,
+                    strtolower(trim((string) ($fileSpec['sha256'] ?? '')))
+                );
+                if ($actualHash === false) {
+                    throw new RuntimeException('فایل ' . $source . ' داخل بسته پیدا نشد.');
+                }
+                $installed[] = $target;
             }
-            $content = self::zipContent($zip, $source);
-            if ($content === false) {
-                throw new RuntimeException('فایل ' . $source . ' داخل بسته پیدا نشد.');
-            }
-            if (!empty($fileSpec['sha256']) && !hash_equals(strtolower((string) $fileSpec['sha256']), hash('sha256', $content))) {
-                throw new RuntimeException('امضای sha256 فایل ' . $source . ' معتبر نیست.');
-            }
-            self::writeRootFile($target, $content);
-            $installed[] = $target;
-        }
 
-        foreach ($migrations as $migration) {
-            $migrationPath = self::safePackagePath($migration);
-            $sql = self::zipContent($zip, $migrationPath);
-            if ($sql === false) {
-                throw new RuntimeException('migration معرفی‌شده در بسته پیدا نشد: ' . $migrationPath);
+            foreach ($migrations as $migration) {
+                $migrationPath = self::safePackagePath($migration);
+                $sql = self::zipContent($zip, $migrationPath);
+                if ($sql === false) {
+                    throw new RuntimeException('migration معرفی‌شده در بسته پیدا نشد: ' . $migrationPath);
+                }
+                $migrationStarted = true;
+                self::runUpdateMigration($migrationPath, $sql);
             }
-            self::runUpdateMigration($migrationPath, $sql);
+        } catch (Throwable $e) {
+            if ($migrationStarted) {
+                try {
+                    BackupService::restoreUpdateDatabaseSnapshot($safety['name']);
+                } catch (Throwable $rollbackError) {
+                    $keepSnapshots = true;
+                    $snapshotPaths = array_filter(array_column($originals, 'snapshot'));
+                    throw new RuntimeException(
+                        'migration بروزرسانی ناموفق بود و rollback خودکار دیتابیس انجام نشد. بکاپ پیش از ارتقا: '
+                        . $safety['name'] . '. نسخه‌های موقت فایل‌ها: ' . implode(', ', $snapshotPaths)
+                        . '. علت: ' . $e->getMessage() . '؛ خطای rollback دیتابیس: ' . $rollbackError->getMessage(),
+                        0,
+                        $e
+                    );
+                }
+
+                $rollbackErrors = self::restoreUpdateTargets($originals);
+                if ($rollbackErrors) {
+                    $keepSnapshots = true;
+                    $snapshotPaths = array_filter(array_column($originals, 'snapshot'));
+                    throw new RuntimeException(
+                        'دیتابیس از بکاپ پیش از ارتقا برگشت، اما بازگردانی فایل‌های نسخه قبلی کامل نشد. بکاپ: '
+                        . $safety['name'] . '. مسیرهای ناموفق: ' . implode(', ', $rollbackErrors)
+                        . '. نسخه‌های موقت فایل‌ها: ' . implode(', ', $snapshotPaths) . '. علت: ' . $e->getMessage(),
+                        0,
+                        $e
+                    );
+                }
+
+                throw new RuntimeException(
+                    'migration بروزرسانی ناموفق بود؛ دیتابیس و فایل‌ها از وضعیت پیش از ارتقا برگشتند. بکاپ ایمنی: '
+                    . $safety['name'] . '. علت: ' . $e->getMessage(),
+                    0,
+                    $e
+                );
+            }
+            $rollbackErrors = self::restoreUpdateTargets($originals);
+            if ($rollbackErrors) {
+                $keepSnapshots = true;
+                $snapshotPaths = array_filter(array_column($originals, 'snapshot'));
+                throw new RuntimeException($e->getMessage() . ' بازگردانی فایل‌ها نیز ناموفق بود: ' . implode(', ', $rollbackErrors) . '. نسخه‌های موقت: ' . implode(', ', $snapshotPaths), 0, $e);
+            }
+            throw $e;
+        } finally {
+            $zip->close();
+            if (!$keepSnapshots) {
+                self::discardUpdateSnapshots($originals);
+            }
         }
-        $zip->close();
 
         BackupService::log(
             'update_install',
@@ -169,6 +334,117 @@ class ScriptUpdateService
             'installed_files' => $installed,
             'migrations_count' => count($migrations),
         ];
+    }
+
+    /** Reject an incomplete or incompatible package before any backup or file replacement. */
+    protected static function preflightPackage($path, array $files, array $migrations)
+    {
+        $zip = new ZipArchive();
+        if ($zip->open($path) !== true) {
+            throw new RuntimeException('بسته بروزرسانی قابل خواندن نیست.');
+        }
+        try {
+            self::validateZipEntries($zip);
+            $seenTargets = [];
+            foreach ($files as $fileSpec) {
+                $source = self::safePackagePath($fileSpec['source']);
+                $target = self::safeTargetPath($fileSpec['target']);
+                if (isset($seenTargets[strtolower($target)])) {
+                    throw new RuntimeException('مسیر مقصد در بسته بروزرسانی تکراری است: ' . $target);
+                }
+                $seenTargets[strtolower($target)] = true;
+                $targetPath = self::checkedUpdateTargetPath($target);
+                $entry = self::zipEntryInfo($zip, $source);
+                if ($entry === false) {
+                    throw new RuntimeException('فایل ' . $source . ' داخل بسته پیدا نشد.');
+                }
+                $expectedHash = strtolower(trim((string) ($fileSpec['sha256'] ?? '')));
+                if ($expectedHash !== '' && !hash_equals($expectedHash, $entry['sha256'])) {
+                    throw new RuntimeException('امضای sha256 فایل ' . $source . ' معتبر نیست.');
+                }
+                $previousHash = strtolower(trim((string) ($fileSpec['expected_previous_sha256'] ?? '')));
+                if ($previousHash !== '') {
+                    if (!is_file($targetPath) || !hash_equals($previousHash, hash_file('sha256', $targetPath))) {
+                        throw new RuntimeException('نسخه فایل فعلی با مبنای این بروزرسانی یکسان نیست: ' . $target . '. ابتدا بسته سازگار با نسخه نصب‌شده را انتخاب کنید.');
+                    }
+                }
+            }
+            foreach ($migrations as $migration) {
+                $migrationPath = self::safePackagePath($migration);
+                $sql = self::zipContent($zip, $migrationPath);
+                if ($sql === false) {
+                    throw new RuntimeException('migration معرفی‌شده در بسته پیدا نشد: ' . $migrationPath);
+                }
+                if (preg_match('/\b(drop\s+table|truncate\s+table|delete\s+from)\b/i', $sql)) {
+                    throw new RuntimeException('migration بروزرسانی شامل دستور مخرب است: ' . $migrationPath);
+                }
+            }
+        } finally {
+            $zip->close();
+        }
+    }
+
+    /** Keep byte-for-byte file copies so a failed update can restore code files. */
+    protected static function snapshotUpdateTarget($targetPath)
+    {
+        if (!file_exists($targetPath)) {
+            return ['path' => $targetPath, 'snapshot' => null];
+        }
+        if (!is_file($targetPath) || is_link($targetPath)) {
+            throw new RuntimeException('مسیر مقصد بروزرسانی فایل عادی نیست.');
+        }
+        $snapshot = tempnam(sys_get_temp_dir(), 'proma-update-');
+        if ($snapshot === false || !copy($targetPath, $snapshot)) {
+            if ($snapshot !== false) {
+                @unlink($snapshot);
+            }
+            throw new RuntimeException('تهیه نسخه موقت از فایل فعلی انجام نشد.');
+        }
+        return ['path' => $targetPath, 'snapshot' => $snapshot];
+    }
+
+    /** Reject symlinked parents before reading an old target or creating directories. */
+    protected static function checkedUpdateTargetPath($relativePath)
+    {
+        $root = realpath(dirname(__DIR__));
+        if ($root === false) {
+            throw new RuntimeException('ریشه برنامه قابل شناسایی نیست.');
+        }
+        $parts = explode('/', self::safeTargetPath($relativePath));
+        $path = $root;
+        foreach ($parts as $index => $part) {
+            $path .= DIRECTORY_SEPARATOR . $part;
+            if (is_link($path) || ($index < count($parts) - 1 && file_exists($path) && !is_dir($path))) {
+                throw new RuntimeException('مسیر مقصد بروزرسانی معتبر نیست: ' . $relativePath);
+            }
+        }
+        return $path;
+    }
+
+    protected static function restoreUpdateTargets(array $originals)
+    {
+        $errors = [];
+        foreach (array_reverse($originals) as $original) {
+            $path = $original['path'];
+            $snapshot = $original['snapshot'];
+            if ($snapshot === null) {
+                if (file_exists($path) && !@unlink($path)) {
+                    $errors[] = $path;
+                }
+            } elseif (!@copy($snapshot, $path)) {
+                $errors[] = $path;
+            }
+        }
+        return $errors;
+    }
+
+    protected static function discardUpdateSnapshots(array $originals)
+    {
+        foreach ($originals as $original) {
+            if ($original['snapshot'] !== null) {
+                @unlink($original['snapshot']);
+            }
+        }
     }
 
     public static function delete($fileName)
@@ -201,50 +477,44 @@ class ScriptUpdateService
         if ($zip->open($path) !== true) {
             throw new RuntimeException('بسته بروزرسانی zip معتبر نیست.');
         }
-        if ($validateEntries) {
-            self::validateZipEntries($zip);
-        }
-        $manifestContent = false;
-        $manifestName = '';
-        foreach (['proma-update.json', 'update-manifest.json', 'manifest.json'] as $candidate) {
-            $manifestContent = self::zipContent($zip, $candidate);
-            if ($manifestContent !== false) {
-                $manifestName = $candidate;
-                break;
+        try {
+            self::validateZipEntries($zip, $validateEntries);
+            $manifestContent = false;
+            $manifestName = '';
+            foreach (['proma-update.json', 'update-manifest.json', 'manifest.json'] as $candidate) {
+                $manifestContent = self::zipContent($zip, $candidate, self::MAX_MANIFEST_SIZE);
+                if ($manifestContent !== false) {
+                    $manifestName = $candidate;
+                    break;
+                }
             }
-        }
-        if ($manifestContent === false) {
-            $manifest = self::buildManifestFromFullPackage($zip, $path);
-            $zip->close();
+            if ($manifestContent === false) {
+                return self::buildManifestFromFullPackage($zip, $path);
+            }
+            $manifest = json_decode($manifestContent, true);
+            if (!is_array($manifest)) {
+                throw new RuntimeException('manifest بروزرسانی JSON معتبر نیست.');
+            }
+            if (isset($manifest['app']) && stripos((string) $manifest['app'], 'proma') === false) {
+                throw new RuntimeException('این بسته برای Proma Pay معتبر نیست.');
+            }
+            if (!self::manifestFiles($manifest) && !self::manifestMigrations($manifest)) {
+                if ($manifestName === 'manifest.json') {
+                    return self::buildManifestFromFullPackage($zip, $path);
+                }
+                throw new RuntimeException('manifest بروزرسانی هیچ فایل یا migration معتبری معرفی نکرده است.');
+            }
+            foreach (self::manifestFiles($manifest) as $file) {
+                self::safePackagePath($file['source']);
+                self::safeTargetPath($file['target']);
+            }
+            foreach (self::manifestMigrations($manifest) as $migration) {
+                self::safePackagePath($migration);
+            }
             return $manifest;
-        }
-        $manifest = json_decode($manifestContent, true);
-        if (!is_array($manifest)) {
+        } finally {
             $zip->close();
-            throw new RuntimeException('manifest بروزرسانی JSON معتبر نیست.');
         }
-        if (isset($manifest['app']) && stripos((string) $manifest['app'], 'proma') === false) {
-            $zip->close();
-            throw new RuntimeException('این بسته برای Proma Pay معتبر نیست.');
-        }
-        if (!self::manifestFiles($manifest) && !self::manifestMigrations($manifest)) {
-            if ($manifestName === 'manifest.json') {
-                $manifest = self::buildManifestFromFullPackage($zip, $path);
-                $zip->close();
-                return $manifest;
-            }
-            $zip->close();
-            throw new RuntimeException('manifest بروزرسانی هیچ فایل یا migration معتبری معرفی نکرده است.');
-        }
-        $zip->close();
-        foreach (self::manifestFiles($manifest) as $file) {
-            self::safePackagePath($file['source']);
-            self::safeTargetPath($file['target']);
-        }
-        foreach (self::manifestMigrations($manifest) as $migration) {
-            self::safePackagePath($migration);
-        }
-        return $manifest;
     }
 
     protected static function quickZipCheck($path)
@@ -256,23 +526,84 @@ class ScriptUpdateService
         $zip->close();
     }
 
-    protected static function zipContent(ZipArchive $zip, $path)
+    protected static function zipContent(ZipArchive $zip, $path, $maxBytes = self::MAX_PACKAGE_ENTRY_SIZE)
+    {
+        $stream = self::openZipEntryStream($zip, $path);
+        if ($stream === false) return false;
+        $entry = self::readZipEntryStream($stream, $path, $maxBytes, null, true);
+        return $entry['content'];
+    }
+
+    /** Return a ZIP entry's size and digest without retaining its contents in memory. */
+    protected static function zipEntryInfo(ZipArchive $zip, $path, $maxBytes = self::MAX_PACKAGE_ENTRY_SIZE)
+    {
+        $stream = self::openZipEntryStream($zip, $path);
+        if ($stream === false) return false;
+        return self::readZipEntryStream($stream, $path, $maxBytes);
+    }
+
+    /** Open ZIP members by normalized path, including legacy ./ prefixes. */
+    protected static function openZipEntryStream(ZipArchive $zip, $path)
     {
         $path = trim(str_replace('\\', '/', (string) $path), '/');
         foreach ([$path, './' . $path] as $candidate) {
-            $content = $zip->getFromName($candidate);
-            if ($content !== false) {
-                return $content;
-            }
+            $stream = @$zip->getStream($candidate);
+            if (is_resource($stream)) return $stream;
         }
         for ($i = 0; $i < $zip->numFiles; $i++) {
-            $entry = str_replace('\\', '/', (string) $zip->getNameIndex($i));
-            $entry = preg_replace('#^\./+#', '', trim($entry, '/'));
-            if ($entry === $path) {
-                return $zip->getFromIndex($i);
-            }
+            $entryName = str_replace('\\', '/', (string) $zip->getNameIndex($i));
+            $normalized = preg_replace('#^\./+#', '', trim($entryName, '/'));
+            if ($normalized !== $path) continue;
+            $stream = @$zip->getStream($entryName);
+            if (is_resource($stream)) return $stream;
         }
         return false;
+    }
+
+    /** Read a ZIP member in bounded chunks, optionally hashing or copying it. */
+    protected static function readZipEntryStream($source, $path, $maxBytes, $destination = null, $collect = false)
+    {
+        $maxBytes = max(0, (int) $maxBytes);
+        $hash = hash_init('sha256');
+        $bytes = 0;
+        $content = '';
+        try {
+            while (!feof($source)) {
+                $chunk = fread($source, 1024 * 1024);
+                if ($chunk === false) {
+                    throw new RuntimeException('خواندن فایل داخل بسته بروزرسانی انجام نشد: ' . $path);
+                }
+                if ($chunk === '') {
+                    if (feof($source)) break;
+                    throw new RuntimeException('خواندن فایل داخل بسته بروزرسانی متوقف شد: ' . $path);
+                }
+                $chunkBytes = strlen($chunk);
+                if ($bytes + $chunkBytes > $maxBytes) {
+                    throw new RuntimeException('فایل داخل بسته بروزرسانی بیش از حد مجاز است: ' . $path);
+                }
+                $bytes += $chunkBytes;
+                hash_update($hash, $chunk);
+
+                if (is_resource($destination)) {
+                    $offset = 0;
+                    while ($offset < $chunkBytes) {
+                        $written = fwrite($destination, substr($chunk, $offset));
+                        if ($written === false || $written === 0) {
+                            throw new RuntimeException('نوشتن فایل موقت بروزرسانی انجام نشد: ' . $path);
+                        }
+                        $offset += $written;
+                    }
+                } elseif ($collect) {
+                    $content .= $chunk;
+                }
+            }
+        } finally {
+            fclose($source);
+        }
+
+        $result = ['bytes' => $bytes, 'sha256' => hash_final($hash)];
+        if ($collect) $result['content'] = $content;
+        return $result;
     }
 
     protected static function relaxRuntimeLimits()
@@ -440,9 +771,24 @@ class ScriptUpdateService
         return $migrations;
     }
 
-    protected static function validateZipEntries(ZipArchive $zip)
+    protected static function validateZipEntries(ZipArchive $zip, $validatePaths = true)
     {
+        if ($zip->numFiles > self::MAX_PACKAGE_ENTRIES) {
+            throw new RuntimeException('تعداد فایل‌های بسته بروزرسانی بیش از حد مجاز است.');
+        }
+        $totalBytes = 0;
         for ($i = 0; $i < $zip->numFiles; $i++) {
+            $stat = $zip->statIndex($i);
+            if (!is_array($stat) || !isset($stat['size']) || $stat['size'] < 0 || $stat['size'] > self::MAX_PACKAGE_ENTRY_SIZE) {
+                throw new RuntimeException('اندازه فایل داخل بسته بروزرسانی معتبر نیست.');
+            }
+            $totalBytes += (int) $stat['size'];
+            if ($totalBytes > self::MAX_PACKAGE_UNCOMPRESSED_SIZE) {
+                throw new RuntimeException('حجم بازشده بسته بروزرسانی بیش از حد مجاز است.');
+            }
+            if (!$validatePaths) {
+                continue;
+            }
             $name = str_replace('\\', '/', (string) $zip->getNameIndex($i));
             $trimmed = trim($name, '/');
             if ($trimmed === '' || strpos($trimmed, '../') !== false || strpos($trimmed, '/..') !== false || preg_match('/^[a-z]:/i', $trimmed) || substr($name, 0, 1) === '/') {
@@ -453,9 +799,16 @@ class ScriptUpdateService
 
     protected static function safePackagePath($path)
     {
-        $path = trim(str_replace('\\', '/', (string) $path), '/');
-        if ($path === '' || strpos($path, '../') !== false || strpos($path, '/..') !== false || preg_match('/^[a-z]:/i', $path) || substr($path, -1) === '/') {
+        $path = str_replace('\\', '/', (string) $path);
+        if ($path === '' || substr($path, 0, 1) === '/' || substr($path, -1) === '/' || preg_match('/[\x00-\x1F:<>"|?*]/', $path)) {
             throw new RuntimeException('مسیر داخل بسته بروزرسانی امن نیست.');
+        }
+        foreach (explode('/', $path) as $component) {
+            if ($component === '' || $component === '.' || $component === '..'
+                || rtrim($component, " .") !== $component
+                || preg_match('/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i', $component)) {
+                throw new RuntimeException('مسیر داخل بسته بروزرسانی امن نیست.');
+            }
         }
         return $path;
     }
@@ -477,18 +830,55 @@ class ScriptUpdateService
 
     protected static function writeRootFile($relativePath, $content)
     {
+        $target = self::checkedUpdateTargetPath($relativePath);
         $root = realpath(dirname(__DIR__));
-        $target = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
         $dir = dirname($target);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-        $realDir = realpath($dir);
-        if (!$root || !$realDir || strpos($realDir, $root) !== 0) {
+        if (!$root) throw new RuntimeException('پوشه اصلی بروزرسانی قابل خواندن نیست.');
+        FilesystemPathGuard::requireParent($root, $dir, $relativePath);
+        if (is_link($target)) {
             throw new RuntimeException('مسیر مقصد بروزرسانی معتبر نیست.');
         }
         if (file_put_contents($target, $content) === false) {
             throw new RuntimeException('نوشتن فایل بروزرسانی انجام نشد: ' . $relativePath);
+        }
+    }
+
+    /** Stream and verify a package file before atomically replacing its target. */
+    protected static function writeRootFileFromZip(ZipArchive $zip, $sourcePath, $relativePath, $expectedHash = '')
+    {
+        $target = self::checkedUpdateTargetPath($relativePath);
+        $root = realpath(dirname(__DIR__));
+        $directory = dirname($target);
+        if (!$root) throw new RuntimeException('پوشه اصلی بروزرسانی قابل خواندن نیست.');
+        FilesystemPathGuard::requireParent($root, $directory, $relativePath);
+        if (is_link($target)) throw new RuntimeException('مسیر مقصد بروزرسانی معتبر نیست.');
+
+        $temporary = tempnam($directory, '.proma-update-');
+        if ($temporary === false) throw new RuntimeException('ساخت فایل موقت برای بروزرسانی انجام نشد: ' . $relativePath);
+        $output = null;
+        try {
+            $source = self::openZipEntryStream($zip, $sourcePath);
+            if ($source === false) return false;
+            $output = fopen($temporary, 'wb');
+            if ($output === false) {
+                fclose($source);
+                throw new RuntimeException('فایل موقت بروزرسانی باز نشد: ' . $relativePath);
+            }
+            $entry = self::readZipEntryStream($source, $sourcePath, self::MAX_PACKAGE_ENTRY_SIZE, $output);
+            if ($expectedHash !== '' && !hash_equals($expectedHash, $entry['sha256'])) {
+                throw new RuntimeException('امضای sha256 فایل ' . $sourcePath . ' معتبر نیست.');
+            }
+            if (!fflush($output)) throw new RuntimeException('نوشتن فایل موقت بروزرسانی کامل نشد: ' . $relativePath);
+            fclose($output);
+            $output = null;
+            @chmod($temporary, 0644);
+            if (!@rename($temporary, $target)) {
+                throw new RuntimeException('جایگزینی فایل بروزرسانی انجام نشد: ' . $relativePath);
+            }
+            return $entry['sha256'];
+        } finally {
+            if (is_resource($output)) fclose($output);
+            if (is_file($temporary)) @unlink($temporary);
         }
     }
 

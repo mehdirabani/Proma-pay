@@ -6,9 +6,12 @@ class OperatorController extends Controller
     {
         $this->requireRole(['admin', 'operator']);
         $operatorId = Auth::role() === 'operator' ? Auth::id() : null;
+        $contracts = Contract::all($operatorId ? ['operator_id' => $operatorId] : []);
+        $contractContacts = Contract::contactDirectoryForContracts(array_column($contracts, 'id'));
         $this->render('operator/index', [
             'title' => 'پنل اپراتور',
-            'contracts' => Contract::all($operatorId ? ['operator_id' => $operatorId] : []),
+            'contracts' => $contracts,
+            'contractContacts' => $contractContacts,
             'calls' => OperatorCall::all($operatorId),
         ]);
     }

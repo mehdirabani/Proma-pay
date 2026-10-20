@@ -64,6 +64,25 @@
   </div>
 </div>
 
+<?php if (Auth::role() === 'customer'): ?>
+  <section class="card">
+    <div class="card-header card-no-border"><h5>تغییر رمز عبور</h5></div>
+    <div class="card-body">
+      <?php if ($success = flash('success')): ?><div class="notice success" role="status" aria-live="polite"><?= e($success) ?></div><?php endif; ?>
+      <?php if ($error = flash('error')): ?><div class="notice danger" role="alert"><?= e($error) ?></div><?php endif; ?>
+      <p class="muted">رمز اولیه چهار رقم آخر موبایل است. برای امنیت بیشتر می‌توانید پس از ورود، با تأیید رمز فعلی یک رمز شخصی ۸ تا ۱۲۸ نویسه‌ای بگذارید.</p>
+      <form method="post" action="<?= e(url('profile/changePassword')) ?>" class="form-grid two" autocomplete="off">
+        <?= csrf_field() ?>
+        <label>رمز فعلی<input name="current_password" type="password" required autocomplete="current-password"></label>
+        <span></span>
+        <label>رمز جدید<input name="password" type="password" minlength="8" maxlength="128" required autocomplete="new-password"></label>
+        <label>تکرار رمز جدید<input name="password_confirmation" type="password" minlength="8" maxlength="128" required autocomplete="new-password"></label>
+        <div class="full"><button class="btn" type="submit">ذخیره رمز جدید</button></div>
+      </form>
+    </div>
+  </section>
+<?php endif; ?>
+
 <section class="card">
   <div class="card-header card-no-border"><h5>مدارک هویتی</h5></div>
   <div class="card-body">
@@ -78,7 +97,7 @@
 
     <div class="table-wrap" style="margin-top:16px">
       <table>
-        <thead><tr><th>نوع مدرک</th><th>وضعیت</th><th>بارگذاری</th><th>بررسی</th><th>فایل</th></tr></thead>
+        <thead><tr><th scope="col">نوع مدرک</th><th scope="col">وضعیت</th><th scope="col">بارگذاری</th><th scope="col">بررسی</th><th scope="col">فایل</th></tr></thead>
         <tbody>
         <?php foreach (($identityDocuments ?? []) as $document): ?>
           <tr>

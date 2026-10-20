@@ -136,6 +136,7 @@ CREATE TABLE `contract_guarantees` (
   `contract_id` bigint(20) unsigned NOT NULL,
   `guarantee_type` varchar(50) NOT NULL,
   `guarantee_count` int(11) NOT NULL DEFAULT 1,
+  `guarantee_amount` decimal(18,2) NOT NULL DEFAULT 0,
   `guarantee_serial` varchar(190) DEFAULT NULL,
   `guarantee_description` text DEFAULT NULL,
   `created_at` datetime NOT NULL,
@@ -217,6 +218,8 @@ CREATE TABLE `contracts` (
   `previous_status` varchar(30) DEFAULT NULL,
   `cancellation_metadata_json` longtext DEFAULT NULL,
   `assigned_operator_id` bigint(20) unsigned DEFAULT NULL,
+  `seller_user_id` bigint(20) unsigned DEFAULT NULL,
+  `marketer_user_id` bigint(20) unsigned DEFAULT NULL,
   `legal_status` varchar(30) DEFAULT NULL,
   `notes` text DEFAULT NULL,
   `created_at` datetime NOT NULL,
@@ -226,6 +229,8 @@ CREATE TABLE `contracts` (
   UNIQUE KEY `uq_prefix_serial` (`prefix`,`serial`),
   KEY `idx_contract_customer` (`customer_id`),
   KEY `idx_contract_operator` (`assigned_operator_id`),
+  KEY `idx_contract_seller` (`seller_user_id`),
+  KEY `idx_contract_marketer` (`marketer_user_id`),
   CONSTRAINT `fk_contract_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_contract_operator` FOREIGN KEY (`assigned_operator_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -456,6 +461,7 @@ CREATE TABLE `installments` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_contract_installment` (`contract_id`,`installment_number`),
   KEY `idx_due_status` (`due_date`,`status`),
+    KEY `idx_installments_due_status_contract` (`due_date`,`status`,`contract_id`),
   CONSTRAINT `fk_installment_contract` FOREIGN KEY (`contract_id`) REFERENCES `contracts` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -518,6 +524,7 @@ CREATE TABLE `legal_cases` (
   KEY `idx_legal_lawyer` (`lawyer_id`),
   KEY `fk_legal_customer` (`customer_id`),
   KEY `fk_legal_contract` (`contract_id`),
+    KEY `idx_legal_customer_updated_id` (`customer_id`,`updated_at`,`id`),
   KEY `idx_legal_contract_status` (`contract_id`,`status`),
   UNIQUE KEY `uq_legal_case_request_uuid` (`request_uuid`),
   CONSTRAINT `fk_legal_contract` FOREIGN KEY (`contract_id`) REFERENCES `contracts` (`id`) ON DELETE CASCADE,
@@ -690,6 +697,25 @@ CREATE TABLE `system_outbox` (
   KEY `idx_system_outbox_aggregate` (`aggregate_type`,`aggregate_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+  DROP TABLE IF EXISTS `customer_automation_events`;
+  /*!40101 SET @saved_cs_client     = @@character_set_client */;
+  /*!40101 SET character_set_client = utf8 */;
+  CREATE TABLE `customer_automation_events` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `event_key` varchar(190) NOT NULL,
+    `event_type` varchar(60) NOT NULL,
+    `customer_id` bigint(20) unsigned NOT NULL,
+    `contract_id` bigint(20) unsigned NOT NULL,
+    `installment_id` bigint(20) unsigned NOT NULL,
+    `event_id` bigint(20) unsigned DEFAULT NULL,
+    `payload_json` longtext NOT NULL,
+    `created_at` datetime NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_customer_automation_event_key` (`event_key`),
+    KEY `idx_customer_automation_customer_date` (`customer_id`,`created_at`,`id`),
+    KEY `idx_customer_automation_installment` (`installment_id`,`event_type`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `payment_corrections`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1000,6 +1026,7 @@ CREATE TABLE `users` (
   `department` varchar(40) DEFAULT NULL,
   `is_department_manager` tinyint(1) NOT NULL DEFAULT 0,
   `password_hash` varchar(255) NOT NULL,
+  `customer_password_mode` varchar(12) DEFAULT NULL,
   `status` varchar(30) NOT NULL DEFAULT 'active',
   `last_login_at` datetime DEFAULT NULL,
   `tour_completed_at` datetime DEFAULT NULL,
@@ -1167,6 +1194,29 @@ CREATE TABLE IF NOT EXISTS `legal_cost_payment_allocations` (
   KEY `idx_legal_cost_payment_cost` (`legal_case_cost_id`,`is_reversal`),
   UNIQUE KEY `uq_legal_cost_payment_source` (`payment_id`,`legal_case_cost_id`,`is_reversal`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS `legal_cost_disbursements` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `disbursement_uuid` varchar(64) NOT NULL,
+  `legal_case_cost_id` bigint unsigned NOT NULL,
+  `contract_id` bigint unsigned NOT NULL,
+  `amount_toman` bigint NOT NULL,
+  `recipient` varchar(190) NOT NULL,
+  `payment_reference` varchar(190) DEFAULT NULL,
+  `paid_at` date NOT NULL,
+  `note` text DEFAULT NULL,
+  `idempotency_key` varchar(64) NOT NULL,
+  `is_reversal` tinyint(1) NOT NULL DEFAULT 0,
+  `reversal_of_id` bigint unsigned DEFAULT NULL,
+  `reversal_reason` text DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_legal_cost_disbursement_uuid` (`disbursement_uuid`),
+  UNIQUE KEY `uq_legal_cost_disbursement_request` (`idempotency_key`),
+  UNIQUE KEY `uq_legal_cost_disbursement_reversal` (`reversal_of_id`),
+  KEY `idx_legal_cost_disbursement_cost` (`legal_case_cost_id`,`id`),
+  KEY `idx_legal_cost_disbursement_contract` (`contract_id`,`paid_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS `installment_change_requests` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `request_id` varchar(48) NOT NULL,
@@ -1242,4 +1292,231 @@ INSERT IGNORE INTO `settings` (`setting_key`,`setting_value`,`is_secret`) VALUES
 ('legal_delay_value','30',0),('legal_delay_unit','day',0),('legal_overdue_count_threshold','1',0),('legal_overdue_amount_enabled','0',0),('legal_overdue_amount_threshold','0',0),('legal_eligibility_operator','delay_only',0),('legal_warning_before_days','0',0),('legal_allow_self_initiation','1',0);
 INSERT IGNORE INTO `legal_policy_versions` (`policy_code`,`version_number`,`policy_json`,`is_active`,`created_at`) VALUES
 ('default',1,'{"delay_value":30,"delay_unit":"day","overdue_count_threshold":1,"overdue_amount_enabled":0,"overdue_amount_threshold":0,"eligibility_operator":"delay_only","warning_before_days":0,"allow_self_initiation":1,"legal_referred_at_mode":"persisted_referral_confirmation"}',1,NOW());
+
+
+
+-- Customer activity points and tier medals (V4.0.2).
+CREATE TABLE IF NOT EXISTS customer_point_rules (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    activity_key VARCHAR(80) NOT NULL,
+    title VARCHAR(150) NOT NULL,
+    description VARCHAR(255) NULL,
+    source_type VARCHAR(20) NOT NULL DEFAULT 'system',
+    points INT UNSIGNED NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_by BIGINT UNSIGNED NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    UNIQUE KEY uq_customer_point_rules_activity (activity_key),
+    KEY idx_customer_point_rules_active (is_active, source_type, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS customer_point_ledger (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    customer_id BIGINT UNSIGNED NOT NULL,
+    rule_id BIGINT UNSIGNED NULL,
+    activity_key VARCHAR(80) NOT NULL,
+    activity_title VARCHAR(150) NOT NULL,
+    points INT NOT NULL,
+    source_type VARCHAR(20) NOT NULL DEFAULT 'system',
+    note TEXT NULL,
+    reference_type VARCHAR(40) NULL,
+    reference_id BIGINT UNSIGNED NULL,
+    idempotency_key VARCHAR(191) NOT NULL,
+    awarded_by BIGINT UNSIGNED NULL,
+    created_at DATETIME NOT NULL,
+    UNIQUE KEY uq_customer_point_ledger_idempotency (idempotency_key),
+    KEY idx_customer_point_ledger_customer_time (customer_id, created_at, id),
+    KEY idx_customer_point_ledger_reference (reference_type, reference_id),
+    KEY idx_customer_point_ledger_activity (activity_key, source_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS customer_loyalty_tiers (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    slug VARCHAR(80) NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    medal_title VARCHAR(150) NOT NULL,
+    description VARCHAR(255) NULL,
+    min_points INT UNSIGNED NOT NULL,
+    icon_key VARCHAR(50) NOT NULL DEFAULT 'award',
+    color VARCHAR(20) NOT NULL DEFAULT '#d97706',
+    sort_order INT NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_by BIGINT UNSIGNED NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NULL,
+    UNIQUE KEY uq_customer_loyalty_tiers_slug (slug),
+    KEY idx_customer_loyalty_tiers_threshold (is_active, min_points, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS customer_loyalty_tier_awards (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    customer_id BIGINT UNSIGNED NOT NULL,
+    tier_id BIGINT UNSIGNED NOT NULL,
+    tier_title VARCHAR(100) NOT NULL,
+    medal_title VARCHAR(150) NOT NULL,
+    description VARCHAR(255) NULL,
+    icon_key VARCHAR(50) NOT NULL DEFAULT 'award',
+    color VARCHAR(20) NOT NULL DEFAULT '#d97706',
+    points_at_award INT UNSIGNED NOT NULL DEFAULT 0,
+    awarded_at DATETIME NOT NULL,
+    KEY idx_customer_loyalty_awards_customer (customer_id, awarded_at),
+    UNIQUE KEY uq_customer_loyalty_awards_tier (customer_id, tier_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO customer_point_rules
+    (activity_key, title, description, source_type, points, is_active, sort_order, created_at)
+VALUES
+    ('contract_created', 'ثبت قرارداد', 'برای ثبت قرارداد غیرلغوشده به مشتری امتیاز داده می‌شود.', 'system', 20, 1, 10, NOW()),
+    ('payment_completed', 'پرداخت موفق', 'برای هر پرداخت موفق و تأییدشده، یک‌بار امتیاز داده می‌شود.', 'system', 5, 1, 20, NOW()),
+    ('payment_on_time', 'تکمیل قسط به‌موقع', 'وقتی قسط به‌طور کامل تا تاریخ سررسید پرداخت شود.', 'system', 10, 1, 30, NOW()),
+    ('payment_early', 'تکمیل زودهنگام قسط', 'وقتی قسط به‌طور کامل پیش از سررسید پرداخت شود.', 'system', 15, 1, 40, NOW()),
+    ('contract_completed', 'تسویه کامل قرارداد', 'برای تکمیل موفق قرارداد، یک‌بار امتیاز داده می‌شود.', 'system', 50, 1, 50, NOW()),
+    ('identity_verified', 'تأیید هویت', 'پس از تأیید هر دو مدرک هویتی مشتری.', 'system', 30, 1, 60, NOW());
+
+INSERT IGNORE INTO customer_loyalty_tiers
+    (slug, title, medal_title, description, min_points, icon_key, color, sort_order, is_active, created_at)
+VALUES
+    ('bronze', 'برنزی', 'مدال برنز', 'شروع مسیر وفاداری و دریافت اولین مدال.', 100, 'award', '#b45309', 10, 1, NOW()),
+    ('silver', 'نقره‌ای', 'مدال نقره', 'سطح مشتری نقره‌ای باشگاه وفاداری.', 300, 'star', '#64748b', 20, 1, NOW()),
+    ('gold', 'طلایی', 'مدال طلا', 'سطح مشتری طلایی باشگاه وفاداری.', 700, 'award', '#ca8a04', 30, 1, NOW()),
+    ('platinum', 'پلاتینی', 'مدال پلاتین', 'سطح مشتری پلاتینی باشگاه وفاداری.', 1500, 'shield', '#0f766e', 40, 1, NOW()),
+    ('diamond', 'الماسی', 'مدال الماس', 'بالاترین سطح فعلی باشگاه وفاداری.', 3000, 'crown', '#6d28d9', 50, 1, NOW());
+
+-- V6 additive tables are also present in the fresh-install schema.
+CREATE TABLE IF NOT EXISTS `financial_ledger_events` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `event_uuid` char(36) NOT NULL,
+  `contract_id` bigint unsigned NOT NULL,
+  `customer_id` bigint unsigned NOT NULL,
+  `event_type` varchar(40) NOT NULL,
+  `source_type` varchar(50) NOT NULL,
+  `source_id` bigint unsigned DEFAULT NULL,
+  `idempotency_key` varchar(190) NOT NULL,
+  `effective_at` datetime NOT NULL,
+  `posted_by` bigint unsigned DEFAULT NULL,
+  `description` varchar(500) DEFAULT NULL,
+  `reverses_event_id` bigint unsigned DEFAULT NULL,
+  `metadata_json` longtext DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_financial_ledger_event_uuid` (`event_uuid`),
+  UNIQUE KEY `uq_financial_ledger_idempotency` (`idempotency_key`),
+  KEY `idx_financial_ledger_contract` (`contract_id`,`id`),
+  KEY `idx_financial_ledger_customer` (`customer_id`,`id`),
+  KEY `idx_financial_ledger_source` (`source_type`,`source_id`),
+  KEY `idx_financial_ledger_effective_at` (`effective_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `financial_ledger_lines` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `event_id` bigint unsigned NOT NULL,
+  `component` varchar(32) NOT NULL,
+  `delta_toman` bigint NOT NULL,
+  `source_line_id` bigint unsigned DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_financial_ledger_line_event` (`event_id`,`id`),
+  KEY `idx_financial_ledger_line_component` (`component`,`event_id`),
+  KEY `idx_financial_ledger_source_line` (`source_line_id`),
+  CONSTRAINT `fk_financial_ledger_line_event` FOREIGN KEY (`event_id`) REFERENCES `financial_ledger_events` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `system_announcements` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(190) NOT NULL,
+  `body` text NOT NULL,
+  `audience_roles_json` text NOT NULL,
+  `local_url` varchar(255) DEFAULT NULL,
+  `published_by` bigint unsigned NOT NULL,
+  `published_at` datetime NOT NULL,
+  `expires_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_system_announcements_published` (`published_at`,`id`),
+  KEY `idx_system_announcements_expiry` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `system_announcement_recipients` (
+  `announcement_id` bigint unsigned NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `is_read` tinyint(1) NOT NULL DEFAULT 0,
+  `read_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`announcement_id`,`user_id`),
+  KEY `idx_announcement_recipient_user` (`user_id`,`is_read`,`announcement_id`),
+  CONSTRAINT `fk_announcement_recipient_announcement` FOREIGN KEY (`announcement_id`) REFERENCES `system_announcements` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_announcement_recipient_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `web_push_subscriptions` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
+  `endpoint` text NOT NULL,
+  `endpoint_hash` char(64) NOT NULL,
+  `p256dh` varchar(120) NOT NULL,
+  `auth_secret` varchar(120) NOT NULL,
+  `user_agent` varchar(500) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `last_success_at` datetime DEFAULT NULL,
+  `last_error_code` varchar(80) DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_web_push_endpoint_hash` (`endpoint_hash`),
+  KEY `idx_web_push_user_active` (`user_id`,`is_active`,`id`),
+  CONSTRAINT `fk_web_push_subscription_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `web_push_deliveries` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `subscription_id` bigint unsigned NOT NULL,
+  `event_key` varchar(190) NOT NULL,
+  `status` varchar(16) NOT NULL DEFAULT 'pending',
+  `http_status` smallint unsigned DEFAULT NULL,
+  `attempts` smallint unsigned NOT NULL DEFAULT 0,
+  `error_code` varchar(80) DEFAULT NULL,
+  `delivered_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_web_push_delivery_event` (`subscription_id`,`event_key`),
+  KEY `idx_web_push_delivery_status` (`status`,`updated_at`),
+  CONSTRAINT `fk_web_push_delivery_subscription` FOREIGN KEY (`subscription_id`) REFERENCES `web_push_subscriptions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `collection_tasks` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `contract_id` bigint unsigned NOT NULL,
+  `customer_id` bigint unsigned NOT NULL,
+  `assigned_to` bigint unsigned DEFAULT NULL,
+  `stage` varchar(40) NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'open',
+  `due_at` datetime NOT NULL,
+  `dedupe_key` varchar(190) NOT NULL,
+  `created_at` datetime NOT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `completed_by` bigint unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_collection_task_dedupe` (`dedupe_key`),
+  KEY `idx_collection_task_assigned` (`assigned_to`,`status`,`due_at`),
+  KEY `idx_collection_task_contract` (`contract_id`,`status`,`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `customer_credit_profiles` (
+  `customer_id` bigint unsigned NOT NULL,
+  `score` smallint unsigned NOT NULL,
+  `risk_level` varchar(16) NOT NULL,
+  `metrics_json` longtext NOT NULL,
+  `recommendation_json` longtext NOT NULL,
+  `reasons_json` longtext NOT NULL,
+  `rules_hash` char(64) NOT NULL,
+  `calculated_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`customer_id`),
+  KEY `idx_customer_credit_profiles_rank` (`risk_level`,`score`),
+  KEY `idx_customer_credit_profiles_calculated` (`calculated_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

@@ -10,7 +10,14 @@ class ProfileReviewsController extends Controller
             $status = 'pending';
         }
         $role = trim((string) ($_GET['role'] ?? ''));
-        if (!in_array($role, ['admin', 'operator', 'lawyer', 'customer', ''], true)) {
+        $roleOptions = PluginManager::availableRoles();
+        foreach (Model::fetchAll('SELECT DISTINCT role FROM users WHERE role IS NOT NULL') as $assigned) {
+            $assignedRole = (string) ($assigned['role'] ?? '');
+            if ($assignedRole !== '' && !isset($roleOptions[$assignedRole])) {
+                $roleOptions[$assignedRole] = role_label($assignedRole);
+            }
+        }
+        if ($role !== '' && !isset($roleOptions[$role])) {
             $role = '';
         }
         $filters = [
@@ -26,6 +33,7 @@ class ProfileReviewsController extends Controller
             'pagination' => $result,
             'summary' => ProfileRequest::statusSummary(),
             'filters' => $filters,
+            'roleOptions' => $roleOptions,
         ]);
     }
 }

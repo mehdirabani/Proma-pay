@@ -10,7 +10,7 @@ if ($dsn === '') {
 $_SERVER['HTTP_HOST'] = 'qa.local'; $_SERVER['SCRIPT_NAME'] = '/index.php'; $_SERVER['REQUEST_METHOD'] = 'CLI'; $_SERVER['REMOTE_ADDR'] = '198.51.100.157';
 require dirname(__DIR__) . '/bootstrap.php';
 $pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_DB_PASSWORD') ?: '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
-$property = new ReflectionProperty(Model::class, 'pdo'); $property->setAccessible(true); $property->setValue(null, $pdo);
+$property = new ReflectionProperty(Model::class, 'pdo');  $property->setValue(null, $pdo);
 foreach (['2026_08_01_contract_installment_integrity_v157.sql', '2026_08_01_legal_cost_approval_v157.sql'] as $migration) {
     ${'migrationSql'} = preg_replace('/^--.*$/m', '', (string) file_get_contents(dirname(__DIR__) . '/database/migrations/' . $migration));
     foreach (preg_split('/;\s*(?:\r?\n|$)/', ${'migrationSql'}) as $statement) {
@@ -21,7 +21,8 @@ $assert = static function ($condition, string $message): void { if (!$condition)
 $suffix = substr(hash('sha256', (string) hrtime(true)), 0, 8);
 $digits = substr(preg_replace('/[^0-9]/', '7', hash('sha256', $suffix)), 0, 10);
 $adminId = User::create(['role' => 'admin', 'username' => 'qa-change-' . $suffix, 'full_name' => 'مدیر تغییر قسط', 'national_id' => $digits, 'mobile' => '0912' . substr($digits, 0, 7), 'email' => 'qa-change-' . $suffix . '@example.test', 'password' => 'Admin#157Pass', 'status' => 'active']);
-$customerId = User::create(['role' => 'customer', 'username' => substr(strrev($digits), 0, 10), 'full_name' => 'مشتری تغییر قسط', 'national_id' => substr(strrev($digits), 0, 10), 'mobile' => '0935' . substr($digits, 0, 7), 'email' => 'qa-change-c-' . $suffix . '@example.test', 'password' => 'Customer#157Pass', 'status' => 'active']);
+$customerMobile = '0935' . substr($digits, 0, 7);
+$customerId = User::create(['role' => 'customer', 'username' => substr(strrev($digits), 0, 10), 'full_name' => 'مشتری تغییر قسط', 'national_id' => substr(strrev($digits), 0, 10), 'mobile' => $customerMobile, 'email' => 'qa-change-c-' . $suffix . '@example.test', 'password' => substr($customerMobile, -4), 'status' => 'active']);
 $contractId = Contract::createWithInstallments(['customer_id' => $customerId, 'principal_amount' => 2000000, 'down_payment_amount' => 0, 'monthly_interest_rate' => 0, 'interest_type' => 'simple', 'months' => 2, 'start_date' => '2027-01-01', 'first_due_date' => '2027-02-01', 'created_by' => $adminId]);
 $rows = Model::fetchAll('SELECT * FROM installments WHERE contract_id = ? ORDER BY installment_number', [$contractId]);
 $assert(count($rows) === 2, 'Expected two generated installments.');

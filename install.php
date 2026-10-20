@@ -105,9 +105,10 @@ function installer_pdo(array $db)
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
     ];
-    if (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) {
-        $options[PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
-    }
+    $mysqlBufferedQueryAttribute = defined('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')
+        ? constant('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')
+        : (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY') ? constant('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY') : null);
+    if ($mysqlBufferedQueryAttribute !== null) $options[$mysqlBufferedQueryAttribute] = true;
     return new PDO($dsn, $db['username'], $db['password'], $options);
 }
 
@@ -201,6 +202,22 @@ function create_schema(PDO $pdo)
         $schemaSql = is_file($schemaPath) ? file_get_contents($schemaPath) : false;
         if (!is_string($schemaSql) || trim($schemaSql) === '') {
             throw new RuntimeException('Canonical installation schema is missing or empty.');
+        }
+        preg_match_all('/^\s*(?:DROP\s+TABLE\s+IF\s+EXISTS|CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?|ALTER\s+TABLE)\s+`([^`]+)`/im', $schemaSql, $targetMatches);
+        $schemaTables = array_values(array_unique($targetMatches[1] ?? []));
+        if (!$schemaTables) {
+            throw new RuntimeException('Canonical installation schema has no verifiable table-safety inventory.');
+        }
+        $tablePlaceholders = implode(',', array_fill(0, count($schemaTables), '?'));
+        $existingTargets = $pdo->prepare(
+            'SELECT TABLE_NAME FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (' . $tablePlaceholders . ')'
+        );
+        $existingTargets->execute($schemaTables);
+        $collisions = $existingTargets->fetchAll(PDO::FETCH_COLUMN);
+        $existingTargets->closeCursor();
+        if ($collisions) {
+            throw new RuntimeException('Fresh installation refused because one or more schema target tables already exist. Use an empty database or resolve the existing tables before retrying.');
         }
         $pdo->exec($schemaSql);
         $pdo->exec(
@@ -1184,5 +1201,6 @@ function installer_page($title, $body)
         . '<link rel="stylesheet" href="' . e(template_asset_url('css/style.css')) . '">'
         . '<link rel="stylesheet" href="' . e(template_asset_url('css/responsive.css')) . '">'
         . '<link rel="stylesheet" href="' . e(asset_url('assets/css/app.css')) . '">'
+        . '<link rel="stylesheet" href="' . e(asset_url('assets/css/design-system/tokens.css')) . '">'
         . '</head><body class="installer-template"><main class="install-shell"><section class="install-panel"><h1>' . e($title) . '</h1><p>راه‌اندازی سامانه مدیریت قرارداد و اقساط</p>' . $body . '</section></main><script src="' . e(asset_url('assets/js/app.js')) . '"></script></body></html>';
 }

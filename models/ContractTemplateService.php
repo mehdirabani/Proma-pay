@@ -382,7 +382,7 @@ class ContractTemplateService extends Model
         return $simple;
     }
 
-    public static function previewHtml(array $template = null)
+    public static function previewHtml(?array $template = null)
     {
         $template = $template ?: (self::getDraftTemplate() ?: self::getEffectiveTemplate());
         $body = ContractTemplateRenderer::render($template['body_source'], $template['body_format'], self::sampleReplacements());

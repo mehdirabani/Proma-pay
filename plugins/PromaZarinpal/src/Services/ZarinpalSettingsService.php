@@ -8,7 +8,7 @@ class ZarinpalSettingsService
 {
     private $cipher;
 
-    public function __construct(SecretCipher $cipher = null)
+    public function __construct(?SecretCipher $cipher = null)
     {
         $this->cipher = $cipher ?: new SecretCipher();
     }

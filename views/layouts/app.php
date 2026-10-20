@@ -76,6 +76,7 @@ $needsCharts = in_array($route, ['dashboard', 'customers', 'contracts'], true)
     || str_starts_with($route, 'plugin/accounting');
 $needsRichEditor = str_starts_with($route, 'contracts/show/')
     || $needsContractTemplateEditor
+    || $route === 'plugin/repair/settings'
     || ($route === 'settings' && (($_GET['tab'] ?? '') === 'contracts'));
 $userInitial = mb_substr($user['full_name'] ?? 'ک', 0, 1, 'UTF-8');
 $userAvatarKey = avatar_key_for($user['avatar_key'] ?? null, $user['id'] ?? ($user['full_name'] ?? ''));
@@ -88,9 +89,13 @@ if (Auth::role() === 'admin') {
         ['contracts', 'قراردادها', 'stroke-project', 'fill-project'],
         ['installments', 'اقساط', 'stroke-file', 'fill-file'],
         ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
+        ['collections', 'مرکز عملیات وصول', 'stroke-board', 'fill-board'],
         ['payments', 'پرداخت‌ها', 'stroke-ecommerce', 'fill-ecommerce'],
+        ['risk', 'ریسک اعتباری مشتری', 'stroke-user', 'fill-user'],
         ['legal', 'حقوقی و شکایت‌ها', 'stroke-file', 'fill-file', [
             ['legal', 'پرونده‌های حقوقی'],
+            ['legal/referred', 'پرونده‌های ارجاع‌شده'],
+            ['legal/eligible', 'واجد شرایط بررسی حقوقی'],
             ['legal/costs', 'تأیید هزینه‌های حقوقی'],
         ]],
         ['review', 'بررسی موارد ارسالی', 'stroke-task', 'fill-task'],
@@ -105,7 +110,7 @@ if (Auth::role() === 'admin') {
             ['ecommerce/orders', 'فهرست سفارشات'],
         ]],
         ['users', 'کاربران', 'stroke-user', 'fill-user'],
-        ['medals', 'مدیریت مدال‌ها', 'stroke-award', 'fill-award'],
+        ['loyalty', 'باشگاه امتیاز مشتریان', 'stroke-award', 'fill-award'],
         ['ai', 'تحلیل هوشمند', 'stroke-learning', 'fill-learning'],
         ['file-manager', 'مدیریت فایل', 'stroke-file', 'fill-file'],
         ['system-health', 'سلامت سامانه', 'stroke-board', 'fill-board'],
@@ -116,8 +121,15 @@ if (Auth::role() === 'admin') {
             ['portal-banners', 'بنرهای پنل مشتری'],
         ]],
     ];
+} elseif (PluginManager::roleLandingRoute(Auth::role()) !== null) {
+    $nav = [
+        ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
+        ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
+        ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
+    ];
 } elseif (Auth::role() === 'operator') {
     $nav = [
+        ['collections', 'مرکز عملیات وصول', 'stroke-board', 'fill-board'],
         ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
         ['contracts', 'قراردادها', 'stroke-project', 'fill-project'],
         ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
@@ -128,7 +140,12 @@ if (Auth::role() === 'admin') {
 } elseif (Auth::role() === 'lawyer') {
     $nav = [
         ['dashboard', 'داشبورد', 'stroke-home', 'fill-home'],
-        ['lawyer', 'پرونده‌ها', 'stroke-file', 'fill-file'],
+        ['legal', 'حقوقی و شکایت‌ها', 'stroke-file', 'fill-file', [
+            ['legal', 'پرونده‌های حقوقی'],
+            ['legal/referred', 'پرونده‌های ارجاع‌شده'],
+            ['legal/eligible', 'واجد شرایط بررسی حقوقی'],
+            ['legal/costs', 'تأیید هزینه‌های حقوقی'],
+        ]],
         ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
         ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
@@ -174,7 +191,7 @@ $mobileNav = [
     ],
     'lawyer' => [
         ['dashboard', 'خانه', 'home'],
-        ['lawyer', 'پرونده‌ها', 'briefcase'],
+        ['legal', 'پرونده‌های حقوقی', 'briefcase'],
         ['calendar', 'جلسات', 'calendar'],
         ['notifications', 'اعلان‌ها', 'bell'],
         ['profile', 'پروفایل', 'user'],
@@ -189,11 +206,15 @@ $mobileNav = [
 ][Auth::role()] ?? [];
 $pluginMenus = [];
 $pluginPageAssets = [];
-if (Auth::role() === 'admin' && class_exists('PluginManager')) {
+if (class_exists('PluginManager')) {
     try {
         $pluginMenus = PluginManager::boot()->menus();
         $pluginMenuGroups = [];
         foreach ($pluginMenus as $pluginMenu) {
+            $allowedRoles = (array) ($pluginMenu['roles'] ?? []);
+            if ($allowedRoles ? !in_array(Auth::role(), $allowedRoles, true) : Auth::role() !== 'admin') {
+                continue;
+            }
             if (!empty($pluginMenu['permission']) && !PluginManager::can($pluginMenu['permission'])) {
                 continue;
             }
@@ -207,6 +228,9 @@ if (Auth::role() === 'admin' && class_exists('PluginManager')) {
                 ];
             }
             $pluginMenuGroups[$pluginId]['children'][] = [(string) $pluginMenu['route'], (string) $pluginMenu['label']];
+            if (count($mobileNav) < 5) {
+                $mobileNav[] = [(string) $pluginMenu['route'], (string) $pluginMenu['label'], 'package'];
+            }
         }
         foreach ($pluginMenuGroups as $pluginMenuGroup) {
             $nav[] = [$pluginMenuGroup['route'], $pluginMenuGroup['label'], 'stroke-others', 'fill-others', $pluginMenuGroup['children']];
@@ -228,7 +252,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
         'installments' => 'calendar', 'payments' => 'credit-card', 'overdue' => 'clock',
         'legal' => 'briefcase', 'lawyer' => 'briefcase', 'review' => 'check-square',
         'notifications' => 'bell', 'chat' => 'message-circle', 'calendar' => 'calendar',
-        'users' => 'users', 'medals' => 'award', 'settings' => 'settings', 'ai' => 'activity',
+        'users' => 'users', 'medals' => 'award', 'loyalty' => 'award', 'settings' => 'settings', 'ai' => 'activity',
         'file-manager' => 'folder', 'system-health' => 'activity', 'plugins' => 'package',
         'ecommerce' => 'shopping-bag', 'portal' => 'user', 'profile-reviews' => 'user-check'];
     $routeKey = explode('/', (string) ($item[0] ?? ''))[0];
@@ -248,8 +272,6 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <link rel="stylesheet" href="<?= e(template_asset_url('css/font-awesome.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/themify.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/feather-icon.css')) ?>">
-  <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/slick.css')) ?>">
-  <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/slick-theme.css')) ?>">
   <?php if ($needsRichEditor): ?><link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/quill.snow.css')) ?>">
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/quill.bubble.css')) ?>"><?php endif; ?>
   <link rel="stylesheet" href="<?= e(template_asset_url('css/vendors/animate.css')) ?>">
@@ -267,9 +289,14 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/contract-settings.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/role-redesign.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/v2-system.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/mobile-first.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/v7-system.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/v7-reference-rhythm.css') . '&rhythm=6') ?>">
+  <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/customer-experience.css') . '&customer-ui=1') ?>">
   <?php if ($needsCharts): ?><script src="<?= e(asset_url('assets/vendor/chart.umd.min.js')) ?>" defer></script><?php endif; ?>
 </head>
 <body class="proma-v2 proma-v2-role-<?= e(Auth::role()) ?>" data-user-id="<?= (int) Auth::id() ?>" data-notification-sound="<?= $notificationSoundEnabled ? '1' : '0' ?>" data-notification-volume="<?= e($notificationSoundVolume) ?>">
+  <a class="proma-skip-link" href="#main-content">پرش به محتوای اصلی</a>
   <div class="loader-wrapper">
     <div class="loader-index"><span></span></div>
     <svg><defs></defs><filter id="goo"><feGaussianBlur in="SourceGraphic" stdDeviation="11" result="blur"></feGaussianBlur><feColorMatrix in="blur" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo"></feColorMatrix></filter></svg>
@@ -279,14 +306,14 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <div class="page-wrapper compact-wrapper proma-v2-shell" id="pageWrapper">
     <div class="page-header">
       <div class="header-wrapper row m-0">
-        <form class="form-inline search-full col" method="get" action="<?= e(url($route)) ?>">
+        <form id="proma-global-search" class="form-inline search-full col" method="get" action="<?= e(url($route)) ?>" role="search" aria-label="جستجوی سامانه">
           <input type="hidden" name="route" value="<?= e($route) ?>">
           <div class="form-group w-100">
             <div class="Typeahead Typeahead--twitterUsers">
               <div class="u-posRelative">
-                <input class="demo-input Typeahead-input form-control-plaintext w-100" type="text" name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="جستجو در سامانه..." title="">
+                <input class="demo-input Typeahead-input form-control-plaintext w-100" type="search" name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="جستجو در سامانه..." aria-label="جستجو در سامانه">
                 <div class="spinner-border Typeahead-spinner" role="status"><span class="sr-only">در حال بارگذاری...</span></div>
-                <i class="close-search" data-feather="x"></i>
+                <button class="close-search" type="button" aria-label="بستن جستجو"><i data-feather="x" aria-hidden="true"></i></button>
               </div>
               <div class="Typeahead-menu"></div>
             </div>
@@ -311,9 +338,9 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
 
         <div class="nav-right col-xxl-7 col-xl-6 col-md-7 col-8 pull-right right-header p-0 ms-auto">
           <ul class="nav-menus">
-            <li><span class="header-search"><svg><use href="<?= e($sprite) ?>#search"></use></svg></span></li>
+            <li><button class="header-search" type="button" aria-label="باز کردن جستجو" aria-controls="proma-global-search" aria-expanded="false"><svg aria-hidden="true"><use href="<?= e($sprite) ?>#search"></use></svg></button></li>
             <li>
-              <div class="mode"><svg><use href="<?= e($sprite) ?>#moon"></use></svg></div>
+              <button class="mode" type="button" aria-label="حالت تاریک" aria-pressed="false"><svg aria-hidden="true"><use href="<?= e($sprite) ?>#moon"></use></svg></button>
             </li>
             <?php if (($user['role'] ?? '') === 'admin'): ?>
               <li class="proma-header-quick-action">
@@ -321,6 +348,10 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
                   <i data-feather="plus-circle"></i>
                   <span>قرارداد جدید</span>
                 </a>
+                <button class="proma-header-contract-btn" type="button" data-open-modal="header-quick-payment" title="پرداخت قسط">
+                  <i data-feather="credit-card"></i>
+                  <span>پرداخت قسط</span>
+                </button>
               </li>
             <?php endif; ?>
             <?php if ($ecommerceEnabled && ($user['role'] ?? '') === 'customer'): ?>
@@ -504,11 +535,11 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
           <div class="page-title">
             <div class="row">
               <div class="col-6">
-                <h4><?= e($title ?? '') ?></h4>
+                <h1><?= e($title ?? '') ?></h1>
               </div>
               <div class="col-6">
                 <ol class="breadcrumb">
-                  <li class="breadcrumb-item"><a href="<?= e(url('dashboard')) ?>"><svg class="stroke-icon"><use href="<?= e($sprite) ?>#stroke-home"></use></svg></a></li>
+                  <li class="breadcrumb-item"><a href="<?= e(url('dashboard')) ?>" aria-label="داشبورد"><svg class="stroke-icon" aria-hidden="true"><use href="<?= e($sprite) ?>#stroke-home"></use></svg></a></li>
                   <li class="breadcrumb-item"><?= e($systemName) ?></li>
                   <li class="breadcrumb-item active"><?= e(role_label(Auth::role())) ?></li>
                 </ol>
@@ -518,7 +549,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
         </div>
         <div class="container-fluid">
           <main class="proma-page-content" id="main-content" tabindex="-1" data-role="<?= e(Auth::role()) ?>" data-route="<?= e($route) ?>">
-            <?php if ($success = flash('success')): ?><div class="alert alert-light-success" role="alert"><?= e($success) ?></div><?php endif; ?>
+            <?php if ($success = flash('success')): ?><div class="alert alert-light-success" role="status" aria-live="polite" aria-atomic="true"><?= e($success) ?></div><?php endif; ?>
             <?php if ($error = flash('error')): ?><div class="alert alert-light-danger" role="alert"><?= e($error) ?></div><?php endif; ?>
             <?= $content ?>
           </main>
@@ -595,16 +626,25 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
     </div>
   </div>
 
+  <?php if (($user['role'] ?? '') === 'admin'): ?>
+    <div class="modal" id="header-quick-payment" data-quick-payment-modal data-search-url="<?= e(url('installments/quickPaymentLookup')) ?>" data-payment-url="<?= e(rtrim(url('installments/payment'), '/') . '/') ?>" data-csrf="<?= e(Csrf::token()) ?>">
+      <div class="modal-content proma-modal-lg">
+        <div class="modal-header"><div><h3>پرداخت قسط</h3><p>کد ملی، شماره موبایل، نام مشتری یا شماره قرارداد را جستجو کنید.</p></div><button class="icon-btn" type="button" data-close-modal aria-label="بستن">×</button></div>
+        <div class="modal-body">
+          <label class="proma-quick-payment-search">جستجوی مشتری یا قرارداد<input type="search" data-quick-payment-search minlength="3" autocomplete="off" placeholder="حداقل سه نویسه"></label>
+          <p class="proma-form-help" data-quick-payment-status>برای نمایش اقساط، اطلاعات قرارداد را وارد کنید.</p>
+          <div class="proma-quick-payment-results" data-quick-payment-results></div>
+        </div>
+        <div class="modal-footer"><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
+      </div>
+    </div>
+  <?php endif; ?>
+
   <script src="<?= e(template_asset_url('js/jquery.min.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/bootstrap/bootstrap.bundle.min.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/icons/feather-icon/feather.min.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/icons/feather-icon/feather-icon.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/config.js')) ?>"></script>
-  <script src="<?= e(template_asset_url('js/clock.js')) ?>"></script>
-  <script src="<?= e(template_asset_url('js/slick/slick.min.js')) ?>"></script>
-  <script src="<?= e(template_asset_url('js/slick/slick.js')) ?>"></script>
-  <script src="<?= e(template_asset_url('js/header-slick.js')) ?>"></script>
-  <script src="<?= e(template_asset_url('js/height-equal.js')) ?>"></script>
   <script src="<?= e(template_asset_url('js/script.js')) ?>"></script>
   <?php if ($needsRichEditor): ?><script src="<?= e(template_asset_url('js/editors/quill.js')) ?>"></script><?php endif; ?>
   <script src="<?= e(asset_url('assets/js/app.js')) ?>"></script>

@@ -20,14 +20,23 @@ if (!preg_match('/^\d+\.\d+\.\d+$/', $accountingVersion)) {
 }
 
 $localQaBuild = in_array('--local-qa', $argv, true);
+$localStaticOnlyBuild = in_array('--local-static-only', $argv, true);
 $packageOnlyBuild = in_array('--package-only', $argv, true);
+if ($localStaticOnlyBuild) {
+    $localQaBuild = true;
+}
 echo $localQaBuild
-    ? "[GATE] Running local release QA. Production infrastructure is not certified by this build.\n"
+    ? ($localStaticOnlyBuild
+        ? "[GATE] Running local PHP lint and static/unit checks only. Database/HTTP integration and production availability are not certified by this build.\n"
+        : "[GATE] Running local release QA. Production infrastructure is not certified by this build.\n")
     : "[GATE] Running strict production release gate before packaging.\n";
 if (!$packageOnlyBuild) {
     $gateCommand = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($root . '/tools/release-gate.php');
     if ($localQaBuild) {
         $gateCommand .= ' --local';
+    }
+    if ($localStaticOnlyBuild) {
+        $gateCommand .= ' --static-only';
     }
     passthru($gateCommand, $gateCode);
     if ($gateCode !== 0) {
@@ -46,13 +55,12 @@ foreach ([$distCore, $distUpdates, $distPlugins] as $directory) {
     }
 }
 
-// Older builders created a second, identical archive with a dashed version.
-// Keep historical canonical releases, but remove only those generated aliases.
-foreach ([$distCore . '/proma-pay_v*.zip', $distUpdates . '/proma-update_v*.zip', $distUpdates . '/proma-update_v*-manifest.json'] as $legacyPattern) {
-    foreach (glob($legacyPattern) ?: [] as $legacyAlias) {
-        if (is_file($legacyAlias) && !unlink($legacyAlias)) {
-            throw new RuntimeException('Cannot remove legacy duplicate release alias: ' . $legacyAlias);
-        }
+$corePath = $distCore . '/PromaPay-v' . $version . '.zip';
+$updatePath = $distUpdates . '/PromaPay-Update-v' . $version . '.zip';
+$updateManifestPath = $distUpdates . '/PromaPay-Update-v' . $version . '-manifest.json';
+foreach ([$corePath, $updatePath, $updateManifestPath] as $existingArtifact) {
+    if (file_exists($existingArtifact)) {
+        throw new RuntimeException('A release artifact for this Core version already exists and is immutable: ' . $existingArtifact . '. Bump the Core version before packaging.');
     }
 }
 
@@ -63,8 +71,8 @@ $relative = static function (string $path) use ($root, $normalize): string {
     return $normalize(substr($path, strlen($root)));
 };
 $openZip = static function (string $path): ZipArchive {
-    if (is_file($path) && !unlink($path)) {
-        throw new RuntimeException('Cannot replace release archive: ' . $path);
+    if (file_exists($path)) {
+        throw new RuntimeException('Release archive already exists and cannot be replaced: ' . $path);
     }
     $zip = new ZipArchive();
     if ($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
@@ -99,6 +107,59 @@ $walk = static function (string $directory, callable $accept, string $prefix = '
     return $files;
 };
 
+$pluginArchiveName = 'PromaAccounting';
+$pluginVersion = $accountingVersion;
+$pluginFiles = $walk($accountingRoot, static function (string $relativePath): bool {
+    return !preg_match('/\.(?:zip|log|tmp)$/i', basename($relativePath));
+}, $pluginArchiveName);
+$pluginPath = $distPlugins . '/' . $pluginArchiveName . '-v' . $pluginVersion . '.zip';
+$legacyPluginPath = $distPlugins . '/' . $pluginArchiveName . '/' . basename($pluginPath);
+if (file_exists($legacyPluginPath)) {
+    throw new RuntimeException('An immutable Proma Accounting archive for this version already exists: ' . $legacyPluginPath . '. Bump the plugin version before packaging.');
+}
+$reusePluginArchive = false;
+if (file_exists($pluginPath)) {
+    if (!is_file($pluginPath)) {
+        throw new RuntimeException('Existing plugin release path is not a file: ' . $pluginPath);
+    }
+    $existingPlugin = new ZipArchive();
+    if ($existingPlugin->open($pluginPath) !== true) {
+        throw new RuntimeException('Existing plugin release archive cannot be read: ' . $pluginPath);
+    }
+    try {
+        $inventoryPath = $pluginArchiveName . '/build-manifest.json';
+        $inventoryRaw = $existingPlugin->getFromName($inventoryPath);
+        $inventory = is_string($inventoryRaw) ? json_decode($inventoryRaw, true) : null;
+        if (!is_array($inventory) || (string) ($inventory['version'] ?? '') !== $pluginVersion) {
+            throw new RuntimeException('Existing plugin release inventory is invalid; bump the plugin version.');
+        }
+        $expectedFiles = [];
+        foreach ($pluginFiles as $archivePath => $sourcePath) {
+            $expectedFiles[$archivePath] = strtolower(hash_file('sha256', $sourcePath));
+        }
+        $listedFiles = [];
+        foreach (($inventory['files'] ?? []) as $item) {
+            if (!is_array($item) || !isset($item['path'], $item['sha256']) || isset($listedFiles[$item['path']])) {
+                throw new RuntimeException('Existing plugin release inventory is incomplete; bump the plugin version.');
+            }
+            $listedFiles[$item['path']] = strtolower((string) $item['sha256']);
+        }
+        ksort($listedFiles, SORT_STRING);
+        if ($listedFiles !== $expectedFiles || $existingPlugin->numFiles !== count($expectedFiles) + 1) {
+            throw new RuntimeException('Plugin source differs from an immutable release of the same version; bump the plugin version.');
+        }
+        foreach ($expectedFiles as $archivePath => $expectedHash) {
+            $content = $existingPlugin->getFromName($archivePath);
+            if (!is_string($content) || !hash_equals($expectedHash, hash('sha256', $content))) {
+                throw new RuntimeException('Existing plugin archive content differs from its source or manifest; bump the plugin version.');
+            }
+        }
+        $reusePluginArchive = true;
+    } finally {
+        $existingPlugin->close();
+    }
+}
+
 $coreExcluded = static function (string $relativePath) use ($normalize): bool {
     $path = strtolower($normalize($relativePath));
     if ($path === '') {
@@ -109,13 +170,16 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
     if (preg_match('#^(?:booklet|contact-modal)-v[\w.-]*\.(?:png|pdf)$#i', $path)) {
         return true;
     }
-    if (in_array($path, ['.env', 'config/database.php', 'installed.lock', '1.xlsx'], true)) {
+    if (in_array($path, ['.env', 'config/database.php', 'installed.lock', '1.xlsx', 'laravel/public/hot', 'laravel/.phpunit.result.cache'], true)
+        || preg_match('#(?:^|/)\.env(?:\.[^/]*)?$#i', $path)) {
         return true;
     }
     foreach ([
         '.git/', '.github/', '.agents/', '.codex/', '.playwright-cli/', '.project-graph/', 'skill/',
         'dist/', 'storage/', 'tmp/', 'output/', 'plugins/', 'plugin-packages/', 'node_modules/',
         'docs/', 'electron/', 'html/', 'scripts/', 'tests/', 'tools/',
+        'laravel/.playwright-cli/', 'laravel/bootstrap/cache/', 'laravel/docs/', 'laravel/node_modules/',
+        'laravel/releases/', 'laravel/storage/', 'laravel/tests/',
     ] as $prefix) {
         if (strpos($path, $prefix) === 0) {
             return true;
@@ -197,6 +261,7 @@ $coreZip->addFromString('release-manifest.json', json_encode([
     'type' => 'core-installer',
     'version' => $version,
     'plugin_api' => (string) ($versionInfo['plugin_api'] ?? '1.0'),
+    'release_gate_status' => $localStaticOnlyBuild ? 'LOCAL_STATIC_UNIT_PASSED_INTEGRATION_BLOCKED' : 'RELEASE_GATE_PASSED',
     'built_at' => gmdate('c'),
     'source_base' => 'Proma Pay V' . $baselineVersion,
     'files' => $hashList($coreFiles),
@@ -236,6 +301,7 @@ $updateManifest = [
         'release_manifest_sha256' => hash('sha256', $baselineRaw),
     ],
     'plugin_api' => (string) ($versionInfo['plugin_api'] ?? '1.0'),
+    'release_gate_status' => $localStaticOnlyBuild ? 'LOCAL_STATIC_UNIT_PASSED_INTEGRATION_BLOCKED' : 'RELEASE_GATE_PASSED',
     'files' => $updateManifestFiles,
     'migrations' => $migrations,
     'preserves' => ['config/database.php', 'plugins/', 'storage/', 'uploads/'],
@@ -253,24 +319,20 @@ $updateZip->close();
 $updateManifestPath = $distUpdates . '/PromaPay-Update-v' . $version . '-manifest.json';
 file_put_contents($updateManifestPath, $updateJson . PHP_EOL);
 
-$pluginArchiveName = 'PromaAccounting';
-$pluginVersion = $accountingVersion;
-$pluginFiles = $walk($accountingRoot, static function (string $relativePath): bool {
-    return !preg_match('/\.(?:zip|log|tmp)$/i', basename($relativePath));
-}, $pluginArchiveName);
-$pluginPath = $distPlugins . '/' . $pluginArchiveName . '-v' . $pluginVersion . '.zip';
-$pluginZip = $openZip($pluginPath);
-foreach ($pluginFiles as $archivePath => $sourcePath) {
-    $pluginZip->addFile($sourcePath, $archivePath);
+if (!$reusePluginArchive) {
+    $pluginZip = $openZip($pluginPath);
+    foreach ($pluginFiles as $archivePath => $sourcePath) {
+        $pluginZip->addFile($sourcePath, $archivePath);
+    }
+    $pluginZip->addFromString($pluginArchiveName . '/build-manifest.json', json_encode([
+        'plugin_id' => (string) ($accountingManifest['id'] ?? 'proma-accounting'),
+        'version' => $pluginVersion,
+        'requires_core' => (string) ($accountingManifest['requires_core'] ?? ''),
+        'built_at' => gmdate('c'),
+        'files' => $hashList($pluginFiles),
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    $pluginZip->close();
 }
-$pluginZip->addFromString($pluginArchiveName . '/build-manifest.json', json_encode([
-    'plugin_id' => (string) ($accountingManifest['id'] ?? 'proma-accounting'),
-    'version' => $pluginVersion,
-    'requires_core' => (string) ($accountingManifest['requires_core'] ?? ''),
-    'built_at' => gmdate('c'),
-    'files' => $hashList($pluginFiles),
-], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-$pluginZip->close();
 
 // The plugin archive name is a contract with the update screen. Validate the
 // version that was actually written into the archive so an edit made while a
@@ -283,7 +345,6 @@ $builtPluginRaw = $builtPluginZip->getFromName($pluginArchiveName . '/plugin.jso
 $builtPluginZip->close();
 $builtPluginManifest = is_string($builtPluginRaw) ? json_decode($builtPluginRaw, true) : null;
 if (!is_array($builtPluginManifest) || (string) ($builtPluginManifest['version'] ?? '') !== $pluginVersion) {
-    @unlink($pluginPath);
     throw new RuntimeException('Proma Accounting changed during packaging; rerun the release build.');
 }
 

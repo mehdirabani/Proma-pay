@@ -2,7 +2,7 @@
 
 | Domain | Primary roles | V1.4.1 coverage |
 | --- | --- | --- |
-| Authentication and profiles | All roles | Login, throttle, last-four customer rule, immediate owned avatar, reviewed profile changes |
+| Authentication and profiles | All roles | Personal-password login for every role, throttle, immediate owned avatar, reviewed profile changes |
 | Customers and contracts | Admin, operator, customer | Search, detail, cancellation, duplicate detection and repair, print |
 | Installments and payments | Admin, operator, customer | Settlement guard, penalty cutoff, reconciliation, grouped and card-transfer entry |
 | Legal workflow | Admin, lawyer | Case visibility, costs, installment context and calendar |

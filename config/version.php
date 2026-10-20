@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'application' => '2.0.3',
-    'display' => 'V2.0.3',
-    'database' => '2026.09.22',
-    'plugin_api' => '1.0',
-    'release_channel' => 'stable',
+    'application' => '7.0.3',
+    'display' => 'V7.0.3',
+    'database' => '2026.10.12',
+    'plugin_api' => '1.1',
+    'release_channel' => 'candidate',
 ];

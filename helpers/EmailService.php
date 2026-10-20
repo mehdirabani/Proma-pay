@@ -2,7 +2,7 @@
 
 class EmailService
 {
-    public static function send($to, $subject, $html, $text = '', array $overrideSettings = null)
+    public static function send($to, $subject, $html, $text = '', ?array $overrideSettings = null)
     {
         $settings = $overrideSettings ? array_replace(Settings::allKeyed(), $overrideSettings) : Settings::allKeyed();
         if (($settings['email_enabled'] ?? '0') !== '1') {
@@ -39,7 +39,7 @@ class EmailService
         return ['ok' => (bool) $ok, 'message' => $ok ? 'ایمیل ارسال شد.' : 'ارسال ایمیل از طریق mail() ناموفق بود.'];
     }
 
-    public static function sendTest($to, array $overrideSettings = null)
+    public static function sendTest($to, ?array $overrideSettings = null)
     {
         $settings = $overrideSettings ? array_replace(Settings::allKeyed(), $overrideSettings) : Settings::allKeyed();
         $title = 'تست ارسال ایمیل';
@@ -53,7 +53,7 @@ class EmailService
         return self::send($to, $title, $html, 'تست ارسال ایمیل سامانه', $settings);
     }
 
-    public static function sendOrderConfirmation(array $order = null)
+    public static function sendOrderConfirmation(?array $order = null)
     {
         if (!$order || empty($order['email'])) {
             return ['ok' => false, 'message' => 'برای سفارش ایمیلی ثبت نشده است.'];
@@ -71,7 +71,7 @@ class EmailService
         return self::send($order['email'], $subject, self::orderSuccessTemplate($order, $settings), self::orderText($order), $settings);
     }
 
-    public static function genericTemplate($title, $body, $buttonText = null, $buttonUrl = null, array $settings = null)
+    public static function genericTemplate($title, $body, $buttonText = null, $buttonUrl = null, ?array $settings = null)
     {
         $settings = $settings ?: Settings::allKeyed();
         $systemName = $settings['system_name'] ?? app_config('app_name', 'پروما');
@@ -98,7 +98,7 @@ class EmailService
             . '</div></body></html>';
     }
 
-    public static function orderSuccessTemplate(array $order, array $settings = null)
+    public static function orderSuccessTemplate(array $order, ?array $settings = null)
     {
         $settings = $settings ?: Settings::allKeyed();
         $systemName = $settings['system_name'] ?? app_config('app_name', 'پروما');

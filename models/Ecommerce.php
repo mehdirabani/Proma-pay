@@ -94,7 +94,7 @@ class Ecommerce extends Model
         return $row ? self::withDisplayPrice($row) : null;
     }
 
-    public static function saveProduct(array $data, array $upload = null, $userId = null)
+    public static function saveProduct(array $data, ?array $upload = null, $userId = null)
     {
         self::ensureSchema();
         $id = max(0, (int) ($data['id'] ?? 0));

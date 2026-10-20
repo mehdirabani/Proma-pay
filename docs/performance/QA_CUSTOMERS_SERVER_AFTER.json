@@ -1,0 +1,9 @@
+{
+  "route": "customers",
+  "n": 30,
+  "php_p50_ms": 69.8,
+  "php_p95_ms": 88.29,
+  "sql_count_p95": 45,
+  "sql_p95_ms": 54.25,
+  "memory_p95_bytes": 4194304
+}

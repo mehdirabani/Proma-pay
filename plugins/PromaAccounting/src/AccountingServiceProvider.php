@@ -6,7 +6,7 @@ class AccountingServiceProvider implements \PluginServiceProviderInterface
 {
     public function register(\PluginManager $manager, array $manifest)
     {
-        foreach (['Money', 'AccountingRepository', 'AccountingIdempotencyService', 'LedgerService', 'CommissionCalculationService', 'CommissionService', 'SalesService', 'AnalyticsService'] as $file) {
+        foreach (['Money', 'AccountingRepository', 'AccountingIdempotencyService', 'LedgerService', 'AccountBalanceService', 'CommissionCalculationService', 'CommissionService', 'SalesService', 'AnalyticsService', 'SalaryPayrollService'] as $file) {
             require_once __DIR__ . '/Services/' . $file . '.php';
         }
         require_once __DIR__ . '/Controllers/AccountingController.php';
@@ -54,6 +54,24 @@ class AccountingServiceProvider implements \PluginServiceProviderInterface
         \PluginHooks::listen('payment.completed', function (array $payload) {
             CommissionService::refreshForContract((int) ($payload['contract_id'] ?? 0), (int) ($payload['actor_user_id'] ?? 0));
         }, 30);
+        \PluginHooks::listen('accounting.repair_expense.post', function (array $payload) {
+            $context = (array) ($payload['context'] ?? []);
+            return LedgerService::post(
+                (int) ($context['user_id'] ?? 0), 'repair_expense', 'increase', $context['amount'] ?? 0,
+                (string) ($context['description'] ?? 'هزینه تأییدشده تعمیر'), (int) ($context['actor_id'] ?? 0),
+                'repair_expense', (int) ($context['expense_id'] ?? 0), (array) ($context['metadata'] ?? []),
+                (string) ($context['idempotency_key'] ?? '')
+            );
+        }, 20);
+        \PluginHooks::listen('accounting.repair_expense.settle', function (array $payload) {
+            $context = (array) ($payload['context'] ?? []);
+            return LedgerService::post(
+                (int) ($context['user_id'] ?? 0), 'repair_expense_settlement', 'decrease', $context['amount'] ?? 0,
+                (string) ($context['description'] ?? 'تسویه هزینه تعمیر'), (int) ($context['actor_id'] ?? 0),
+                'repair_expense_settlement', (int) ($context['expense_id'] ?? 0), (array) ($context['metadata'] ?? []),
+                (string) ($context['idempotency_key'] ?? '')
+            );
+        }, 20);
     }
 
     public function install(\PluginManager $manager, array $manifest)

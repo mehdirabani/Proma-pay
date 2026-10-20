@@ -91,7 +91,9 @@ class User extends Model
         }
         $where[] = "(username IS NULL OR username != 'proma_notice_bot')";
         if (!empty($options['roles'])) {
-            $roles = array_values(array_intersect((array) $options['roles'], ['admin', 'operator', 'lawyer', 'customer']));
+            $roles = array_values(array_unique(array_filter((array) $options['roles'], static function ($item) {
+                return is_string($item) && preg_match('/^[a-z][a-z0-9_]{1,29}$/', $item);
+            })));
             if ($roles) {
                 $where[] = 'role IN (' . implode(',', array_fill(0, count($roles), '?')) . ')';
                 array_push($params, ...$roles);
@@ -127,14 +129,15 @@ class User extends Model
         }
         $needle = '%' . $query . '%';
         $limit = max(1, min(25, (int) $limit));
+        $byId = ctype_digit($query) ? (int) $query : 0;
         return self::fetchAll(
             "SELECT id, full_name, mobile, secondary_phone, national_id, status
              FROM users
              WHERE role = 'customer'
-             AND (full_name LIKE ? OR mobile LIKE ? OR secondary_phone LIKE ? OR national_id LIKE ? OR address LIKE ?)
+             AND (full_name LIKE ? OR mobile LIKE ? OR secondary_phone LIKE ? OR national_id LIKE ? OR address LIKE ? OR (? > 0 AND id = ?))
              ORDER BY id DESC
              LIMIT {$limit}",
-            [$needle, $needle, $needle, $needle, $needle]
+            [$needle, $needle, $needle, $needle, $needle, $byId, $byId]
         );
     }
 
@@ -221,7 +224,7 @@ class User extends Model
         if (mb_strlen($query, 'UTF-8') < 2) {
             return [];
         }
-        $roles = array_values(array_intersect($roles, ['admin', 'operator', 'lawyer', 'customer']));
+        $roles = array_values(array_intersect($roles, array_keys(PluginManager::availableRoles())));
         $needle = '%' . $query . '%';
         $params = [$needle, $needle, $needle, $needle, $needle, $needle, $needle, $needle];
         $roleSql = '';
@@ -281,7 +284,9 @@ class User extends Model
         $page = min($page, $pages);
         $offset = ($page - 1) * $perPage;
         $rows = self::fetchAll(
-            "SELECT u.*,
+            "SELECT u.id, u.full_name, u.father_name, u.issued_from, u.national_id,
+             u.mobile, u.secondary_phone, u.address, u.avatar_key, u.avatar_path,
+             u.avatar_version, u.status, u.created_at,
              COUNT(DISTINCT CASE WHEN c.status != 'cancelled' THEN c.id END) AS contract_count,
              COUNT(DISTINCT CASE WHEN c.status != 'cancelled' AND i.status != 'cancelled' THEN i.id END) AS installment_count,
              COUNT(DISTINCT CASE WHEN c.status != 'cancelled' AND i.status = 'paid' THEN i.id END) AS paid_installments,
@@ -323,21 +328,7 @@ class User extends Model
 
     public static function medalsForUsers(array $userIds)
     {
-        self::ensureMedalSchema();
-        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds))));
-        if (!$userIds) {
-            return [];
-        }
-        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
-        $rows = self::fetchAll("SELECT * FROM medals WHERE user_id IN ({$placeholders}) AND COALESCE(is_active, 1) = 1 ORDER BY source ASC, id DESC", $userIds);
-        $grouped = [];
-        foreach ($rows as $row) {
-            $grouped[(int) $row['user_id']][] = $row;
-        }
-        if (class_exists('Medal')) {
-            $grouped = Medal::mergeLegacy($grouped, $userIds);
-        }
-        return $grouped;
+        return class_exists('CustomerLoyalty') ? CustomerLoyalty::medalsForUsers($userIds) : [];
     }
 
     public static function addMedal($userId, $title, $description = '', $points = 0)
@@ -391,7 +382,7 @@ class User extends Model
         if (class_exists('IdentityDocument') && IdentityDocument::isVerified($userId)) {
             self::addMedalOnce($userId, 'احراز هویت کامل', 'مدارک هویتی مشتری تایید شده است.', 30);
         }
-        $paidTotal = (float) (self::fetch(
+        $paidTotal = normalize_money(self::fetch(
             "SELECT COALESCE(SUM(p.amount),0) AS total
              FROM payments p
              JOIN contracts c ON c.id = p.contract_id
@@ -452,13 +443,16 @@ class User extends Model
     {
         self::ensureProfileColumns();
         $data = self::prepareUserData($data);
+        if (!PluginManager::roleAssignable($data['role'] ?? '')) {
+            throw new InvalidArgumentException('نقش انتخاب‌شده فعال یا معتبر نیست.');
+        }
         self::assertUniqueIdentity($data);
         $avatarKey = avatar_key_for($data['avatar_key'] ?? null, ($data['national_id'] ?? '') . '|' . ($data['mobile'] ?? '') . '|' . ($data['full_name'] ?? ''));
         $avatarSuggestion = avatar_suggestion_for($data['full_name'] ?? '', $data['role'] ?? '');
         $avatarExplicit = !empty($data['avatar_key']) && in_array((string) $data['avatar_key'], avatar_options(), true);
         self::execute(
-            'INSERT INTO users (role, username, full_name, father_name, issued_from, national_id, mobile, secondary_phone, email, password_hash, status, address, avatar_key, avatar_category, avatar_source, avatar_locked, avatar_suggestion_reason, department, is_department_manager, created_at)
-             VALUES (:role, :username, :full_name, :father_name, :issued_from, :national_id, :mobile, :secondary_phone, :email, :password_hash, :status, :address, :avatar_key, :avatar_category, :avatar_source, :avatar_locked, :avatar_suggestion_reason, :department, :is_department_manager, NOW())',
+            'INSERT INTO users (role, username, full_name, father_name, issued_from, national_id, mobile, secondary_phone, email, password_hash, customer_password_mode, status, address, avatar_key, avatar_category, avatar_source, avatar_locked, avatar_suggestion_reason, department, is_department_manager, created_at)
+             VALUES (:role, :username, :full_name, :father_name, :issued_from, :national_id, :mobile, :secondary_phone, :email, :password_hash, :customer_password_mode, :status, :address, :avatar_key, :avatar_category, :avatar_source, :avatar_locked, :avatar_suggestion_reason, :department, :is_department_manager, NOW())',
             [
                 'role' => $data['role'],
                 'username' => trim(to_english_digits($data['username'] ?? '')) ?: null,
@@ -469,7 +463,8 @@ class User extends Model
                 'mobile' => self::normalizePhoneValue($data['mobile'] ?? '') ?: null,
                 'secondary_phone' => self::normalizePhoneValue($data['secondary_phone'] ?? '') ?: null,
                 'email' => trim((string) ($data['email'] ?? '')) ?: null,
-                'password_hash' => password_hash(($data['password'] ?? '') ?: bin2hex(random_bytes(8)), PASSWORD_DEFAULT),
+                'password_hash' => password_hash(($data['password'] ?? '') ?: bin2hex(random_bytes(32)), PASSWORD_DEFAULT),
+                'customer_password_mode' => $data['customer_password_mode'] ?? null,
                 'status' => $data['status'] ?? 'active',
                 'address' => $data['address'] ?? '',
                 'avatar_key' => $avatarExplicit ? $avatarKey : $avatarSuggestion['key'],
@@ -540,6 +535,10 @@ class User extends Model
             return false;
         }
         $data = self::prepareUserData($data, $user);
+        if (($data['role'] ?? $user['role']) !== $user['role']
+            && !PluginManager::roleAssignable($data['role'])) {
+            throw new InvalidArgumentException('نقش انتخاب‌شده فعال یا معتبر نیست.');
+        }
         self::assertUniqueIdentity($data, (int) $id);
         $avatarKey = avatar_key_for($data['avatar_key'] ?? null, (string) $id . '|' . ($data['full_name'] ?? ($user['full_name'] ?? '')));
         $avatarExplicit = !empty($data['avatar_key']) && in_array((string) $data['avatar_key'], avatar_options(), true);
@@ -555,6 +554,9 @@ class User extends Model
             'mobile' => self::normalizePhoneValue($data['mobile'] ?? $user['mobile']) ?: null,
             'secondary_phone' => self::normalizePhoneValue($data['secondary_phone'] ?? $user['secondary_phone']) ?: null,
             'email' => ($data['email'] ?? $user['email']) ?: null,
+            'customer_password_mode' => ($data['role'] ?? $user['role']) === 'customer'
+                ? ($data['customer_password_mode'] ?? $user['customer_password_mode'] ?? 'pin')
+                : null,
             'status' => $data['status'] ?? $user['status'],
             'address' => $data['address'] ?? ($user['address'] ?? ''),
             'avatar_key' => $avatarExplicit ? $avatarKey : ($user['avatar_key'] ?? $avatarSuggestion['key']),
@@ -574,7 +576,7 @@ class User extends Model
             "UPDATE users SET role = :role, username = :username, full_name = :full_name,
              father_name = :father_name, issued_from = :issued_from,
              national_id = :national_id, mobile = :mobile, secondary_phone = :secondary_phone,
-             email = :email, status = :status, address = :address, avatar_key = :avatar_key,
+             email = :email, customer_password_mode = :customer_password_mode, status = :status, address = :address, avatar_key = :avatar_key,
              avatar_category = :avatar_category, avatar_source = :avatar_source, avatar_locked = :avatar_locked,
              avatar_suggestion_reason = :avatar_suggestion_reason,
              department = :department, is_department_manager = :is_department_manager {$passwordSql} WHERE id = :id",
@@ -586,7 +588,7 @@ class User extends Model
         return true;
     }
 
-    protected static function prepareUserData(array $data, array $existing = null)
+    protected static function prepareUserData(array $data, ?array $existing = null)
     {
         $role = $data['role'] ?? ($existing['role'] ?? '');
         $nationalId = trim(to_english_digits($data['national_id'] ?? ($existing['national_id'] ?? '')));
@@ -597,8 +599,22 @@ class User extends Model
             if ($username === '' && $nationalId !== '') {
                 $data['username'] = $nationalId;
             }
-            if ($existing === null && trim((string) ($data['password'] ?? '')) === '' && strlen($mobile) >= 4) {
-                $data['password'] = substr($mobile, -4);
+            $password = (string) ($data['password'] ?? '');
+            $customerPassword = self::customerPasswordFromMobile($mobile);
+            if ($customerPassword === '') {
+                throw new InvalidArgumentException('برای حساب مشتری، شماره موبایل معتبر لازم است.');
+            }
+            if ($password !== '' && !hash_equals($customerPassword, to_english_digits($password))) {
+                throw new InvalidArgumentException('رمز مشتری باید چهار رقم آخر شماره موبایل باشد.');
+            }
+            $mobileChanged = $existing !== null
+                && self::normalizePhoneValue($existing['mobile'] ?? '') !== $mobile;
+            $becomingCustomer = $existing !== null && ($existing['role'] ?? '') !== 'customer';
+            if ($existing === null || $mobileChanged || $becomingCustomer || $password !== '') {
+                $data['password'] = $customerPassword;
+                $data['customer_password_mode'] = 'pin';
+            } else {
+                $data['customer_password_mode'] = ($existing['customer_password_mode'] ?? 'pin') === 'custom' ? 'custom' : 'pin';
             }
         }
 
@@ -623,7 +639,13 @@ class User extends Model
         return $digits;
     }
 
-    public static function syncCustomerLoginDefaults($id, array $user = null, $resetDefaultPassword = false)
+    public static function customerPasswordFromMobile($mobile)
+    {
+        $mobile = self::normalizePhoneValue($mobile);
+        return strlen($mobile) >= 4 ? substr($mobile, -4) : '';
+    }
+
+    public static function syncCustomerLoginDefaults($id, ?array $user = null)
     {
         self::ensureProfileColumns();
         $user = $user ?: self::find((int) $id);
@@ -640,13 +662,6 @@ class User extends Model
             if (!$duplicate) {
                 $updates[] = 'username = ?';
                 $params[] = $nationalId;
-            }
-        }
-        if ($resetDefaultPassword && strlen($mobile) >= 4) {
-            $defaultPassword = substr($mobile, -4);
-            if (!password_verify($defaultPassword, $user['password_hash'] ?? '')) {
-                $updates[] = 'password_hash = ?';
-                $params[] = password_hash($defaultPassword, PASSWORD_DEFAULT);
             }
         }
         if (!$updates) {
@@ -741,6 +756,9 @@ class User extends Model
             }
 
             self::mergeMedals($keepId, $mergeId);
+            if (class_exists('CustomerLoyalty')) {
+                self::mergeLoyalty($keepId, $mergeId);
+            }
 
             self::execute(
                 'UPDATE users SET username = NULL, national_id = NULL, mobile = NULL, email = NULL, status = ?, full_name = ?, updated_at = NOW() WHERE id = ?',
@@ -820,6 +838,20 @@ class User extends Model
         self::safeExecute('UPDATE medals SET user_id = ? WHERE user_id = ?', [$keepId, $mergeId]);
     }
 
+    protected static function mergeLoyalty($keepId, $mergeId)
+    {
+        self::execute('UPDATE customer_point_ledger SET customer_id = ? WHERE customer_id = ?', [(int) $keepId, (int) $mergeId]);
+        self::execute(
+            'INSERT IGNORE INTO customer_loyalty_tier_awards
+             (customer_id, tier_id, tier_title, medal_title, description, icon_key, color, points_at_award, awarded_at)
+             SELECT ?, tier_id, tier_title, medal_title, description, icon_key, color, points_at_award, awarded_at
+             FROM customer_loyalty_tier_awards WHERE customer_id = ?',
+            [(int) $keepId, (int) $mergeId]
+        );
+        self::execute('DELETE FROM customer_loyalty_tier_awards WHERE customer_id = ?', [(int) $mergeId]);
+        CustomerLoyalty::reconcileCustomer((int) $keepId);
+    }
+
     protected static function safeExecute($sql, array $params = [])
     {
         try {
@@ -830,10 +862,52 @@ class User extends Model
 
     public static function setPassword($id, $password)
     {
-        self::execute('UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?', [
-            password_hash((string) $password, PASSWORD_DEFAULT),
-            (int) $id,
-        ]);
+        $user = self::find((int) $id);
+        if (!$user) {
+            throw new InvalidArgumentException('حساب کاربری پیدا نشد.');
+        }
+        if (($user['role'] ?? '') === 'customer') {
+            $customerPassword = self::customerPasswordFromMobile($user['mobile'] ?? '');
+            if ($customerPassword === '' || !hash_equals($customerPassword, to_english_digits((string) $password))) {
+                throw new InvalidArgumentException('رمز مشتری باید چهار رقم آخر شماره موبایل باشد.');
+            }
+            $password = $customerPassword;
+        }
+        if (($user['role'] ?? '') === 'customer') {
+            self::execute('UPDATE users SET password_hash = ?, customer_password_mode = ?, updated_at = NOW() WHERE id = ?', [
+                password_hash((string) $password, PASSWORD_DEFAULT), 'pin', (int) $id,
+            ]);
+            return;
+        }
+        self::execute('UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?', [password_hash((string) $password, PASSWORD_DEFAULT), (int) $id]);
+    }
+
+    public static function setCustomCustomerPassword($id, $password, $actorId = null)
+    {
+        $user = self::find((int) $id);
+        if (!$user || ($user['role'] ?? '') !== 'customer') {
+            throw new InvalidArgumentException('حساب مشتری پیدا نشد.');
+        }
+        $length = mb_strlen((string) $password, 'UTF-8');
+        if ($length < 8 || $length > 128) {
+            throw new InvalidArgumentException('رمز شخصی باید بین ۸ تا ۱۲۸ نویسه باشد.');
+        }
+        self::begin();
+        try {
+            self::execute('UPDATE users SET password_hash = ?, customer_password_mode = ?, updated_at = NOW() WHERE id = ?', [
+                password_hash((string) $password, PASSWORD_DEFAULT), 'custom', (int) $id,
+            ]);
+            if (class_exists('AuditLog')) {
+                AuditLog::record('auth', 'customer_password_changed', 'user', (int) $id, [
+                    'actor_user_id' => $actorId ? (int) $actorId : (int) $id,
+                    'description' => 'مشتری رمز شخصی خود را پس از احراز رمز فعلی تغییر داد.',
+                ]);
+            }
+            self::commit();
+        } catch (Throwable $e) {
+            self::rollBack();
+            throw $e;
+        }
     }
 
     public static function updateAvatar($id, $avatarKey)

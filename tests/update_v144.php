@@ -13,7 +13,7 @@ $assert = static function ($condition, string $message): void {
 };
 
 $method = new ReflectionMethod(ScriptUpdateService::class, 'packageCompatibility');
-$method->setAccessible(true);
+
 
 $versionInfo = require $root . '/config/version.php';
 $currentVersion = (string) ($versionInfo['application'] ?? '1.4.4');

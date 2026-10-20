@@ -44,7 +44,7 @@ class Medal extends Model
             "SELECT COUNT(*) AS total,
                     SUM(is_active = 1) AS active,
                     SUM(award_type = 'automatic') AS automatic,
-                    SUM(award_type = 'manual') AS manual,
+                    SUM(award_type = 'manual') AS `manual`,
                     SUM(behavior_type = 'reversible') AS reversible,
                     SUM(is_active = 1 AND award_type = 'automatic' AND last_evaluated_at IS NULL) AS pending_reconciliation
              FROM medal_definitions WHERE archived_at IS NULL"

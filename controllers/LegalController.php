@@ -4,21 +4,107 @@ class LegalController extends Controller
 {
     public function index()
     {
-        $this->requireRole('admin');
+        $this->requireRole(['admin', 'lawyer']);
         $filters = [
             'status' => in_array($_GET['status'] ?? '', ['open', 'referred', 'closed'], true) ? $_GET['status'] : null,
             'search' => $_GET['q'] ?? null,
             'page' => $_GET['page'] ?? 1,
-            'per_page' => 30,
+            'per_page' => 15,
         ];
-        $result = LegalCase::paginated($filters + ['eligible_only' => true]);
+        $filters['exclude_status'] = 'referred';
+        if (Auth::role() === 'lawyer') {
+            $filters['lawyer_id'] = (int) Auth::id();
+        }
+        $result = LegalCase::paginated($filters);
         $this->render('legal/index', [
             'title' => 'حقوقی و شکایت‌ها',
             'cases' => $result['items'],
             'pagination' => $result,
+            'legalQueue' => 'main',
+            'legalQueueRoute' => 'legal',
+            'legalSummary' => $this->caseSummary(),
             'legalStageOptions' => LegalCaseLog::stageOptions(),
             'legalCostTypeOptions' => LegalCaseLog::costTypeOptions(),
         ], is_ajax_request() ? null : 'app');
+    }
+
+    public function referred()
+    {
+        $this->requireRole(['admin', 'lawyer']);
+        $filters = ['status' => 'referred', 'search' => $_GET['q'] ?? null, 'page' => $_GET['page'] ?? 1, 'per_page' => 15];
+        if (Auth::role() === 'lawyer') {
+            $filters['lawyer_id'] = (int) Auth::id();
+        }
+        $result = LegalCase::paginated($filters);
+        $this->render('legal/index', [
+            'title' => 'پرونده‌های ارجاع‌شده', 'cases' => $result['items'], 'pagination' => $result,
+            'legalQueue' => 'referred', 'legalQueueRoute' => 'legal/referred',
+            'legalSummary' => $this->caseSummary(),
+            'legalStageOptions' => LegalCaseLog::stageOptions(), 'legalCostTypeOptions' => LegalCaseLog::costTypeOptions(),
+        ], is_ajax_request() ? null : 'app');
+    }
+
+    private function caseSummary(): array
+    {
+        $where = '';
+        $params = [];
+        if (Auth::role() === 'lawyer') {
+            $where = ' WHERE lawyer_id = ?';
+            $params[] = (int) Auth::id();
+        }
+        $row = Model::fetch(
+            "SELECT COUNT(*) AS total,
+                    SUM(status='open') AS open_count,
+                    SUM(status='referred') AS referred_count,
+                    SUM(status='closed') AS closed_count
+             FROM legal_cases{$where}",
+            $params
+        ) ?: [];
+        return array_map('intval', $row + ['total' => 0, 'open_count' => 0, 'referred_count' => 0, 'closed_count' => 0]);
+    }
+
+    public function export($queue = 'main')
+    {
+        $this->requireRole(['admin', 'lawyer']);
+        $referred = $queue === 'referred';
+        $filters = [
+            'status' => $referred ? 'referred' : (in_array($_GET['status'] ?? '', ['open', 'referred', 'closed'], true) ? $_GET['status'] : null),
+            'search' => trim((string) ($_GET['q'] ?? '')),
+            'per_page' => 100,
+        ];
+        if (!$referred) $filters['exclude_status'] = 'referred';
+        if (Auth::role() === 'lawyer') {
+            $filters['lawyer_id'] = (int) Auth::id();
+        }
+        SpreadsheetHelper::downloadPaginatedXlsx(
+            $referred ? 'پرونده‌های-ارجاع‌شده.xlsx' : 'پرونده‌های-حقوقی.xlsx',
+            $referred ? 'پرونده‌های ارجاع‌شده' : 'پرونده‌های حقوقی',
+            ['شماره قرارداد', 'مشتری', 'موبایل', 'وکیل', 'مرحله', 'شماره شکایت', 'هزینه ثبت‌شده (تومان)', 'وضعیت', 'آخرین تغییر'],
+            static function (int $page, int $perPage) use ($filters): array {
+                $pageFilters = $filters;
+                $pageFilters['page'] = $page;
+                $pageFilters['per_page'] = min(100, $perPage);
+                return LegalCase::paginated($pageFilters);
+            },
+            static fn (array $row): array => [
+                (string) ($row['contract_number'] ?? ''), (string) ($row['customer_name'] ?? ''),
+                (string) ($row['mobile'] ?? ''), (string) ($row['lawyer_name'] ?? ''),
+                (string) ($row['stage'] ?? ''), (string) ($row['complaint_number'] ?? ''),
+                normalize_money($row['expense_amount'] ?? 0), status_label($row['status'] ?? ''),
+                (string) ($row['updated_at'] ?? $row['created_at'] ?? ''),
+            ],
+            100
+        );
+    }
+
+    public function eligible()
+    {
+        $this->requireRole(['admin', 'lawyer']);
+        $contracts = LegalCase::eligibleContracts(trim((string) ($_GET['q'] ?? '')));
+        $existingCases = Model::fetchAll("SELECT contract_id FROM legal_cases WHERE status NOT IN ('closed', 'archived')");
+        $activeContractIds = array_fill_keys(array_map(static fn ($row) => (int) $row['contract_id'], $existingCases), true);
+        $contracts = array_values(array_filter($contracts, static fn ($contract) => empty($activeContractIds[(int) ($contract['id'] ?? 0)])));
+        $this->render('legal/eligible', ['title' => 'قراردادهای واجد شرایط بررسی حقوقی', 'contracts' => $contracts, 'search' => trim((string) ($_GET['q'] ?? ''))]);
     }
 
     public function create()
@@ -31,39 +117,63 @@ class LegalController extends Controller
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت پرونده انجام نشد.');
         }
-        redirect('legal');
+        redirect('legal/referred');
     }
 
     public function costs()
     {
-        $this->requireRole('admin');
+        $this->requireRole(['admin', 'lawyer']);
+        $isAdmin = Auth::role() === 'admin';
         $status = in_array($_GET['status'] ?? '', ['pending_approval', 'approved', 'reversed'], true) ? $_GET['status'] : 'pending_approval';
         $search = trim((string) ($_GET['q'] ?? ''));
         $params = [$status];
         $where = "WHERE c.approval_status = ?";
+        if (!$isAdmin) {
+            $where .= ' AND lc.lawyer_id = ?';
+            $params[] = (int) Auth::id();
+        }
         if ($search !== '') {
             $where .= " AND (co.contract_number LIKE ? OR cu.full_name LIKE ? OR c.title LIKE ? OR c.category LIKE ?)";
             $needle = '%' . $search . '%';
             array_push($params, $needle, $needle, $needle, $needle);
         }
         $costs = LegalCaseCostService::tableAvailable() ? Model::fetchAll(
-            "SELECT c.*, co.contract_number, cu.full_name AS customer_name, u.full_name AS created_by_name, a.full_name AS approved_by_name
+            "SELECT c.*, co.contract_number, cu.full_name AS customer_name, u.full_name AS created_by_name, a.full_name AS approved_by_name,
+                    lc.legal_referred_at
              FROM legal_case_costs c
              LEFT JOIN contracts co ON co.id = c.contract_id
              LEFT JOIN users cu ON cu.id = co.customer_id
              LEFT JOIN users u ON u.id = c.created_by
              LEFT JOIN users a ON a.id = c.approved_by
+             LEFT JOIN legal_cases lc ON lc.id = c.legal_case_id AND lc.contract_id = c.contract_id
              {$where}
              ORDER BY c.cost_date DESC, c.id DESC
              LIMIT 200",
             $params
         ) : [];
+        $thirdPartyByCost = LegalCaseCostService::thirdPartyPaymentsByCost(array_column($costs, 'id'));
+        foreach ($costs as &$cost) {
+            $ledger = $thirdPartyByCost[(int) $cost['id']] ?? ['total' => 0, 'items' => []];
+            $cost['company_paid_amount_toman'] = normalize_money($ledger['total'] ?? 0);
+            $cost['third_party_payments'] = $ledger['items'] ?? [];
+            $canCharge = ($cost['approval_status'] ?? '') === 'approved'
+                && (int) ($cost['chargeable_to_customer'] ?? 0) === 1
+                && empty($cost['reversed_at'])
+                && !in_array((string) ($cost['payment_status'] ?? ''), ['reimbursed', 'cancelled'], true)
+                && !empty($cost['legal_referred_at']);
+            $cost['customer_receivable_toman'] = $canCharge
+                ? max(0, normalize_money($cost['amount_toman'] ?? 0) - normalize_money($cost['paid_amount_toman'] ?? 0))
+                : 0;
+        }
+        unset($cost);
         $this->render('legal/costs', [
-            'title' => 'تأیید هزینه‌های حقوقی',
+            'title' => $isAdmin ? 'تأیید هزینه‌های حقوقی' : 'هزینه‌های حقوقی پرونده‌های من',
             'costs' => $costs,
             'status' => $status,
             'search' => $search,
             'registryReady' => LegalCaseCostService::tableAvailable(),
+            'thirdPartyLedgerReady' => LegalCaseCostService::disbursementTableAvailable(),
+            'canManageCosts' => $isAdmin,
         ], is_ajax_request() ? null : 'app');
     }
 
@@ -93,6 +203,45 @@ class LegalController extends Controller
         redirect('legal/costs');
     }
 
+    public function recordThirdPartyCostPayment($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            $date = parse_jalali_date((string) ($_POST['paid_at'] ?? '')) ?: trim((string) ($_POST['paid_at'] ?? ''));
+            LegalCaseCostService::recordThirdPartyPayment(
+                (int) $id,
+                normalize_money($_POST['amount_toman'] ?? 0),
+                (string) ($_POST['recipient'] ?? ''),
+                (string) ($_POST['payment_reference'] ?? ''),
+                $date,
+                (string) ($_POST['note'] ?? ''),
+                (string) ($_POST['idempotency_key'] ?? ''),
+                (int) Auth::id()
+            );
+            set_flash('success', 'پرداخت مجموعه به مرجع ثالث ثبت شد؛ مانده قابل وصول از مشتری تغییر نکرد.');
+        } catch (Throwable $e) {
+            if (!$e instanceof InvalidArgumentException && class_exists('PluginRegistry')) {
+                PluginRegistry::logRuntimeError('legal_cost.third_party_payment', $e);
+            }
+            set_flash('error', $e instanceof InvalidArgumentException || $e instanceof RuntimeException ? $e->getMessage() : 'ثبت پرداخت به مرجع ثالث انجام نشد.');
+        }
+        redirect('legal/costs?status=approved');
+    }
+
+    public function reverseThirdPartyCostPayment($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            LegalCaseCostService::reverseThirdPartyPayment((int) $id, (string) ($_POST['reason'] ?? ''), (int) Auth::id());
+            set_flash('success', 'برگشت پرداخت به مرجع ثالث ثبت شد؛ سابقه پرداخت حفظ شد و بدهی مشتری تغییر نکرد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException || $e instanceof RuntimeException ? $e->getMessage() : 'برگشت پرداخت به مرجع ثالث انجام نشد.');
+        }
+        redirect('legal/costs?status=approved');
+    }
+
     public function show($id)
     {
         Auth::requireLogin();
@@ -111,6 +260,20 @@ class LegalController extends Controller
         $batch = ContractInstallmentFinancialBatchService::load((int) $case['contract_id']);
         $installments = $batch['items'];
         $legalCostSummary = ContractLegalCostSummaryService::forContract((int) $case['contract_id']);
+        $legalCosts = LegalCaseCostService::forContract((int) $case['contract_id']);
+        $disbursementsByCost = LegalCaseCostService::thirdPartyPaymentsByCost(array_column($legalCosts, 'id'));
+        foreach ($legalCosts as &$legalCost) {
+            $legalCost['company_paid_amount_toman'] = normalize_money($disbursementsByCost[(int) $legalCost['id']]['total'] ?? 0);
+            $chargeable = ($legalCost['approval_status'] ?? '') === 'approved'
+                && (int) ($legalCost['chargeable_to_customer'] ?? 0) === 1
+                && empty($legalCost['reversed_at'])
+                && !in_array((string) ($legalCost['payment_status'] ?? ''), ['reimbursed', 'cancelled'], true)
+                && !empty($case['legal_referred_at']);
+            $legalCost['customer_receivable_toman'] = $chargeable
+                ? max(0, normalize_money($legalCost['amount_toman'] ?? 0) - normalize_money($legalCost['paid_amount_toman'] ?? 0))
+                : 0;
+        }
+        unset($legalCost);
         $financialSummary = ContractFinancialSummaryService::summarize((int) $case['contract_id'], null, $installments);
         $legalFinancials = $this->buildLegalFinancials($installments, $financialSummary, $legalCostSummary);
 
@@ -122,7 +285,7 @@ class LegalController extends Controller
             'legalFinancials' => $legalFinancials,
             'financialSummary' => $financialSummary,
             'legalCostSummary' => $legalCostSummary,
-            'legalCosts' => LegalCaseCostService::forContract((int) $case['contract_id']),
+            'legalCosts' => $legalCosts,
             'financialBatchWarnings' => $batch['warnings'],
             'timeline' => LegalCase::timeline((int) $id),
             'payments' => LegalCase::paymentsForCase((int) $id),
@@ -349,6 +512,8 @@ class LegalController extends Controller
         }
         $totals['pending_approval_legal_costs'] = normalize_money($legalCostSummary['pending_approval_legal_costs'] ?? 0);
         $totals['approved_legal_costs'] = normalize_money($legalCostSummary['approved_legal_costs'] ?? 0);
+        $totals['collected_legal_costs'] = normalize_money($legalCostSummary['collected_legal_costs'] ?? 0);
+        $totals['company_paid_legal_costs'] = normalize_money($legalCostSummary['company_paid_legal_costs'] ?? 0);
         $totals['complaint_costs'] = normalize_money($legalCostSummary['outstanding_chargeable_legal_costs'] ?? 0);
         $totals['normal_collectable'] = $totals['normal_payable'];
         $totals['legal_collectable'] = normalize_money($financialSummary['final_collectable_amount'] ?? 0);

@@ -8,7 +8,15 @@ $quickActions = [
     ['label' => 'بررسی رسیدها', 'url' => url('review', ['tab' => 'receipts']), 'icon' => 'check-square', 'tone' => 'success'],
     ['label' => 'تنظیمات', 'url' => url('settings'), 'icon' => 'settings', 'tone' => 'muted'],
 ];
+if (class_exists('PluginManager') && PluginManager::isActive('proma-accounting') && PluginManager::can('plugin.proma-accounting.view')) {
+    $quickActions[] = ['label' => 'حسابداری', 'url' => url('plugin/accounting/dashboard'), 'icon' => 'book-open', 'tone' => 'info'];
+}
+if (class_exists('PluginManager') && PluginManager::isActive('proma-repair') && PluginManager::can('plugin.proma-repair.view_orders')) {
+    $quickActions[] = ['label' => 'تعمیرات', 'url' => url('plugin/repair/dashboard'), 'icon' => 'package', 'tone' => 'warning'];
+}
 $mainKpis = [
+    ['label' => 'مشتریان فعال', 'value' => to_persian_digits($kpis['customers'] ?? 0), 'meta' => 'پرونده مشتری', 'tone' => 'info', 'icon' => 'users'],
+    ['label' => 'قرارداد فعال', 'value' => to_persian_digits($kpis['contracts'] ?? 0), 'meta' => 'از ' . to_persian_digits($kpis['contracts_total'] ?? 0) . ' قرارداد', 'tone' => 'primary', 'icon' => 'file-text'],
     ['label' => 'وصول ماه جاری', 'value' => money_toman($kpis['received'] ?? 0), 'meta' => 'از ' . money_toman($kpis['due_month'] ?? 0) . ' سررسید', 'tone' => 'success', 'icon' => 'trending-up'],
     ['label' => 'مانده وصول نشده', 'value' => money_toman($kpis['outstanding'] ?? 0), 'meta' => 'کل اقساط پرداخت نشده', 'tone' => 'warning', 'icon' => 'credit-card'],
     ['label' => 'اقساط معوق', 'value' => to_persian_digits($kpis['overdue'] ?? 0), 'meta' => money_toman($kpis['overdue_amount'] ?? 0), 'tone' => 'danger', 'icon' => 'alert-triangle'],
@@ -32,8 +40,9 @@ $healthCards = [
     </section>
   </div>
 
-  <?php foreach ($mainKpis as $card): ?>
-    <div class="col-xxl-3 col-md-6 proma-dashboard-metric">
+  <div class="col-12">
+    <section class="proma-admin-kpi-grid" aria-label="خلاصه وضعیت کسب‌وکار">
+      <?php foreach ($mainKpis as $card): ?>
       <article class="card proma-admin-kpi proma-admin-kpi--<?= e($card['tone']) ?>">
         <div class="card-body">
           <span class="proma-admin-kpi-icon"><i data-feather="<?= e($card['icon']) ?>"></i></span>
@@ -44,8 +53,9 @@ $healthCards = [
           </div>
         </div>
       </article>
-    </div>
-  <?php endforeach; ?>
+      <?php endforeach; ?>
+    </section>
+  </div>
 
   <div class="col-12">
     <nav class="proma-workspace-shortcuts" aria-label="دسترسی سریع مدیریت">
@@ -54,6 +64,25 @@ $healthCards = [
       <?php endforeach; ?>
     </nav>
   </div>
+
+  <?php foreach (array_slice((array) ($dashboardWidgets ?? []), 0, 12) as $dashboardWidget): ?>
+    <?php
+      if (!is_array($dashboardWidget) || trim((string) ($dashboardWidget['title'] ?? '')) === '') continue;
+      $widgetRoute = trim((string) ($dashboardWidget['route'] ?? ''), '/');
+      if ($widgetRoute !== '' && !preg_match('#^[a-zA-Z0-9_/-]+$#', $widgetRoute)) $widgetRoute = '';
+      $widgetIcon = preg_match('/^[a-zA-Z0-9-]{1,32}$/', (string) ($dashboardWidget['icon'] ?? '')) ? (string) $dashboardWidget['icon'] : 'grid';
+    ?>
+    <div class="col-xxl-3 col-md-6">
+      <section class="card proma-admin-panel proma-plugin-dashboard-widget">
+        <div class="card-body">
+          <span class="proma-admin-kpi-icon"><i data-feather="<?= e($widgetIcon) ?>"></i></span>
+          <div><h5><?= e($dashboardWidget['title']) ?></h5><p><?= e($dashboardWidget['description'] ?? '') ?></p>
+            <?php if ($widgetRoute !== ''): ?><a class="link-only" href="<?= e(url($widgetRoute)) ?>"><?= e($dashboardWidget['action_label'] ?? 'مشاهده') ?></a><?php endif; ?>
+          </div>
+        </div>
+      </section>
+    </div>
+  <?php endforeach; ?>
 
   <div class="col-xxl-8 col-xl-12">
     <section class="card proma-admin-panel">
@@ -142,7 +171,7 @@ $healthCards = [
       <div class="card-body pt-0">
         <div class="appointment-table table-responsive">
           <table class="table table-bordernone">
-            <thead><tr><th>مشتری</th><th>قرارداد</th><th>سررسید</th><th>مبلغ</th><th>وضعیت</th></tr></thead>
+            <thead><tr><th scope="col">مشتری</th><th scope="col">قرارداد</th><th scope="col">سررسید</th><th scope="col">مبلغ</th><th scope="col">وضعیت</th></tr></thead>
             <tbody>
             <?php foreach ($upcoming as $item): ?>
               <tr>
@@ -245,7 +274,7 @@ $healthCards = [
       <div class="card-body pt-0">
         <div class="appointment-table table-responsive">
           <table class="table table-bordernone">
-            <thead><tr><th>مشتری</th><th>نوع</th><th>مبلغ</th><th>روش</th><th>تاریخ</th></tr></thead>
+            <thead><tr><th scope="col">مشتری</th><th scope="col">نوع</th><th scope="col">مبلغ</th><th scope="col">روش</th><th scope="col">تاریخ</th></tr></thead>
             <tbody>
             <?php foreach ($recentPayments as $payment): ?>
               <tr>
@@ -275,7 +304,7 @@ $healthCards = [
       <div class="card-body pt-0">
         <div class="appointment-table table-responsive">
           <table class="table table-bordernone">
-            <thead><tr><th>مشتری</th><th>قرارداد</th><th>سررسید</th><th>قابل پرداخت</th><th>وضعیت</th></tr></thead>
+            <thead><tr><th scope="col">مشتری</th><th scope="col">قرارداد</th><th scope="col">سررسید</th><th scope="col">قابل پرداخت</th><th scope="col">وضعیت</th></tr></thead>
             <tbody>
             <?php foreach ($overdue as $item): ?>
               <tr>

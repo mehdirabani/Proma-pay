@@ -15,8 +15,13 @@ if ($dsn === '') {
 }
 $pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_DB_PASSWORD') ?: '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
 $property = new ReflectionProperty(Model::class, 'pdo');
-$property->setAccessible(true);
+
 $property->setValue(null, $pdo);
+
+$repairMigration = 'database/migrations/2026_10_06_v4_restored_backup_schema_repair.sql';
+$repairRunner = new ReflectionMethod(ScriptUpdateService::class, 'runUpdateMigration');
+
+$repairRunner->invoke(null, $repairMigration, (string) file_get_contents(dirname(__DIR__) . '/' . $repairMigration));
 
 $users = [
     ['admin', 'qa150admin', 'QA Admin 150', 'Admin#150Pass', '09120001501', '8000001501'],
@@ -27,7 +32,8 @@ $users = [
 foreach ($users as [$role, $username, $name, $password, $mobile, $nationalId]) {
     if (!Model::fetch('SELECT id FROM users WHERE username = ? LIMIT 1', [$username])) {
         User::create([
-            'role' => $role, 'username' => $username, 'full_name' => $name, 'password' => $password,
+            'role' => $role, 'username' => $username, 'full_name' => $name,
+            'password' => $role === 'customer' ? substr($mobile, -4) : $password,
             'mobile' => $mobile, 'national_id' => $nationalId, 'email' => $username . '@example.test', 'status' => 'active',
         ]);
     }

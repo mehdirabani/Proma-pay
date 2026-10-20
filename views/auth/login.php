@@ -21,7 +21,7 @@ $logoIconPath = trim((string) ($settings['logo_icon_path'] ?? ''));
               <?= csrf_field() ?>
               <h4>ورود به سامانه</h4>
               <p>شناسه خود را وارد کنید؛ سامانه نوع حساب شما را به صورت خودکار تشخیص می‌دهد.</p>
-              <?php if ($success = flash('success')): ?><div class="alert alert-light-success" role="alert"><?= e($success) ?></div><?php endif; ?>
+              <?php if ($success = flash('success')): ?><div class="alert alert-light-success" role="status" aria-live="polite" aria-atomic="true"><?= e($success) ?></div><?php endif; ?>
               <?php if ($error = flash('error')): ?><div class="alert alert-light-danger" role="alert"><?= e($error) ?></div><?php endif; ?>
 
               <div class="form-group">
@@ -43,6 +43,7 @@ $logoIconPath = trim((string) ($settings['logo_icon_path'] ?? ''));
                 <div class="auth-inline-actions">
                   <a href="<?= e(url('auth/forgotPassword')) ?>">فراموشی رمز عبور؟</a>
                 </div>
+                <small class="text-muted">شناسه و رمز حساب خود را وارد کنید.</small>
                 <button class="btn btn-primary btn-block w-100" type="submit">ورود</button>
                 <div class="auth-inline-actions proma-auth-secondary-action">
                   <span>هنوز حساب مشتری ندارید؟</span>

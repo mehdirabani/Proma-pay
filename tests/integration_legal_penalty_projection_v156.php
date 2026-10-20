@@ -19,7 +19,7 @@ $pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_
     PDO::ATTR_EMULATE_PREPARES => false,
 ]);
 $property = new ReflectionProperty(Model::class, 'pdo');
-$property->setAccessible(true);
+
 $property->setValue(null, $pdo);
 $assert = static function ($condition, string $message): void { if (!$condition) throw new RuntimeException($message); };
 $suffix = substr(hash('sha256', (string) hrtime(true)), 0, 9);
@@ -34,7 +34,8 @@ Settings::saveMany([
 LegalEligibilityService::publishFromSettings(null);
 $adminId = User::create(['role' => 'admin', 'username' => 'qa-proj-admin-' . $suffix, 'full_name' => 'مدیر جریمه', 'national_id' => $digits('admin'), 'mobile' => '0912' . substr($digits('mobile-a'), 0, 7), 'email' => 'qa-proj-admin-' . $suffix . '@example.test', 'password' => 'Admin#156Pass', 'status' => 'active']);
 $lawyerId = User::create(['role' => 'lawyer', 'username' => 'qa-proj-lawyer-' . $suffix, 'full_name' => 'وکیل جریمه', 'national_id' => $digits('lawyer'), 'mobile' => '0935' . substr($digits('mobile-l'), 0, 7), 'email' => 'qa-proj-lawyer-' . $suffix . '@example.test', 'password' => 'Lawyer#156Pass', 'status' => 'active']);
-$customerId = User::create(['role' => 'customer', 'username' => $digits('customer'), 'full_name' => 'مشتری جریمه', 'national_id' => $digits('customer'), 'mobile' => '0991' . substr($digits('mobile-c'), 0, 7), 'email' => 'qa-proj-customer-' . $suffix . '@example.test', 'password' => 'Customer#156Pass', 'status' => 'active']);
+$customerMobile = '0991' . substr($digits('mobile-c'), 0, 7);
+$customerId = User::create(['role' => 'customer', 'username' => $digits('customer'), 'full_name' => 'مشتری جریمه', 'national_id' => $digits('customer'), 'mobile' => $customerMobile, 'email' => 'qa-proj-customer-' . $suffix . '@example.test', 'password' => substr($customerMobile, -4), 'status' => 'active']);
 $contractId = Contract::createWithInstallments([
     'customer_id' => $customerId, 'principal_amount' => 1000000, 'down_payment_amount' => 0,
     'monthly_interest_rate' => 0, 'interest_type' => 'simple', 'months' => 1,

@@ -21,7 +21,7 @@ class ZarinpalClient
     private $responseTimeout;
     private $transport;
 
-    public function __construct($connectTimeout = 5, $responseTimeout = 20, callable $transport = null)
+    public function __construct($connectTimeout = 5, $responseTimeout = 20, ?callable $transport = null)
     {
         $this->connectTimeout = max(3, min(30, (int) $connectTimeout));
         $this->responseTimeout = max($this->connectTimeout, min(60, (int) $responseTimeout));

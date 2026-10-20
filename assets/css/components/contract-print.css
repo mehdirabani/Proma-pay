@@ -80,8 +80,8 @@ body {
 
 .contract-print-page {
   position: relative;
-  width: 210mm;
-  min-height: 297mm;
+  width: var(--contract-page-width, 210mm);
+  min-height: var(--contract-page-height, 297mm);
   margin: 12px auto 20px;
   padding: var(--contract-margin-top) var(--contract-margin-right) var(--contract-margin-bottom) var(--contract-margin-left);
   overflow: visible;
@@ -239,7 +239,10 @@ body {
 }
 .contract-guarantor-box .full { grid-column: 1 / -1; }
 .contract-signature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4mm; margin-block-start: var(--contract-signature-top-spacing); }
+.contract-signature-grid--seller { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .contract-signature-box { min-height: var(--contract-signature-box-height); padding-block-start: 2px; border-top: 1px solid #111827; font-size: 6px; line-height: 1.2; text-align: center; }
+.contract-seller-signature { align-items: center; display: flex; flex-direction: column; gap: 1mm; justify-content: flex-end; }
+.contract-seller-signature img { display: block; height: auto; max-height: 15mm; max-width: 34mm; object-fit: contain; }
 .contract-print-footer { margin-block-start: 2px; padding-block-start: 1px; border-top: 1px solid #98a2b3; color: #667085; font-size: 5.5px; text-align: center; }
 .contract-empty { margin: 1px 0; padding: 2px; color: #667085; border: 1px dashed #98a2b3; font-size: 6px; }
 .contract-cancelled-note { color: #b42318 !important; }

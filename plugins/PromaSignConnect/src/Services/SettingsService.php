@@ -3,7 +3,7 @@ namespace Proma\Plugins\SignConnect\Services;
 final class SettingsService
 {
     public static function defaults(): array { return [
-        'otp_login_enabled'=>'0','otp_length'=>'6','otp_ttl_seconds'=>'180','otp_resend_seconds'=>'60',
+        'otp_length'=>'6','otp_ttl_seconds'=>'180','otp_resend_seconds'=>'60',
         'otp_max_attempts'=>'5','otp_hourly_limit'=>'5','otp_daily_limit'=>'15','otp_lock_seconds'=>'900',
         'otp_primary_provider'=>'ippanel','otp_fallback_provider'=>'smsir','otp_send_mode'=>'default_text',
         'otp_default_text'=>"کد ورود شما به سامانه پرما پی:\n{otp}\n\nاعتبار این کد:\n{expiry_minutes} دقیقه\n\nاین کد را در اختیار دیگران قرار ندهید.",
@@ -48,7 +48,7 @@ final class SettingsService
             'ippanel' => ['provider_ippanel_enabled','provider_ippanel_capabilities','ippanel_api_key','ippanel_from_number','ippanel_connect_timeout','ippanel_timeout','ippanel_retry_count'],
             'smsir' => ['provider_smsir_enabled','provider_smsir_capabilities','smsir_api_key','smsir_sender_line','smsir_connect_timeout','smsir_timeout','smsir_retry_count'],
             'telegram' => ['provider_telegram_enabled','provider_telegram_capabilities','telegram_link_ttl','telegram_parse_mode'],
-            'otp' => ['otp_login_enabled','otp_length','otp_ttl_seconds','otp_resend_seconds','otp_max_attempts','otp_hourly_limit','otp_daily_limit','otp_lock_seconds','otp_primary_provider','otp_fallback_provider','otp_send_mode','otp_default_text','otp_pattern_id','otp_variables'],
+            'otp' => ['otp_length','otp_ttl_seconds','otp_resend_seconds','otp_max_attempts','otp_hourly_limit','otp_daily_limit','otp_lock_seconds','otp_primary_provider','otp_fallback_provider','otp_send_mode','otp_default_text','otp_pattern_id','otp_variables'],
             'signature' => ['signature_hash_algorithm','signature_canonicalization','integrity_scan_enabled'],
             'routing' => ['provider_priority'],
             'security' => ['integrity_scan_enabled'],
@@ -68,7 +68,7 @@ final class SettingsService
 
     private function validate(string $section, array $values): void
     {
-        foreach (['provider_ippanel_enabled','provider_smsir_enabled','provider_telegram_enabled','provider_in_app_enabled','otp_login_enabled','integrity_scan_enabled'] as $key) {
+        foreach (['provider_ippanel_enabled','provider_smsir_enabled','provider_telegram_enabled','provider_in_app_enabled','integrity_scan_enabled'] as $key) {
             if (isset($values[$key]) && !in_array((string)$values[$key], ['0','1'], true)) {
                 throw new \InvalidArgumentException('مقدار وضعیت فعال‌سازی معتبر نیست.');
             }

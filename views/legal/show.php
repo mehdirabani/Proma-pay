@@ -106,6 +106,9 @@ foreach ($payments as $payment) {
       <span><small>جریمه عادی واقعی</small><strong><?= money_toman($financialSummary['normal_late_penalty_total'] ?? 0) ?></strong></span>
       <span><small>جریمه حقوقی واقعی</small><strong><?= money_toman($financialSummary['legal_late_penalty_total'] ?? 0) ?></strong></span>
       <span><small>هزینه در انتظار تأیید</small><strong><?= money_toman($legalCostSummary['pending_approval_legal_costs'] ?? 0) ?></strong></span>
+      <span><small>کل هزینه‌های ثبت‌شده</small><strong><?= money_toman($legalCostSummary['total_legal_costs'] ?? 0) ?></strong></span>
+      <span><small>پرداخت مجموعه به مرجع ثالث</small><strong><?= money_toman($legalCostSummary['company_paid_legal_costs'] ?? 0) ?></strong></span>
+      <span><small>وصول از مشتری</small><strong><?= money_toman($legalCostSummary['collected_legal_costs'] ?? 0) ?></strong></span>
       <span><small>هزینه حقوقی قابل مطالبه</small><strong><?= money_toman($legalCostSummary['outstanding_chargeable_legal_costs'] ?? 0) ?></strong></span>
       <span><small>مبلغ واقعی قابل پرداخت امروز</small><strong><?= money_toman($financialSummary['final_collectable_amount'] ?? 0) ?></strong></span>
     </div>
@@ -199,7 +202,7 @@ foreach ($payments as $payment) {
       <button type="button" class="btn secondary" data-open-modal="legal-document-complaint_draft">تهیه پیش‌نویس شکواییه</button>
     </div>
   </div>
-  <div class="table-wrap"><table><thead><tr><th>نوع</th><th>عنوان</th><th>وضعیت</th><th>مهلت</th><th>ثبت‌کننده</th><th>مرجع/پیگیری</th><th>عملیات</th></tr></thead><tbody>
+  <div class="table-wrap"><table><thead><tr><th scope="col">نوع</th><th scope="col">عنوان</th><th scope="col">وضعیت</th><th scope="col">مهلت</th><th scope="col">ثبت‌کننده</th><th scope="col">مرجع/پیگیری</th><th scope="col">عملیات</th></tr></thead><tbody>
   <?php foreach ($legalDocuments as $document): ?>
     <tr><td><?= e(['contractual_warning' => 'اخطار قراردادی داخلی', 'petition_draft' => 'پیش‌نویس دادخواست', 'complaint_draft' => 'پیش‌نویس شکواییه'][$document['document_type']] ?? $document['document_type']) ?></td><td><?= e($document['title']) ?></td><td><span class="badge <?= e(($document['document_status'] ?? '') === 'external_submission_confirmed' ? 'success' : 'muted') ?>"><?= e(($document['document_status'] ?? '') === 'external_submission_confirmed' ? 'ثبت بیرونی تاییدشده' : 'پیش‌نویس داخلی') ?></span></td><td><?= !empty($document['deadline_date']) ? e(jdate($document['deadline_date'])) : '-' ?></td><td><?= e($document['created_by_name'] ?? '-') ?></td><td><?= !empty($document['external_reference']) ? e($document['external_authority'] . ' / ' . $document['external_reference']) : 'ثبت نشده' ?></td><td><?php if (($document['document_status'] ?? '') !== 'external_submission_confirmed'): ?><button class="btn small info" type="button" data-open-modal="legal-confirm-external-<?= (int) $document['id'] ?>">تایید ثبت بیرونی</button><?php endif; ?></td></tr>
     <div class="modal" id="legal-confirm-external-<?= (int) $document['id'] ?>"><div class="modal-content"><div class="modal-header"><h3>تایید ثبت واقعی بیرونی</h3><button class="icon-btn" type="button" data-close-modal>×</button></div><form method="post" action="<?= e(url('legal/confirmExternalDocument/' . (int) $document['id'])) ?>"><div class="modal-body form-grid"><?= csrf_field() ?><div class="full notice warning">فقط پس از ثبت واقعی در مرجع مربوط این فرم را تایید کنید؛ این سامانه خودکار چیزی را ثبت یا ابلاغ نمی‌کند.</div><label>مرجع ثبت بیرونی<input name="external_authority" required placeholder="نام مرجع/سامانه"></label><label>شماره پیگیری واقعی<input name="external_reference" required></label><label>تاریخ ثبت واقعی<input name="external_submitted_at" data-jalali-input required value="<?= e(jdate(date('Y-m-d'))) ?>"></label><label class="full"><input type="checkbox" name="confirm_external_submission" value="1" required> ثبت واقعی را بررسی و شخصاً تایید می‌کنم.</label></div><div class="modal-footer"><button type="submit" class="btn success">ثبت تایید</button><button type="button" class="btn secondary" data-close-modal>بستن</button></div></form></div></div>
@@ -248,7 +251,7 @@ foreach ($payments as $payment) {
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>قسط</th><th>سررسید</th><th>مبلغ</th><th>پرداخت‌شده</th><th>مانده</th><th>جریمه عادی واقعی</th><th>جریمه حقوقی واقعی</th><th>حقوقی بالقوه (تحلیلی)</th><th>جمع جریمه قابل پرداخت</th><th>قابل وصول واقعی</th><th>وضعیت</th></tr></thead>
+        <thead><tr><th scope="col">قسط</th><th scope="col">سررسید</th><th scope="col">مبلغ</th><th scope="col">پرداخت‌شده</th><th scope="col">مانده</th><th scope="col">جریمه عادی واقعی</th><th scope="col">جریمه حقوقی واقعی</th><th scope="col">حقوقی بالقوه (تحلیلی)</th><th scope="col">جمع جریمه قابل پرداخت</th><th scope="col">قابل وصول واقعی</th><th scope="col">وضعیت</th></tr></thead>
         <tbody>
         <?php foreach ($legalRows as $installment): ?>
           <tr>
@@ -275,13 +278,13 @@ foreach ($payments as $payment) {
 <?php if ($canViewCosts): ?>
 <section class="card">
   <div class="card-header card-no-border"><div><h2>ریز هزینه‌های حقوقی</h2><p>هزینه‌های «در انتظار تأیید» صرفاً ثبت شده‌اند و تا تأیید مدیریت به بدهی مشتری اضافه نمی‌شوند.</p></div></div>
-  <div class="table-wrap"><table><thead><tr><th>تاریخ</th><th>عنوان</th><th>نوع</th><th>مبلغ</th><th>وضعیت تأیید</th><th>وضعیت وصول</th><th>ثبت‌کننده</th></tr></thead><tbody>
+  <div class="table-wrap"><table><thead><tr><th scope="col">تاریخ</th><th scope="col">عنوان</th><th scope="col">نوع</th><th scope="col">مبلغ</th><th scope="col">وضعیت تأیید</th><th scope="col">وصول مشتری و پرداخت مرجع</th><th scope="col">ثبت‌کننده</th></tr></thead><tbody>
   <?php foreach ($legalCosts as $cost): ?>
     <?php $approval = (string) ($cost['approval_status'] ?? 'pending_approval'); ?>
     <tr>
       <td><?= e(jdate($cost['cost_date'] ?? '')) ?></td><td><?= e($cost['title'] ?? '-') ?></td><td><?= e($cost['category'] ?? '-') ?></td><td><?= money_toman($cost['amount_toman'] ?? 0) ?></td>
       <td><span class="badge <?= e($approval === 'approved' ? 'success' : ($approval === 'reversed' ? 'danger' : 'warning')) ?>"><?= e($approval === 'approved' ? 'تأیید شده' : ($approval === 'reversed' ? 'برگشت خورده' : 'در انتظار تأیید')) ?></span></td>
-      <td><?= e(status_label($cost['payment_status'] ?? 'pending')) ?></td><td><?= e($cost['created_by_name'] ?? '-') ?></td>
+      <td><small>وصول از مشتری: <?= money_toman($cost['paid_amount_toman'] ?? 0) ?></small><small>پرداخت مجموعه به مرجع: <?= money_toman($cost['company_paid_amount_toman'] ?? 0) ?></small><small>مانده مشتری: <?= money_toman($cost['customer_receivable_toman'] ?? 0) ?></small></td><td><?= e($cost['created_by_name'] ?? '-') ?></td>
     </tr>
   <?php endforeach; ?>
   <?php if (!$legalCosts): ?><tr><td colspan="7" class="empty">هزینه‌ای برای این قرارداد ثبت نشده است.</td></tr><?php endif; ?>
@@ -325,7 +328,7 @@ foreach ($payments as $payment) {
   <div class="card-header card-no-border"><h2>لاگ پرداخت‌های مرتبط</h2></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>تاریخ</th><th>قسط</th><th>مبلغ</th><th>روش</th><th>وضعیت</th><th>شرح</th></tr></thead>
+      <thead><tr><th scope="col">تاریخ</th><th scope="col">قسط</th><th scope="col">مبلغ</th><th scope="col">روش</th><th scope="col">وضعیت</th><th scope="col">شرح</th></tr></thead>
       <tbody>
       <?php foreach ($payments as $payment): ?>
         <tr>

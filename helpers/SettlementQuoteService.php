@@ -24,7 +24,7 @@ final class SettlementQuoteService
     {
         $plan = self::planForScope($contract, $rows, null, $scope, $asOf, false);
         $ids = array_map(static function ($row) { return (int) $row['id']; }, $plan['rows']);
-        if (!$ids) throw new InvalidArgumentException('قسط قابل پرداختی برای محاسبه وجود ندارد.', 409);
+        if (!$ids && normalize_money($plan['legal_cost_total'] ?? 0) <= 0) throw new InvalidArgumentException('قسط یا هزینه حقوقی قابل پرداختی برای محاسبه وجود ندارد.', 409);
         $quoteUuid = bin2hex(random_bytes(20));
         $calculatedAt = date('Y-m-d H:i:s');
         $expiresAt = date('Y-m-d H:i:s', time() + self::ttlSeconds());
@@ -149,22 +149,26 @@ final class SettlementQuoteService
         $scope = self::normalizeScope($scope);
         $baseQuote = PaymentAllocationService::quote($rows, $asOf);
         $baseTotal = normalize_money($baseQuote['full_settlement_total'] ?? 0);
-        if ($baseTotal <= 0) throw new InvalidArgumentException('قسط قابل پرداختی برای محاسبه وجود ندارد.', 409);
-        $costRows = $scope === 'contract'
+        $costRows = in_array($scope, ['contract', 'contract_legal_first'], true)
             ? LegalCaseCostService::outstandingChargeableForContract((int) $contract['id'], $forUpdate)
             : [];
         $legalCostTotal = 0;
         foreach ($costRows as $cost) {
             $legalCostTotal += max(0, normalize_money($cost['amount_toman'] ?? 0) - normalize_money($cost['paid_amount_toman'] ?? 0));
         }
+        if ($baseTotal <= 0 && $legalCostTotal <= 0) throw new InvalidArgumentException('قسط یا هزینه حقوقی قابل پرداختی برای محاسبه وجود ندارد.', 409);
         $total = $baseTotal + $legalCostTotal;
         $requested = $amount === null ? $total : normalize_money($amount);
         if ($requested <= 0) throw new InvalidArgumentException('مبلغ پرداخت باید بیشتر از صفر باشد.');
         if ($requested > $total) throw new InvalidArgumentException('مبلغ پرداخت از مبلغ قابل تسویه بیشتر است.', 422);
 
-        $installmentAmount = min($requested, $baseTotal);
-        $plan = PaymentAllocationService::plan($rows, $installmentAmount, $asOf);
-        $remainder = $requested - $installmentAmount;
+        $legalFirst = $scope === 'contract_legal_first';
+        $legalFirstAmount = $legalFirst ? min($requested, $legalCostTotal) : 0;
+        $installmentAmount = min(max(0, $requested - $legalFirstAmount), $baseTotal);
+        $plan = $installmentAmount > 0
+            ? PaymentAllocationService::plan($rows, $installmentAmount, $asOf)
+            : PaymentAllocationService::quote($rows, $asOf);
+        $remainder = $legalFirst ? $legalFirstAmount : ($requested - $installmentAmount);
         $costAllocations = [];
         foreach ($costRows as $cost) {
             if ($remainder <= 0) break;
@@ -194,6 +198,6 @@ final class SettlementQuoteService
     private static function normalizeScope($scope)
     {
         $scope = strtolower(trim((string) $scope));
-        return in_array($scope, ['selected', 'contract', 'schedule'], true) ? $scope : 'selected';
+        return in_array($scope, ['selected', 'contract', 'contract_legal_first', 'schedule', 'forward'], true) ? $scope : 'selected';
     }
 }

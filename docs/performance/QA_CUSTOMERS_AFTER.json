@@ -1,0 +1,9 @@
+{
+  "route": "customers",
+  "samples": 30,
+  "http_errors": 0,
+  "wall_p50_ms": 82.31,
+  "wall_p95_ms": 100.03,
+  "wall_p99_ms": 100.92,
+  "response_bytes_p50": 288963
+}

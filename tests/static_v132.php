@@ -14,7 +14,10 @@ $assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.3.2', 
 
 $plugin = json_decode((string) file_get_contents($root . '/plugins/PromaAccounting/plugin.json'), true);
 $assert(version_compare((string) ($plugin['version'] ?? '0.0.0'), '1.2.3', '>='), 'Proma Accounting version must retain V1.2.3 compatibility.');
-$assert((bool) preg_match('/^(?:>=)?1\\.3\\.2$/', trim((string) ($plugin['requires_core'] ?? ''))), 'Proma Accounting must require core 1.3.2 or newer.');
+$minimumCore = (string) ($plugin['requires_core'] ?? '');
+$assert(preg_match('/^>=(\d+\.\d+\.\d+)$/', $minimumCore, $minimumCoreMatch) === 1, 'Proma Accounting minimum core requirement must use a supported semantic version.');
+$assert(version_compare((string) ($version['application'] ?? '0.0.0'), $minimumCoreMatch[1], '>='), 'Proma Accounting minimum core requirement exceeds the installed Core version.');
+$assert((string) ($plugin['plugin_api_version'] ?? '') === (string) ($version['plugin_api'] ?? ''), 'Proma Accounting plugin API requirement must match the Core extension API.');
 
 $layout = (string) file_get_contents($root . '/views/layouts/app.php');
 $manager = (string) file_get_contents($root . '/core/PluginManager.php');

@@ -38,9 +38,10 @@ class Model
             PDO::ATTR_EMULATE_PREPARES => false,
             PDO::ATTR_TIMEOUT => 5,
         ];
-        if (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY')) {
-            $options[PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
-        }
+        $mysqlBufferedQueryAttribute = defined('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')
+            ? constant('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')
+            : (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY') ? constant('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY') : null);
+        if ($mysqlBufferedQueryAttribute !== null) $options[$mysqlBufferedQueryAttribute] = true;
         $startedAt = microtime(true);
         try {
             self::$pdo = new PDO($dsn, $config['username'], $config['password'], $options);

@@ -28,7 +28,7 @@ $installmentStatusOptions = $installmentStatusOptions ?? Ecommerce::installmentR
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>اقلام</th><th>وضعیت</th><th>ثبت</th><th>اعمال تغییر</th></tr></thead>
+        <thead><tr><th scope="col">شماره</th><th scope="col">مشتری</th><th scope="col">مبلغ</th><th scope="col">اقلام</th><th scope="col">وضعیت</th><th scope="col">ثبت</th><th scope="col">اعمال تغییر</th></tr></thead>
         <tbody>
         <?php foreach ($orders as $order): ?>
           <tr>
@@ -75,7 +75,7 @@ $installmentStatusOptions = $installmentStatusOptions ?? Ecommerce::installmentR
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>متقاضی</th><th>محصول</th><th>وضعیت</th><th>توضیحات</th><th>ثبت</th><th>بررسی مدیریت</th></tr></thead>
+        <thead><tr><th scope="col">متقاضی</th><th scope="col">محصول</th><th scope="col">وضعیت</th><th scope="col">توضیحات</th><th scope="col">ثبت</th><th scope="col">بررسی مدیریت</th></tr></thead>
         <tbody>
         <?php foreach ($installmentRequests as $request): ?>
           <tr>

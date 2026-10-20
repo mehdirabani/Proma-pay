@@ -17,7 +17,7 @@ $legalCosts = $read('helpers/LegalCaseCostService.php');
 $costSummary = $read('helpers/ContractLegalCostSummaryService.php');
 $settlementQuote = $read('helpers/SettlementQuoteService.php');
 $paymentGroup = $read('helpers/PaymentGroupService.php');
-$css = $read('assets/css/app.css');
+$tokens = $read('assets/css/design-system/tokens.css');
 $js = $read('assets/js/app.js');
 $releaseBuilder = $read('scripts/build_release.php');
 $assert(strpos($view, 'proma-contract-workspace') !== false && strpos($view, 'data-contract-tab-panel="installments"') !== false, 'Contract details has no content-aware installment workspace.');
@@ -33,7 +33,7 @@ $assert(strpos($legalCosts, 'recordPaymentAllocation') !== false && strpos($lega
 $legalCostMigration = $read('database/migrations/2026_08_01_legal_cost_approval_v157.sql');
 $assert(strpos($legalCostMigration, 'legal_case_costs') !== false && strpos($legalCostMigration, 'legal_cost_payment_allocations') !== false, 'Legal-cost migration is missing.');
 $assert(strpos($settlementQuote, 'planForScope') !== false && strpos($settlementQuote, 'legal_cost_allocations') !== false && strpos($paymentGroup, 'legal_cost_allocations') !== false, 'Contract settlement does not persist approved legal costs.');
-$assert(strpos($css, '--space-1: 4px') !== false && strpos($css, '--control-height: 48px') !== false, 'Shared spacing/control tokens are missing.');
+$assert(strpos($tokens, '--pp-space-1: 4px') !== false && strpos($tokens, '--pp-control: 48px') !== false, 'Shared spacing/control tokens are missing from the canonical token sheet.');
 $assert(strpos($js, 'initContractDetailWorkspace') !== false && strpos($js, 'initContractSettlement') !== false, 'Contract page CSP-safe JavaScript is missing.');
 $assert(strpos($releaseBuilder, "'.playwright-cli/'") !== false, 'Release archives can include browser QA artifacts.');
 echo "STATIC_V157_OK\n";

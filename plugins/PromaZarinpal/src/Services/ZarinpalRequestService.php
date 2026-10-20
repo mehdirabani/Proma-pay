@@ -14,7 +14,7 @@ class ZarinpalRequestService
     private $logs;
     private $clientFactory;
 
-    public function __construct(ZarinpalSettingsService $settings = null, ZarinpalTransactionRepository $transactions = null, ZarinpalLogRepository $logs = null, callable $clientFactory = null)
+    public function __construct(?ZarinpalSettingsService $settings = null, ?ZarinpalTransactionRepository $transactions = null, ?ZarinpalLogRepository $logs = null, ?callable $clientFactory = null)
     {
         $this->settings = $settings ?: new ZarinpalSettingsService();
         $this->transactions = $transactions ?: new ZarinpalTransactionRepository();
@@ -74,7 +74,8 @@ class ZarinpalRequestService
                     $localOrderId,
                     $idempotencyKey,
                     'zarinpal',
-                    (string) ($context['quote_uuid'] ?? '')
+                    (string) ($context['quote_uuid'] ?? ''),
+                    (string) ($context['settlement_scope'] ?? 'selected')
                 );
                 $groupId = (int) $group['id'];
             } else {

@@ -5,7 +5,7 @@
 - Source baseline: commit `5814817`, Proma Pay V1.4.0.
 - Architecture: server-rendered PHP MVC with PDO/MySQL and optional plugins.
 - Supported runtime: PHP 8.1 or newer; QA runtime: PHP 8.2.12 and MariaDB.
-- Customer authentication rule: national ID/identifier plus the last four mobile digits.
+- Customer authentication rule: account identifier plus a personal password; the mobile-suffix fallback is disabled.
 
 ## Release-blocking findings
 

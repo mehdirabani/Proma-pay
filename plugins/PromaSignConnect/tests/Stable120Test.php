@@ -1,7 +1,7 @@
 <?php
 $root=dirname(__DIR__);$errors=[];$read=static fn($file)=>(string)file_get_contents($root.'/'.$file);
 $manifest=json_decode($read('plugin.json'),true);
-if(($manifest['version']??'')!=='1.2.1')$errors[]='version';
+if(!preg_match('/^\d+\.\d+\.\d+$/',(string)($manifest['version']??''))||version_compare((string)$manifest['version'],'1.2.1','<'))$errors[]='version-baseline';
 if(!in_array('migrations/2026_08_01_stable_1_2_0.sql',$manifest['migrations']??[],true))$errors[]='migration-registration';
 $migration=$read('migrations/2026_08_01_stable_1_2_0.sql');
 foreach(['proma_connect_template_variables','proma_connect_variable_provider_mappings','proma_connect_broadcast_campaigns','uq_connect_broadcast_delivery']as$needle)if(strpos($migration,$needle)===false)$errors[]='migration:'.$needle;
@@ -12,4 +12,4 @@ foreach(['saveForProviderAccount','requiredCapability','حداقل یک روید
 foreach(['resolve','signature_requested','contract_signature_request']as$needle)if(strpos($capabilities,$needle)===false)$errors[]='capability-resolution:'.$needle;
 foreach(['mapValues','source_resolver','provider_parameter']as$needle)if(strpos($variables,$needle)===false)$errors[]='variables:'.$needle;
 foreach(['ویرایش تنظیمات','دسترسی‌های ارسال رویداد','رجیستری متغیرها','جایگزینی توکن وب‌سرویس']as$needle)if(strpos($view,$needle)===false)$errors[]='view:'.$needle;
-echo $errors?"FAIL\n".implode("\n",$errors)."\n":"PASS: stable 1.2.1 management and registry\n";exit($errors?1:0);
+echo $errors?"FAIL\n".implode("\n",$errors)."\n":"PASS: stable 1.2.1 regression baseline management and registry\n";exit($errors?1:0);

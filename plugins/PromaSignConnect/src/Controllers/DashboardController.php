@@ -26,7 +26,7 @@ final class DashboardController extends \Controller
         if (!in_array($section, self::SECTIONS, true)) \ErrorHandler::abort(404);
         $data = [
             'title' => 'تنظیمات امضا و ارتباطات',
-            'settings' => (new SettingsService())->all(false),
+            'settings' => SettingsService::defaults(),
             'section' => $section,
             'counts' => ['requests'=>0,'signed'=>0,'queued'=>0,'dead'=>0],
             'baleAccounts' => [],
@@ -51,6 +51,7 @@ final class DashboardController extends \Controller
         ];
         unset($_SESSION['proma_telegram_link']);
         try {
+            $data['settings'] = (new SettingsService())->all(false);
             $data['counts'] = [
                 'requests'=>(int)(\Model::fetch('SELECT COUNT(*) c FROM proma_sign_requests')['c']??0),
                 'signed'=>(int)(\Model::fetch("SELECT COUNT(*) c FROM proma_sign_requests WHERE status='completed'")['c']??0),
@@ -110,6 +111,7 @@ final class DashboardController extends \Controller
             if ($section === 'signers') $data['signerPolicies'] = (new SignerPolicyService())->all();
             if ($section === 'health') $data['healthRows'] = $this->healthRows();
         } catch (\Throwable $e) {
+            \ErrorHandler::log('sign_connect_settings_section', $e, 500);
             $data['loadError'] = 'بخشی از داده‌ها قابل بارگذاری نیست؛ migration افزونه و سلامت پایگاه داده را بررسی کنید.';
         }
         $this->render('plugin:proma-sign-connect/settings-center', $data);

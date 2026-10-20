@@ -46,7 +46,7 @@ $allowed = $cacheRoot . '/plugin-delete-safety-' . bin2hex(random_bytes(4));
 mkdir($allowed, 0755, true);
 file_put_contents($allowed . '/sample.txt', 'safe');
 $reflection = new ReflectionMethod(PluginManager::class, 'removePluginFiles');
-$reflection->setAccessible(true);
+
 $reflection->invoke(PluginManager::instance(), $allowed);
 $assert(!file_exists($allowed), 'Managed cache directory was not removed.');
 

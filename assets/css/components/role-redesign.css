@@ -416,6 +416,59 @@ body:not(.dark-only) .page-wrapper.compact-wrapper .page-body-wrapper .page-body
   color: #b45309 !important;
 }
 
+.proma-followup-recorded {
+  border-color: #86efac !important;
+  background: #ecfdf3 !important;
+  color: #15803d !important;
+}
+
+.proma-followup-history {
+  display: grid;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-block-start: 12px;
+  border-block-start: 1px solid var(--proma-panel-border);
+}
+
+.proma-followup-history__heading,
+.proma-followup-history__item header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.proma-followup-history__heading small,
+.proma-followup-history__item time,
+.proma-followup-history__item > small,
+.proma-followup-history__empty {
+  color: var(--proma-panel-muted);
+  font-size: 12px;
+}
+
+.proma-followup-history__item {
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid var(--proma-panel-border);
+  border-radius: 9px;
+  background: #fff;
+}
+
+.proma-followup-history__item p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.proma-followup-history__empty {
+  margin: 0;
+  padding: 12px;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
 .proma-contract-summary-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -596,6 +649,358 @@ body:not(.dark-only) .page-wrapper.compact-wrapper .page-body-wrapper .page-body
 .page-body > .footer p {
   margin: 0;
   color: #98a2b3;
+}
+
+/* V5.0.2 role dashboards: shared hierarchy with role-specific data. */
+.proma-role-dashboard,
+.proma-admin-dashboard {
+  --dashboard-ink: #17233d;
+  --dashboard-muted: #75809a;
+  align-items: stretch;
+}
+
+.proma-role-dashboard .proma-role-hero,
+.proma-admin-dashboard .proma-workspace-intro {
+  isolation: isolate;
+  position: relative;
+  overflow: hidden;
+  min-height: 182px;
+  border: 0;
+  border-radius: 24px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 8% 120%, rgba(56, 189, 248, .26), transparent 22rem),
+    linear-gradient(115deg, #17223d 0%, #263d74 54%, #5143bd 100%);
+  box-shadow: 0 20px 42px rgba(28, 39, 83, .2);
+}
+
+.proma-role-dashboard .proma-role-hero::after,
+.proma-admin-dashboard .proma-workspace-intro::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-inline-end: -54px;
+  inset-block-end: -132px;
+  width: 330px;
+  height: 260px;
+  border: 1px solid rgba(255, 255, 255, .13);
+  border-radius: 50%;
+  box-shadow: 0 0 0 28px rgba(255, 255, 255, .035), 0 0 0 62px rgba(255, 255, 255, .025);
+  pointer-events: none;
+}
+
+.proma-role-dashboard .proma-role-hero .card-body {
+  position: relative;
+  z-index: 1;
+  grid-template-columns: minmax(0, 1fr) minmax(245px, auto);
+  align-items: center;
+  gap: 24px;
+  min-height: 182px;
+  padding: clamp(22px, 3vw, 38px);
+  background: transparent;
+}
+
+.proma-role-dashboard .proma-role-hero h4,
+.proma-admin-dashboard .proma-workspace-intro h2 {
+  margin: 8px 0;
+  color: #fff;
+  font-size: clamp(22px, 2.1vw, 30px);
+  font-weight: 850;
+  letter-spacing: -.035em;
+}
+
+.proma-role-dashboard .proma-role-hero p,
+.proma-admin-dashboard .proma-workspace-intro p {
+  max-width: 68ch;
+  margin: 0;
+  color: rgba(255, 255, 255, .76);
+  line-height: 1.9;
+}
+
+.proma-role-dashboard .proma-role-hero .badge,
+.proma-admin-dashboard .proma-workspace-intro .proma-eyebrow {
+  color: #e9e8ff;
+  background: rgba(255, 255, 255, .12);
+}
+
+.proma-role-dashboard .proma-role-hero-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
+  max-width: 430px;
+}
+
+.proma-role-dashboard .proma-role-hero-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  gap: 8px;
+  padding-inline: 14px;
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 12px;
+  color: #fff;
+  background: rgba(255, 255, 255, .12);
+  box-shadow: none;
+  backdrop-filter: blur(8px);
+}
+
+.proma-role-dashboard .proma-role-hero-actions .btn:hover {
+  border-color: rgba(255, 255, 255, .48);
+  background: rgba(255, 255, 255, .2);
+  color: #fff;
+}
+
+.proma-role-dashboard .proma-customer-balance .proma-balance-amount {
+  display: block;
+  margin-top: 8px;
+  color: #fff;
+  font-size: clamp(22px, 2.2vw, 31px);
+  font-weight: 900;
+  letter-spacing: -.025em;
+}
+
+.proma-admin-dashboard .proma-workspace-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: clamp(22px, 3vw, 38px);
+}
+
+.proma-admin-dashboard .proma-workspace-intro > * {
+  position: relative;
+  z-index: 1;
+}
+
+.proma-admin-dashboard .proma-workspace-intro .btn {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 11px 18px;
+  border: 0;
+  border-radius: 12px;
+  color: #30277f;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(8, 17, 44, .2);
+}
+
+.proma-admin-dashboard .proma-workspace-intro .btn:hover {
+  color: #241b69;
+  background: #f2f1ff;
+}
+
+.proma-role-dashboard .proma-dashboard-metric,
+.proma-admin-dashboard .proma-dashboard-metric {
+  display: flex;
+}
+
+.proma-role-dashboard .proma-role-kpi,
+.proma-admin-dashboard .proma-admin-kpi {
+  position: relative;
+  width: 100%;
+  min-height: 142px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--proma-card-bg);
+  box-shadow: 0 12px 30px rgba(20, 31, 61, .055);
+}
+
+.proma-role-dashboard .proma-role-kpi::before,
+.proma-admin-dashboard .proma-admin-kpi::before {
+  content: "";
+  position: absolute;
+  inset-block: 18px;
+  inset-inline-start: 0;
+  width: 3px;
+  border-radius: 0 99px 99px 0;
+  background: var(--dashboard-accent, #6b55df);
+}
+
+.proma-role-dashboard .proma-role-kpi .card-body,
+.proma-admin-dashboard .proma-admin-kpi .card-body {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-height: 140px;
+  padding: 20px;
+}
+
+.proma-role-kpi-icon,
+.proma-admin-kpi-icon {
+  display: grid;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--dashboard-accent, #6b55df) 20%, transparent);
+  border-radius: 15px;
+  color: var(--dashboard-accent, #6b55df);
+  background: color-mix(in srgb, var(--dashboard-accent, #6b55df) 9%, transparent);
+}
+
+.proma-role-kpi-icon svg,
+.proma-admin-kpi-icon svg {
+  width: 21px;
+  height: 21px;
+  stroke: currentColor;
+}
+
+.proma-role-kpi--violet { --dashboard-accent: #7258e9; }
+.proma-role-kpi--blue { --dashboard-accent: #1687c9; }
+.proma-role-kpi--rose { --dashboard-accent: #e45273; }
+.proma-role-kpi--amber { --dashboard-accent: #d59316; }
+.proma-role-kpi--teal { --dashboard-accent: #159b8d; }
+.proma-admin-kpi--primary { --dashboard-accent: #7258e9; }
+.proma-admin-kpi--info { --dashboard-accent: #1687c9; }
+.proma-admin-kpi--success { --dashboard-accent: #159b70; }
+.proma-admin-kpi--warning { --dashboard-accent: #d59316; }
+.proma-admin-kpi--danger { --dashboard-accent: #e45273; }
+.proma-admin-kpi--muted { --dashboard-accent: #77839a; }
+
+.proma-role-dashboard .proma-role-kpi small,
+.proma-admin-dashboard .proma-admin-kpi small {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--dashboard-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.proma-role-dashboard .proma-role-kpi strong,
+.proma-admin-dashboard .proma-admin-kpi strong {
+  display: block;
+  color: var(--dashboard-ink);
+  font-size: clamp(19px, 1.65vw, 24px);
+  font-weight: 900;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.proma-role-dashboard .proma-role-kpi em,
+.proma-admin-dashboard .proma-admin-kpi em {
+  display: block;
+  margin-top: 4px;
+  color: var(--dashboard-muted);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.6;
+}
+
+.proma-role-dashboard .proma-role-panel,
+.proma-admin-dashboard .proma-admin-panel {
+  height: 100%;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.proma-role-dashboard .proma-role-panel > .card-header,
+.proma-admin-dashboard .proma-admin-panel > .card-header {
+  padding-top: 20px;
+  padding-bottom: 14px;
+}
+
+.proma-role-dashboard .proma-role-panel .header-top h5,
+.proma-admin-dashboard .proma-admin-panel .header-top h5 {
+  margin: 0;
+  color: var(--dashboard-ink);
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.proma-role-dashboard .proma-role-panel .table-responsive,
+.proma-admin-dashboard .proma-admin-panel .table-responsive,
+.proma-admin-dashboard .proma-admin-panel .table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+}
+
+body.dark-only .proma-role-dashboard .proma-role-kpi strong,
+body.dark-only .proma-admin-dashboard .proma-admin-kpi strong,
+body.dark-only .proma-role-dashboard .proma-role-panel .header-top h5,
+body.dark-only .proma-admin-dashboard .proma-admin-panel .header-top h5 {
+  color: #f3f4fa;
+}
+
+body.dark-only .proma-role-dashboard .proma-role-kpi small,
+body.dark-only .proma-role-dashboard .proma-role-kpi em,
+body.dark-only .proma-admin-dashboard .proma-admin-kpi small,
+body.dark-only .proma-admin-dashboard .proma-admin-kpi em {
+  color: #aab3c4;
+}
+
+@media (max-width: 767.98px) {
+  .proma-role-dashboard .proma-role-hero .card-body {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    gap: 18px;
+    padding: 22px;
+  }
+
+  .proma-role-dashboard .proma-role-hero-actions {
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .proma-admin-dashboard .proma-workspace-intro {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 22px;
+  }
+
+  .proma-admin-dashboard .proma-workspace-intro .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .proma-role-dashboard .proma-dashboard-metric,
+  .proma-admin-dashboard .proma-dashboard-metric {
+    flex: 0 0 50%;
+    max-width: 50%;
+    padding-inline: 6px;
+  }
+
+  .proma-role-dashboard .proma-role-kpi,
+  .proma-admin-dashboard .proma-admin-kpi {
+    min-height: 136px;
+    border-radius: 15px;
+  }
+
+  .proma-role-dashboard .proma-role-kpi .card-body,
+  .proma-admin-dashboard .proma-admin-kpi .card-body {
+    min-height: 134px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+    padding: 13px;
+  }
+
+  .proma-role-kpi-icon,
+  .proma-admin-kpi-icon {
+    flex-basis: 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+  }
+
+  .proma-role-kpi-icon svg,
+  .proma-admin-kpi-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .proma-role-dashboard .proma-role-kpi strong,
+  .proma-admin-dashboard .proma-admin-kpi strong {
+    font-size: 15px;
+  }
+
+  .proma-role-dashboard .proma-role-kpi small,
+  .proma-admin-dashboard .proma-admin-kpi small {
+    font-size: 10px;
+  }
 }
 
 body.dark-only {

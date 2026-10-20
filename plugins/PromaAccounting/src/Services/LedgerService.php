@@ -7,7 +7,7 @@ class LedgerService
     public static function accountFor($userId)
     {
         $userId = (int) $userId;
-        if ($userId <= 0 || !\Model::fetch("SELECT id FROM users WHERE id = ? AND role IN ('admin','operator','lawyer') AND status = 'active' LIMIT 1", [$userId])) {
+        if ($userId <= 0 || !\Model::fetch("SELECT id FROM users WHERE id = ? AND role IN ('admin','operator','lawyer','repair_technician','customer') AND status = 'active' LIMIT 1", [$userId])) {
             throw new \InvalidArgumentException('کاربر حسابداری معتبر نیست.');
         }
         $account = \Model::fetch('SELECT * FROM accounting_user_accounts WHERE user_id = ? LIMIT 1', [$userId]);

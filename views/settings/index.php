@@ -8,6 +8,18 @@ if ($activeContractTemplate === '') {
     $activeContractTemplate = ContractDocument::defaultTemplate();
 }
 $activeTab = $activeTab ?? 'general';
+$notificationTypeLabels = [
+    'payment' => 'پرداخت موفق یا جدید', 'payment_receipt' => 'رسید پرداخت', 'legal' => 'اقدام‌های حقوقی',
+    'identity' => 'بررسی هویت', 'profile' => 'اصلاح مشخصات کاربر', 'overdue' => 'ارجاع پیگیری معوق',
+    'calendar' => 'رویدادهای تقویم', 'message' => 'پیام گفت‌وگو', 'bot' => 'پاسخ دستیار', 'repair' => 'اقدام‌های تعمیرات', 'installment' => 'وضعیت اقساط', 'due_soon' => 'نزدیک‌شدن سررسید قسط', 'due_today' => 'رسیدن موعد قسط', 'followup' => 'وظیفه پیگیری اپراتور', 'system' => 'رویدادهای سامانه',
+];
+$enabledNotificationTypes = json_decode((string) ($settings['notification_event_types_json'] ?? ''), true);
+if (!is_array($enabledNotificationTypes)) $enabledNotificationTypes = array_keys($notificationTypeLabels);
+$enabledWebPushTypes = json_decode((string) ($settings['web_push_event_types_json'] ?? ''), true);
+if (!is_array($enabledWebPushTypes)) $enabledWebPushTypes = ['payment', 'payment_receipt', 'message', 'due_soon', 'due_today', 'overdue', 'legal', 'system'];
+$creditRiskRules = json_decode((string) ($settings['credit_risk_rules_json'] ?? ''), true);
+if (!is_array($creditRiskRules)) $creditRiskRules = CreditRiskEngine::defaultRules();
+$collectionStageRules = json_decode((string) ($settings['collection_stage_rules_json'] ?? ''), true);
 $tabGroups = [
     'پایه' => [
         'general' => 'عمومی',
@@ -30,6 +42,7 @@ $tabGroups = [
     'داده و هوشمندی' => [
         'imports' => 'ورود دیتا',
         'ai' => 'هوش مصنوعی',
+        'credit' => 'ریسک و وصول',
     ],
     'نگهداری' => [
         'backup' => 'بکاپ و بازیابی',
@@ -249,6 +262,9 @@ if (!isset($tabs[$activeTab])) {
   <section class="card proma-settings-panel <?= $activeTab === 'gateway' ? 'active' : '' ?>" data-settings-panel="gateway">
     <div class="card-header"><h2>درگاه پرداخت</h2></div>
     <div class="card-body form-grid">
+      <div class="full proma-settings-toggle">
+        <label><input type="checkbox" name="payment_legal_cost_priority" value="1"<?= checked($settings['payment_legal_cost_priority'] ?? '1', '1') ?>><span><strong>پیش‌فرض پرداخت هزینه‌های حقوقی پیش از اقساط</strong><small>در فرم‌های پرداخت قراردادی، این گزینه از ابتدا فعال باشد. با فعال‌بودن آن، مبلغ ابتدا به هزینه‌های حقوقی تأییدشده می‌رسد و باقیمانده طبق ترتیب اقساط توزیع می‌شود.</small></span></label>
+      </div>
       <div>
         <span class="field-title">پرداخت آنلاین زیبال</span>
         <div class="switch-options">
@@ -370,6 +386,8 @@ if (!isset($tabs[$activeTab])) {
         <code>php <?= e(str_replace('\\', '/', dirname(__DIR__, 2))) ?>/cron/calendar_reminders.php</code>
         <strong>یا route امن وب:</strong>
         <code><?= e($detectedBase) ?>/index.php?route=cron/calendar-reminders&amp;token=<?= e($settings['calendar_cron_token'] ?? '') ?></code>
+        <strong>اجرای روزانهٔ مرحله‌بندی وصول:</strong>
+        <code><?= e($detectedBase) ?>/index.php?route=cron/collection-stages&amp;token=<?= e($settings['calendar_cron_token'] ?? '') ?></code>
       </div>
       <div class="full actions"><button class="btn" type="submit">ذخیره تنظیمات اعلان تقویم</button></div>
     </div>
@@ -378,6 +396,14 @@ if (!isset($tabs[$activeTab])) {
   <section class="card proma-settings-panel <?= $activeTab === 'notifications' ? 'active' : '' ?>" data-settings-panel="notifications">
     <div class="card-header"><h2>اعلان‌ها و چت</h2></div>
     <div class="card-body form-grid">
+      <div class="full proma-feature-toggle">
+        <div><strong>اعلان واقعی مرورگر و گوشی</strong><small>پس از فعال‌سازی، کاربران هر دستگاه را جداگانه مجاز می‌کنند. برای کارکرد اعلان در پس‌زمینه، نشانی سامانه باید HTTPS باشد.</small></div>
+        <label><input type="checkbox" name="web_push_enabled" value="1"<?= checked($settings['web_push_enabled'] ?? '0', '1') ?>><span>فعال</span></label>
+      </div>
+      <div class="full notice <?= !empty($webPushKeyReady) ? 'success' : 'info' ?>">
+        <?= !empty($webPushKeyReady) ? 'کلید امن VAPID آماده است؛ ' . to_persian_digits($webPushSubscriberCount ?? 0) . ' کاربر دست‌کم یک دستگاه متصل دارند.' : 'با ذخیره تنظیمات در حالت فعال، کلید امن VAPID به‌صورت خودکار ساخته می‌شود.' ?>
+        اعلان‌های مرورگر از همان رویدادهای سامانه و صف پردازش اعلان ارسال می‌شوند.
+      </div>
       <div>
         <span class="field-title">صدای اعلان تازه</span>
         <div class="switch-options">
@@ -387,7 +413,33 @@ if (!isset($tabs[$activeTab])) {
       <label>شدت صدا<input name="notifications_sound_volume" value="<?= e($settings['notifications_sound_volume'] ?? '0.45') ?>" inputmode="decimal" placeholder="0.45"></label>
       <label>حذف خودکار تصویرهای چت پس از چند روز<input name="chat_file_auto_delete_days" value="<?= e(to_persian_digits($settings['chat_file_auto_delete_days'] ?? '7')) ?>" inputmode="numeric"></label>
       <div class="full notice info">فایل تصویر چت بعد از این مدت از دیسک حذف می‌شود، اما رکورد و مرجع پیام در دیتابیس باقی می‌ماند.</div>
+      <fieldset class="full form-grid">
+        <legend>رویدادهایی که اعلان کاربر می‌سازند</legend>
+        <p class="full muted">این انتخاب ساخت اعلان داخل سامانه را کنترل می‌کند؛ ثبت تراکنش، پیگیری و ممیزی مالی مستقل از آن ادامه دارد.</p>
+        <?php foreach ($notificationTypeLabels as $type => $label): ?>
+          <label><input type="checkbox" name="notification_event_types[]" value="<?= e($type) ?>"<?= in_array($type, $enabledNotificationTypes, true) ? ' checked' : '' ?>><span><?= e($label) ?></span></label>
+        <?php endforeach; ?>
+      </fieldset>
+      <fieldset class="full form-grid">
+        <legend>رویدادهای اعلان مرورگر و گوشی</legend>
+        <p class="full muted">کاربر باید روی هر دستگاه یک‌بار اعلان را فعال کند. این انتخاب فقط دریافت Web Push را کنترل می‌کند.</p>
+        <?php foreach ($notificationTypeLabels as $type => $label): ?>
+          <label><input type="checkbox" name="web_push_event_types[]" value="<?= e($type) ?>"<?= in_array($type, $enabledWebPushTypes, true) ? ' checked' : '' ?>><span><?= e($label) ?></span></label>
+        <?php endforeach; ?>
+      </fieldset>
+      <div class="full"><a class="btn secondary" href="<?= e(url('notifications')) ?>">تنظیم دستگاه و ارسال اعلان سراسری</a></div>
       <div class="full actions"><button class="btn" type="submit">ذخیره تنظیمات اعلان و چت</button></div>
+    </div>
+  </section>
+
+  <section class="card proma-settings-panel <?= $activeTab === 'credit' ? 'active' : '' ?>" data-settings-panel="credit">
+    <div class="card-header"><h2>ریسک اعتباری و عملیات وصول</h2></div>
+    <div class="card-body form-grid">
+      <div class="full notice info">امتیاز Proma Score از سوابق واقعی ثبت‌شده محاسبه می‌شود و فقط پیشنهاد اعتباری است؛ تصمیم نهایی قرارداد همچنان با مدیر است. منبع چک برگشتی در این نسخه موجود نیست و در امتیاز لحاظ نمی‌شود.</div>
+      <label class="full">قواعد امتیاز ریسک (JSON)<textarea name="credit_risk_rules_json" rows="12" dir="ltr" spellcheck="false"><?= e(json_encode($creditRiskRules, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?></textarea></label>
+      <label class="full">آستانه‌های مراحل وصول (JSON)<textarea name="collection_stage_rules_json" rows="8" dir="ltr" spellcheck="false"><?= e(json_encode($collectionStageRules ?: ['reminder_min_days' => 1, 'reminder_max_days' => 3, 'operator_task_min_days' => 4, 'operator_task_max_days' => 10, 'serious_warning_min_days' => 11, 'serious_warning_max_days' => 20, 'legal_review_min_days' => 21], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) ?></textarea></label>
+      <div class="full notice warning">قواعد فعلی تعیین اولویت پرداخت، شامل اولویت هزینهٔ حقوقی و سپس جریمه و اقساط، در تنظیمات پیش‌فاکتور مالی نگهداری می‌شود و این فرم آن را تغییر نمی‌دهد.</div>
+      <div class="full actions"><button class="btn" type="submit">ذخیره قواعد ریسک و وصول</button></div>
     </div>
   </section>
 
@@ -417,7 +469,7 @@ if (!isset($tabs[$activeTab])) {
       <div class="full"><button class="btn" type="submit" form="settings-import-form" data-loading-text="در حال خواندن دیتا...">خواندن و پیش‌نمایش دیتا</button></div>
       <div class="table-wrap full">
         <table>
-          <thead><tr><th>منبع</th><th>وضعیت</th><th>تاریخ</th><th>خطاها</th><th>عملیات</th></tr></thead>
+          <thead><tr><th scope="col">منبع</th><th scope="col">وضعیت</th><th scope="col">تاریخ</th><th scope="col">خطاها</th><th scope="col">عملیات</th></tr></thead>
           <tbody>
           <?php foreach (($importBatches ?? []) as $batch): ?>
             <?php $errors = json_decode($batch['error_summary'] ?? '[]', true); ?>
@@ -456,10 +508,11 @@ if (!isset($tabs[$activeTab])) {
       <div class="actions">
         <button class="btn success" type="submit" formaction="<?= e(url('backup/create')) ?>">گرفتن بکاپ zip</button>
         <button class="btn danger" type="button" data-open-modal="restore-backup-modal">بازیابی بکاپ</button>
+        <a class="btn secondary" href="<?= e(url('backup/data')) ?>">مشاهده همهٔ داده‌ها و سوابق قدیمی</a>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>فایل بکاپ</th><th>نوع</th><th>حجم</th><th>زمان ساخت</th><th>عملیات</th></tr></thead>
+          <thead><tr><th scope="col">فایل بکاپ</th><th scope="col">نوع</th><th scope="col">حجم</th><th scope="col">زمان ساخت</th><th scope="col">عملیات</th></tr></thead>
           <tbody>
             <?php foreach (($backupFiles ?? []) as $file): ?>
               <tr>
@@ -483,7 +536,7 @@ if (!isset($tabs[$activeTab])) {
       <div class="proma-section-heading d-flex justify-content-between align-items-center flex-wrap gap-2"><h3 class="mb-0">لاگ عملیات بکاپ</h3><?php if (!empty($backupLogs)): ?><button class="btn small danger" type="button" data-open-modal="delete-backup-logs-modal"><i data-feather="trash-2"></i> حذف لاگ‌ها</button><?php endif; ?></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th><input type="checkbox" data-check-all="backup_log_ids" aria-label="انتخاب همه لاگ‌های بکاپ"></th><th>زمان</th><th>عملیات</th><th>فایل</th><th>وضعیت</th><th>پیام</th></tr></thead>
+          <thead><tr><th scope="col"><input type="checkbox" data-check-all="backup_log_ids" aria-label="انتخاب همه لاگ‌های بکاپ"></th><th scope="col">زمان</th><th scope="col">عملیات</th><th scope="col">فایل</th><th scope="col">وضعیت</th><th scope="col">پیام</th></tr></thead>
           <tbody>
             <?php foreach (($backupLogs ?? []) as $log): ?>
               <tr>
@@ -505,18 +558,19 @@ if (!isset($tabs[$activeTab])) {
   <section class="card proma-settings-panel <?= $activeTab === 'update' ? 'active' : '' ?>" data-settings-panel="update">
     <div class="card-header"><h2>بروزرسانی اسکریپت</h2></div>
     <div class="card-body grid">
-      <div class="notice info">می‌توانید بسته بروزرسانی manifestدار یا فایل کامل <span class="ltr">proma-pay_v...</span> را بارگذاری کنید. آپلود سریع ذخیره می‌شود و اعتبارسنجی کامل هنگام نصب انجام می‌شود. قبل از نصب، سامانه به صورت خودکار بکاپ ایمنی می‌گیرد و مسیرهای حساس مانند config/database.php، storage و uploads تغییر نمی‌کنند.</div>
+      <div class="notice info">بستهٔ آپدیت یا فایل کامل ZIP را انتخاب کنید. سقف موثر این هاست <strong class="ltr"><?= to_persian_digits(number_format(($updateUploadLimits['max_bytes'] ?? 0) / (1024 * 1024), 1)) ?> MB</strong> است؛ این مقدار با محدودیت‌های PHP و سقف داخلی سامانه محاسبه شده است. برای بسته‌های بزرگ‌تر، مقدار <span class="ltr">upload_max_filesize</span> و <span class="ltr">post_max_size</span> را در تنظیمات PHP هاست افزایش دهید. اگر درخواست از سقف عبور کند، علت در همین صفحه نمایش داده می‌شود.</div>
       <div class="form-grid two">
         <label>فایل zip بروزرسانی
-          <input type="file" name="update_file" accept=".zip,application/zip" form="settings-update-upload-form">
+          <input id="settings-update-file" type="file" name="update_file" accept=".zip,application/zip" form="settings-update-upload-form" required data-update-upload-file data-max-bytes="<?= (int) ($updateUploadLimits['max_bytes'] ?? 0) ?>" data-max-label="<?= e(to_persian_digits(number_format(($updateUploadLimits['max_bytes'] ?? 0) / (1024 * 1024), 1)) . ' MB') ?>">
         </label>
         <div class="actions">
-          <button class="btn" type="submit" form="settings-update-upload-form" data-loading-text="در حال بارگذاری بسته...">بارگذاری بسته</button>
+          <button id="settings-update-upload-button" class="btn" type="submit" form="settings-update-upload-form" data-loading-text="در حال ارسال فایل...">بارگذاری بسته</button>
+          <small class="d-block" data-update-upload-feedback role="status" aria-live="polite">PHP: upload_max_filesize = <?= e($updateUploadLimits['upload_limit'] ?? '-') ?>، post_max_size = <?= e($updateUploadLimits['post_limit'] ?? '-') ?>.</small>
         </div>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>بسته</th><th>نسخه</th><th>فایل‌ها</th><th>Migration</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+          <thead><tr><th scope="col">بسته</th><th scope="col">نسخه</th><th scope="col">فایل‌ها</th><th scope="col">Migration</th><th scope="col">وضعیت</th><th scope="col">عملیات</th></tr></thead>
           <tbody>
             <?php foreach (($updatePackages ?? []) as $package): ?>
               <tr>
@@ -563,7 +617,7 @@ if (!isset($tabs[$activeTab])) {
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>نام بسته</th><th>حجم</th><th>زمان ساخت</th><th>عملیات</th></tr></thead>
+          <thead><tr><th scope="col">نام بسته</th><th scope="col">حجم</th><th scope="col">زمان ساخت</th><th scope="col">عملیات</th></tr></thead>
           <tbody>
             <?php foreach (($easyInstallPackages ?? []) as $package): ?>
               <tr>
@@ -608,7 +662,7 @@ if (!isset($tabs[$activeTab])) {
   <?= csrf_field() ?>
 </form>
 
-<form id="settings-update-upload-form" method="post" action="<?= e(url('updates/upload')) ?>" enctype="multipart/form-data" data-loading-form>
+<form id="settings-update-upload-form" method="post" action="<?= e(url('updates/upload')) ?>" enctype="multipart/form-data" data-loading-form data-update-upload-form>
   <?= csrf_field() ?>
 </form>
 
@@ -634,8 +688,10 @@ if (!isset($tabs[$activeTab])) {
     <form method="post" action="<?= e(url('backup/restore')) ?>" enctype="multipart/form-data" data-loading-form data-loading-text="در حال بازیابی...">
       <div class="modal-body grid">
         <?= csrf_field() ?>
+        <?php $restoreUploadLimits = BackupService::restoreUploadLimits(); $restoreSqlDumpLimit = BackupService::restoreSqlDumpLimitBytes(); ?>
         <?php $restoreUploadCode = ConfirmationCode::hint('backup_restore_upload'); ?>
         <div class="notice error">بازیابی، داده‌ها و فایل‌های فعلی را با محتوای بکاپ جایگزین می‌کند. قبل از شروع، سامانه به صورت خودکار از وضعیت فعلی بکاپ می‌گیرد. فایل می‌تواند <span class="ltr">.zip</span> یا <span class="ltr">.sql</span> باشد. برای تایید عدد <strong class="ltr"><?= e($restoreUploadCode) ?></strong> را وارد کنید.</div>
+        <div class="notice info">سقف آپلود این فرم <strong class="ltr"><?= to_persian_digits(number_format($restoreUploadLimits['max_bytes'] / 1048576, 1)) ?> MB</strong> است. فایل SQL بازشده داخل ZIP تا <strong class="ltr"><?= to_persian_digits(number_format($restoreSqlDumpLimit / 1024 / 1024, 0)) ?> MB</strong> با پردازش جریان‌محور پشتیبانی می‌شود؛ برای آن فضای آزاد دیسک لازم است.</div>
         <label>فایل بکاپ<input type="file" name="backup_file" accept=".zip,.sql,application/zip,application/sql,text/plain" required></label>
         <label>عدد تایید<input name="restore_confirm_text" required inputmode="numeric" autocomplete="off" placeholder="<?= e($restoreUploadCode) ?>"></label>
       </div>

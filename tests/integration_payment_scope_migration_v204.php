@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 /**
  * Destructive schema-upgrade test. It is intentionally limited to a disposable
- * database whose name is exactly proma_qa_v204 and needs an explicit opt-in.
+ * database named proma_qa_v204 (or an isolated 10-hex suffix) and needs an explicit opt-in.
  */
 $dsn = trim((string) getenv('PROMA_TEST_DB_DSN'));
-if ($dsn === '' || getenv('PROMA_TEST_ALLOW_DESTRUCTIVE') !== '1' || !preg_match('/(?:^|;)dbname=proma_qa_v204(?:;|$)/', $dsn)) {
+if ($dsn === '' || getenv('PROMA_TEST_ALLOW_DESTRUCTIVE') !== '1' || !preg_match('/(?:^|;)dbname=proma_qa_v204(?:_[a-f0-9]{10})?(?:;|$)/i', $dsn)) {
     fwrite(STDERR, "Refusing schema mutation: use the disposable proma_qa_v204 database and PROMA_TEST_ALLOW_DESTRUCTIVE=1.\n");
     exit(2);
 }
@@ -23,12 +23,12 @@ $pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 ]);
 $property = new ReflectionProperty(Model::class, 'pdo');
-$property->setAccessible(true);
+
 $property->setValue(null, $pdo);
 
 $migrationName = 'database/migrations/2026_10_01_group_payment_allocation_scope.sql';
 $schemaSetup = new ReflectionMethod(ScriptUpdateService::class, 'ensureMigrationSchema');
-$schemaSetup->setAccessible(true);
+
 $schemaSetup->invoke(null);
 $column = $pdo->query("SHOW COLUMNS FROM payment_groups LIKE 'allocation_scope'")->fetch();
 if ($column) {
@@ -38,7 +38,7 @@ $statement = $pdo->prepare('DELETE FROM migrations WHERE migration_name = ?');
 $statement->execute([$migrationName]);
 
 $runner = new ReflectionMethod(ScriptUpdateService::class, 'runUpdateMigration');
-$runner->setAccessible(true);
+
 $runner->invoke(null, $migrationName, (string) file_get_contents(dirname(__DIR__) . '/' . $migrationName));
 
 $column = $pdo->query("SHOW COLUMNS FROM payment_groups LIKE 'allocation_scope'")->fetch();

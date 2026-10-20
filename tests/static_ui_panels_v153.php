@@ -16,6 +16,7 @@ $criteria = (string) file_get_contents($root . '/models/OverdueFilterCriteria.ph
 $service = (string) file_get_contents($root . '/models/OverdueAggregationService.php');
 $javascript = (string) file_get_contents($root . '/assets/js/app.js');
 $panels = (string) file_get_contents($root . '/assets/css/components/panels.css');
+$customerExperience = (string) file_get_contents($root . '/assets/css/components/customer-experience.css');
 
 foreach (['proma-status-tabs', 'proma-empty-state', 'render_pagination($pagination, $pageUrl)', 'data-filter-reset-page="1"', "'paid' => ['پرداخت‌شده'"] as $needle) {
     $assert(strpos($installments, $needle) !== false, 'Installment operational UI is missing: ' . $needle);
@@ -30,14 +31,17 @@ foreach (['class OverdueFilterCriteria', 'public const SORTS', 'queryParameters'
 foreach (['GROUP BY {$groupBy}', 'overdue_count', 'max_overdue_days', 'estimated_payable', 'hydrateFinancialState'] as $needle) {
     $assert(strpos($service, $needle) !== false, 'Overdue aggregation is missing: ' . $needle);
 }
-foreach (['proma-purchase-contract-list', 'proma-purchase-contract-card', 'پیشرفت پرداخت', 'مشاهده جزئیات'] as $needle) {
+foreach (['customer-history-list', 'customer-purchase-card', 'پیشرفت پرداخت اقساط', 'جزئیات قرارداد'] as $needle) {
     $assert(strpos($history, $needle) !== false, 'Customer purchase history redesign is missing: ' . $needle);
 }
 foreach (['resetFilterPage', 'data-filter-reset-page', "pageField.value = '1'"] as $needle) {
     $assert(strpos($javascript, $needle) !== false, 'Filter page reset is missing: ' . $needle);
 }
-foreach (['.proma-operational-filter', '.proma-overdue-mobile-card', '.proma-purchase-contract-card', '.proma-empty-state'] as $needle) {
+foreach (['.proma-operational-filter', '.proma-overdue-mobile-card', '.proma-empty-state'] as $needle) {
     $assert(strpos($panels, $needle) !== false, 'Shared operational panel CSS is missing: ' . $needle);
+}
+foreach (['.customer-history-list', '.customer-purchase-card {', '.customer-purchase-card__actions'] as $needle) {
+    $assert(strpos($customerExperience, $needle) !== false, 'Customer purchase history styling is missing: ' . $needle);
 }
 
 echo "STATIC_UI_PANELS_V153_OK\n";

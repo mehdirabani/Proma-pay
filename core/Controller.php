@@ -22,10 +22,12 @@ class Controller
         require $viewFile;
         $content = ob_get_clean();
         if ($layout === null) {
-            echo $content;
+            echo ErrorHandler::nonceInlineScripts($content);
             return;
         }
+        ob_start();
         require __DIR__ . '/../views/layouts/' . $layout . '.php';
+        echo ErrorHandler::nonceInlineScripts(ob_get_clean());
     }
 
     protected function json(array $payload, $status = 200)

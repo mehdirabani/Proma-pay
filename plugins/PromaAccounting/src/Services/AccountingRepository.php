@@ -18,24 +18,30 @@ class AccountingRepository
                     month_totals.payments_this_month,
                     month_totals.receipts_this_month
              FROM
-                (SELECT COUNT(*) AS users FROM users WHERE role IN ('admin','operator','lawyer') AND status = 'active') user_totals
+                (SELECT COUNT(*) AS users FROM users WHERE role IN ('admin','operator','lawyer','repair_technician') AND status = 'active') user_totals
              CROSS JOIN
                 (SELECT COUNT(*) AS sales FROM plugin_accounting_sales WHERE status NOT IN ('cancelled','deleted')) sale_totals
              CROSS JOIN
-                (SELECT COALESCE(SUM(CASE WHEN status IN ('pending','payable','approved','posted') THEN calculated_amount ELSE 0 END), 0) AS commission,
-                        COALESCE(SUM(CASE WHEN status = 'pending' THEN calculated_amount ELSE 0 END), 0) AS pending_commissions,
-                        COALESCE(SUM(CASE WHEN status IN ('payable','approved','posted') THEN calculated_amount ELSE 0 END), 0) AS payable_commissions
-                 FROM plugin_accounting_commissions) commission_totals
+                (SELECT COALESCE(SUM(CASE WHEN cm.status IN ('pending','payable','approved','posted') THEN cm.calculated_amount ELSE 0 END), 0) AS commission,
+                        COALESCE(SUM(CASE WHEN cm.status = 'pending' THEN cm.calculated_amount ELSE 0 END), 0) AS pending_commissions,
+                        COALESCE(SUM(CASE WHEN cm.status IN ('payable','approved','posted') THEN cm.calculated_amount ELSE 0 END), 0) AS payable_commissions
+                 FROM plugin_accounting_commissions cm
+                 JOIN users commission_user ON commission_user.id = cm.seller_user_id
+                 WHERE commission_user.role IN ('admin','operator','lawyer','repair_technician')) commission_totals
              CROSS JOIN
                 (SELECT COALESCE(SUM(CASE WHEN current_balance > 0 THEN current_balance ELSE 0 END), 0) AS positive_balances,
                         COALESCE(SUM(CASE WHEN current_balance < 0 THEN current_balance ELSE 0 END), 0) AS negative_balances,
                         COALESCE(SUM(current_balance), 0) AS ledger
-                 FROM accounting_user_accounts) account_totals
+                 FROM accounting_user_accounts a
+                 JOIN users account_user ON account_user.id = a.user_id
+                 WHERE account_user.role IN ('admin','operator','lawyer','repair_technician')) account_totals
              CROSS JOIN
-                (SELECT COALESCE(SUM(CASE WHEN direction = 'decrease' AND entry_type IN ('payment','payment_to_user') THEN amount ELSE 0 END), 0) AS payments_this_month,
-                        COALESCE(SUM(CASE WHEN direction = 'increase' AND entry_type IN ('receipt','receipt_from_user') THEN amount ELSE 0 END), 0) AS receipts_this_month
-                 FROM accounting_ledger_entries
-                 WHERE created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')) month_totals"
+                (SELECT COALESCE(SUM(CASE WHEN l.direction = 'decrease' AND l.entry_type IN ('payment','payment_to_user') THEN l.amount ELSE 0 END), 0) AS payments_this_month,
+                        COALESCE(SUM(CASE WHEN l.direction = 'increase' AND l.entry_type IN ('receipt','receipt_from_user') THEN l.amount ELSE 0 END), 0) AS receipts_this_month
+                 FROM accounting_ledger_entries l
+                 JOIN users ledger_user ON ledger_user.id = l.user_id
+                 WHERE l.created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
+                   AND ledger_user.role IN ('admin','operator','lawyer','repair_technician')) month_totals"
         ) ?: [];
 
         return [
@@ -55,12 +61,14 @@ class AccountingRepository
     public static function dashboardSeries()
     {
         $rows = \Model::fetchAll(
-            "SELECT DATE_FORMAT(created_at, '%Y-%m') AS period,
-                    COALESCE(SUM(CASE WHEN direction = 'increase' THEN amount ELSE 0 END), 0) AS receipts,
-                    COALESCE(SUM(CASE WHEN direction = 'decrease' THEN amount ELSE 0 END), 0) AS payments
-             FROM accounting_ledger_entries
-             WHERE created_at >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 5 MONTH), '%Y-%m-01')
-             GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+            "SELECT DATE_FORMAT(l.created_at, '%Y-%m') AS period,
+                    COALESCE(SUM(CASE WHEN l.direction = 'increase' THEN l.amount ELSE 0 END), 0) AS receipts,
+                    COALESCE(SUM(CASE WHEN l.direction = 'decrease' THEN l.amount ELSE 0 END), 0) AS payments
+             FROM accounting_ledger_entries l
+             JOIN users u ON u.id = l.user_id
+             WHERE l.created_at >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 5 MONTH), '%Y-%m-01')
+               AND u.role IN ('admin','operator','lawyer','repair_technician')
+             GROUP BY DATE_FORMAT(l.created_at, '%Y-%m')
              ORDER BY period"
         );
         $indexed = [];
@@ -88,6 +96,7 @@ class AccountingRepository
             "SELECT l.*, u.full_name, u.role, u.mobile
              FROM accounting_ledger_entries l
              JOIN users u ON u.id = l.user_id
+             WHERE u.role IN ('admin','operator','lawyer','repair_technician')
              ORDER BY l.id DESC LIMIT {$limit}"
         );
     }
@@ -101,6 +110,7 @@ class AccountingRepository
              FROM plugin_accounting_sales s
              JOIN users u ON u.id = s.seller_user_id
              WHERE s.status NOT IN ('cancelled', 'deleted')
+               AND u.role IN ('admin','operator','lawyer','repair_technician')
              GROUP BY u.id, u.full_name, u.role, u.mobile
              ORDER BY financed_total DESC, sales_count DESC LIMIT {$limit}"
         );
@@ -109,7 +119,7 @@ class AccountingRepository
     public static function accounts($search = '', $page = 1, $perPage = 50, $filters = [])
     {
         $params = [];
-        $where = ["u.role IN ('admin','operator','lawyer')", "u.status = 'active'"];
+        $where = ["u.role IN ('admin','operator','lawyer','repair_technician')", "u.status = 'active'"];
         if (trim((string) $search) !== '') {
             $needle = '%' . trim((string) $search) . '%';
             $where[] = '(u.full_name LIKE ? OR u.mobile LIKE ? OR u.username LIKE ?)';
@@ -122,7 +132,7 @@ class AccountingRepository
         } elseif (($filters['balance'] ?? '') === 'zero') {
             $where[] = 'COALESCE(a.current_balance, 0) = 0';
         }
-        if (in_array($filters['role'] ?? '', ['admin', 'operator', 'lawyer'], true)) {
+        if (in_array($filters['role'] ?? '', ['admin', 'operator', 'lawyer', 'repair_technician'], true)) {
             $where[] = 'u.role = ?';
             $params[] = $filters['role'];
         }
@@ -233,7 +243,7 @@ class AccountingRepository
         $perPage = max(10, min(100, (int) $perPage));
         $page = max(1, (int) $page);
         $params = [];
-        $where = ['1 = 1'];
+        $where = ["u.role IN ('admin','operator','lawyer','repair_technician')"];
         if (in_array($filters['status'] ?? '', ['pending', 'approved', 'payable', 'posted', 'paid', 'reversed', 'cancelled'], true)) {
             $where[] = 'cm.status = ?';
             $params[] = $filters['status'];
@@ -249,7 +259,7 @@ class AccountingRepository
             $params[] = $needle;
         }
         $whereSql = implode(' AND ', $where);
-        $total = (int) ((\Model::fetch("SELECT COUNT(*) AS total FROM plugin_accounting_commissions cm JOIN contracts c ON c.id = cm.contract_id LEFT JOIN users u ON u.id = cm.seller_user_id WHERE {$whereSql}", $params)['total'] ?? 0));
+        $total = (int) ((\Model::fetch("SELECT COUNT(*) AS total FROM plugin_accounting_commissions cm JOIN contracts c ON c.id = cm.contract_id JOIN users u ON u.id = cm.seller_user_id WHERE {$whereSql}", $params)['total'] ?? 0));
         $pages = max(1, (int) ceil($total / $perPage));
         $page = min($page, $pages);
         $offset = ($page - 1) * $perPage;
@@ -257,7 +267,7 @@ class AccountingRepository
             "SELECT cm.*, c.contract_number, u.full_name AS seller_name
              FROM plugin_accounting_commissions cm
              JOIN contracts c ON c.id = cm.contract_id
-             LEFT JOIN users u ON u.id = cm.seller_user_id
+             JOIN users u ON u.id = cm.seller_user_id
              WHERE {$whereSql}
              ORDER BY cm.id DESC LIMIT {$perPage} OFFSET {$offset}",
             $params
@@ -287,6 +297,6 @@ class AccountingRepository
     public static function staff($search = '')
     {
         $needle = '%' . trim((string) $search) . '%';
-        return \Model::fetchAll("SELECT id, full_name, role, mobile FROM users WHERE role IN ('admin','operator','lawyer') AND status = 'active' AND (full_name LIKE ? OR mobile LIKE ? OR username LIKE ?) ORDER BY full_name LIMIT 100", [$needle, $needle, $needle]);
+        return \Model::fetchAll("SELECT id, full_name, role, mobile FROM users WHERE role IN ('admin','operator','lawyer','repair_technician') AND status = 'active' AND (full_name LIKE ? OR mobile LIKE ? OR username LIKE ?) ORDER BY full_name LIMIT 100", [$needle, $needle, $needle]);
     }
 }

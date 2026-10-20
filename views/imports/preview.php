@@ -8,7 +8,7 @@
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>ردیف</th><th>داده خام</th><th>وضعیت</th></tr></thead>
+      <thead><tr><th scope="col">ردیف</th><th scope="col">داده خام</th><th scope="col">وضعیت</th></tr></thead>
       <tbody>
       <?php foreach ($rows as $row): ?>
         <tr><td><?= to_persian_digits($row['row_index'] ?? $row['row_number'] ?? '') ?></td><td><code><?= e($row['raw_json']) ?></code></td><td><span class="badge muted"><?= e(status_label($row['status'])) ?></span></td></tr>
@@ -57,13 +57,13 @@
       </div>
       <?php if (!empty($parsed['customers'])): ?>
         <h3>مشتریان شناسایی شده</h3>
-        <div class="table-wrap"><table><thead><tr><th>نام</th><th>کد ملی</th><th>موبایل</th></tr></thead><tbody>
+        <div class="table-wrap"><table><thead><tr><th scope="col">نام</th><th scope="col">کد ملی</th><th scope="col">موبایل</th></tr></thead><tbody>
           <?php foreach ($parsed['customers'] as $customer): ?><tr><td><?= e($customer['full_name'] ?? '') ?></td><td><?= to_persian_digits($customer['national_id'] ?? '') ?></td><td><?= to_persian_digits($customer['mobile'] ?? '') ?></td></tr><?php endforeach; ?>
         </tbody></table></div>
       <?php endif; ?>
       <?php if (!empty($parsed['contracts'])): ?>
         <h3>قراردادهای شناسایی شده</h3>
-        <div class="table-wrap"><table><thead><tr><th>کد ملی مشتری</th><th>مبلغ اصل</th><th>پیش‌پرداخت</th><th>مانده قابل تقسیط</th><th>سود ماهانه</th><th>تعداد اقساط</th></tr></thead><tbody>
+        <div class="table-wrap"><table><thead><tr><th scope="col">کد ملی مشتری</th><th scope="col">مبلغ اصل</th><th scope="col">پیش‌پرداخت</th><th scope="col">مانده قابل تقسیط</th><th scope="col">سود ماهانه</th><th scope="col">تعداد اقساط</th></tr></thead><tbody>
           <?php foreach ($parsed['contracts'] as $contract): ?>
             <?php
             $principal = normalize_money($contract['principal_amount'] ?? 0);
@@ -75,7 +75,7 @@
       <?php endif; ?>
       <?php if (!empty($parsed['payments'])): ?>
         <h3>پرداخت‌های شناسایی شده</h3>
-        <div class="table-wrap"><table><thead><tr><th>قرارداد</th><th>قسط</th><th>مبلغ</th><th>تاریخ</th><th>شرح</th></tr></thead><tbody>
+        <div class="table-wrap"><table><thead><tr><th scope="col">قرارداد</th><th scope="col">قسط</th><th scope="col">مبلغ</th><th scope="col">تاریخ</th><th scope="col">شرح</th></tr></thead><tbody>
           <?php foreach ($parsed['payments'] as $payment): ?>
             <tr><td><?= e($payment['contract_number'] ?? '') ?></td><td><?= to_persian_digits($payment['installment_number'] ?? '-') ?></td><td><?= money_toman(normalize_money($payment['amount'] ?? 0)) ?></td><td><?= e($payment['payment_date'] ?? '') ?></td><td><?= e($payment['notes'] ?? '') ?></td></tr>
           <?php endforeach; ?>

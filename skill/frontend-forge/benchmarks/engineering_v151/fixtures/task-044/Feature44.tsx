@@ -1,1 +1,0 @@
-export const Pay44=()=> <form><button type="button">Pay</button></form>

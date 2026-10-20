@@ -1,1 +1,0 @@
-export const Link43=()=> <a href="/profil">Profile</a>

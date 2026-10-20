@@ -1,1 +1,0 @@
-import HeavyWidget42 from './HeavyWidget42'; export default function Page42(){return <HeavyWidget42/>}

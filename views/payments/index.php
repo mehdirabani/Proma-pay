@@ -2,7 +2,7 @@
   <div class="card-header card-no-border">
     <div class="header-top">
       <h2>گزارش پرداخت‌ها</h2>
-      <span class="badge badge-light-info">اصلاحیه فقط وضعیت داخلی سامانه را تغییر می‌دهد.</span>
+      <div class="actions"><span class="badge badge-light-info">اصلاحیه فقط وضعیت داخلی سامانه را تغییر می‌دهد.</span><a class="btn small secondary" data-xlsx-export href="<?= e(url('payments/export')) ?>"><?= proma_icon('download') ?><span>خروجی Excel</span></a></div>
     </div>
   </div>
   <div class="card-body">
@@ -22,7 +22,7 @@
 <section class="card proma-list-section" aria-labelledby="gateway-review-title">
   <div class="card-header card-no-border"><div class="header-top"><h2 id="gateway-review-title">پرداخت‌های درگاه نیازمند تطبیق</h2><span class="badge warning"><?= to_persian_digits(count($gatewayReviewGroups)) ?> مورد</span></div></div>
   <div class="card-body"><p class="notice warning">وجه این پرداخت‌ها توسط درگاه تأیید شده ولی هنوز به اقساط تخصیص نیافته است. پیش از هر اصلاحیه، نتیجه را با گزارش درگاه و سابقهٔ قرارداد تطبیق دهید.</p></div>
-  <div class="table-wrap"><table class="proma-v2-data-table"><thead><tr><th>قرارداد</th><th>مشتری</th><th>مبلغ تأییدشده</th><th>شناسه درگاه</th><th>دلیل بررسی</th><th>ثبت درخواست</th><th>عملیات</th></tr></thead><tbody>
+  <div class="table-wrap"><table class="proma-v2-data-table"><thead><tr><th scope="col">قرارداد</th><th scope="col">مشتری</th><th scope="col">مبلغ تأییدشده</th><th scope="col">شناسه درگاه</th><th scope="col">دلیل بررسی</th><th scope="col">ثبت درخواست</th><th scope="col">عملیات</th></tr></thead><tbody>
   <?php foreach ($gatewayReviewGroups as $review): ?><tr>
     <td data-label="قرارداد"><?= e($review['contract_number']) ?></td><td data-label="مشتری"><?= e($review['customer_name']) ?></td>
     <td data-label="مبلغ تأییدشده"><?= $review['gateway_verified_amount'] === null ? 'نیاز به استعلام درگاه' : money_toman($review['gateway_verified_amount']) ?></td>
@@ -73,17 +73,17 @@
     <table>
       <thead>
         <tr>
-          <th>تاریخ</th>
-          <th>قرارداد</th>
-          <th>مشتری</th>
-          <th>قسط</th>
-          <th>نوع پرداخت</th>
-          <th>مبلغ</th>
-          <th>روش</th>
-          <th>کدها</th>
-          <th>وضعیت</th>
-          <th>اصلاحیه</th>
-          <th>عملیات</th>
+          <th scope="col">تاریخ</th>
+          <th scope="col">قرارداد</th>
+          <th scope="col">مشتری</th>
+          <th scope="col">قسط</th>
+          <th scope="col">نوع پرداخت</th>
+          <th scope="col">مبلغ</th>
+          <th scope="col">روش</th>
+          <th scope="col">کدها</th>
+          <th scope="col">وضعیت</th>
+          <th scope="col">اصلاحیه</th>
+          <th scope="col">عملیات</th>
         </tr>
       </thead>
       <tbody>

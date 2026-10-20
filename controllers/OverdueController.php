@@ -8,7 +8,12 @@ class OverdueController extends Controller
         $criteria = OverdueFilterCriteria::fromRequest($_GET);
         $operatorId = Auth::role() === 'operator' ? Auth::id() : null;
         $result = OverdueAggregationService::paginated($criteria, $operatorId);
-        $contractContacts = Contract::contactDirectoryForContracts(array_column($result['items'], 'contract_id'));
+        $contractIds = array_column($result['items'], 'contract_id');
+        $contractContacts = Contract::contactDirectoryForContracts($contractIds);
+        $followupHistoryByContract = [];
+        foreach (OperatorCall::recentForContracts($contractIds, 5) as $call) {
+            $followupHistoryByContract[(int) ($call['contract_id'] ?? 0)][] = $call;
+        }
         if (!is_ajax_request() && $criteria->page !== (int) $result['page']) {
             $params = $criteria->queryParameters(false);
             $params['page'] = (int) $result['page'];
@@ -20,9 +25,42 @@ class OverdueController extends Controller
             'overdueContracts' => $result['items'],
             'pagination' => $result,
             'contractContacts' => $contractContacts,
+            'followupHistoryByContract' => $followupHistoryByContract,
             'operators' => User::all('operator'),
             'lawyers' => User::all('lawyer'),
         ], is_ajax_request() ? null : 'app');
+    }
+
+    public function export()
+    {
+        $this->requireRole(['admin', 'operator']);
+        $criteria = OverdueFilterCriteria::fromRequest($_GET);
+        $criteria->page = 1;
+        $criteria->perPage = 100;
+        $operatorId = Auth::role() === 'operator' ? (int) Auth::id() : null;
+        SpreadsheetHelper::downloadPaginatedXlsx(
+            'سررسیدهای-گذشته.xlsx',
+            'سررسیدهای گذشته',
+            ['شماره قرارداد', 'مشتری', 'موبایل', 'تعداد اقساط معوق', 'قدیمی‌ترین سررسید', 'بیشترین تأخیر (روز)', 'مانده اصل اقساط معوق (تومان)', 'جریمه عادی قابل پرداخت (تومان)', 'جریمه حقوقی قابل پرداخت (تومان)', 'هزینه حقوقی قابل وصول (تومان)', 'مجموع بدهی سررسیدشده (تومان)', 'تعداد پرونده حقوقی'],
+            static function (int $page, int $perPage) use ($criteria, $operatorId): array {
+                $pageCriteria = clone $criteria;
+                $pageCriteria->page = $page;
+                $pageCriteria->perPage = min(100, $perPage);
+                $result = OverdueAggregationService::paginated($pageCriteria, $operatorId, false);
+                return ['items' => $result['items'], 'total' => $result['total'], 'pages' => $result['pages']];
+            },
+            static fn (array $row): array => [
+                (string) ($row['contract_number'] ?? ''), (string) ($row['customer_name'] ?? ''),
+                (string) ($row['mobile'] ?? ''), (int) ($row['overdue_count'] ?? 0),
+                jdate($row['oldest_due_date'] ?? ''), (int) ($row['max_overdue_days'] ?? 0),
+                normalize_money($row['overdue_installments_total'] ?? 0),
+                normalize_money($row['outstanding_normal_late_fees'] ?? 0),
+                normalize_money($row['outstanding_legal_late_fees'] ?? 0),
+                normalize_money($row['outstanding_legal_costs'] ?? 0),
+                normalize_money($row['total_overdue_amount'] ?? $row['estimated_payable'] ?? 0), (int) ($row['legal_case_count'] ?? 0),
+            ],
+            100
+        );
     }
 
     public function discount($id)

@@ -39,7 +39,7 @@ $pageUrl = static function ($page) use ($filters) {
   <div class="card-body">
     <form method="get" action="<?= e(url('profile-reviews')) ?>" class="proma-review-filter form-grid four">
       <label>جست‌وجوی حساب<input name="q" value="<?= e($filters['q'] ?? '') ?>" placeholder="نام، کد ملی، موبایل یا نام کاربری"></label>
-      <label>نقش<select name="role"><option value="">همه نقش‌ها</option><?php foreach (['admin', 'operator', 'lawyer', 'customer'] as $role): ?><option value="<?= e($role) ?>"<?= selected($filters['role'] ?? '', $role) ?>><?= e(role_label($role)) ?></option><?php endforeach; ?></select></label>
+      <label>نقش<select name="role"><option value="">همه نقش‌ها</option><?php foreach (($roleOptions ?? PluginManager::availableRoles()) as $role => $label): ?><option value="<?= e($role) ?>"<?= selected($filters['role'] ?? '', $role) ?>><?= e($label) ?></option><?php endforeach; ?></select></label>
       <label>وضعیت<select name="status"><option value="">همه وضعیت‌ها</option><?php foreach (['pending', 'approved', 'partial', 'rejected'] as $status): ?><option value="<?= e($status) ?>"<?= selected($filters['status'] ?? '', $status) ?>><?= e(ProfileRequest::statusLabel($status)) ?></option><?php endforeach; ?></select></label>
       <?php if (!empty($filters['user_id'])): ?><input type="hidden" name="user_id" value="<?= (int) $filters['user_id'] ?>"><?php endif; ?>
       <div class="proma-field-actions"><button class="btn" type="submit"><?= proma_icon('eye') ?><span>اعمال فیلتر</span></button><a class="btn secondary" href="<?= e(url('profile-reviews')) ?>"><?= proma_icon('close') ?><span>پاک کردن</span></a></div>

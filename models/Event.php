@@ -76,6 +76,23 @@ class Event extends Model
         );
     }
 
+    public static function customerFollowups(int $customerId, int $limit = 30): array
+    {
+        self::ensureSchema();
+        if ($customerId <= 0) return [];
+        $limit = max(1, min(100, $limit));
+        return self::fetchAll(
+            "SELECT e.*, u.full_name AS assigned_name, u.role AS assigned_role
+             FROM customer_automation_events a
+             JOIN events e ON e.id = a.event_id
+             LEFT JOIN users u ON u.id = COALESCE(e.assigned_user_id, e.user_id)
+             WHERE a.customer_id = ? AND e.status <> 'cancelled'
+             ORDER BY e.event_date DESC, e.id DESC
+             LIMIT {$limit}",
+            [$customerId]
+        );
+    }
+
     public static function installmentCalendarEvents($startDate, $endDate, $customerId = null)
     {
         $params = [$startDate, $endDate];

@@ -20,8 +20,8 @@ $logoIconPath = trim((string) ($settings['logo_icon_path'] ?? ''));
             <form method="post" class="theme-form auth-form active">
               <?= csrf_field() ?>
               <h4>فراموشی رمز عبور</h4>
-              <p>شناسه حساب را وارد کنید تا کد بازیابی برای موبایل ثبت‌شده ارسال شود.</p>
-              <?php if ($success = flash('success')): ?><div class="alert alert-light-success" role="alert"><?= e($success) ?></div><?php endif; ?>
+              <p>شناسه حساب را وارد کنید. اگر حساب فعالی وجود داشته باشد، راهنمای بازیابی ارسال می‌شود.</p>
+              <?php if ($success = flash('success')): ?><div class="alert alert-light-success" role="status" aria-live="polite" aria-atomic="true"><?= e($success) ?></div><?php endif; ?>
               <?php if ($error = flash('error')): ?><div class="alert alert-light-danger" role="alert"><?= e($error) ?></div><?php endif; ?>
 
               <div class="form-group">

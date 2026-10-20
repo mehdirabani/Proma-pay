@@ -5,6 +5,7 @@ class ErrorHandler
     protected static $installed = false;
     protected static $handling = false;
     protected static $requestId;
+    protected static $cspNonce;
 
     public static function install()
     {
@@ -19,7 +20,8 @@ class ErrorHandler
             header_remove('X-Powered-By');
         }
         header('X-Request-Id: ' . self::$requestId);
-        header("Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'");
+        $nonce = self::cspNonce();
+        header("Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{$nonce}'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'");
         set_exception_handler([self::class, 'handleException']);
         set_error_handler([self::class, 'handlePhpError']);
         register_shutdown_function([self::class, 'handleShutdown']);
@@ -42,6 +44,27 @@ class ErrorHandler
             self::$requestId = dechex((int) microtime(true)) . dechex(mt_rand());
         }
         return self::$requestId;
+    }
+
+    public static function cspNonce()
+    {
+        if (self::$cspNonce === null) {
+            self::$cspNonce = bin2hex(random_bytes(18));
+        }
+        return self::$cspNonce;
+    }
+
+    /** Add the response nonce only to inline scripts emitted by trusted PHP views. */
+    public static function nonceInlineScripts($html)
+    {
+        $nonce = htmlspecialchars(self::cspNonce(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        return preg_replace_callback('~<script\b([^>]*)>~i', static function (array $match) use ($nonce) {
+            $attributes = (string) ($match[1] ?? '');
+            if (preg_match('/\bsrc\s*=/i', $attributes) || preg_match('/\bnonce\s*=/i', $attributes)) {
+                return $match[0];
+            }
+            return '<script nonce="' . $nonce . '"' . $attributes . '>';
+        }, (string) $html);
     }
 
     public static function abort($status, $message = '', array $details = [], array $headers = [])

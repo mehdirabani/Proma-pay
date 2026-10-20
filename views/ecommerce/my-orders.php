@@ -16,13 +16,13 @@
       <table>
         <thead>
           <tr>
-            <th>شماره سفارش</th>
-            <th>تعداد کالا</th>
-            <th>مبلغ</th>
-            <th>پرداخت</th>
-            <th>وضعیت سفارش</th>
-            <th>تاریخ ثبت</th>
-            <th>عملیات</th>
+            <th scope="col">شماره سفارش</th>
+            <th scope="col">تعداد کالا</th>
+            <th scope="col">مبلغ</th>
+            <th scope="col">پرداخت</th>
+            <th scope="col">وضعیت سفارش</th>
+            <th scope="col">تاریخ ثبت</th>
+            <th scope="col">عملیات</th>
           </tr>
         </thead>
         <tbody>

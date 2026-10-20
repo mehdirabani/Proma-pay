@@ -626,6 +626,12 @@
 .proma-empty-state p { max-width: 470px; margin: 0; font-size: 12px; line-height: 1.8; }
 
 .proma-overdue-table { margin-bottom: 0; }
+.proma-overdue-debt-breakdown { display: grid; gap: 0; margin: 0; border: 1px solid var(--proma-panel-border); border-radius: 12px; overflow: hidden; }
+.proma-overdue-debt-breakdown > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--proma-panel-border); }
+.proma-overdue-debt-breakdown > div:last-child { border-bottom: 0; }
+.proma-overdue-debt-breakdown dt { color: var(--proma-panel-muted); }
+.proma-overdue-debt-breakdown dd { margin: 0; font-weight: 700; text-align: end; }
+.proma-overdue-debt-breakdown .total { color: var(--proma-panel-text, #14211f); background: #f0fdfa; font-size: 1.05em; }
 .proma-overdue-table table { min-width: 990px; margin: 0; }
 .proma-overdue-table td > small,
 .proma-metric-pair :is(span, small) { display: block; margin-top: 4px; color: var(--proma-panel-muted); font-size: 11px; line-height: 1.55; }

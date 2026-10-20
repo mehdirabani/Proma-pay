@@ -428,7 +428,8 @@ function percent_label($value)
 
 function role_label($role)
 {
-    return app_config('roles', [])[$role] ?? 'نامشخص';
+    $labels = PluginManager::assignableRoles();
+    return $labels[$role] ?? ($role !== '' ? 'نقش غیرفعال: ' . $role : 'نامشخص');
 }
 
 function department_label($department)
@@ -781,10 +782,14 @@ function proma_icon($name, $title = '', $class = '')
 {
     $icons = [
         'archive' => '<path d="M3 7h18v13H3z"/><path d="M2 3h20v4H2z"/><path d="M10 12h4"/>',
+        'activity' => '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+        'alert-circle' => '<circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>',
         'award' => '<circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 21l5-3 5 3-1.5-8.5"/>',
         'book' => '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5z"/><path d="M4 4.5v18"/>',
         'chart' => '<path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/>',
+        'check-circle' => '<circle cx="12" cy="12" r="10"/><path d="m8 12 2.5 2.5L16 9"/>',
         'check' => '<path d="m5 12 4 4L19 6"/>',
+        'clipboard' => '<rect x="4" y="4" width="16" height="18" rx="2"/><path d="M9 4.5h6a1.5 1.5 0 0 0-3-3 1.5 1.5 0 0 0-3 3ZM8 11h8M8 15h8"/>',
         'close' => '<path d="m6 6 12 12"/><path d="m18 6-12 12"/>',
         'copy' => '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
         'download' => '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/>',
@@ -792,11 +797,19 @@ function proma_icon($name, $title = '', $class = '')
         'eye' => '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/>',
         'file' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>',
         'history' => '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>',
+        'message-circle' => '<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/>',
         'more' => '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
         'phone' => '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .8 2.9a2 2 0 0 1-.5 2.1L8.1 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.4 1.9.7 2.9.8a2 2 0 0 1 1.6 1.9Z"/>',
+        'package' => '<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="M3 8v9l9 5 9-5V8M12 13v9"/>',
         'printer' => '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/>',
+        'search' => '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+        'shield' => '<path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/>',
         'slash' => '<path d="m4 4 16 16"/><circle cx="12" cy="12" r="9"/>',
+        'tool' => '<path d="M14.7 6.3a5 5 0 0 0-6.4 6.4L3 18l3 3 5.3-5.3a5 5 0 0 0 6.4-6.4L14 13l-3-3 3.7-3.7Z"/>',
+        'trending-up' => '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
         'trash' => '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 15H6L5 6"/><path d="M10 11v5M14 11v5"/>',
+        'wallet' => '<rect x="2" y="5" width="20" height="15" rx="2"/><path d="M2 9h20M16 15h2"/>',
+        'x-circle' => '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6m0-6 6 6"/>',
         'user' => '<circle cx="12" cy="8" r="4"/><path d="M4 22a8 8 0 0 1 16 0"/>',
     ];
     $name = isset($icons[$name]) ? $name : 'file';

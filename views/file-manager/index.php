@@ -98,7 +98,7 @@ $pageUrl = function ($page) use ($filters) {
     </div>
     <div class="table-wrap">
       <table class="proma-file-table">
-        <thead><tr><th>فایل</th><th>دسته و ارتباط</th><th>بارگذار</th><th>تاریخ</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+        <thead><tr><th scope="col">فایل</th><th scope="col">دسته و ارتباط</th><th scope="col">بارگذار</th><th scope="col">تاریخ</th><th scope="col">وضعیت</th><th scope="col">عملیات</th></tr></thead>
         <tbody>
         <?php foreach (($filesPage['items'] ?? []) as $file): ?>
           <?php $fileId = (int) $file['id']; $uuid = $file['file_uuid']; ?>

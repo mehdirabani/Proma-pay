@@ -1,1 +1,0 @@
-import HeavyWidget6 from './HeavyWidget6'; export default function Page6(){return <HeavyWidget6/>}

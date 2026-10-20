@@ -1,1 +1,0 @@
-export function Editor3(props){ const [value,setValue]=useState(props.value); return <input value={value}/> }

@@ -1,6 +1,6 @@
 {
   "name": "proma-pay",
-  "version": "2.0.3",
+  "version": "7.0.3",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
@@ -9,7 +9,14 @@
     "build": "electron-builder --win"
   },
   "devDependencies": {
-    "electron": "^31.0.0",
-    "electron-builder": "^24.13.3"
+    "electron": "^44.5.1",
+    "electron-builder": "^26.17.0"
+  },
+  "build": {
+    "asar": true,
+    "files": [
+      "electron/main.js",
+      "electron/preload.js"
+    ]
   }
 }

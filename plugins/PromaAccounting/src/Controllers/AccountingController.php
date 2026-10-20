@@ -82,7 +82,7 @@ class AccountingController extends \Controller
     public function ledger($userId)
     {
         $user = \User::find((int) $userId);
-        if (!$user || !in_array($user['role'] ?? '', ['admin', 'operator', 'lawyer'], true)) {
+        if (!$user || !in_array($user['role'] ?? '', ['admin', 'operator', 'lawyer', 'repair_technician'], true)) {
             throw new \InvalidArgumentException('کاربر حسابداری پیدا نشد.');
         }
         $result = AccountingRepository::ledger((int) $userId, $_GET['page'] ?? 1, 50);
@@ -281,7 +281,7 @@ class AccountingController extends \Controller
             throw new \InvalidArgumentException('نام قانون الزامی است.');
         }
         $userId = !empty($input['user_id']) ? (int) $input['user_id'] : null;
-        if ($userId && !\Model::fetch("SELECT id FROM users WHERE id = ? AND role IN ('admin','operator','lawyer') AND status = 'active' LIMIT 1", [$userId])) {
+        if ($userId && !\Model::fetch("SELECT id FROM users WHERE id = ? AND role IN ('admin','operator','lawyer','repair_technician') AND status = 'active' LIMIT 1", [$userId])) {
             throw new \InvalidArgumentException('فروشنده انتخاب‌شده معتبر یا فعال نیست.');
         }
         return [
@@ -301,6 +301,9 @@ class AccountingController extends \Controller
 
     public function myFinance()
     {
+        if (\Auth::role() === 'customer') {
+            \ErrorHandler::abort(403);
+        }
         $userId = (int) \Auth::id();
         $start = $_GET['start_date'] ?? date('Y-m-01');
         $end = $_GET['end_date'] ?? date('Y-m-d');
@@ -321,6 +324,9 @@ class AccountingController extends \Controller
     public function analyticsSummary($userId)
     {
         $requested = (int) $userId;
+        if (\Auth::role() === 'customer') {
+            \ErrorHandler::abort(403);
+        }
         $self = (int) \Auth::id() === $requested;
         if (!$self && \Auth::role() !== 'admin') {
             throw new \RuntimeException('دسترسی به تحلیل مالی این کاربر مجاز نیست.');

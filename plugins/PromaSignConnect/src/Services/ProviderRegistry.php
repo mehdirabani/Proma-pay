@@ -36,8 +36,16 @@ final class ProviderRegistry
     {
         if ($provider === 'in_app') return ($this->settings['provider_in_app_enabled'] ?? '1') === '1';
         if ($provider === 'bale') {
-            $rows = \Model::fetchAll("SELECT capabilities_json FROM proma_connect_provider_configs WHERE provider_key='bale' AND is_active=1 AND status='active' AND archived_at IS NULL ORDER BY is_default DESC,id ASC");
-            foreach($rows as$row){$capabilities=json_decode((string)($row['capabilities_json']??'{}'),true)?:[];if(!empty($capabilities[$capability]))return true;}return false;
+            try {
+                $rows = \Model::fetchAll("SELECT capabilities_json FROM proma_connect_provider_configs WHERE provider_key='bale' AND is_active=1 AND status='active' AND archived_at IS NULL ORDER BY is_default DESC,id ASC");
+                foreach ($rows as $row) {
+                    $capabilities = json_decode((string) ($row['capabilities_json'] ?? '{}'), true) ?: [];
+                    if (!empty($capabilities[$capability])) return true;
+                }
+            } catch (\Throwable $e) {
+                \ErrorHandler::log('sign_connect_bale_capability_check', $e, 500);
+            }
+            return false;
         }
         if (($this->settings['provider_' . $provider . '_enabled'] ?? '0') !== '1') return false;
         return in_array($capability, ProviderCapabilityCatalog::normalize(

@@ -118,7 +118,7 @@ $pageUrl = function ($page) use ($viewMode) {
   <div class="card-header card-no-border"><h2>نمای جدولی کاربران</h2></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>نام</th><th>نقش</th><th>واحد</th><th>شناسه</th><th>موبایل</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+      <thead><tr><th scope="col">نام</th><th scope="col">نقش</th><th scope="col">واحد</th><th scope="col">شناسه</th><th scope="col">موبایل</th><th scope="col">وضعیت</th><th scope="col">عملیات</th></tr></thead>
       <tbody>
       <?php foreach ($users as $item): ?>
         <tr>
@@ -152,7 +152,7 @@ $pageUrl = function ($page) use ($viewMode) {
   <div class="card-header card-no-border"><h5>مدارک هویتی در انتظار بررسی</h5></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>کاربر</th><th>نقش</th><th>نوع مدرک</th><th>زمان بارگذاری</th><th>فایل</th><th>عملیات</th></tr></thead>
+      <thead><tr><th scope="col">کاربر</th><th scope="col">نقش</th><th scope="col">نوع مدرک</th><th scope="col">زمان بارگذاری</th><th scope="col">فایل</th><th scope="col">عملیات</th></tr></thead>
       <tbody>
       <?php foreach ($identityRequests as $document): ?>
         <tr>
@@ -183,7 +183,7 @@ $pageUrl = function ($page) use ($viewMode) {
         <?php
           $userFormMode = 'create';
           $userFormData = [];
-          $userFormRoles = array_values(array_filter($roles, fn($role) => $role !== 'customer'));
+          $userFormRoles = array_values(array_filter($creatableRoles ?? $activeRoles ?? $roles, fn($role) => $role !== 'customer'));
           $userFormDepartments = $departments ?? [];
           $userFormAvatarKeys = $avatars;
           include __DIR__ . '/_form_fields.php';

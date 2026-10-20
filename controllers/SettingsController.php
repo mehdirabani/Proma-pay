@@ -10,6 +10,8 @@ class SettingsController extends Controller
         } catch (Throwable $e) {
             $importBatches = [];
         }
+        $webPushKeyReady = WebPushService::keysReady();
+        try { $webPushSubscriberCount = WebPushService::subscriberCount(); } catch (Throwable $e) { $webPushSubscriberCount = 0; }
         $this->render('settings/index', [
             'title' => 'تنظیمات',
             'settings' => Settings::allKeyed(),
@@ -17,8 +19,11 @@ class SettingsController extends Controller
             'backupLogs' => BackupService::logs(),
             'backupFiles' => BackupService::files(),
             'updatePackages' => ScriptUpdateService::packages(),
+            'updateUploadLimits' => ScriptUpdateService::uploadLimits(),
             'easyInstallPackages' => EasyInstallPackageService::packages(),
             'importBatches' => $importBatches,
+            'webPushKeyReady' => $webPushKeyReady,
+            'webPushSubscriberCount' => $webPushSubscriberCount,
         ]);
     }
 
@@ -34,7 +39,19 @@ class SettingsController extends Controller
                 if (in_array($key, $digitFields, true)) {
                     $rawValue = to_english_digits($rawValue);
                 }
-                if ($key === 'zibal_merchant') {
+                if ($key === 'credit_risk_rules_json') {
+                    try { $rawValue = $this->normalizeJsonRules($rawValue, CreditRiskEngine::defaultRules()); }
+                    catch (InvalidArgumentException $e) { set_flash('error', $e->getMessage()); redirect('settings', ['tab' => 'credit']); }
+                } elseif ($key === 'collection_stage_rules_json') {
+                    try {
+                        $rawValue = $this->normalizeJsonRules($rawValue, [
+                            'reminder_min_days' => 1, 'reminder_max_days' => 3,
+                            'operator_task_min_days' => 4, 'operator_task_max_days' => 10,
+                            'serious_warning_min_days' => 11, 'serious_warning_max_days' => 20,
+                            'legal_review_min_days' => 21,
+                        ]);
+                    } catch (InvalidArgumentException $e) { set_flash('error', $e->getMessage()); redirect('settings', ['tab' => 'credit']); }
+                } elseif ($key === 'zibal_merchant') {
                     $rawValue = preg_replace('/\s+/', '', $rawValue);
                 } elseif ($key === 'footer_text') {
                     $rawValue = trim(preg_replace('/\s+/u', ' ', strip_tags($rawValue)));
@@ -78,9 +95,17 @@ class SettingsController extends Controller
                 $values[$key] = $rawValue;
             }
         }
-        foreach (['password_reset_enabled', 'calendar_notifications_enabled', 'calendar_notify_admin_without_user', 'calendar_due_day_repeat_enabled', 'notifications_sound_enabled', 'zibal_enabled', 'zibal_test_mode', 'card_transfer_enabled', 'card_transfer_show_sheba', 'card_transfer_show_account_number', 'email_enabled', 'ecommerce_enabled', 'landing_enabled', 'legal_overdue_amount_enabled', 'legal_allow_self_initiation', 'show_projected_legal_penalty_to_customer'] as $checkbox) {
+        foreach (['password_reset_enabled', 'calendar_notifications_enabled', 'calendar_notify_admin_without_user', 'calendar_due_day_repeat_enabled', 'notifications_sound_enabled', 'web_push_enabled', 'zibal_enabled', 'zibal_test_mode', 'card_transfer_enabled', 'card_transfer_show_sheba', 'card_transfer_show_account_number', 'email_enabled', 'ecommerce_enabled', 'landing_enabled', 'legal_overdue_amount_enabled', 'legal_allow_self_initiation', 'show_projected_legal_penalty_to_customer', 'payment_legal_cost_priority'] as $checkbox) {
             $values[$checkbox] = isset($_POST[$checkbox]) ? '1' : '0';
         }
+        $notificationTypes = $_POST['notification_event_types'] ?? [];
+        if (!is_array($notificationTypes)) $notificationTypes = [];
+        $notificationTypes = array_values(array_unique(array_filter(array_map('strval', $notificationTypes), static fn (string $type): bool => (bool) preg_match('/\A[a-z][a-z0-9_-]{1,39}\z/i', $type))));
+        $values['notification_event_types_json'] = json_encode($notificationTypes, JSON_UNESCAPED_UNICODE);
+        $webPushTypes = $_POST['web_push_event_types'] ?? [];
+        if (!is_array($webPushTypes)) $webPushTypes = [];
+        $webPushTypes = array_values(array_unique(array_filter(array_map('strval', $webPushTypes), static fn (string $type): bool => (bool) preg_match('/\A[a-z][a-z0-9_-]{1,39}\z/i', $type))));
+        $values['web_push_event_types_json'] = json_encode($webPushTypes, JSON_UNESCAPED_UNICODE);
         $values['notifications_sound_volume'] = (string) max(0, min(1, (float) ($values['notifications_sound_volume'] ?? '0.45')));
         $values['chat_file_auto_delete_days'] = (string) max(1, min(365, (int) ($values['chat_file_auto_delete_days'] ?? '7')));
         $values['late_penalty_grace_days'] = (string) max(0, min(365, (int) to_english_digits($values['late_penalty_grace_days'] ?? '0')));
@@ -131,6 +156,14 @@ class SettingsController extends Controller
         if (empty($values['calendar_cron_token'])) {
             unset($values['calendar_cron_token']);
         }
+        if (($values['web_push_enabled'] ?? ($currentSettings['web_push_enabled'] ?? '0')) === '1') {
+            try {
+                WebPushService::ensureKeys();
+            } catch (Throwable $e) {
+                set_flash('error', 'فعال‌سازی اعلان مرورگر انجام نشد: ' . $e->getMessage());
+                redirect('settings', ['tab' => 'notifications']);
+            }
+        }
         $previousLegalPolicy = LegalEligibilityService::defaults($currentSettings);
         Settings::saveMany($values);
         $nextLegalPolicy = LegalEligibilityService::defaults(Settings::allKeyed());
@@ -144,6 +177,25 @@ class SettingsController extends Controller
         set_flash('success', 'تنظیمات ذخیره شد.');
         $tab = preg_replace('/[^a-z0-9_-]/i', '', $_POST['_active_tab'] ?? 'general') ?: 'general';
         redirect('settings', ['tab' => $tab]);
+    }
+
+    private function normalizeJsonRules(string $rawValue, array $defaults): string
+    {
+        $decoded = json_decode($rawValue, true);
+        if (!is_array($decoded)) throw new InvalidArgumentException('ساختار قانون‌های تنظیمی باید JSON معتبر باشد.');
+        $normalized = $defaults;
+        foreach ($defaults as $key => $default) {
+            if (!isset($decoded[$key]) || !is_numeric($decoded[$key])) continue;
+            $normalized[$key] = max(0, min(1000, (int) to_english_digits((string) $decoded[$key])));
+        }
+        if (isset($normalized['reminder_max_days'], $normalized['reminder_min_days']) && $normalized['reminder_max_days'] < $normalized['reminder_min_days']) throw new InvalidArgumentException('بازهٔ یادآوری وصول نامعتبر است.');
+        if (isset($normalized['operator_task_max_days'], $normalized['operator_task_min_days']) && $normalized['operator_task_max_days'] < $normalized['operator_task_min_days']) throw new InvalidArgumentException('بازهٔ وظیفهٔ اپراتور نامعتبر است.');
+        if (isset($normalized['serious_warning_max_days'], $normalized['serious_warning_min_days']) && $normalized['serious_warning_max_days'] < $normalized['serious_warning_min_days']) throw new InvalidArgumentException('بازهٔ هشدار جدی نامعتبر است.');
+        if (isset($normalized['reminder_max_days'], $normalized['operator_task_min_days'], $normalized['operator_task_max_days'], $normalized['serious_warning_min_days'], $normalized['serious_warning_max_days'], $normalized['legal_review_min_days'])
+            && !($normalized['reminder_max_days'] < $normalized['operator_task_min_days'] && $normalized['operator_task_max_days'] < $normalized['serious_warning_min_days'] && $normalized['serious_warning_max_days'] < $normalized['legal_review_min_days'])) {
+            throw new InvalidArgumentException('بازه‌های مرحله‌ای باید بدون هم‌پوشانی و به‌ترتیب افزایش باشند.');
+        }
+        return json_encode($normalized, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     public function contracts($section = '')
@@ -359,6 +411,37 @@ class SettingsController extends Controller
                 ContractTemplateService::audit('compact_print_profile_activated', 1, null, null, ['preset' => $profile['preset']], $reason, Auth::id());
             }
             set_flash('success', 'تنظیمات چاپ ذخیره شد و بدون بازسازی متن روی همه چاپ‌ها اعمال می‌شود.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('settings/contracts/print');
+    }
+
+    public function saveContractSellerSignature()
+    {
+        ContractPermission::requirePermission('contract_print_settings.manage');
+        $this->onlyPost();
+        try {
+            $oldPath = trim((string) Settings::get('contract_seller_signature_path', ''));
+            if (!empty($_POST['remove_seller_signature'])) {
+                $newPath = '';
+            } else {
+                $upload = $_FILES['seller_signature'] ?? [];
+                if (empty($upload['tmp_name']) || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+                    throw new InvalidArgumentException('تصویر امضای فروشنده را انتخاب کنید یا گزینه حذف را بزنید.');
+                }
+                $newPath = UploadHelper::storePublicImage($upload, 'contract-signatures', ['jpg', 'jpeg', 'png', 'webp'], [
+                    'category' => 'contract_seller_signature',
+                    'visibility' => 'public',
+                    'related_entity_type' => 'contract_seller_signature',
+                    'relation_type' => 'signature',
+                    'description' => 'تصویر امضای فروشنده برای چاپ قرارداد',
+                ]);
+                if (!$newPath) throw new RuntimeException('ذخیره تصویر امضا انجام نشد.');
+            }
+            Settings::saveMany(['contract_seller_signature_path' => $newPath]);
+            ContractTemplateService::audit('seller_signature_updated', 1, null, ['path' => $oldPath], ['path' => $newPath], trim((string) ($_POST['change_reason'] ?? 'تغییر امضای فروشنده')), Auth::id());
+            set_flash('success', $newPath === '' ? 'امضای فروشنده از چاپ قرارداد حذف شد.' : 'تصویر امضای فروشنده برای چاپ قرارداد ذخیره شد.');
         } catch (Throwable $e) {
             set_flash('error', $e->getMessage());
         }

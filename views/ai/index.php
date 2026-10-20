@@ -57,7 +57,7 @@ $actionTypeLabels = [
           <h5>اقدام‌های پیشنهادی</h5>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>عنوان</th><th>نوع</th><th>شرح</th><th>نیاز به تأیید</th></tr></thead>
+              <thead><tr><th scope="col">عنوان</th><th scope="col">نوع</th><th scope="col">شرح</th><th scope="col">نیاز به تأیید</th></tr></thead>
               <tbody>
               <?php foreach ($structured['proposed_actions'] as $action): ?>
                 <tr>
@@ -93,7 +93,7 @@ $actionTypeLabels = [
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>دستور</th><th>وضعیت</th><th>مدیر</th><th>تاریخ</th><th>نتیجه</th><th>عملیات</th></tr></thead>
+      <thead><tr><th scope="col">دستور</th><th scope="col">وضعیت</th><th scope="col">مدیر</th><th scope="col">تاریخ</th><th scope="col">نتیجه</th><th scope="col">عملیات</th></tr></thead>
       <tbody>
       <?php foreach (($logs ?? []) as $log): ?>
         <tr>

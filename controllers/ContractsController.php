@@ -6,6 +6,9 @@ class ContractsController extends Controller
     {
         $this->requireRole(['admin', 'operator']);
         $readOnly = Auth::role() === 'operator';
+        $affiliatePlugin = class_exists('PluginRegistry') ? PluginRegistry::find('proma-affiliate') : null;
+        $affiliateEnabled = !$readOnly && class_exists('PluginManager') && PluginManager::isActive('proma-affiliate')
+            && version_compare((string) ($affiliatePlugin['version'] ?? '0.0.0'), '1.0.4', '>=');
         $today = date('Y-m-d');
         $viewMode = in_array($_GET['view'] ?? '', ['cards', 'list'], true) ? $_GET['view'] : 'cards';
         $result = Contract::paginated([
@@ -16,12 +19,20 @@ class ContractsController extends Controller
             // without reducing the denser list view.
             'per_page' => $viewMode === 'cards' ? 12 : 24,
         ]);
+        $preselectedCustomer = null;
+        if (!$readOnly && !empty($_GET['customer_id'])) {
+            $candidateCustomer = User::find((int) $_GET['customer_id']);
+            if ($candidateCustomer && ($candidateCustomer['role'] ?? '') === 'customer' && ($candidateCustomer['status'] ?? '') === 'active') {
+                $preselectedCustomer = $candidateCustomer;
+            }
+        }
         $contractIds = array_column($result['items'], 'id');
         $this->render('contracts/index', [
             'title' => $readOnly ? 'قراردادها' : 'مدیریت قراردادها',
             'contracts' => $result['items'],
             'pagination' => $result,
             'contractStats' => Contract::installmentStatsForContracts($contractIds),
+            'contractContacts' => Contract::contactDirectoryForContracts($contractIds),
             'contractTrends' => Payment::monthlyTrendsForContracts($contractIds, 6),
             'contractTimelines' => Payment::recentForContracts($contractIds, 8),
             'contractGuarantors' => Contract::guarantorsForContracts($contractIds),
@@ -29,7 +40,11 @@ class ContractsController extends Controller
             'contractGuarantees' => $readOnly ? [] : ContractDocument::guaranteesForContracts($contractIds),
             'contractGuarantorPeople' => $readOnly ? [] : ContractDocument::guarantorPeopleForContracts($contractIds),
             'customers' => [],
+            'preselectedCustomer' => $preselectedCustomer,
             'operators' => $readOnly ? [] : User::all('operator'),
+            'salesPeople' => $readOnly ? [] : User::all(null, null, 'active', ['roles' => ['admin', 'operator', 'lawyer', 'repair_technician'], 'limit' => 100]),
+            'affiliateEnabled' => $affiliateEnabled,
+            'currentUserId' => (int) Auth::id(),
             'settings' => Settings::allKeyed(),
             'defaultStartDate' => jdate($today),
             'defaultFirstDueDate' => jdate(FinanceHelper::addMonths($today, 1)),
@@ -37,6 +52,26 @@ class ContractsController extends Controller
             'contractsRoute' => 'contracts',
             'readOnlyTitle' => 'فهرست قراردادها',
         ], is_ajax_request() ? null : 'app');
+    }
+
+    public function export()
+    {
+        $this->requireRole(['admin', 'operator']);
+        $search = trim((string) ($_GET['q'] ?? ''));
+        SpreadsheetHelper::downloadPaginatedXlsx(
+            'قراردادها.xlsx',
+            'قراردادها',
+            ['شماره قرارداد', 'مشتری', 'کد ملی', 'موبایل', 'اپراتور', 'مبلغ قرارداد (تومان)', 'پیش‌پرداخت (تومان)', 'تعداد اقساط', 'وضعیت', 'تاریخ قرارداد', 'اولین سررسید', 'تاریخ ثبت'],
+            static fn (int $page, int $perPage): array => Contract::paginated(['search' => $search, 'page' => $page, 'per_page' => min(60, $perPage)]),
+            static fn (array $row): array => [
+                (string) ($row['contract_number'] ?? ''), (string) ($row['customer_name'] ?? ''),
+                (string) ($row['national_id'] ?? ''), (string) ($row['mobile'] ?? ''),
+                (string) ($row['operator_name'] ?? ''), normalize_money($row['principal_amount'] ?? 0),
+                normalize_money($row['down_payment_amount'] ?? 0), (int) ($row['months'] ?? 0),
+                status_label($row['status'] ?? ''), jdate($row['start_date'] ?? ''),
+                jdate($row['first_due_date'] ?? ''), (string) ($row['created_at'] ?? ''),
+            ]
+        );
     }
 
     /**
@@ -114,12 +149,14 @@ class ContractsController extends Controller
                 redirect('contracts/show/' . (int) $requestState['contract_id']);
             }
             $customerId = $this->resolveCustomer($reusedCustomer);
+            $sellerUserId = $this->resolveAttributionUserId($_POST['seller_user_id'] ?? (string) Auth::id(), 'فروشنده', false);
+            $marketerUserId = $this->resolveAttributionUserId($_POST['marketer_user_id'] ?? '', 'بازاریاب', true);
             $startDate = parse_jalali_date($_POST['start_date'] ?? '') ?: date('Y-m-d');
             $firstDue = parse_jalali_date($_POST['first_due_date'] ?? '') ?: FinanceHelper::addMonths($startDate, 1);
             if (!$customerId || !$startDate || !$firstDue) {
                 throw new InvalidArgumentException('اطلاعات مشتری و تاریخ‌های قرارداد باید کامل و معتبر باشد.');
             }
-            Contract::createWithInstallments([
+            $createdContractId = (int) Contract::createWithInstallments([
                 'customer_id' => $customerId,
                 'prefix' => $_POST['prefix'] ?? '',
                 'principal_amount' => $_POST['principal_amount'] ?? 0,
@@ -130,11 +167,39 @@ class ContractsController extends Controller
                 'start_date' => $startDate,
                 'first_due_date' => $firstDue,
                 'assigned_operator_id' => $_POST['assigned_operator_id'] ?? null,
-                'seller_user_id' => $_POST['seller_user_id'] ?? null,
+                'seller_user_id' => $sellerUserId,
+                'marketer_user_id' => $marketerUserId,
                 'notes' => $_POST['notes'] ?? '',
                 'created_by' => Auth::id(),
                 'request_uuid' => $requestUuid,
             ], $_POST['guarantors'] ?? [], $_POST['items'] ?? [], $_POST['guarantee'] ?? [], $_POST['guarantor_people'] ?? []);
+            if (class_exists('CreditRiskEngine')) CreditRiskEngine::invalidate($customerId);
+            $affiliateReferrerId = (int) ($_POST['affiliate_referrer_id'] ?? 0);
+            $affiliatePlugin = class_exists('PluginRegistry') ? PluginRegistry::find('proma-affiliate') : null;
+            if ($createdContractId > 0 && class_exists('PluginManager')
+                && PluginManager::isActive('proma-affiliate') && version_compare((string) ($affiliatePlugin['version'] ?? '0.0.0'), '1.0.5', '>=')) {
+                if ($affiliateReferrerId > 0) {
+                    try {
+                        PluginHooks::dispatch('affiliate.contract.sale_selected', [
+                            'contract_id' => $createdContractId,
+                            'customer_id' => $customerId,
+                            'referrer_user_id' => $affiliateReferrerId,
+                        ]);
+                    } catch (Throwable $affiliateError) {
+                        if (class_exists('PluginRegistry')) {
+                            PluginRegistry::logRuntimeError('affiliate.contract.sale_selected', $affiliateError);
+                        } else {
+                            ErrorHandler::log('affiliate.contract.sale_selected', $affiliateError, 500);
+                        }
+                    }
+                }
+                try {
+                    PluginHooks::dispatch('affiliate.contract.created', ['contract_id' => $createdContractId, 'customer_id' => $customerId]);
+                } catch (Throwable $affiliateError) {
+                    if (class_exists('PluginRegistry')) PluginRegistry::logRuntimeError('affiliate.contract.created', $affiliateError);
+                    else ErrorHandler::log('affiliate.contract.created', $affiliateError, 500);
+                }
+            }
             $message = 'قرارداد و اقساط آن با موفقیت ساخته شد.';
             if ($reusedCustomer) {
                 $message .= ' مشتری «' . $reusedCustomer . '» از قبل وجود داشت و همان پرونده برای قرارداد انتخاب شد.';
@@ -579,6 +644,10 @@ class ContractsController extends Controller
         $this->requireRole(['admin', 'operator']);
         $this->onlyPost();
         try {
+            $requestedScope = (string) ($_POST['settlement_scope'] ?? 'selected');
+            $settlementScope = !empty($_POST['include_legal_costs'])
+                ? 'contract_legal_first'
+                : (in_array($requestedScope, ['contract', 'contract_legal_first', 'schedule'], true) ? $requestedScope : 'selected');
             $group = PaymentGroupService::create(
                 (int) $id,
                 $_POST['installment_ids'] ?? [],
@@ -591,7 +660,7 @@ class ContractsController extends Controller
                 $_POST['quote_uuid'] ?? null,
                 parse_jalali_date($_POST['payment_date'] ?? '') ?: date('Y-m-d'),
                 $_POST['payment_time'] ?? date('H:i'),
-                in_array(($_POST['settlement_scope'] ?? 'selected'), ['contract', 'schedule'], true) ? (string) $_POST['settlement_scope'] : 'selected'
+                $settlementScope
             );
             set_flash('success', 'پرداخت گروهی ' . ($group['group_number'] ?? '') . ' ثبت شد.');
         } catch (Throwable $e) {
@@ -607,6 +676,9 @@ class ContractsController extends Controller
         try {
             $bulkAction = $_POST['bulk_action'] ?? '';
             if ($bulkAction === 'payment_group') {
+                $settlementScope = !empty($_POST['include_legal_costs'])
+                    ? 'contract_legal_first'
+                    : (($_POST['settlement_scope'] ?? 'selected') === 'schedule' ? 'schedule' : 'selected');
                 $group = PaymentGroupService::create(
                     (int) $id,
                     $_POST['installment_ids'] ?? [],
@@ -619,7 +691,7 @@ class ContractsController extends Controller
                     $_POST['quote_uuid'] ?? null,
                     parse_jalali_date($_POST['payment_date'] ?? '') ?: date('Y-m-d'),
                     $_POST['payment_time'] ?? date('H:i'),
-                    ($_POST['settlement_scope'] ?? 'selected') === 'schedule' ? 'schedule' : 'selected'
+                    $settlementScope
                 );
                 $result = ['updated' => count($_POST['installment_ids'] ?? []), 'group_number' => $group['group_number'] ?? ''];
             } else {
@@ -637,13 +709,13 @@ class ContractsController extends Controller
         Auth::requireLogin();
         $contract = Contract::find((int) $id);
         $this->authorizeContractAccess($contract);
-        $scope = in_array(($_GET['scope'] ?? 'selected'), ['contract', 'schedule'], true) ? (string) $_GET['scope'] : 'selected';
+        $scope = in_array(($_GET['scope'] ?? 'selected'), ['contract', 'contract_legal_first', 'schedule'], true) ? (string) $_GET['scope'] : 'selected';
         $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($_GET['installment_ids'] ?? [])))));
         if ($scope === 'selected' && !$ids) {
             $this->json(['ok' => false, 'message' => 'حداقل یک قسط را انتخاب کنید.'], 422);
         }
         try {
-            $quote = SettlementQuoteService::create((int) $contract['id'], in_array($scope, ['contract', 'schedule'], true) ? [] : $ids, Auth::id(), $scope);
+            $quote = SettlementQuoteService::create((int) $contract['id'], in_array($scope, ['contract', 'contract_legal_first', 'schedule'], true) ? [] : $ids, Auth::id(), $scope);
             $this->json(['ok' => true, 'quote' => $quote]);
         } catch (Throwable $e) {
             $this->json(['ok' => false, 'message' => $e instanceof InvalidArgumentException ? $e->getMessage() : 'محاسبه پیش‌فاکتور تسویه انجام نشد.'], $e->getCode() === 409 ? 409 : 422);
@@ -657,6 +729,7 @@ class ContractsController extends Controller
         $this->authorizeContractAccess($contract);
         $contractDocument = ContractDocument::viewModel((int) $id);
         $settings = Settings::allKeyed();
+        $printBody = ContractDocument::injectSellerSignature($contractDocument['body'], $settings, $contract);
         $this->render('contracts/print', [
             'title' => 'چاپ قرارداد',
             'contract' => $contract,
@@ -664,7 +737,7 @@ class ContractsController extends Controller
             'printProfile' => ContractPrintProfile::load($settings),
             'documentTitle' => $contractDocument['title'],
             'documentHeader' => $contractDocument['header'],
-            'body' => $contractDocument['body'],
+            'body' => $printBody,
         ], null);
     }
 
@@ -1008,11 +1081,29 @@ class ContractsController extends Controller
             'start_date' => $startDate,
             'first_due_date' => $firstDue,
             'assigned_operator_id' => $assignedOperatorId,
-            'seller_user_id' => array_key_exists('seller_user_id', $input) && trim((string) $input['seller_user_id']) !== '' ? (int) $input['seller_user_id'] : null,
+            'seller_user_id' => $this->resolveAttributionUserId($input['seller_user_id'] ?? ($contract['seller_user_id'] ?? ''), 'فروشنده', false),
+            'marketer_user_id' => $this->resolveAttributionUserId($input['marketer_user_id'] ?? ($contract['marketer_user_id'] ?? ''), 'بازاریاب', true),
             'notes' => array_key_exists('notes', $input) ? $input['notes'] : ($contract['notes'] ?? ''),
             'updated_by' => Auth::id(),
             'change_reason' => trim((string) ($input['change_reason'] ?? '')) ?: 'ویرایش قرارداد',
         ];
+    }
+
+    protected function resolveAttributionUserId($value, string $label, bool $allowEmpty): ?int
+    {
+        $raw = trim((string) $value);
+        if ($raw === '' || (int) $raw <= 0) {
+            if ($allowEmpty) {
+                return null;
+            }
+            throw new InvalidArgumentException('انتخاب ' . $label . ' الزامی است.');
+        }
+        $userId = (int) $raw;
+        $user = User::find($userId);
+        if (!$user || ($user['status'] ?? '') !== 'active' || !in_array($user['role'] ?? '', ['admin', 'operator', 'lawyer', 'repair_technician'], true)) {
+            throw new InvalidArgumentException($label . ' انتخاب‌شده معتبر یا فعال نیست.');
+        }
+        return $userId;
     }
 
     protected function authorizeContractAccess($contract)

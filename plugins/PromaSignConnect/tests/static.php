@@ -8,5 +8,5 @@ foreach(['api-access-key','PROMA_SIGNATURE_HMAC_KEY','TelegramLinkTokenService',
 foreach(['error_log($code','password_hash($code .']as$needle)if(strpos($all,$needle)!==false)$errors[]='secret-risk:'.$needle;
 if(preg_match('/api-access-key[\'"]?\s*[:=]\s*[\'"][A-Za-z0-9_-]{20,}/',$all))$errors[]='real-bale-key-detected';
 $authController=dirname($root,2).'/controllers/AuthController.php';
-if(is_file($authController)&&!preg_match('/substr\\(\\$mobile,\\s*-4\\)/',(string)file_get_contents($authController)))$errors[]='existing-password-login-not-found';
+if(is_file($authController)&&!preg_match('/mb_strlen\\(\\$password,\\s*[\'\"]UTF-8[\'\"]\\)\\s*<\\s*8/',(string)file_get_contents($authController)))$errors[]='customer-registration-password-policy-not-found';
 echo $errors?("FAIL\n".implode("\n",$errors)."\n"):"PASS: static release checks\n";exit($errors?1:0);

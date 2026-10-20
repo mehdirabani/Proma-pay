@@ -70,6 +70,7 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
       <span><small>تاریخ قرارداد</small><strong><?= e(jdate($contract['start_date'])) ?></strong></span>
       <span><small>مدل کالای خریداری‌شده</small><strong><?= e($firstItem['product_model'] ?? 'ثبت نشده') ?></strong></span>
       <span><small>نوع ضمانت</small><strong><?= e($firstGuarantee['guarantee_type'] ?? 'ثبت نشده') ?></strong></span>
+      <span><small>مبلغ ضمانت</small><strong><?= money_toman($firstGuarantee['guarantee_amount'] ?? 0) ?></strong></span>
       <span><small>سریال ضمانت</small><strong dir="ltr"><?= e(to_persian_digits($firstGuarantee['guarantee_serial'] ?? 'ثبت نشده')) ?></strong></span>
       <span><small>تعداد ضامن‌ها</small><strong><?= to_persian_digits(count($guarantors)) ?></strong></span>
     </div>
@@ -250,7 +251,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
            <div class="actions"><button class="btn" type="submit">ذخیره نسخه نهایی</button></div>
          </form>
          <?php if (!empty($documentVersions)): ?>
-           <div class="table-wrap mt-3"><table><thead><tr><th>نسخه</th><th>منبع</th><th>تاریخ</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>
+           <div class="table-wrap mt-3"><table><thead><tr><th scope="col">نسخه</th><th scope="col">منبع</th><th scope="col">تاریخ</th><th scope="col">وضعیت</th><th scope="col">عملیات</th></tr></thead><tbody>
            <?php foreach ($documentVersions as $documentVersion): ?><tr><td>v<?= to_persian_digits($documentVersion['version_number']) ?></td><td><?= e($documentVersion['source']) ?></td><td><?= e(jdatetime($documentVersion['created_at'])) ?></td><td><?= !empty($documentVersion['is_finalized']) ? 'نهایی' : (!empty($documentVersion['is_published']) ? 'منتشرشده' : 'پیش‌نویس') ?></td><td class="actions"><?php if (empty($documentVersion['is_published'])): ?><form method="post" action="<?= e(url('contracts/publishDocumentVersion/' . (int) $documentVersion['id'])) ?>"><?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $contract['id'] ?>"><button class="btn small secondary" type="submit">انتشار</button></form><?php endif; ?><?php if (empty($documentVersion['is_finalized'])): ?><form method="post" action="<?= e(url('contracts/finalizeDocumentVersion/' . (int) $documentVersion['id'])) ?>" onsubmit="return confirm('این نسخه نهایی شود و دیگر بازنویسی خودکار نشود؟')"><?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $contract['id'] ?>"><button class="btn small warning" type="submit">نهایی‌سازی</button></form><?php endif; ?></td></tr><?php endforeach; ?>
            </tbody></table></div>
          <?php endif; ?>
@@ -262,7 +263,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
     <div class="card-header card-no-border"><h2>کالاهای قرارداد</h2></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>مدل کالا</th><th>IMEI 1</th><th>IMEI 2</th></tr></thead>
+        <thead><tr><th scope="col">مدل کالا</th><th scope="col">IMEI 1</th><th scope="col">IMEI 2</th></tr></thead>
         <tbody>
         <?php foreach ($items as $item): ?>
           <tr><td><?= e($item['product_model']) ?></td><td dir="ltr"><?= e(to_persian_digits($item['imei_1'] ?? '')) ?></td><td dir="ltr"><?= e(to_persian_digits($item['imei_2'] ?? '')) ?></td></tr>
@@ -275,7 +276,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
     <div class="card-header card-no-border"><h2>ضمانت‌ها</h2></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>نوع</th><th>تعداد</th><th>شناسه</th><th>توضیحات</th></tr></thead>
+        <thead><tr><th scope="col">نوع</th><th scope="col">تعداد</th><th scope="col">شناسه</th><th scope="col">توضیحات</th></tr></thead>
         <tbody>
         <?php foreach ($guarantees as $guarantee): ?>
           <tr>
@@ -295,7 +296,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
     <div class="card-header card-no-border"><h2>ضامن‌ها</h2></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>نام</th><th>کد ملی</th><th>تماس</th><th>نسبت</th></tr></thead>
+        <thead><tr><th scope="col">نام</th><th scope="col">کد ملی</th><th scope="col">تماس</th><th scope="col">نسبت</th></tr></thead>
         <tbody>
         <?php foreach ($guarantors as $person): ?>
           <tr>
@@ -322,7 +323,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
     <?php if ($canManageActiveContract): ?><form method="post" action="<?= e(url('contracts/bulkInstallmentAction/' . (int) $contract['id'])) ?>" id="installment-bulk-form"><?= csrf_field() ?><input type="hidden" name="settlement_scope" value="selected" data-installment-payment-scope><?php endif; ?>
     <div class="table-wrap">
       <table class="proma-v2-data-table proma-contract-installments-table">
-        <thead><tr><?php if ($canManageActiveContract): ?><th><input type="checkbox" data-check-all="installment_ids" aria-label="انتخاب همه اقساط"></th><?php endif; ?><th>قسط</th><th>سررسید</th><th>جزئیات مالی امروز</th><th>وضعیت</th><?php if ($canManageActiveContract): ?><th>عملیات</th><?php endif; ?></tr></thead>
+        <thead><tr><?php if ($canManageActiveContract): ?><th scope="col"><input type="checkbox" data-check-all="installment_ids" aria-label="انتخاب همه اقساط"></th><?php endif; ?><th scope="col">قسط</th><th scope="col">سررسید</th><th scope="col">جزئیات مالی امروز</th><th scope="col">وضعیت</th><?php if ($canManageActiveContract): ?><th scope="col">عملیات</th><?php endif; ?></tr></thead>
         <tbody>
         <?php foreach ($installments as $installment): ?>
           <tr>
@@ -362,7 +363,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
         </tbody>
       </table>
     </div>
-    <?php if ($canManageActiveContract): ?><div class="proma-payment-workspace mt-3"><div class="proma-payment-workspace__summary"><strong>پرداخت انتخاب‌شده‌ها</strong><span>اگر مبلغ از جمع اقساط انتخاب‌شده بیشتر باشد، مازاد خودکار به اقساط باز بعدی همین قرارداد تخصیص می‌یابد.</span></div><div class="form-grid three"><input type="hidden" name="payment_request_uuid" value="<?= e(bin2hex(random_bytes(16))) ?>"><input type="hidden" name="quote_uuid" value=""><label>علت عملیات<input name="bulk_reason" required placeholder="علت ثبت پرداخت"></label><label>مبلغ پرداخت گروهی<input name="group_amount" data-installment-group-amount data-money inputmode="numeric" placeholder="مبلغ دریافت‌شده"></label><label>روش پرداخت<select name="payment_method"><option value="manual">دستی</option><option value="card_transfer">کارت به کارت</option><option value="cash">نقدی</option><option value="pos">دستگاه کارت‌خوان</option><option value="bank_transfer">واریز بانکی</option><option value="check">چک</option></select></label><label>تاریخ پرداخت<input name="payment_date" value="<?= e(jdate(date('Y-m-d'))) ?>"></label><label>ساعت پرداخت<input name="payment_time" type="time" value="<?= e(date('H:i')) ?>"></label></div><div class="notice info" data-installment-overflow-hint role="status">اقساط انتخاب‌شده مبنای تخصیص هستند؛ مازاد به‌ترتیب سررسید به اقساط بعدی می‌رود.</div><div class="notice info">اولویت تخصیص در هر قسط: جریمه حقوقی، جریمه عادی و سپس اصل. ابطال هر قسط فقط از منوی امن همان قسط انجام می‌شود.</div><div class="actions"><button class="btn success" type="submit" name="bulk_action" value="payment_group">ثبت پرداخت</button><button class="btn secondary" type="submit" name="bulk_action" value="recalculate">محاسبه مجدد وضعیت</button></div></div></form><?php endif; ?>
+    <?php if ($canManageActiveContract): ?><div class="proma-payment-workspace mt-3"><div class="proma-payment-workspace__summary"><strong>پرداخت انتخاب‌شده‌ها</strong><span>اگر مبلغ از جمع اقساط انتخاب‌شده بیشتر باشد، مازاد خودکار به اقساط باز بعدی همین قرارداد تخصیص می‌یابد.</span></div><div class="form-grid three"><input type="hidden" name="payment_request_uuid" value="<?= e(bin2hex(random_bytes(16))) ?>"><input type="hidden" name="quote_uuid" value=""><label>علت عملیات<input name="bulk_reason" required placeholder="علت ثبت پرداخت"></label><label>مبلغ پرداخت گروهی<input name="group_amount" data-installment-group-amount data-money inputmode="numeric" placeholder="مبلغ دریافت‌شده"></label><label>روش پرداخت<select name="payment_method"><option value="manual">دستی</option><option value="card_transfer">کارت به کارت</option><option value="cash">نقدی</option><option value="pos">دستگاه کارت‌خوان</option><option value="bank_transfer">واریز بانکی</option><option value="check">چک</option></select></label><label>تاریخ پرداخت<input name="payment_date" value="<?= e(jdate(date('Y-m-d'))) ?>"></label><label>ساعت پرداخت<input name="payment_time" type="time" value="<?= e(date('H:i')) ?>"></label></div><div class="notice info" data-installment-overflow-hint role="status">اقساط انتخاب‌شده مبنای تخصیص هستند؛ مازاد به‌ترتیب سررسید به اقساط بعدی می‌رود.</div><?php if ($combinedLegalCost > 0): ?><label class="proma-checkbox-field"><input type="checkbox" name="include_legal_costs" value="1"><span>اول هزینه‌های حقوقی تأییدشده پرداخت شود؛ مازاد به اقساط باز همین قرارداد برسد.</span></label><?php endif; ?><div class="notice info">اولویت تخصیص در هر قسط: جریمه حقوقی، جریمه عادی و سپس اصل. ابطال هر قسط فقط از منوی امن همان قسط انجام می‌شود.</div><div class="actions"><button class="btn success" type="submit" name="bulk_action" value="payment_group">ثبت پرداخت</button><button class="btn secondary" type="submit" name="bulk_action" value="recalculate">محاسبه مجدد وضعیت</button></div></div></form><?php endif; ?>
   </section>
 </div>
 
@@ -417,14 +418,14 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
 
       <?php if ($canViewLegalCosts): ?>
         <section class="proma-legal-cost-table">
-          <div class="header-top"><div><h3>هزینه‌های حقوقی</h3><p>هزینهٔ پیش‌نویس تا تأیید مدیریت وارد بدهی یا تسویه نمی‌شود.</p></div></div>
+          <div class="header-top"><div><h3>هزینه‌های حقوقی</h3><p>هزینهٔ پیش‌نویس تا تأیید مدیریت وارد بدهی یا تسویه نمی‌شود.</p></div><?php if (Auth::role() === 'admin' && $combinedLegalCost > 0 && ($contract['status'] ?? '') !== 'cancelled'): ?><button class="btn success" type="button" data-open-modal="collect-contract-legal-costs">ثبت دریافت هزینه حقوقی</button><?php endif; ?></div>
           <div class="proma-legal-cost-kpis">
             <span><small>کل</small><strong><?= money_toman($legalCostSummary['total_legal_costs'] ?? 0) ?></strong></span>
             <span><small>تأییدشده</small><strong><?= money_toman($legalCostSummary['approved_legal_costs'] ?? 0) ?></strong></span>
             <span><small>قابل مطالبه امروز</small><strong><?= money_toman($legalCostSummary['outstanding_chargeable_legal_costs'] ?? 0) ?></strong></span>
             <span><small>برگشت‌خورده</small><strong><?= money_toman($legalCostSummary['reversed_legal_costs'] ?? 0) ?></strong></span>
           </div>
-          <div class="table-wrap"><table><thead><tr><th>عنوان</th><th>تاریخ</th><th>مبلغ</th><th>وضعیت</th><th>قابل مطالبه</th><?php if (Auth::role() === 'admin'): ?><th>عملیات</th><?php endif; ?></tr></thead><tbody>
+          <div class="table-wrap"><table><thead><tr><th scope="col">عنوان</th><th scope="col">تاریخ</th><th scope="col">مبلغ</th><th scope="col">وضعیت</th><th scope="col">قابل مطالبه</th><?php if (Auth::role() === 'admin'): ?><th scope="col">عملیات</th><?php endif; ?></tr></thead><tbody>
           <?php foreach ($legalCosts as $legalCost): ?>
             <tr><td><?= e($legalCost['title']) ?><small class="d-block"><?= e($legalCost['category']) ?></small></td><td><?= e(jdate($legalCost['cost_date'])) ?></td><td><?= money_toman($legalCost['amount_toman']) ?></td><td><span class="badge <?= ($legalCost['approval_status'] ?? '') === 'approved' ? 'success' : (($legalCost['approval_status'] ?? '') === 'reversed' ? 'danger' : 'warning') ?>"><?= e(($legalCost['approval_status'] ?? '') === 'approved' ? 'تأییدشده' : (($legalCost['approval_status'] ?? '') === 'reversed' ? 'برگشت‌خورده' : 'در انتظار تأیید')) ?></span></td><td><?= !empty($legalCost['chargeable_to_customer']) ? 'بله' : 'خیر' ?></td><?php if (Auth::role() === 'admin'): ?><td class="actions"><?php if (($legalCost['approval_status'] ?? '') === 'pending_approval'): ?><form method="post" action="<?= e(url('contracts/approveLegalCost/' . (int) $contract['id'] . '/' . (int) $legalCost['id'])) ?>"><?= csrf_field() ?><button class="btn success small" type="submit">تأیید</button></form><?php endif; ?><?php if (($legalCost['approval_status'] ?? '') !== 'reversed'): ?><button class="btn danger small" type="button" data-open-modal="reverse-legal-cost-<?= (int) $legalCost['id'] ?>">برگشت</button><?php endif; ?></td><?php endif; ?></tr>
           <?php endforeach; ?>
@@ -510,6 +511,28 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
       </div>
     </div>
   </section>
+        <?php if (Auth::role() === 'admin' && $combinedLegalCost > 0 && ($contract['status'] ?? '') !== 'cancelled'): ?>
+          <div class="modal" id="collect-contract-legal-costs">
+            <div class="modal-content">
+              <div class="modal-header"><h3>ثبت دریافت هزینه حقوقی</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن"><?= proma_icon('close') ?></button></div>
+              <form method="post" action="<?= e(url('contracts/paymentGroup/' . (int) $contract['id'])) ?>" data-disable-on-submit>
+                <div class="modal-body form-grid two">
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="payment_request_uuid" value="<?= e(bin2hex(random_bytes(16))) ?>">
+                  <input type="hidden" name="settlement_scope" value="contract">
+                  <div class="notice info full">ماندهٔ هزینه‌های حقوقی قابل وصول: <strong><?= money_toman($combinedLegalCost) ?></strong>. اگر قرارداد اقساط باز داشته باشد، با تیک اول ابتدا هزینهٔ حقوقی پرداخت می‌شود و باقیمانده به اقساط می‌رسد.</div>
+                  <label>مبلغ دریافتی<input name="group_amount" data-money inputmode="numeric" required value="<?= e(number_format($combinedLegalCost, 0)) ?>"></label>
+                  <label>روش پرداخت<select name="payment_method"><option value="manual">دستی</option><option value="card_transfer">کارت به کارت</option><option value="cash">نقدی</option><option value="pos">دستگاه کارت‌خوان</option><option value="bank_transfer">واریز بانکی</option><option value="check">چک</option></select></label>
+                  <label>تاریخ پرداخت<input name="payment_date" value="<?= e(jdate(date('Y-m-d'))) ?>" required></label>
+                  <label>ساعت پرداخت<input name="payment_time" type="time" value="<?= e(date('H:i')) ?>"></label>
+                  <label class="full">شرح پرداخت<input name="group_description" maxlength="255" value="دریافت هزینه‌های حقوقی قرارداد"></label>
+                  <label class="proma-checkbox-field full"><input type="checkbox" name="include_legal_costs" value="1" checked><span>اولویت پرداخت با هزینه‌های حقوقی باشد؛ مازاد به اقساط باز تخصیص یابد.</span></label>
+                </div>
+                <div class="modal-footer"><button class="btn success" type="submit">ثبت پرداخت</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
+              </form>
+            </div>
+          </div>
+        <?php endif; ?>
 <?php endif; ?>
 
 <?php if ($isInternalViewer && Auth::role() === 'admin'): ?>
@@ -547,7 +570,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
     <?php if (!empty($paymentTimeline)): ?>
       <div class="table-wrap proma-payment-log-table">
         <table>
-          <thead><tr><th>تاریخ و ساعت</th><th>قسط</th><th>نوع</th><th>روش</th><th>مبلغ</th><th>وضعیت</th><th>شناسه</th></tr></thead>
+          <thead><tr><th scope="col">تاریخ و ساعت</th><th scope="col">قسط</th><th scope="col">نوع</th><th scope="col">روش</th><th scope="col">مبلغ</th><th scope="col">وضعیت</th><th scope="col">شناسه</th></tr></thead>
           <tbody>
           <?php foreach ($paymentTimeline as $payment): ?>
             <?php $paymentMoment = $payment['paid_at'] ?? $payment['payment_date'] ?? $payment['created_at'] ?? ''; ?>
@@ -573,7 +596,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
   <div class="card-header card-no-border"><h2>تاریخچه تغییرات قرارداد</h2></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>نوع تغییر</th><th>کاربر</th><th>دلیل</th><th>زمان</th></tr></thead>
+      <thead><tr><th scope="col">نوع تغییر</th><th scope="col">کاربر</th><th scope="col">دلیل</th><th scope="col">زمان</th></tr></thead>
       <tbody>
       <?php foreach ($logs as $log): ?>
         <tr>
@@ -652,6 +675,8 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
             <label>ساعت پرداخت<input name="payment_time" type="time" value="<?= e(date('H:i')) ?>"></label>
             <label>روش پرداخت<select name="method"><option value="manual">پرداخت دستی</option></select></label>
             <label class="full">توضیحات<input name="description" placeholder="توضیحات پرداخت"></label>
+            <label class="proma-checkbox-field full"><input type="checkbox" name="include_legal_costs" value="1"><span>اول هزینه‌های حقوقی تأییدشده پرداخت شود؛ مازاد به اقساط باز قرارداد برسد.</span></label>
+            <div class="notice info full">در صورت انتخاب، هزینه‌های حقوقی سهم اول پرداخت را می‌گیرند و باقیمانده طبق سررسید به اقساط قابل پرداخت می‌رسد.</div>
           </div>
           <div class="modal-footer"><button class="btn success" type="submit">ثبت پرداخت</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
         </form>

@@ -9,7 +9,7 @@ class ZarinpalGateway implements PaymentGatewayProviderInterface
     private $settings;
     private $requests;
 
-    public function __construct(ZarinpalSettingsService $settings = null, ZarinpalRequestService $requests = null)
+    public function __construct(?ZarinpalSettingsService $settings = null, ?ZarinpalRequestService $requests = null)
     {
         $this->settings = $settings ?: new ZarinpalSettingsService();
         $this->requests = $requests ?: new ZarinpalRequestService($this->settings);

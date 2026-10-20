@@ -44,6 +44,43 @@ class ProfileController extends Controller
         redirect('profile');
     }
 
+    public function changePassword()
+    {
+        $this->requireRole('customer');
+        $this->onlyPost();
+        $user = Auth::user();
+        $current = (string) ($_POST['current_password'] ?? '');
+        $password = (string) ($_POST['password'] ?? '');
+        $confirmation = (string) ($_POST['password_confirmation'] ?? '');
+        if (!$user || !Auth::verifyPasswordForUser($user, $current)) {
+            set_flash('error', 'رمز فعلی صحیح نیست.');
+            redirect('profile');
+        }
+        if ($password !== $confirmation) {
+            set_flash('error', 'تکرار رمز جدید با آن یکسان نیست.');
+            redirect('profile');
+        }
+        if (mb_strlen($password, 'UTF-8') < 8 || mb_strlen($password, 'UTF-8') > 128) {
+            set_flash('error', 'رمز شخصی باید بین ۸ تا ۱۲۸ نویسه باشد.');
+            redirect('profile');
+        }
+        if (hash_equals($current, $password)) {
+            set_flash('error', 'رمز جدید باید با رمز فعلی تفاوت داشته باشد.');
+            redirect('profile');
+        }
+        try {
+            User::setCustomCustomerPassword((int) Auth::id(), $password, Auth::id());
+            if (!Auth::refreshPasswordFingerprint()) {
+                Auth::logout();
+                redirect('auth/login');
+            }
+            set_flash('success', 'رمز شخصی با موفقیت تغییر کرد. از این پس با رمز جدید وارد شوید.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'تغییر رمز انجام نشد.');
+        }
+        redirect('profile');
+    }
+
     public function updateAvatar()
     {
         Auth::requireLogin();

@@ -24,6 +24,7 @@ foreach ($files as $file) {
 
 $payment = file_get_contents($root . '/models/Payment.php');
 $installmentsController = file_get_contents($root . '/controllers/InstallmentsController.php');
+$paymentGroupService = file_get_contents($root . '/helpers/PaymentGroupService.php');
 $paymentGroup = file_get_contents($root . '/helpers/PaymentGroupService.php');
 $paymentsController = file_get_contents($root . '/controllers/PaymentsController.php');
 $paymentReceipt = file_get_contents($root . '/models/PaymentReceipt.php');
@@ -35,8 +36,8 @@ $installSql = file_get_contents($root . '/database/proma-pay-install.sql');
 
 $checks = [
     ['Payment uses outbox', strpos($payment, 'SystemOutbox::safeEnqueuePluginHook') !== false && strpos($payment, 'recordPaymentAudit') !== false],
-    ['Manual payment uses idempotency', strpos($installmentsController, 'payment_request_uuid') !== false && strpos($installmentsController, 'PaymentRequest::beginRequest') !== false],
-    ['Manual payment isolates side effects', strpos($installmentsController, 'PaymentRequest::complete') !== false && strpos($installmentsController, 'safeEnqueueNotification') !== false],
+    ['Manual payment uses idempotency', strpos($installmentsController, 'payment_request_uuid') !== false && strpos($paymentGroupService, 'PaymentRequest::beginSettlement') !== false],
+    ['Manual payment isolates side effects', strpos($paymentGroupService, 'PaymentRequest::completeSettlement') !== false && strpos($installmentsController, 'safeEnqueueNotification') !== false],
     ['Gateway path uses outbox', strpos($paymentsController, 'safeEnqueueNotification') !== false && strpos($paymentsController, 'SystemOutbox::processPending') !== false],
     ['Group payments use outbox', strpos($paymentGroup, 'safeEnqueuePluginHook') !== false && strpos($paymentGroup, 'SystemOutbox::processPending') !== false],
     ['Receipts use outbox', strpos($paymentReceipt, 'safeEnqueueNotification') !== false && strpos($paymentReceipt, 'SystemOutbox::processPending') !== false],

@@ -40,9 +40,11 @@ class PaymentRequest extends Model
             if (!hash_equals((string) $existing['request_hash'], $requestHash)) {
                 throw new InvalidArgumentException('این درخواست پرداخت قبلاً با اطلاعات متفاوت ثبت شده است. صفحه را تازه‌سازی کنید.');
             }
+            self::assertActor($existing, $userId);
             if (($existing['status'] ?? '') === 'completed' && !empty($existing['payment_id'])) {
                 return ['status' => 'completed', 'uuid' => $uuid, 'payment_id' => (int) $existing['payment_id']];
             }
+            if (self::retryFailed($uuid)) return ['status' => 'new', 'uuid' => $uuid, 'payment_id' => null];
             throw new RuntimeException('این درخواست پرداخت در حال پردازش است. برای جلوگیری از پرداخت تکراری چند لحظه بعد وضعیت را بررسی کنید.');
         }
     }
@@ -76,9 +78,11 @@ class PaymentRequest extends Model
             if (!hash_equals((string) $existing['request_hash'], trim((string) $requestHash))) {
                 throw new InvalidArgumentException('این شناسه پرداخت با مبلغ یا اقساط متفاوت استفاده شده است. صفحه را تازه‌سازی کنید.', 409);
             }
+            self::assertActor($existing, $userId);
             if (($existing['status'] ?? '') === 'completed' && !empty($existing['payment_group_id'])) {
                 return ['status' => 'completed', 'uuid' => $uuid, 'payment_group_id' => (int) $existing['payment_group_id']];
             }
+            if (self::retryFailed($uuid)) return ['status' => 'new', 'uuid' => $uuid, 'payment_group_id' => null];
             throw new RuntimeException('این درخواست پرداخت در حال پردازش است. برای جلوگیری از پرداخت تکراری چند لحظه بعد وضعیت را بررسی کنید.', 409);
         }
     }
@@ -103,5 +107,19 @@ class PaymentRequest extends Model
             );
         } catch (Throwable $ignored) {
         }
+    }
+
+    private static function assertActor(array $existing, $userId)
+    {
+        if ((int) ($existing['user_id'] ?? 0) !== (int) $userId) {
+            throw new InvalidArgumentException('این شناسه پرداخت متعلق به کاربر دیگری است.', 403);
+        }
+    }
+
+    private static function retryFailed($uuid)
+    {
+        // Compare-and-set: only one simultaneous retry can own the request.
+        return self::execute("UPDATE payment_requests SET status = 'processing', error_message = NULL, response_code = NULL, updated_at = NOW()
+            WHERE request_uuid = ? AND status = 'failed' AND payment_id IS NULL AND payment_group_id IS NULL", [$uuid]) === 1;
     }
 }

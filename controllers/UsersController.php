@@ -13,20 +13,30 @@ class UsersController extends Controller
         $currentUser = Auth::user();
         $role = $_GET['role'] ?? null;
         $status = $_GET['status'] ?? null;
-        $allowedRoles = ['admin', 'operator', 'lawyer'];
+        $availableRoles = array_keys(PluginManager::availableRoles());
+        $assignableRoles = array_keys(PluginManager::assignableRoles());
+        // Customer accounts belong to Customers, not the internal user directory.
+        $allowedRoles = array_values(array_diff($assignableRoles, ['customer']));
+        if (Auth::role() === 'admin') {
+            foreach (Model::fetchAll('SELECT DISTINCT role FROM users WHERE role IS NOT NULL') as $assigned) {
+                $assignedRole = (string) ($assigned['role'] ?? '');
+                if ($assignedRole !== '' && $assignedRole !== 'customer' && !in_array($assignedRole, $allowedRoles, true)) {
+                    $allowedRoles[] = $assignedRole;
+                }
+            }
+        }
         $role = in_array($role, $allowedRoles, true) ? $role : null;
         $status = in_array($status, ['active', 'inactive'], true) ? $status : null;
-        $options = [];
+        $options = ['roles' => $allowedRoles];
         if (Auth::role() !== 'admin') {
             $options['department'] = $currentUser['department'] ?? '';
-            $options['roles'] = ['admin', 'operator', 'lawyer'];
+            $options['roles'] = $allowedRoles;
             if ($role === 'customer') {
                 $role = null;
             }
         } elseif (isset($_GET['department']) && $_GET['department'] !== '') {
             $options['department'] = $_GET['department'];
         }
-        $options['roles'] = $options['roles'] ?? $allowedRoles;
         $options['per_page'] = 36;
         $options['page'] = $_GET['page'] ?? 1;
         $result = User::paginated($role, $_GET['q'] ?? null, $status, $options);
@@ -41,6 +51,8 @@ class UsersController extends Controller
             'users' => $users,
             'pagination' => $result,
             'roles' => $allowedRoles,
+            'activeRoles' => $availableRoles,
+            'creatableRoles' => array_values(array_filter($assignableRoles, static fn ($candidate) => $candidate !== 'customer')),
             'departments' => app_config('departments', []),
             'canManageUsers' => Auth::role() === 'admin',
             'identityRequests' => [],
@@ -59,12 +71,14 @@ class UsersController extends Controller
             ->mobile('mobile', 'موبایل')
             ->email('email', 'ایمیل');
         if (!$validator->passes()) {
-            set_flash('error', implode(' ', $validator->errors()));
-            redirect('users');
+            ErrorHandler::abort(422, implode(' ', $validator->errors()));
+        }
+        if (!PluginManager::roleAssignable($_POST['role'] ?? '') || ($_POST['role'] ?? '') === 'customer') {
+            ErrorHandler::abort(422, 'نقش انتخاب‌شده فعال یا معتبر نیست.');
         }
         try {
             User::create([
-                'role' => in_array($_POST['role'] ?? '', ['admin', 'operator', 'lawyer'], true) ? $_POST['role'] : 'operator',
+                'role' => $_POST['role'],
                 'username' => $_POST['username'] ?? '',
                 'full_name' => $_POST['full_name'] ?? '',
                 'father_name' => $_POST['father_name'] ?? '',
@@ -82,7 +96,10 @@ class UsersController extends Controller
             ]);
             set_flash('success', 'کاربر با موفقیت ثبت شد.');
         } catch (Throwable $e) {
-            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت کاربر انجام نشد. داده‌های تکراری را بررسی کنید.');
+            if ($e instanceof InvalidArgumentException) {
+                ErrorHandler::abort(422, $e->getMessage());
+            }
+            set_flash('error', 'ثبت کاربر انجام نشد. داده‌های تکراری را بررسی کنید.');
         }
         redirect('users');
     }
@@ -98,11 +115,14 @@ class UsersController extends Controller
         }
         $validator = (new Validator($_POST))->required('full_name', 'نام کامل')->mobile('mobile', 'موبایل')->email('email', 'ایمیل');
         if (!$validator->passes()) {
-            set_flash('error', implode(' ', $validator->errors()));
-            redirect('users');
+            ErrorHandler::abort(422, implode(' ', $validator->errors()));
+        }
+        $requestedRole = (string) ($_POST['role'] ?? '');
+        if ($requestedRole !== $user['role'] && !PluginManager::roleAssignable($requestedRole)) {
+            ErrorHandler::abort(422, 'نقش انتخاب‌شده فعال یا معتبر نیست.');
         }
         try {
-            $role = in_array($_POST['role'] ?? '', ['admin', 'operator', 'lawyer'], true) ? $_POST['role'] : $user['role'];
+            $role = $requestedRole !== '' ? $requestedRole : $user['role'];
             User::updateUser((int) $id, [
                 'role' => $role,
                 'username' => $_POST['username'] ?? '',
@@ -122,7 +142,10 @@ class UsersController extends Controller
             ]);
             set_flash('success', 'اطلاعات کاربر به‌روزرسانی شد.');
         } catch (Throwable $e) {
-            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ویرایش کاربر انجام نشد.');
+            if ($e instanceof InvalidArgumentException) {
+                ErrorHandler::abort(422, $e->getMessage());
+            }
+            set_flash('error', 'ویرایش کاربر انجام نشد.');
         }
         redirect('users');
     }

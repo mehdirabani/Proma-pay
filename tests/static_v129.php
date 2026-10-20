@@ -47,9 +47,13 @@ $contentPosition = strpos($appLayout, '<?= $content ?>');
 $assert($mainPosition !== false && $successPosition !== false && $contentPosition !== false, 'Application content wrapper is incomplete.');
 $assert($mainPosition < $successPosition && $successPosition < $contentPosition, 'Flash messages must participate in page spacing.');
 
-foreach (['admin.php', 'operator.php', 'lawyer.php', 'customer.php'] as $dashboard) {
+foreach ([
+    'admin.php' => 'proma-admin-dashboard',
+    'operator.php' => 'v7-role-dashboard--operator',
+    'lawyer.php' => 'v7-role-dashboard--lawyer',
+    'customer.php' => 'proma-role-dashboard',
+] as $dashboard => $expected) {
     $source = (string) file_get_contents($root . '/views/dashboard/' . $dashboard);
-    $expected = $dashboard === 'admin.php' ? 'proma-admin-dashboard' : 'proma-role-dashboard';
     $assert(strpos($source, $expected) !== false, 'Dashboard layout hook is missing from ' . $dashboard);
 }
 

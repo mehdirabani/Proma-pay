@@ -75,6 +75,10 @@ $tabs = [
       </div>
     </section>
   </div>
+  <section class="card proma-seller-signature-settings">
+    <div class="card-header card-no-border"><div><h3>امضای نمایندهٔ مجموعه</h3><p>تصویر امضا در بخش فروشندهٔ قراردادهای تولیدشده درج می‌شود.</p></div></div>
+    <div class="card-body"><a class="btn" href="<?= e(url('settings/contracts/print')) ?>">بارگذاری یا تغییر امضای نماینده</a></div>
+  </section>
 <?php endif; ?>
 
 <?php if ($section === 'numbering'): ?>
@@ -232,6 +236,20 @@ $tabs = [
       <div class="card-body"><div class="notice info">برای خروجی تمیز، در پنجره چاپ گزینه «سرصفحه و پابرگ / Headers and footers» را غیرفعال کنید.</div><div class="proma-preview-frame-shell"><iframe title="پیش‌نمایش زنده قرارداد" src="<?= e($contractPreviewUrl) ?>" data-contract-preview-frame></iframe></div></div>
     </section>
   </div>
+  <section class="card proma-seller-signature-settings">
+    <div class="card-header card-no-border"><div><h3>امضای نمایندهٔ مجموعه در محل فروشنده</h3><p>این تصویر در کادر امضای فروشندهٔ قراردادهای جدید و چاپ آن‌ها درج می‌شود.</p></div></div>
+    <form method="post" action="<?= e(url('settings/saveContractSellerSignature')) ?>" enctype="multipart/form-data">
+      <?= csrf_field() ?>
+      <div class="card-body form-grid two">
+        <?php $sellerSignaturePath = trim((string) ($settings['contract_seller_signature_path'] ?? '')); ?>
+        <?php if ($sellerSignaturePath !== ''): ?><div class="proma-seller-signature-preview"><img src="<?= e(asset_url($sellerSignaturePath)) ?>" alt="پیش‌نمایش امضای نمایندهٔ مجموعه"><span>امضای فعلی نماینده</span></div><?php endif; ?>
+        <label class="full">تصویر امضا (PNG، JPG یا WebP، حداکثر ۱۰ مگابایت)<input type="file" name="seller_signature" accept="image/png,image/jpeg,image/webp" <?= $sellerSignaturePath === '' ? 'required' : '' ?>></label>
+        <?php if ($sellerSignaturePath !== ''): ?><label class="proma-checkbox-field full"><input type="checkbox" name="remove_seller_signature" value="1"><span>حذف امضای فعلی از چاپ قرارداد</span></label><?php endif; ?>
+        <label class="full">دلیل تغییر<input name="change_reason" value="تنظیم تصویر امضای فروشنده برای چاپ قرارداد"></label>
+      </div>
+      <div class="card-footer"><button class="btn" type="submit"><i data-feather="upload"></i> ذخیره امضای نماینده</button></div>
+    </form>
+  </section>
 <?php endif; ?>
 
 <?php if ($section === 'versions'): ?>
@@ -246,7 +264,7 @@ $tabs = [
   <?php endif; ?>
   <section class="card">
     <div class="card-header card-no-border"><div class="header-top"><div><h3>تاریخچه نسخه‌های قالب</h3><p>نسخه‌های فعال و دارای ارجاع حقوقی حذف نمی‌شوند.</p></div><div class="actions"><a class="btn secondary" href="<?= e(url('settings/contracts/versions') . (!empty($showArchivedVersions) ? '' : '?show_archived=1')) ?>"><i data-feather="archive"></i> <?= !empty($showArchivedVersions) ? 'پنهان‌کردن بایگانی‌ها' : 'نمایش نسخه‌های بایگانی‌شده' ?></a><a class="btn" href="<?= e(url('settings/contracts/template')) ?>"><i data-feather="plus"></i> پیش‌نویس جدید</a></div></div></div>
-    <div class="table-wrap"><table><thead><tr><th>نسخه و وضعیت</th><th>ایجاد/انتشار</th><th>دلیل تغییر</th><th>استفاده</th><th>عملیات</th></tr></thead><tbody>
+    <div class="table-wrap"><table><thead><tr><th scope="col">نسخه و وضعیت</th><th scope="col">ایجاد/انتشار</th><th scope="col">دلیل تغییر</th><th scope="col">استفاده</th><th scope="col">عملیات</th></tr></thead><tbody>
       <?php foreach ($templateVersions as $version): ?>
         <tr>
           <td><strong>V<?= to_persian_digits($version['version_number']) ?></strong><br><span class="badge <?= $version['status'] === 'published' ? 'success' : ($version['status'] === 'draft' ? 'warning' : 'secondary') ?>"><?= e($statusLabels[$version['status']] ?? $version['status']) ?></span><?php if (!empty($version['is_current'])): ?> <span class="badge success">فعال</span><?php endif; ?></td>

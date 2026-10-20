@@ -29,7 +29,7 @@ $fileManager = $read('views/file-manager/index.php');
 $fileController = $read('controllers/FileManagerController.php');
 $notifications = $read('views/notifications/index.php');
 $notificationController = $read('controllers/NotificationsController.php');
-$summary = $read('helpers/ContractFinancialSummaryService.php');
+$summary = $read('helpers/FinancialDebtEngine.php');
 
 $assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.5.14', '>='), 'version must retain V1.5.14 operations');
 $assert(strpos($css, '.page-body .container-fluid') !== false && strpos($css, 'max-width: none;') !== false, 'global shell must not narrow all pages');

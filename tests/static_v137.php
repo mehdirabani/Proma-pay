@@ -95,8 +95,9 @@ $contractShow = (string) file_get_contents($root . '/views/contracts/show.php');
 $assert(strpos($contractShow, '$canManageActiveContract') !== false && strpos($contractShow, 'فقط برای مشاهده و چاپ') !== false, 'Cancelled contract UI still shows mutable controls.');
 
 $tokens = (string) file_get_contents($root . '/assets/css/design-system/tokens.css');
-foreach (['#6a1b9a', '#4a148c', '#8e24aa', '#b388ff', '#f5f5f5', '#212121'] as $color) {
-    $assert(stripos($tokens, $color) !== false, 'Design token is missing: ' . $color . '.');
+// V2 replaced the legacy literal palette with canonical semantic tokens.
+foreach (['--pp-primary-500: #6c3bff', '--pp-primary-700: #4722c8', '--pp-primary-200: #d8d0ff', '--pp-canvas: #f6f7fb', '--pp-ink: #171a2b'] as $token) {
+    $assert(strpos($tokens, $token) !== false, 'Current design token is missing: ' . $token . '.');
 }
 $assert(strpos($tokens, '.form-group') !== false && strpos($tokens, '[required]') !== false, 'Legacy form groups are not covered by the unified required-field design.');
 

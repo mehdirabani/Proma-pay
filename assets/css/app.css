@@ -1,13 +1,14 @@
 :root {
-  --proma-primary: #7366ff;
-  --proma-primary-soft: rgba(115, 102, 255, .12);
-  --proma-success: #54ba4a;
-  --proma-warning: #ffaa05;
-  --proma-danger: #fc4438;
-  --proma-info: #16c7f9;
-  --proma-text: #2f2f3b;
-  --proma-muted: #6f7180;
-  --proma-line: #ecf0f7;
+  /* Keep core actions visible when a page loads app.css without the token sheet. */
+  --proma-primary: #5b2fe8;
+  --proma-primary-soft: rgba(91, 47, 232, .12);
+  --proma-success: #00a86b;
+  --proma-warning: #f59e0b;
+  --proma-danger: #ef4444;
+  --proma-info: #2985ff;
+  --proma-text: #171a2b;
+  --proma-muted: #6c7288;
+  --proma-line: #e7e9f2;
 }
 
 @font-face {
@@ -123,6 +124,116 @@
 @media (max-width: 767px) {
   .proma-template-editor-card .proma-template-visual-editor .proma-rich-editor {
     min-height: 420px;
+  }
+}
+
+.proma-web-push-card .card-header p {
+  margin: 4px 0 0;
+  color: var(--proma-muted);
+  font-size: .9rem;
+}
+
+.proma-web-push-control {
+  display: grid;
+  gap: 14px;
+  padding: clamp(16px, 3vw, 24px);
+  border: 1px solid rgba(115, 102, 255, .18);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(22, 199, 249, .12), transparent 34%),
+    linear-gradient(135deg, rgba(115, 102, 255, .07), rgba(22, 199, 249, .035));
+}
+
+.proma-web-push-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  color: var(--proma-text, #182230);
+  font-weight: 700;
+  line-height: 1.9;
+}
+
+.proma-web-push-status::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
+  margin-block-start: .55em;
+  border-radius: 50%;
+  background: var(--proma-primary, #7366ff);
+  box-shadow: 0 0 0 4px rgba(115, 102, 255, .12);
+}
+
+.proma-web-push-control[data-subscribed="1"] .proma-web-push-status::before {
+  background: #12a66a;
+  box-shadow: 0 0 0 4px rgba(18, 166, 106, .13);
+}
+
+.proma-web-push-control .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.proma-web-push-control [data-web-push-enable],
+.proma-web-push-control [data-web-push-disable] {
+  min-height: 46px;
+}
+
+.proma-web-push-control [hidden] {
+  display: none !important;
+}
+
+.proma-payment-card__copy {
+  min-height: 44px;
+  border-color: rgba(255, 255, 255, .28);
+  background: rgba(8, 15, 35, .18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+
+.proma-payment-card__copy:focus-visible,
+.proma-payment-method-switch button:focus-visible,
+.proma-web-push-control button:focus-visible {
+  outline: 3px solid rgba(22, 199, 249, .75);
+  outline-offset: 3px;
+}
+
+.proma-payment-card__number {
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 14px rgba(8, 15, 35, .2);
+}
+
+@media (max-width: 767px) {
+  .proma-web-push-control .actions {
+    display: grid;
+  }
+
+  .proma-web-push-control .actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .proma-payment-card__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .proma-payment-card__copy {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .proma-payment-card,
+  .proma-payment-card[data-payment-card] {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .proma-payment-card::before {
+    animation: none !important;
   }
 }
 
@@ -1401,6 +1512,10 @@ a {
   box-shadow: 0 0 0 3px #fff, 0 7px 18px rgba(15, 23, 42, .12);
 }
 
+.proma-customer-medal-form {
+  margin-top: 16px;
+}
+
 .proma-progress-avatar.is-complete {
   background: conic-gradient(#16a34a 100%, #16a34a 0);
 }
@@ -2456,7 +2571,7 @@ label.required-field::after {
 }
 
 .proma-live-card,
-.proma-preview-grid span {
+.proma-preview-grid > span {
   display: grid;
   gap: 4px;
   min-height: 64px;
@@ -2467,13 +2582,13 @@ label.required-field::after {
 }
 
 .proma-live-card span,
-.proma-preview-grid small {
+.proma-preview-grid > span > small {
   color: var(--proma-muted);
   font-size: 12px;
 }
 
 .proma-live-card strong,
-.proma-preview-grid strong {
+.proma-preview-grid > span > strong {
   color: var(--proma-text);
   font-size: 16px;
 }
@@ -2486,6 +2601,44 @@ label.required-field::after {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
+}
+
+.proma-installment-payment-preview {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.proma-installment-payment-preview > span {
+  align-content: start;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.proma-installment-payment-preview .proma-preview-amount,
+.proma-installment-payment-preview .proma-penalty-display {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#create-contract .proma-contract-form > .proma-form-section:first-of-type .form-grid.three {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#create-contract .proma-section-title {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .proma-preview-grid.proma-installment-payment-preview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .proma-preview-grid.proma-installment-payment-preview {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .proma-chip-row {
@@ -7634,28 +7787,6 @@ tr[data-card-href]:hover td {
 .proma-health-note p {
   margin: 0;
   line-height: 1.8;
-}
-
-/* V1.5.7 — shared contract-detail spacing and control system. */
-:root {
-  --space-0: 0;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --space-12: 48px;
-  --page-padding-x: 24px;
-  --page-padding-y: 24px;
-  --section-gap: 24px;
-  --card-padding: 20px;
-  --card-gap: 16px;
-  --control-height: 48px;
-  --control-radius: 12px;
-  --card-radius: 16px;
 }
 
 .proma-contract-tabs {

@@ -43,7 +43,7 @@ $confidenceLabels = [
         <input type="hidden" name="canonical_id" value="<?= (int) $canonical['id'] ?>">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>انتخاب</th><th>شماره قرارداد</th><th>زمان ایجاد</th><th>پرداخت مؤثر</th><th>پرونده حقوقی</th><th>وضعیت</th></tr></thead>
+            <thead><tr><th scope="col">انتخاب</th><th scope="col">شماره قرارداد</th><th scope="col">زمان ایجاد</th><th scope="col">پرداخت مؤثر</th><th scope="col">پرونده حقوقی</th><th scope="col">وضعیت</th></tr></thead>
             <tbody>
             <?php foreach ($group['duplicates'] as $duplicate): ?>
               <?php $eligible = (int) ($duplicate['effective_payment_count'] ?? 0) === 0 && (int) ($duplicate['legal_case_count'] ?? 0) === 0 && !in_array($duplicate['status'] ?? '', ['completed', 'closed'], true); ?>

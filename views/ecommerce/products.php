@@ -48,7 +48,7 @@ $pageUrl = function ($page) {
   <div class="table-wrap">
     <table>
       <thead>
-        <tr><th>محصول</th><th>SKU</th><th>دسته / برند</th><th>قیمت</th><th>موجودی</th><th>وضعیت</th><th>عملیات</th></tr>
+        <tr><th scope="col">محصول</th><th scope="col">SKU</th><th scope="col">دسته / برند</th><th scope="col">قیمت</th><th scope="col">موجودی</th><th scope="col">وضعیت</th><th scope="col">عملیات</th></tr>
       </thead>
       <tbody>
       <?php foreach ($products as $product): ?>

@@ -191,15 +191,27 @@ try {
         $archive = $open($archivePath);
         $assert($archive->extractTo($target), 'Could not extract ' . $label . ' archive.');
         $archive->close();
-        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($target, FilesystemIterator::SKIP_DOTS));
-        foreach ($iterator as $file) {
-            if (!$file->isFile() || strtolower($file->getExtension()) !== 'php') {
-                continue;
-            }
-            exec(escapeshellarg(PHP_BINARY) . ' -l ' . escapeshellarg($file->getPathname()) . ' 2>&1', $lintOutput, $lintCode);
-            $assert($lintCode === 0, 'Extracted PHP lint failed: ' . $file->getPathname() . ' ' . implode(' ', $lintOutput));
-            $lintOutput = [];
-        }
+        $batchLintScript = <<<'PHP'
+$directory = $argv[1] ?? '';
+$iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS));
+foreach ($iterator as $file) {
+    if (!$file->isFile() || strtolower($file->getExtension()) !== 'php') {
+        continue;
+    }
+    try {
+        token_get_all((string) file_get_contents($file->getPathname()), TOKEN_PARSE);
+    } catch (ParseError $error) {
+        fwrite(STDERR, $file->getPathname() . ': ' . $error->getMessage() . PHP_EOL);
+        exit(1);
+    }
+}
+PHP;
+        exec(
+            escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($batchLintScript) . ' ' . escapeshellarg($target) . ' 2>&1',
+            $lintOutput,
+            $batchLintExit
+        );
+        $assert($batchLintExit === 0, 'Extracted PHP lint failed: ' . implode(' ', $lintOutput));
     }
 } finally {
     $removeTree($extractRoot);

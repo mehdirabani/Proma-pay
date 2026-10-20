@@ -2,14 +2,18 @@
 $legalStages = app_config('legal_stages', []);
 $legalStageOptions = $legalStageOptions ?? $legalStages;
 $legalCostTypeOptions = $legalCostTypeOptions ?? [];
+$legalQueue = $legalQueue ?? 'main';
+$legalQueueRoute = $legalQueueRoute ?? 'legal';
+$isLawyer = Auth::role() === 'lawyer';
 $pagination = $pagination ?? ['total' => count($cases ?? []), 'page' => 1, 'pages' => 1, 'per_page' => count($cases ?? []) ?: 30];
-$pageUrl = function ($page) {
+$legalSummary = $legalSummary ?? ['total' => 0, 'open_count' => 0, 'referred_count' => 0, 'closed_count' => 0];
+$pageUrl = function ($page) use ($legalQueueRoute) {
     $params = [
         'q' => $_GET['q'] ?? null,
         'status' => $_GET['status'] ?? null,
         'page' => (int) $page > 1 ? (int) $page : null,
     ];
-    return url('legal', array_filter($params, fn($value) => $value !== null && $value !== ''));
+    return url($legalQueueRoute, array_filter($params, fn($value) => $value !== null && $value !== ''));
 };
 ?>
 <div data-ajax-results="legal">
@@ -17,17 +21,27 @@ $pageUrl = function ($page) {
   <div class="col-12">
     <section class="card">
       <div class="card-header card-no-border">
-        <div class="header-top"><div><h5>پرونده‌های حقوقی</h5><small class="text-muted">پرونده جدید را از صفحه جزئیات همان قرارداد ارجاع دهید.</small></div><span class="badge badge-light-danger"><?= to_persian_digits($pagination['total'] ?? count($cases)) ?> پرونده</span></div>
+        <div class="header-top"><div><h5><?= $isLawyer ? 'پرونده‌های حقوقی من' : 'پرونده‌های حقوقی' ?></h5><small class="text-muted">پرونده‌ها بر اساس وضعیت و مرحله حقوقی از هم جدا شده‌اند.</small></div><div class="actions"><span class="badge badge-light-danger"><?= to_persian_digits($pagination['total'] ?? count($cases)) ?> پرونده</span><a class="btn small secondary" data-xlsx-export href="<?= e(url($legalQueue === 'referred' ? 'legal/export/referred' : 'legal/export')) ?>"><?= proma_icon('download') ?><span>خروجی Excel</span></a></div></div>
       </div>
+      <div class="card-body pt-0"><nav class="proma-contract-tabs" aria-label="صف پرونده‌های حقوقی">
+        <a class="<?= $legalQueue === 'main' ? 'active' : '' ?>" href="<?= e(url('legal')) ?>">پرونده‌های حقوقی</a>
+        <a class="<?= $legalQueue === 'referred' ? 'active' : '' ?>" href="<?= e(url('legal/referred')) ?>">پرونده‌های ارجاع‌شده</a>
+        <a href="<?= e(url('legal/eligible')) ?>">واجد شرایط بررسی حقوقی</a>
+      </nav>
+      <div class="proma-legal-summary" aria-label="خلاصه پرونده‌های حقوقی">
+        <article class="is-open"><span>پرونده‌های باز</span><strong><?= to_persian_digits($legalSummary['open_count'] ?? 0) ?></strong></article>
+        <article class="is-referred"><span>ارجاع‌شده</span><strong><?= to_persian_digits($legalSummary['referred_count'] ?? 0) ?></strong></article>
+        <article class="is-closed"><span>بسته‌شده</span><strong><?= to_persian_digits($legalSummary['closed_count'] ?? 0) ?></strong></article>
+        <article class="is-total"><span>کل پرونده‌ها</span><strong><?= to_persian_digits($legalSummary['total'] ?? 0) ?></strong></article>
+      </div></div>
       <div class="card-body pt-0">
-        <form method="get" action="<?= e(url('legal')) ?>" class="form-grid three" data-ajax-filter data-ajax-target="[data-ajax-results='legal']">
-          <input type="hidden" name="route" value="legal">
+        <form method="get" action="<?= e(url($legalQueueRoute)) ?>" class="form-grid three" data-ajax-filter data-ajax-target="[data-ajax-results='legal']">
+          <input type="hidden" name="route" value="<?= e($legalQueueRoute) ?>">
           <label>جستجو<input name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="قرارداد، مشتری، موبایل یا شماره شکایت"></label>
           <label>وضعیت
             <select name="status">
               <option value="">همه وضعیت‌ها</option>
               <option value="open"<?= selected($_GET['status'] ?? '', 'open') ?>>باز</option>
-              <option value="referred"<?= selected($_GET['status'] ?? '', 'referred') ?>>ارجاع شده</option>
               <option value="closed"<?= selected($_GET['status'] ?? '', 'closed') ?>>بسته</option>
             </select>
           </label>
@@ -40,7 +54,7 @@ $pageUrl = function ($page) {
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>قرارداد</th><th>مشتری</th><th>وکیل</th><th>مرحله</th><th>شماره شکایت</th><th>هزینه</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+          <thead><tr><th scope="col">قرارداد</th><th scope="col">مشتری</th><th scope="col">وکیل</th><th scope="col">مرحله</th><th scope="col">شماره شکایت</th><th scope="col">هزینه</th><th scope="col">وضعیت</th><th scope="col">عملیات</th></tr></thead>
           <tbody>
           <?php foreach ($cases as $case): ?>
             <tr>
@@ -51,11 +65,13 @@ $pageUrl = function ($page) {
               <td><?= to_persian_digits($case['complaint_number']) ?></td>
               <td><?= money_toman($case['expense_amount']) ?></td>
               <td><span class="badge <?= e(badge_class($case['status'])) ?>"><?= e(status_label($case['status'])) ?></span></td>
-              <td class="actions">
-                <a class="btn small info" href="<?= e(url('legal/show/' . (int) $case['id'])) ?>">جزئیات و تاریخچه</a>
-                <button class="btn small" type="button" data-open-modal="legal-quick-update-<?= (int) $case['id'] ?>">اقدام سریع</button>
-                <button class="btn small secondary" type="button" data-open-modal="legal-case-<?= (int) $case['id'] ?>">ویرایش پرونده</button>
-                <button class="btn small danger icon-only" type="button" data-open-modal="delete-legal-case-<?= (int) $case['id'] ?>" title="حذف پرونده" aria-label="حذف پرونده"><i data-feather="trash-2"></i></button>
+              <td class="actions proma-legal-row-actions">
+                <a class="btn small info icon-only" href="<?= e(url('legal/show/' . (int) $case['id'])) ?>" title="جزئیات و تاریخچه" aria-label="جزئیات و تاریخچه"><i data-feather="eye"></i></a>
+                <button class="btn small icon-only" type="button" data-open-modal="legal-quick-update-<?= (int) $case['id'] ?>" title="اقدام سریع" aria-label="اقدام سریع"><i data-feather="activity"></i></button>
+                <?php if (!$isLawyer): ?>
+                  <button class="btn small secondary icon-only" type="button" data-open-modal="legal-case-<?= (int) $case['id'] ?>" title="ویرایش پرونده" aria-label="ویرایش پرونده"><i data-feather="edit-3"></i></button>
+                  <button class="btn small danger icon-only" type="button" data-open-modal="delete-legal-case-<?= (int) $case['id'] ?>" title="حذف پرونده" aria-label="حذف پرونده"><i data-feather="trash-2"></i></button>
+                <?php endif; ?>
               </td>
             </tr>
           <?php endforeach; ?>
@@ -166,7 +182,7 @@ $pageUrl = function ($page) {
     </div>
   </div>
 
-  <div class="modal" id="legal-case-<?= (int) $case['id'] ?>">
+  <?php if (!$isLawyer): ?><div class="modal" id="legal-case-<?= (int) $case['id'] ?>">
     <div class="modal-content proma-modal-lg">
       <div class="modal-header"><h3>به‌روزرسانی پرونده</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
       <form method="post" action="<?= e(url('legal/update/' . $case['id'])) ?>">
@@ -215,5 +231,6 @@ $pageUrl = function ($page) {
       </form>
     </div>
   </div>
+  <?php endif; ?>
 <?php endforeach; ?>
 </div>

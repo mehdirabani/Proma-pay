@@ -35,6 +35,8 @@
 .proma-contract-settings-nav a:hover,
 .proma-contract-settings-nav a.active { color: var(--proma-primary); background: var(--proma-primary-soft); }
 .proma-contract-settings-nav svg { width: 17px; height: 17px; }
+.proma-seller-signature-preview { align-items: center; background: #f8f8fb; border: 1px solid #e7e8ef; border-radius: 10px; display: flex; gap: 14px; grid-column: 1 / -1; min-height: 90px; padding: 12px; }
+.proma-seller-signature-preview img { background: #fff; max-height: 76px; max-width: 220px; object-fit: contain; }
 
 .proma-contract-settings-kpis {
   display: grid;

@@ -14,7 +14,7 @@ class ZarinpalVerificationService
     private $transactionService;
     private $clientFactory;
 
-    public function __construct(ZarinpalSettingsService $settings = null, ZarinpalTransactionRepository $transactions = null, ZarinpalLogRepository $logs = null, ZarinpalTransactionService $transactionService = null, callable $clientFactory = null)
+    public function __construct(?ZarinpalSettingsService $settings = null, ?ZarinpalTransactionRepository $transactions = null, ?ZarinpalLogRepository $logs = null, ?ZarinpalTransactionService $transactionService = null, ?callable $clientFactory = null)
     {
         $this->settings = $settings ?: new ZarinpalSettingsService();
         $this->transactions = $transactions ?: new ZarinpalTransactionRepository();
@@ -140,7 +140,7 @@ class ZarinpalVerificationService
         return !$timestamp || $timestamp < time() - 120;
     }
 
-    private function failure($message, array $transaction = null)
+    private function failure($message, ?array $transaction = null)
     {
         return ['ok' => false, 'status' => 'failure', 'message' => (string) $message, 'transaction' => $transaction];
     }

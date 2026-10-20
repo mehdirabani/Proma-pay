@@ -17,7 +17,7 @@ class SalesService
             'INSERT IGNORE INTO plugin_accounting_sales
              (contract_id, customer_id, seller_user_id, sales_channel, principal_amount, down_payment_amount, financed_amount, registered_by, registered_at, status, metadata_json)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)',
-            [(int) $contract['id'], (int) $contract['customer_id'], $sellerId, 'other', $data['principal'], $data['down_payment'], $data['financed'], $actorId ? (int) $actorId : null, $status, json_encode(['source' => 'contract.created'], JSON_UNESCAPED_UNICODE)]
+            [(int) $contract['id'], (int) $contract['customer_id'], $sellerId, 'other', $data['principal'], $data['down_payment'], $data['financed'], $actorId ? (int) $actorId : null, $status, json_encode(['source' => 'contract.created', 'marketer_user_id' => !empty($contract['marketer_user_id']) ? (int) $contract['marketer_user_id'] : null], JSON_UNESCAPED_UNICODE)]
         );
         $sale = \Model::fetch('SELECT * FROM plugin_accounting_sales WHERE contract_id = ? LIMIT 1', [(int) $contractId]);
         if ($sale) {
@@ -38,15 +38,28 @@ class SalesService
         }
         $data = self::amounts($contract);
         $old = $sale;
+        $sellerId = self::eligibleSeller($contract['seller_user_id'] ?? ($sale['seller_user_id'] ?? 0));
+        $status = $sellerId ? 'active' : 'needs_assignment';
+        $metadata = json_decode((string) ($sale['metadata_json'] ?? ''), true);
+        $metadata = is_array($metadata) ? $metadata : [];
+        $metadata['marketer_user_id'] = !empty($contract['marketer_user_id']) ? (int) $contract['marketer_user_id'] : null;
+        if ((int) ($sale['seller_user_id'] ?? 0) !== (int) ($sellerId ?? 0)) {
+            CommissionService::reverseForSale((int) $sale['id'], $actorId, 'تغییر فروشنده قرارداد');
+        }
         \Model::execute(
             'UPDATE plugin_accounting_sales
-             SET principal_amount = ?, down_payment_amount = ?, financed_amount = ?, updated_by = ?, updated_at = NOW()
+             SET seller_user_id = ?, status = ?, principal_amount = ?, down_payment_amount = ?, financed_amount = ?, metadata_json = ?, updated_by = ?, updated_at = NOW()
              WHERE id = ?',
-            [$data['principal'], $data['down_payment'], $data['financed'], $actorId ? (int) $actorId : null, (int) $sale['id']]
+            [$sellerId, $status, $data['principal'], $data['down_payment'], $data['financed'], json_encode($metadata, JSON_UNESCAPED_UNICODE), $actorId ? (int) $actorId : null, (int) $sale['id']]
         );
         $sale = \Model::fetch('SELECT * FROM plugin_accounting_sales WHERE id = ?', [(int) $sale['id']]);
-        self::log($sale, 'sale_amount_changed', $old, $sale, $actorId);
-        CommissionService::refreshForSale($sale, $actorId);
+        $action = (int) ($old['seller_user_id'] ?? 0) !== (int) ($sale['seller_user_id'] ?? 0)
+            || (string) ($old['metadata_json'] ?? '') !== (string) ($sale['metadata_json'] ?? '')
+            ? 'sale_attribution_changed' : 'sale_amount_changed';
+        self::log($sale, $action, $old, $sale, $actorId);
+        if ($sellerId) {
+            CommissionService::refreshForSale($sale, $actorId);
+        }
         return $sale;
     }
 
@@ -123,7 +136,7 @@ class SalesService
         if ($userId <= 0) {
             return null;
         }
-        $user = \Model::fetch("SELECT id FROM users WHERE id = ? AND role IN ('admin','operator','lawyer') AND status = 'active' LIMIT 1", [$userId]);
+        $user = \Model::fetch("SELECT id FROM users WHERE id = ? AND role IN ('admin','operator','lawyer','repair_technician') AND status = 'active' LIMIT 1", [$userId]);
         return $user ? $userId : null;
     }
 

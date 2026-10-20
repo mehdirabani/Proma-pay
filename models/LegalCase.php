@@ -78,6 +78,10 @@ class LegalCase extends Model
     protected static function listWhere(array $filters, array &$params)
     {
         $where = [];
+        if (!empty($filters['customer_id'])) {
+            $where[] = 'lc.customer_id = ?';
+            $params[] = (int) $filters['customer_id'];
+        }
         if (!empty($filters['eligible_only'])) {
             $where[] = "EXISTS (
                 SELECT 1 FROM installments i
@@ -94,6 +98,10 @@ class LegalCase extends Model
         if (!empty($filters['status'])) {
             $where[] = 'lc.status = ?';
             $params[] = $filters['status'];
+        }
+        if (!empty($filters['exclude_status'])) {
+            $where[] = 'lc.status <> ?';
+            $params[] = $filters['exclude_status'];
         }
         if (!empty($filters['search'])) {
             $needle = '%' . to_english_digits($filters['search']) . '%';

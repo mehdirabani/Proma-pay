@@ -24,7 +24,7 @@
   <div class="card-header"><h2>بسته‌های اخیر ورود دیتا</h2></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>منبع</th><th>وضعیت</th><th>تاریخ</th><th>خطاها</th><th>عملیات</th></tr></thead>
+      <thead><tr><th scope="col">منبع</th><th scope="col">وضعیت</th><th scope="col">تاریخ</th><th scope="col">خطاها</th><th scope="col">عملیات</th></tr></thead>
       <tbody>
       <?php foreach ($batches as $batch): ?>
         <?php $errors = json_decode($batch['error_summary'] ?? '[]', true); ?>

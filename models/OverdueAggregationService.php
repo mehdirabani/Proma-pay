@@ -12,7 +12,7 @@ declare(strict_types=1);
  */
 final class OverdueAggregationService
 {
-    public static function paginated(OverdueFilterCriteria $criteria, ?int $forcedOperatorId = null): array
+    public static function paginated(OverdueFilterCriteria $criteria, ?int $forcedOperatorId = null, bool $includeSummary = true): array
     {
         [$from, $where, $whereParams, $having, $havingParams] = self::queryParts($criteria, $forcedOperatorId);
         $select = self::aggregateSelect();
@@ -37,7 +37,7 @@ final class OverdueAggregationService
             'per_page' => $criteria->perPage,
             'from' => $total === 0 ? 0 : $offset + 1,
             'to' => min($total, $offset + count($items)),
-            'summary' => self::summary($groupSql, $params),
+            'summary' => $includeSummary ? self::summary($groupSql, $params) : [],
         ];
     }
 
@@ -146,18 +146,29 @@ final class OverdueAggregationService
         $amountEnabled = !empty($policy['overdue_amount_enabled']);
         $amount = max(0, normalize_money($policy['overdue_amount_threshold'] ?? 0));
         $delaySql = 'max_overdue_days >= ?';
-        $params[] = $delay;
         $countSql = 'overdue_count >= ?';
-        $params[] = $count;
         $amountSql = $amountEnabled ? 'estimated_payable >= ?' : '1=1';
-        if ($amountEnabled) $params[] = $amount;
         $operator = (string) ($policy['eligibility_operator'] ?? 'delay_only');
         if ($operator === 'and') {
             $eligible = "({$delaySql} AND {$countSql} AND {$amountSql})";
+            $params[] = $delay;
+            $params[] = $count;
+            if ($amountEnabled) $params[] = $amount;
         } elseif ($operator === 'or') {
-            $eligible = $amountEnabled ? "(({$delaySql} AND {$countSql}) OR {$amountSql})" : "({$delaySql} OR {$countSql})";
+            if ($amountEnabled) {
+                $eligible = "(({$delaySql} AND {$countSql}) OR {$amountSql})";
+                $params[] = $delay;
+                $params[] = $count;
+                $params[] = $amount;
+            } else {
+                $eligible = "({$delaySql} OR {$countSql})";
+                $params[] = $delay;
+                $params[] = $count;
+            }
         } else {
             $eligible = "({$delaySql} AND {$amountSql})";
+            $params[] = $delay;
+            if ($amountEnabled) $params[] = $amount;
         }
         return $value === 'yes' ? $eligible : "NOT {$eligible}";
     }
@@ -234,16 +245,20 @@ final class OverdueAggregationService
         foreach ($items as &$item) {
             $contractId = (int) $item['contract_id'];
             $contractRows = $byContract[$contractId] ?? [];
-            $totalPayable = 0.0;
-            $totalPenalty = 0.0;
-            foreach ($contractRows as $row) {
-                $state = $states[(int) ($row['id'] ?? 0)] ?? [];
-                if (empty($state['payment_allowed'])) continue;
-                $totalPayable += normalize_money($state['final_payable'] ?? 0);
-                $totalPenalty += normalize_money($state['calculated_penalty'] ?? 0);
-            }
-            $item['total_overdue_amount'] = normalize_money($totalPayable);
-            $item['total_penalty'] = normalize_money($totalPenalty);
+            $installmentQuote = PaymentAllocationService::quote($contractRows);
+            $legalCostSummary = ContractLegalCostSummaryService::forContract($contractId);
+            $breakdown = ContractFinancialSummaryService::buildOverdueBreakdown($installmentQuote, $legalCostSummary);
+            $item['overdue_installments_total'] = $breakdown['overdue_installments_total'];
+            $item['outstanding_normal_late_fees'] = $breakdown['outstanding_normal_late_fees'];
+            $item['outstanding_legal_late_fees'] = $breakdown['outstanding_legal_late_fees'];
+            $item['total_penalty'] = $breakdown['outstanding_late_fees'];
+            $item['outstanding_legal_costs'] = $breakdown['outstanding_legal_costs'];
+            $item['total_overdue_amount'] = $breakdown['total_overdue_debt'];
+            $item['financial_breakdown'] = $breakdown;
+            $item['calculation_warnings'] = array_values(array_filter(array_map(
+                static fn (array $row): array => $states[(int) ($row['id'] ?? 0)] ?? [],
+                $contractRows
+            ), static fn (array $state): bool => !in_array((string) ($state['calculation_status'] ?? ''), ['calculated', 'not_applicable'], true)));
             $policy = $policies[$contractId] ?? $activePolicy;
             $eligibility = LegalEligibilityService::evaluate([
                 'id' => $contractId,

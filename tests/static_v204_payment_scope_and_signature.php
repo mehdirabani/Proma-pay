@@ -32,7 +32,7 @@ $customerFileQuery = $customerFileStart !== false && $customerFileEnd !== false
     : '';
 
 $assert(strpos($document, "'امضای مشتری'") !== false && strpos($document, "'امضای امانت‌دار'") === false, 'Generated contract signature label is still incorrect.');
-$assert(strpos($quote, "['selected', 'contract', 'schedule']") !== false, 'The schedule-only overflow quote scope is missing.');
+$assert(strpos($quote, "['selected', 'contract', 'contract_legal_first', 'schedule', 'forward']") !== false, 'The supported settlement allocation scopes are missing.');
 $assert(strpos($group, 'allocation_scope') !== false && strpos($group, "verifyLocked((string) (\$group['quote_uuid'] ?? ''), \$contract, \$rows, \$ids, \$amount, (int) \$group['customer_id'], \$scope)") !== false, 'Gateway completion does not re-verify the persisted allocation scope.');
 $assert(strpos($gateway, "(\$context['settlement_scope'] ?? 'selected')") !== false, 'Gateway provider does not persist the payment allocation scope.');
 $assert(strpos($payments, "\$_POST['selected_installment_ids']") !== false && strpos($payments, 'statesForRows($installments)') !== false, 'Group payment does not batch-check selected installments.');

@@ -4,8 +4,21 @@ DirectoryIndex index.php
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Internal records and update archives are never public download targets.
-    RewriteRule ^storage/(?:logs|backups|updates|releases)/ - [F,L,NC]
+    # Keep VCS metadata, dotfiles and environment files private. ACME challenge
+    # paths remain available for certificate provisioning.
+    RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,L,NC]
+
+    # PHP source, configuration, operational scripts, tests and internal docs
+    # are application internals. They are loaded by PHP, never by HTTP.
+    RewriteRule ^(?:config|core|controllers|models|helpers|services|views|database|cron|scripts|tools|tests|docs)(?:/|$) - [F,L,NC]
+    RewriteRule ^bootstrap\.php$ - [F,L,NC]
+    # Keep plugin implementation files private while leaving public plugin assets accessible.
+    RewriteRule ^plugins/[^/]+/(?:src|tests|migrations|views|lang)(?:/|$) - [F,L,NC]
+    RewriteRule ^plugins/[^/]+/(?:bootstrap|routes)\.php$ - [F,L,NC]
+
+    # Only validated public media below uploads is directly served. This also
+    # protects nested QA/release snapshots and private keys in storage copies.
+    RewriteRule ^storage/(?!uploads(?:/|$)) - [F,L,NC]
     # Public media is image-only. Never allow executable payloads below uploads.
     RewriteRule ^storage/uploads/.*\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh)$ - [F,L,NC]
 
@@ -61,7 +74,7 @@ ErrorDocument 504 /static-errors/504.html
     </FilesMatch>
 </IfModule>
 
-<FilesMatch "^(installed\.lock|\.env|composer\.(json|lock)|package(-lock)?\.json)$">
+<FilesMatch "^(installed\.lock|\.env(?:\..*)?|composer\.(json|lock)|package(-lock)?\.json|pnpm(-lock|-workspace)?\.yaml|yarn\.lock)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

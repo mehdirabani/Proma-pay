@@ -31,7 +31,7 @@ $pageUrl = static function ($page) {
   <section class="proma-zp-card proma-zp-table-card">
     <div class="table-responsive">
       <table class="table proma-zp-table">
-        <thead><tr><th>شناسه</th><th>مشتری / قرارداد</th><th>مبلغ</th><th>محیط</th><th>وضعیت</th><th>Authority / Ref ID</th><th>زمان</th><th>عملیات</th></tr></thead>
+        <thead><tr><th scope="col">شناسه</th><th scope="col">مشتری / قرارداد</th><th scope="col">مبلغ</th><th scope="col">محیط</th><th scope="col">وضعیت</th><th scope="col">Authority / Ref ID</th><th scope="col">زمان</th><th scope="col">عملیات</th></tr></thead>
         <tbody>
         <?php foreach ($items as $item): ?>
           <tr>

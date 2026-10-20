@@ -60,7 +60,7 @@ class ContractPrintProfile
         ]);
     }
 
-    public static function load(array $settings = null)
+    public static function load(?array $settings = null)
     {
         $settings = $settings === null ? Settings::allKeyed() : $settings;
         if (($settings['contract_print_preset'] ?? '') === 'compact') {
@@ -159,10 +159,13 @@ class ContractPrintProfile
         return implode(';', $items) . ';';
     }
 
-    public static function pageRule(array $profile)
+    public static function pageRule(array $profile, ?string $pageSize = null)
     {
         $p = self::validate($profile);
-        return '@page{size:A4 portrait;margin:' . self::number($p['margin_top']) . 'mm ' . self::number($p['margin_right']) . 'mm ' . self::number($p['margin_bottom']) . 'mm ' . self::number($p['margin_left']) . 'mm;}';
+        $pageSize = in_array(strtoupper((string) $pageSize), ['A4', 'A5'], true)
+            ? strtoupper((string) $pageSize)
+            : (in_array(strtoupper((string) ($p['page_size'] ?? 'A4')), ['A4', 'A5'], true) ? strtoupper((string) $p['page_size']) : 'A4');
+        return '@page{size:' . $pageSize . ' portrait;margin:' . self::number($p['margin_top']) . 'mm ' . self::number($p['margin_right']) . 'mm ' . self::number($p['margin_bottom']) . 'mm ' . self::number($p['margin_left']) . 'mm;}';
     }
 
     protected static function normalizePreset($preset)

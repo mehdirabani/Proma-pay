@@ -27,7 +27,7 @@
   <div class="card-header card-no-border"><h2>اقلام سفارش</h2></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>محصول</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th></tr></thead>
+      <thead><tr><th scope="col">محصول</th><th scope="col">تعداد</th><th scope="col">قیمت واحد</th><th scope="col">جمع</th></tr></thead>
       <tbody>
       <?php foreach ($order['items'] ?? [] as $item): ?>
         <tr>

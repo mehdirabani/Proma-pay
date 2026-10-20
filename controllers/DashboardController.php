@@ -6,6 +6,10 @@ class DashboardController extends Controller
     {
         Auth::requireLogin();
         $role = Auth::role();
+        $pluginLanding = PluginManager::roleLandingRoute($role);
+        if ($pluginLanding !== null) {
+            redirect($pluginLanding);
+        }
         if ($role === 'admin') {
             $this->admin();
             return;
@@ -18,7 +22,11 @@ class DashboardController extends Controller
             $this->lawyer();
             return;
         }
-        $this->customer();
+        if ($role === 'customer') {
+            $this->customer();
+            return;
+        }
+        ErrorHandler::abort(403);
     }
 
     protected function admin()
@@ -155,11 +163,14 @@ class DashboardController extends Controller
              ORDER BY overdue_count DESC, contracts DESC
             LIMIT 5"
         );
-        $bestCustomers = $this->customerRanking('best');
-        $worstCustomers = $this->customerRanking('worst');
+        $dashboardWidgets = (array) PluginManager::filter('dashboard.admin.widgets', [], [
+            'admin_id' => (int) Auth::id(),
+            'kpis' => $kpis,
+        ]);
 
         $this->render('dashboard/admin', [
             'title' => 'داشبورد مدیریت',
+            'dashboardWidgets' => $dashboardWidgets,
             'kpis' => $kpis,
             'chartLabels' => $paymentTrend['labels'],
             'chartData' => $paymentTrend['data'],
@@ -169,8 +180,6 @@ class DashboardController extends Controller
             'upcoming' => $upcoming,
             'recentPayments' => $recentPayments,
             'riskCustomers' => $riskCustomers,
-            'bestCustomers' => $bestCustomers,
-            'worstCustomers' => $worstCustomers,
             'operatorLoad' => $operatorLoad,
             'overdue' => Installment::overdue(null, null, null, 8),
         ]);
@@ -236,35 +245,6 @@ class DashboardController extends Controller
         ];
     }
 
-    protected function customerRanking($mode)
-    {
-        $rows = Model::fetchAll(
-            "SELECT u.id, u.full_name, u.mobile,
-              (SELECT COUNT(*) FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE c.customer_id = u.id AND c.status != 'cancelled' AND i.status = 'paid') AS paid_count,
-              (SELECT COUNT(*) FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE c.customer_id = u.id AND c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE()) AS overdue_count,
-              (SELECT COALESCE(AVG(DATEDIFF(CURDATE(), i.due_date)),0) FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE c.customer_id = u.id AND c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE()) AS avg_delay,
-              (SELECT COALESCE(SUM(p.amount),0) FROM payments p JOIN contracts c ON c.id = p.contract_id WHERE c.customer_id = u.id AND c.status != 'cancelled' AND p.status = 'paid') AS total_paid,
-             (SELECT COUNT(*) FROM contracts c WHERE c.customer_id = u.id AND c.status = 'active') AS active_contracts,
-             (SELECT COUNT(*) FROM legal_cases lc WHERE lc.customer_id = u.id AND lc.status != 'closed') AS legal_count
-             FROM users u
-             WHERE u.role = 'customer' AND u.status = 'active'"
-        );
-        foreach ($rows as &$row) {
-            $score = ((int) $row['paid_count'] * 12)
-                + ((float) $row['total_paid'] / 1000000)
-                + ((int) $row['active_contracts'] * 5)
-                - ((int) $row['overdue_count'] * 15)
-                - ((float) $row['avg_delay'])
-                - ((int) $row['legal_count'] * 20);
-            $row['score'] = max(0, (int) round($score));
-        }
-        unset($row);
-        usort($rows, function ($a, $b) use ($mode) {
-            return $mode === 'worst' ? ($a['score'] <=> $b['score']) : ($b['score'] <=> $a['score']);
-        });
-        return array_slice($rows, 0, 6);
-    }
-
     protected function operator()
     {
         $contracts = Contract::all(['operator_id' => Auth::id()]);
@@ -281,6 +261,7 @@ class DashboardController extends Controller
         ];
         $this->render('dashboard/operator', [
             'title' => 'داشبورد اپراتور',
+            'accountingBalance' => $this->accountingBalance(),
             'contracts' => $contracts,
             'calls' => $calls,
             'overdue' => $overdue,
@@ -300,6 +281,7 @@ class DashboardController extends Controller
         ];
         $this->render('dashboard/lawyer', [
             'title' => 'داشبورد وکیل',
+            'accountingBalance' => $this->accountingBalance(),
             'cases' => $cases,
             'eligible' => $eligible,
             'metrics' => $metrics,
@@ -309,12 +291,11 @@ class DashboardController extends Controller
     protected function customer()
     {
         $customerId = Auth::id();
-        User::syncAutomaticMedals((int) $customerId);
-        if (class_exists('Medal')) {
-            Medal::evaluateCustomer((int) $customerId, Auth::id());
-        }
         $contracts = Contract::all(['customer_id' => $customerId]);
         $installments = Installment::all(['customer_id' => $customerId]);
+        $customerWidgets = PluginManager::filter('dashboard.customer.widgets', [], ['customer_id' => (int) $customerId]);
+        $customerWidgets = is_array($customerWidgets) ? $customerWidgets : [];
+        $loyaltyProfile = CustomerLoyalty::profile((int) $customerId, 6);
         $activeInstallments = array_filter($installments, static fn ($item) => !in_array(($item['status'] ?? ''), ['paid', 'cancelled'], true));
         $this->render('dashboard/customer', [
             'title' => 'داشبورد مشتری',
@@ -322,8 +303,10 @@ class DashboardController extends Controller
             'contracts' => $contracts,
             'installments' => $installments,
             'payments' => Payment::recentForCustomer($customerId, 9),
-            'medals' => User::medalsForUsers([(int) $customerId])[(int) $customerId] ?? [],
+            'medals' => $loyaltyProfile['medals'] ?? [],
+            'loyaltyProfile' => $loyaltyProfile,
             'socialLinks' => configured_social_links(Settings::allKeyed()),
+            'customerWidgets' => $customerWidgets,
             'ecommerceOrders' => ecommerce_is_enabled() ? Ecommerce::ordersForCustomer($customerId, 6) : [],
             'metrics' => [
                 'contracts' => count($contracts),
@@ -343,6 +326,22 @@ class DashboardController extends Controller
                 [$customerId]
             ),
         ]);
+    }
+
+    /** Return the signed balance for the current user without making dashboards depend on the plugin. */
+    protected function accountingBalance()
+    {
+        if (!class_exists('PluginManager') || !PluginManager::isActive('proma-accounting') || !class_exists('Proma\\Plugins\\Accounting\\Services\\AccountBalanceService')) {
+            return null;
+        }
+        try {
+            return \Proma\Plugins\Accounting\Services\AccountBalanceService::snapshot((int) Auth::id());
+        } catch (\Throwable $e) {
+            if (class_exists('ErrorHandler')) {
+                ErrorHandler::log('dashboard_accounting_balance', $e, 503);
+            }
+            return null;
+        }
     }
 
 }

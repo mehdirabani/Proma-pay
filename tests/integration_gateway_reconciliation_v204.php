@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 $dsn = trim((string) getenv('PROMA_TEST_DB_DSN'));
-if ($dsn === '' || !preg_match('/(?:^|;)dbname=proma_qa_v204(?:;|$)/', $dsn)) {
+if ($dsn === '' || !preg_match('/(?:^|;)dbname=(?:proma_qa_v204(?:_[a-f0-9]{10})?|proma_qa_v404_20261008)(?:;|$)/i', $dsn)
+    || (preg_match('/dbname=proma_qa_v204_[a-f0-9]{10}(?:;|$)/i', $dsn) && getenv('PROMA_TEST_ALLOW_DESTRUCTIVE') !== '1')) {
     fwrite(STDERR, "Use only the disposable proma_qa_v204 database.\n");
     exit(2);
 }
@@ -19,7 +20,7 @@ $pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_
     PDO::ATTR_EMULATE_PREPARES => false,
 ]);
 $property = new ReflectionProperty(Model::class, 'pdo');
-$property->setAccessible(true);
+
 $property->setValue(null, $pdo);
 $assert = static function ($condition, string $message): void {
     if (!$condition) throw new RuntimeException($message);
@@ -27,10 +28,10 @@ $assert = static function ($condition, string $message): void {
 
 $migrationName = 'database/migrations/2026_10_02_gateway_reconciliation_queue.sql';
 $schemaSetup = new ReflectionMethod(ScriptUpdateService::class, 'ensureMigrationSchema');
-$schemaSetup->setAccessible(true);
+
 $schemaSetup->invoke(null);
 $runner = new ReflectionMethod(ScriptUpdateService::class, 'runUpdateMigration');
-$runner->setAccessible(true);
+
 $runner->invoke(null, $migrationName, (string) file_get_contents(dirname(__DIR__) . '/' . $migrationName));
 foreach (['gateway_verified_amount', 'gateway_ref_id', 'reconciliation_reason'] as $column) {
     $assert((bool) $pdo->query("SHOW COLUMNS FROM payment_groups LIKE '" . $column . "'")->fetch(), 'Controlled migration missed ' . $column);
@@ -80,7 +81,7 @@ $visible = Model::fetch(
 );
 $assert((int) ($visible['id'] ?? 0) === (int) $pending['id'], 'Admin reconciliation queue cannot find the preserved gateway payment.');
 $reviewGuard = new ReflectionMethod(PaymentsController::class, 'hasUnresolvedGatewayReview');
-$reviewGuard->setAccessible(true);
+
 $assert($reviewGuard->invoke(new PaymentsController(), $contractId, $customerId) === true, 'Customer gateway retry was not blocked while captured money awaits review.');
 $assert($reviewGuard->invoke(new PaymentsController(), $contractId, $adminId) === false, 'Gateway guard leaked a customer review to another actor.');
 $panelTemplate = (string) file_get_contents(dirname(__DIR__) . '/views/installments/index.php');

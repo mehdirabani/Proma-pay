@@ -43,13 +43,11 @@ foreach ([
 $installSql = (string) file_get_contents($root . '/database/proma-pay-install.sql');
 $installer = (string) file_get_contents($root . '/install.php');
 preg_match_all('/CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+`?([a-z0-9_]+)`?/i', $installSql, $sqlTables);
-preg_match_all('/CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+`?([a-z0-9_]+)`?/i', $installer, $installerTables);
 $sqlTableNames = array_values(array_unique(array_map('strtolower', $sqlTables[1] ?? [])));
-$installerTableNames = array_values(array_unique(array_map('strtolower', $installerTables[1] ?? [])));
 sort($sqlTableNames);
-sort($installerTableNames);
 $assert(count($sqlTableNames) >= 60, 'Fresh-install SQL table inventory is unexpectedly incomplete.');
-$assert($sqlTableNames === $installerTableNames, 'install.php and proma-pay-install.sql table inventories differ. SQL-only: ' . implode(',', array_diff($sqlTableNames, $installerTableNames)) . ' Installer-only: ' . implode(',', array_diff($installerTableNames, $sqlTableNames)));
+$assert(strpos($installer, "__DIR__ . '/database/proma-pay-install.sql'") !== false, 'Fresh installs must load the canonical SQL schema.');
+$assert(in_array('customer_automation_events', $sqlTableNames, true), 'Canonical fresh-install SQL omits the customer automation event table.');
 
 $ddlViolations = [];
 foreach (['controllers', 'models', 'helpers'] as $directory) {

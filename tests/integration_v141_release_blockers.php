@@ -19,10 +19,10 @@ $pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES => false,
-    PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => false,
+    Pdo\Mysql::ATTR_USE_BUFFERED_QUERY => false,
 ]);
 $property = new ReflectionProperty(Model::class, 'pdo');
-$property->setAccessible(true);
+
 $property->setValue(null, $pdo);
 $initialAccountingStatus = (string) ((PluginRegistry::find('proma-accounting')['status'] ?? ''));
 
@@ -58,8 +58,10 @@ $createUser = static function ($role, $prefix) use ($suffix) {
 [$lawyerId] = $createUser('lawyer', 'lawyer');
 [$customerId, $customerMobile, $customerNationalId] = $createUser('customer', 'customer');
 
-$assert(Auth::unifiedLogin($customerNationalId, substr($customerMobile, -4)), 'Customer last-four mobile login policy regressed.');
+$assert(Auth::unifiedLogin($customerNationalId, substr($customerMobile, -4)), 'Customer mobile PIN login failed.');
 $assert((int) Auth::id() === (int) $customerId, 'Customer login resolved another account.');
+$_SESSION = [];
+$assert(!Auth::customerLogin($customerNationalId, '0000'), 'An incorrect customer PIN must be rejected.');
 $_SESSION = [];
 
 $profileRequestId = ProfileRequest::createRequest($customerId, [
@@ -76,7 +78,7 @@ $newCustomerMobile = '0935' . str_pad(substr($suffix, -7), 7, '0', STR_PAD_LEFT)
 $mobileRequestId = ProfileRequest::createRequest($customerId, ['mobile' => $newCustomerMobile]);
 $mobileApproval = ProfileRequest::approveFields($mobileRequestId, $adminId, ['mobile'], 'شماره موبایل تایید شد.');
 $assert(($mobileApproval['status'] ?? '') === 'approved', 'Customer mobile profile change was not approved.');
-$assert(Auth::customerLogin($customerNationalId, substr($newCustomerMobile, -4)), 'Customer could not log in with the last four digits of the approved mobile.');
+$assert(Auth::unifiedLogin($customerNationalId, substr($newCustomerMobile, -4)), 'Approved mobile changes must synchronize the mobile PIN.');
 $_SESSION = [];
 
 $avatarFixture = dirname(__DIR__) . '/assets/images/avatars/avatar-2.png';
@@ -161,7 +163,7 @@ $repairContractId = Contract::createWithInstallments([
 ]);
 $repairInstallment = Model::fetch('SELECT * FROM installments WHERE contract_id = ? LIMIT 1', [$repairContractId]);
 Model::execute('UPDATE installments SET paid_amount = base_amount, remaining_amount = 0, status = ? WHERE id = ?', ['paid', (int) $repairInstallment['id']]);
-$issues = array_values(array_filter(InstallmentReconciliationService::scan(), static function ($issue) use ($repairInstallment) {
+$issues = array_values(array_filter(InstallmentReconciliationService::scan(500, $repairContractId), static function ($issue) use ($repairInstallment) {
     return (int) ($issue['id'] ?? 0) === (int) $repairInstallment['id'];
 }));
 $assert(count($issues) === 1, 'Dry-run reconciliation did not detect a mismatched installment.');

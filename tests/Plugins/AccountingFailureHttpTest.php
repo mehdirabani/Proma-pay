@@ -15,7 +15,7 @@ $plugin = $pdo->query("SELECT status, manifest_json FROM system_plugins WHERE pl
 if (!$plugin) throw new RuntimeException('Accounting plugin registry row is missing.');
 
 $cookie = tempnam(sys_get_temp_dir(), 'proma-plugin-failure-');
-$request = static function ($route, $cookie, array $post = null, $follow = true) use ($baseUrl) {
+$request = static function ($route, $cookie, ?array $post = null, $follow = true) use ($baseUrl) {
     $ch = curl_init($baseUrl . '/index.php?route=' . rawurlencode($route));
     curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => $follow, CURLOPT_MAXREDIRS => 5, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 10, CURLOPT_COOKIEJAR => $cookie, CURLOPT_COOKIEFILE => $cookie]);
     if ($post !== null) { curl_setopt($ch, CURLOPT_POST, true); curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post)); }

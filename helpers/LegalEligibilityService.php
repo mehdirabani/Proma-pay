@@ -26,7 +26,7 @@ final class LegalEligibilityService
         ];
     }
 
-    public static function activePolicy(array $settings = null)
+    public static function activePolicy(?array $settings = null)
     {
         $settings = $settings ?? Settings::allKeyed();
         $fallback = self::defaults($settings);
@@ -47,7 +47,7 @@ final class LegalEligibilityService
         return ['id' => null, 'version' => 0, 'policy' => $fallback, 'source' => 'settings_fallback'];
     }
 
-    public static function policyForContract($contractId, array $settings = null)
+    public static function policyForContract($contractId, ?array $settings = null)
     {
         $settings = $settings ?? Settings::allKeyed();
         try {
@@ -139,7 +139,7 @@ final class LegalEligibilityService
         $delayMet = $delayDate !== null && $asOf >= $delayDate;
         $countMet = count($overdue) >= max(1, (int) ($policy['overdue_count_threshold'] ?? 1));
         $amountEnabled = !empty($policy['overdue_amount_enabled']);
-        $amountMet = !$amountEnabled || $overdueAmount >= max(0, normalize_money($policy['overdue_amount_threshold'] ?? 0));
+        $amountMet = !$amountEnabled || ($overdueAmount > 0 && $overdueAmount >= max(0, normalize_money($policy['overdue_amount_threshold'] ?? 0)));
         $operator = $policy['eligibility_operator'] ?? 'delay_only';
         if ($operator === 'and') {
             $eligible = $delayMet && $countMet && $amountMet;
@@ -148,6 +148,10 @@ final class LegalEligibilityService
         } else {
             $eligible = $delayMet && $amountMet;
         }
+        // Even an `or` policy requires a real overdue installment; a zero
+        // configured amount threshold must never turn fully settled contracts
+        // into legal-action candidates.
+        if (!$overdue) $eligible = false;
         $reasons = [];
         if ($delayMet) $reasons[] = 'تاخیر از حد سیاست حقوقی عبور کرده است.';
         if ($countMet) $reasons[] = 'تعداد اقساط معوق به حد تعیین‌شده رسیده است.';

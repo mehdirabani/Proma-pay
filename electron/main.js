@@ -11,7 +11,10 @@ function createWindow() {
     title: 'پرما پرداخت',
     webPreferences: {
       preload: require('path').join(__dirname, 'preload.js'),
-      contextIsolation: true
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true
     }
   });
   win.loadURL(targetUrl);

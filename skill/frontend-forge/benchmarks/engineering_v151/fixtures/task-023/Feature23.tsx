@@ -1,1 +1,0 @@
-'use client'; export default function Static23(){return <div>Static 23</div>}

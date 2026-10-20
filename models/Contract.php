@@ -419,8 +419,8 @@ class Contract extends Model
 
             self::execute(
                 'INSERT INTO contracts
-                 (customer_id, contract_number, prefix, serial, principal_amount, down_payment_amount, monthly_interest_rate, interest_type, months, start_date, first_due_date, status, assigned_operator_id, notes, created_at)
-                 VALUES (:customer_id, :contract_number, :prefix, :serial, :principal_amount, :down_payment_amount, :monthly_interest_rate, :interest_type, :months, :start_date, :first_due_date, :status, :assigned_operator_id, :notes, NOW())',
+                 (customer_id, contract_number, prefix, serial, principal_amount, down_payment_amount, monthly_interest_rate, interest_type, months, start_date, first_due_date, status, assigned_operator_id, seller_user_id, marketer_user_id, notes, created_at)
+                 VALUES (:customer_id, :contract_number, :prefix, :serial, :principal_amount, :down_payment_amount, :monthly_interest_rate, :interest_type, :months, :start_date, :first_due_date, :status, :assigned_operator_id, :seller_user_id, :marketer_user_id, :notes, NOW())',
                 [
                     'customer_id' => (int) $data['customer_id'],
                     'contract_number' => $contractNumber,
@@ -435,6 +435,8 @@ class Contract extends Model
                     'first_due_date' => $data['first_due_date'],
                     'status' => 'active',
                     'assigned_operator_id' => $data['assigned_operator_id'] ?? null,
+                    'seller_user_id' => $data['seller_user_id'] ?? null,
+                    'marketer_user_id' => $data['marketer_user_id'] ?? null,
                     'notes' => $data['notes'] ?? '',
                 ]
             );
@@ -464,6 +466,7 @@ class Contract extends Model
                     'customer_id' => (int) $data['customer_id'],
                     'actor_user_id' => !empty($data['created_by']) ? (int) $data['created_by'] : null,
                     'seller_user_id' => !empty($data['seller_user_id']) ? (int) $data['seller_user_id'] : null,
+                    'marketer_user_id' => !empty($data['marketer_user_id']) ? (int) $data['marketer_user_id'] : null,
                 ], 'contract', $contractId);
             }
             if (!empty($data['request_uuid'])) {
@@ -506,7 +509,8 @@ class Contract extends Model
                  down_payment_amount = :down_payment_amount,
                  monthly_interest_rate = :monthly_interest_rate, interest_type = :interest_type,
                  months = :months, start_date = :start_date, first_due_date = :first_due_date,
-                 assigned_operator_id = :assigned_operator_id, notes = :notes WHERE id = :id',
+                  assigned_operator_id = :assigned_operator_id, seller_user_id = :seller_user_id,
+                  marketer_user_id = :marketer_user_id, notes = :notes WHERE id = :id',
                 [
                     'id' => (int) $id,
                     'customer_id' => (int) $data['customer_id'],
@@ -518,6 +522,8 @@ class Contract extends Model
                     'start_date' => $data['start_date'],
                     'first_due_date' => $data['first_due_date'],
                     'assigned_operator_id' => $data['assigned_operator_id'] ?? null,
+                    'seller_user_id' => $data['seller_user_id'] ?? null,
+                    'marketer_user_id' => $data['marketer_user_id'] ?? null,
                     'notes' => $data['notes'] ?? '',
                 ]
             );
@@ -551,6 +557,7 @@ class Contract extends Model
                     'customer_id' => (int) $data['customer_id'],
                     'actor_user_id' => !empty($data['updated_by']) ? (int) $data['updated_by'] : null,
                     'seller_user_id' => !empty($data['seller_user_id']) ? (int) $data['seller_user_id'] : null,
+                    'marketer_user_id' => !empty($data['marketer_user_id']) ? (int) $data['marketer_user_id'] : null,
                 ], 'contract', (int) $id);
             }
             self::commit();

@@ -62,26 +62,67 @@ final class BaleAccountService
         if (!array_filter($capabilities)) throw new \InvalidArgumentException('حداقل یک نوع پیام باید فعال باشد.');
         \Model::begin();
         try {
-            $before = $id ? $this->find($id) : null;
-            if ($id && !$before) throw new \InvalidArgumentException('تنظیم بله پیدا نشد.');
+            $before = null;
+            $restoring = false;
+            if ($id) {
+                $before = $this->find($id);
+                if (!$before) throw new \InvalidArgumentException('تنظیم بله پیدا نشد.');
+                $restoring = !empty($before['archived_at']);
+            } else {
+                // The title is unique per provider and environment, and archived
+                // rows still reserve that key. Treat a repeated add submission
+                // as a reconfiguration of the matching account so the database
+                // constraint remains a final safety net rather than a user error.
+                $existing = \Model::fetch(
+                    "SELECT id,archived_at FROM proma_connect_provider_configs
+                     WHERE provider_key='bale' AND title=? AND environment='production'
+                     ORDER BY id DESC LIMIT 1 FOR UPDATE",
+                    [$title]
+                );
+                if ($existing) {
+                    $id = (int) $existing['id'];
+                    $before = $this->find($id);
+                    $restoring = !empty($existing['archived_at']);
+                }
+            }
             if (!$id && $keyInput === '') throw new \InvalidArgumentException('توکن وب‌سرویس بله وارد نشده است.');
+            if ($id && $keyInput === '') {
+                $secret = \Model::fetch(
+                    "SELECT encrypted_secret FROM proma_connect_provider_configs WHERE id=? AND provider_key='bale' LIMIT 1",
+                    [$id]
+                );
+                if (empty($secret['encrypted_secret'])) throw new \InvalidArgumentException('توکن وب‌سرویس بله برای این بازو ذخیره نشده است.');
+            }
             $duplicate = \Model::fetch(
                 "SELECT id FROM proma_connect_provider_configs
-                 WHERE provider_key='bale' AND title=? AND environment='production'
-                   AND archived_at IS NULL AND id<>? LIMIT 1",
+                 WHERE provider_key='bale' AND title=? AND environment='production' AND id<>? LIMIT 1",
                 [$title,$id]
             );
-            if ($duplicate) throw new \InvalidArgumentException('این عنوان داخلی قبلاً استفاده شده است.');
+            if ($duplicate) throw new \InvalidArgumentException('این عنوان برای بازوی دیگری رزرو شده است. عنوان دیگری وارد کنید یا همان بازو را ویرایش کنید.');
             $encrypted = null;
             if ($keyInput !== '') {
-                try { $encrypted = SecretCipher::encrypt($keyInput); }
-                catch (\Throwable $e) { throw new \RuntimeException('ذخیره امن توکن با خطا روبه‌رو شد.', 0, $e); }
+                try {
+                    if (!SecretCipher::isReady()) {
+                        $storedSecrets = \Model::fetch(
+                            "SELECT
+                               (SELECT COUNT(*) FROM proma_connect_provider_configs WHERE encrypted_secret IS NOT NULL AND encrypted_secret<>'') +
+                               (SELECT COUNT(*) FROM proma_connect_settings WHERE is_secret=1 AND setting_value<>'') AS total"
+                        );
+                        if ((int) ($storedSecrets['total'] ?? 0) > 0) {
+                            throw new \RuntimeException('کلید رمزگذاری اتصال‌ها پیدا نشد؛ کلید قبلی باید از پشتیبان بازیابی شود تا توکن‌های ذخیره‌شده از دسترس خارج نشوند.');
+                        }
+                        SecretCipher::ensureMasterKey();
+                    }
+                    $encrypted = SecretCipher::encrypt($keyInput);
+                } catch (\Throwable $e) {
+                    throw new \RuntimeException('ذخیره امن توکن انجام نشد: ' . $e->getMessage(), 0, $e);
+                }
             }
             if ($id) {
-                $connectionChanged = $keyInput !== '' || (string)$before['external_bot_id'] !== $botId;
+                $connectionChanged = $restoring || $keyInput !== '' || (string)$before['external_bot_id'] !== $botId;
                 $sql = "UPDATE proma_connect_provider_configs
                         SET title=?,external_bot_id=?,capabilities_json=?,
-                            status=?,is_active=?,is_default=?,
+                            status=?,is_active=?,is_default=?,archived_at=NULL,
                             updated_by=?,updated_at=NOW()";
                 $params = [$title,$botId,json_encode($capabilities),$connectionChanged?'configured_not_verified':$before['status'],$connectionChanged?0:(int)$before['is_active'],$connectionChanged?0:(int)$before['is_default'],$actorId];
                 if ($encrypted !== null) { $sql .= ',encrypted_secret=?'; $params[] = $encrypted; }
@@ -105,6 +146,13 @@ final class BaleAccountService
             return $id;
         } catch (\Throwable $e) {
             \Model::rollBack();
+            if ($e instanceof \PDOException) {
+                $sqlState = (string) ($e->errorInfo[0] ?? '');
+                $driverCode = (int) ($e->errorInfo[1] ?? 0);
+                if ($sqlState === '23000' && $driverCode === 1062 && str_contains($e->getMessage(), 'uq_provider_title')) {
+                    throw new \InvalidArgumentException('این بازوی بله با همین عنوان هم‌زمان ثبت شده است. صفحه را تازه کنید و بازوی موجود را ویرایش کنید.', 0, $e);
+                }
+            }
             throw $e;
         }
     }

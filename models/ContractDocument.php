@@ -43,6 +43,7 @@ class ContractDocument extends Model
             '{{guarantors_section}}' => 'بخش مشخصات ضامن‌ها',
             '{{guarantee_type}}' => 'نوع ضمانت',
             '{{guarantee_count}}' => 'تعداد ضمانت',
+            '{{guarantee_amount}}' => 'مبلغ ضمانت',
             '{{guarantee_serial}}' => 'شناسه چک یا سفته',
             '{{guarantee_description}}' => 'توضیحات ضمانت',
             '{{installment_count}}' => 'تعداد اقساط',
@@ -306,6 +307,31 @@ TEXT;
         ];
     }
 
+    /** Put the configured representative signature into the seller's print box only. */
+    public static function injectSellerSignature($body, array $settings, array $contract)
+    {
+        $body = (string) $body;
+        $signaturePath = trim((string) ($settings['contract_seller_signature_path'] ?? ''));
+        if ($signaturePath === '' || strpos($body, 'data-contract-seller-signature') !== false) return $body;
+
+        $sellerName = trim((string) ($settings['company_representative_name'] ?? ''))
+            ?: trim((string) ($settings['company_name'] ?? ''))
+            ?: 'نماینده مجموعه';
+        $imageUrl = asset_url($signaturePath);
+        $signatureBox = '<div class="contract-signature-box contract-seller-signature" data-contract-seller-signature>'
+            . '<img src="' . e($imageUrl) . '" alt="امضای ' . e($sellerName) . '">'
+            . '<span>امضای ' . e($sellerName) . '</span></div>';
+
+        $boxPattern = '~<div\b(?=[^>]*\bclass\s*=\s*(["\'])[^"\']*\bcontract-signature-box\b[^"\']*\1)[^>]*>.*?</div>~isu';
+        $bodyWithSeller = preg_replace_callback($boxPattern, static function () use ($signatureBox) { return $signatureBox; }, $body, 1, $replaced);
+        if (is_string($bodyWithSeller) && $replaced > 0) return $bodyWithSeller;
+
+        $gridPattern = '~(<(?:section|div)\b(?=[^>]*\bclass\s*=\s*(["\'])[^"\']*\bcontract-signature-grid\b[^"\']*\2)[^>]*>)~i';
+        $bodyWithSeller = preg_replace_callback($gridPattern, static function ($match) use ($signatureBox) { return $match[1] . $signatureBox; }, $body, 1, $gridCount);
+        if (is_string($bodyWithSeller) && $gridCount > 0) return $bodyWithSeller;
+        return $body . '<section class="contract-signature-grid">' . $signatureBox . '</section>';
+    }
+
     public static function versions($contractId)
     {
         self::ensureSchema();
@@ -369,12 +395,13 @@ TEXT;
             $description = 'نوع ضمانت: ' . $other . ($description !== '' ? "\n" . $description : '');
         }
         self::execute(
-            'INSERT INTO contract_guarantees (contract_id, guarantee_type, guarantee_count, guarantee_serial, guarantee_description, created_at)
-             VALUES (?, ?, ?, ?, ?, NOW())',
+            'INSERT INTO contract_guarantees (contract_id, guarantee_type, guarantee_count, guarantee_amount, guarantee_serial, guarantee_description, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, NOW())',
             [
                 (int) $contractId,
                 $type,
                 max(1, (int) to_english_digits($data['guarantee_count'] ?? 1)),
+                normalize_money($data['guarantee_amount'] ?? 0),
                 trim(to_english_digits($data['guarantee_serial'] ?? '')) ?: null,
                 $description ?: null,
             ]
@@ -626,6 +653,7 @@ TEXT;
             '{{guarantors_section}}' => self::guarantorsSection($guarantors),
             '{{guarantee_type}}' => e($firstGuarantee['guarantee_type'] ?? ''),
             '{{guarantee_count}}' => e(to_persian_digits($firstGuarantee['guarantee_count'] ?? 0)),
+            '{{guarantee_amount}}' => e(money_toman($firstGuarantee['guarantee_amount'] ?? 0)),
             '{{guarantee_serial}}' => e(to_persian_digits($firstGuarantee['guarantee_serial'] ?? '')),
             '{{guarantee_description}}' => e($firstGuarantee['guarantee_description'] ?? ''),
             '{{installment_count}}' => e(to_persian_digits(count($installments))),
