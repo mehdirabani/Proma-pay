@@ -1,6 +1,6 @@
 # برنامهٔ Cutover
 
-این سند دستور اجرایی staging/Production است؛ اجرای cutover در Workspace انجام نشده است.
+این سند دستور اجرایی staging/Production برای محیطی است که هنوز پیش از cutover قرار دارد.
 
 ## پیش‌شرط‌ها
 
@@ -22,4 +22,4 @@
 
 ## وضعیت
 
-Cutover انجام نشده است. هیچ Plugin Registry یا runtime production در این کار تغییر نکرده است.
+Production cutover انجام نشده است. در اولین مشاهدهٔ آزمون محلی `proma.test`، successor از قبل active و افزونهٔ قدیمی در وضعیت `removed` بود؛ این نوبت هیچ lifecycleای را تغییر نداد. برای rollback محلی باید ابتدا بسته/فایل‌های legacy به runtime بازگردد. وضعیت و شواهد در `MIGRATION_VERIFICATION_REPORT.md` آمده است.

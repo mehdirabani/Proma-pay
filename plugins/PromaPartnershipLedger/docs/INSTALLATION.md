@@ -1,6 +1,6 @@
 # نصب و cutover
 
-1. بسته را از Plugin Manager در نصب staging Proma Pay 7.0.3 بارگذاری کنید.
+1. بسته را از Plugin Manager در نصب staging Proma Pay 7.0.3 بارگذاری کنید. runtime محلی `proma.test` هنگام آزمون ۲۲ اکتبر ۲۰۲۶ از قبل successor را فعال داشت و افزونهٔ قدیمی در آن runtime `removed` بود؛ این وضعیت را با مراحل زیر اشتباه نگیرید.
 2. در محیط موجود، migrationها با `CREATE TABLE IF NOT EXISTS` schema قبلی را حفظ می‌کنند و جدول نسخه‌های سیاست مالی را اضافه می‌کنند. نصب تازه نیز schema پایهٔ افزونه را ایجاد می‌کند.
 3. در دورهٔ staging/cutover، افزونهٔ قدیمی writer عملیاتی می‌ماند و successor فعال نمی‌شود. گارد فعال‌سازی این شرط را بررسی می‌کند.
 4. parity و snapshotهای قبل/بعد را read-only تطبیق دهید؛ اختلاف یا دادهٔ ناشناخته را حل کنید.
