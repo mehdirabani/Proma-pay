@@ -1,0 +1,30 @@
+{
+  "id": "proma-affiliate",
+  "name": "بازاریابی معرفان Proma Pay",
+  "description": "کد معرفی، سناریوهای پاداش، اعتبار خرید و درخواست برداشت",
+  "version": "1.1.1",
+  "author": "Proma Pay",
+  "plugin_api_version": "1.1",
+  "requires_core": ">=6.0.2",
+  "requires_php": ">=8.1",
+  "provider": "Proma\\Plugins\\Affiliate\\AffiliateServiceProvider",
+  "permissions": [
+    {"key":"plugin.proma-affiliate.manage","label":"مدیریت سناریوهای افیلیت و برداشت‌ها"},
+    {"key":"plugin.proma-affiliate.view_admin","label":"مشاهده گزارش افیلیت"}
+  ],
+  "routes": [
+    {"path":"plugin/affiliate/admin","handler":"Proma\\Plugins\\Affiliate\\Controllers\\AffiliateController@admin","method":"GET","permission":"plugin.proma-affiliate.view_admin"},
+    {"path":"plugin/affiliate/settings","handler":"Proma\\Plugins\\Affiliate\\Controllers\\AffiliateController@saveSettings","method":"POST","permission":"plugin.proma-affiliate.manage"},
+    {"path":"plugin/affiliate/balance/{id}","handler":"Proma\\Plugins\\Affiliate\\Controllers\\AffiliateController@adjustBalance","method":"POST","permission":"plugin.proma-affiliate.manage"},
+    {"path":"plugin/affiliate/search-referrers","handler":"Proma\\Plugins\\Affiliate\\Controllers\\AffiliateController@searchReferrers","method":"GET","permission":"plugin.proma-affiliate.view_admin"},
+    {"path":"plugin/affiliate/withdrawals","handler":"Proma\\Plugins\\Affiliate\\Controllers\\AffiliateController@withdrawals","method":"GET","permission":"plugin.proma-affiliate.view_admin"},
+    {"path":"plugin/affiliate/withdrawals/{id}","handler":"Proma\\Plugins\\Affiliate\\Controllers\\AffiliateController@reviewWithdrawal","method":"POST","permission":"plugin.proma-affiliate.manage"},
+    {"path":"plugin/affiliate/wallet","handler":"Proma\\Plugins\\Affiliate\\Controllers\\AffiliateController@wallet","method":"GET","auth":true},
+    {"path":"plugin/affiliate/withdraw","handler":"Proma\\Plugins\\Affiliate\\Controllers\\AffiliateController@requestWithdrawal","method":"POST","auth":true},
+    {"path":"plugin/affiliate/convert","handler":"Proma\\Plugins\\Affiliate\\Controllers\\AffiliateController@convertCredit","method":"POST","auth":true},
+    {"path":"plugin/affiliate/payout-account","handler":"Proma\\Plugins\\Affiliate\\Controllers\\AffiliateController@savePayoutDetails","method":"POST","auth":true}
+  ],
+  "migrations": ["migrations/2026_10_03_affiliate_core.sql", "migrations/2026_10_04_purchase_commissions.sql", "migrations/2026_10_05_affiliate_wallet_management.sql", "migrations/2026_10_06_affiliate_contract_commissions.sql"],
+  "assets": [],
+  "settings": []
+}

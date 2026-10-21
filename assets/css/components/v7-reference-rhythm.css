@@ -1,0 +1,675 @@
+/* V7.0.1: spacing and density calibrated against the supplied Proma screens. */
+body.proma-v2 .proma-page-content {
+  gap: 14px;
+  padding-block-end: 24px;
+}
+
+body.proma-v2 .proma-page-content .proma-page-intro {
+  gap: 14px;
+  margin-block-end: 12px;
+  padding: 14px 18px;
+}
+
+body.proma-v2 .proma-page-content > .card > .card-header,
+body.proma-v2 .proma-page-content > .card > .card-body,
+body.proma-v2 .proma-page-content > .card > .card-footer {
+  padding-inline: 16px;
+}
+
+body.proma-v2 .proma-page-content table:not(.v7-role-table) th,
+body.proma-v2 .proma-page-content table:not(.v7-role-table) td {
+  padding-block: 9px;
+  line-height: 1.5;
+}
+
+/* Contract list: match the compact, aligned list and card rhythm in the reference. */
+body.proma-v2 .proma-contracts-page { gap: 12px; }
+body.proma-v2 .proma-contracts-page .proma-contracts-intro {
+  min-height: 0;
+  margin: 0;
+  padding: 11px 16px;
+  border-radius: 14px;
+}
+body.proma-v2 .proma-contracts-intro .proma-eyebrow { margin: 0; font-size: 10px; line-height: 1.5; }
+body.proma-v2 .proma-contracts-intro h1 { margin: 2px 0 3px; font-size: 24px; line-height: 1.45; }
+body.proma-v2 .proma-contracts-intro p { font-size: 11px; line-height: 1.6; }
+body.proma-v2 .proma-contracts-intro__actions .btn { min-height: 36px; padding: 7px 11px; font-size: 12px; }
+body.proma-v2 .proma-contracts-summary { gap: 9px; }
+body.proma-v2 .proma-contracts-summary > article { min-height: 68px; gap: 9px; padding: 10px 12px; border-radius: 12px; }
+body.proma-v2 .proma-contracts-summary__icon { flex-basis: 34px; width: 34px; height: 34px; border-radius: 10px; }
+body.proma-v2 .proma-contracts-summary small { font-size: 10px; line-height: 1.4; }
+body.proma-v2 .proma-contracts-summary strong { font-size: 16px; line-height: 1.35; }
+body.proma-v2 .proma-contracts-page .proma-filter-card { display: flex; flex-direction: column; margin: 0; }
+body.proma-v2 .proma-contracts-page .proma-filter-card .card-header { padding: 10px 14px 4px; }
+body.proma-v2 .proma-contracts-page .proma-filter-card .card-header .header-top { align-items: center; gap: 10px; }
+body.proma-v2 .proma-contracts-page .proma-filter-card .card-header h2 { font-size: 16px; line-height: 1.5; }
+body.proma-v2 .proma-contracts-page .proma-filter-card .card-header .actions { gap: 5px; }
+body.proma-v2 .proma-contracts-page .proma-filter-card .card-header .btn { min-height: 32px; padding: 5px 9px; font-size: 11px; }
+body.proma-v2 .proma-contracts-page .proma-filter-card .card-body { padding: 7px 14px 12px; }
+body.proma-v2 .proma-contracts-page .proma-filter-toolbar--contracts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px 12px;
+}
+body.proma-v2 .proma-contracts-page .proma-filter-toolbar--contracts > label.full { grid-column: auto; grid-template-rows: max-content auto; gap: 4px; min-height: 0; font-size: 11px; }
+body.proma-v2 .proma-contracts-page .proma-filter-toolbar--contracts > label.full .proma-form-label { display: block; height: auto; min-height: 0; line-height: 1.45; }
+body.proma-v2 .proma-contracts-page .proma-filter-toolbar--contracts > label.full input { min-height: 38px; height: 38px; }
+body.proma-v2 .proma-contracts-page .proma-filter-toolbar--contracts .proma-filter-actions { grid-column: auto; width: max-content; min-height: 38px; align-self: end; }
+body.proma-v2 .proma-contracts-page .proma-filter-toolbar--contracts .proma-filter-actions .btn { min-height: 38px; }
+body.proma-v2 .proma-contracts-page .proma-list-meta { margin: 0; }
+body.proma-v2 .proma-contracts-page .proma-list-meta .badge { min-height: 26px; padding: 4px 9px; font-size: 10px; }
+body.proma-v2 .proma-contract-card-grid { gap: 12px; margin-top: 0; }
+body.proma-v2 .proma-contract-card { gap: 9px; padding: 13px; border-radius: 14px; }
+body.proma-v2 .proma-contract-card__header { gap: 5px 8px; }
+body.proma-v2 .proma-contract-card .proma-progress-avatar { width: 48px; height: 48px; flex-basis: 48px; }
+body.proma-v2 .proma-contract-card .proma-progress-avatar .proma-avatar-choice { width: 38px; height: 38px; }
+body.proma-v2 .proma-contract-card-main { gap: 9px; }
+body.proma-v2 .proma-contract-card h6 { margin-bottom: 2px; font-size: 13px; line-height: 1.5; }
+body.proma-v2 .proma-contract-card__meta { gap: 4px; }
+body.proma-v2 .proma-contract-card__meta .badge,
+body.proma-v2 .proma-contract-card__meta .proma-contract-badge { min-height: 23px; padding: 3px 7px; font-size: 10px; }
+body.proma-v2 .proma-contract-card__controls .proma-icon-button { width: 34px; height: 34px; min-height: 34px; }
+body.proma-v2 .proma-contract-stats.four { gap: 5px; }
+body.proma-v2 .proma-contract-stats span { gap: 1px; padding: 5px 3px; }
+body.proma-v2 .proma-contract-stats strong { font-size: 15px; line-height: 1.4; }
+body.proma-v2 .proma-contract-stats small { font-size: 10px; line-height: 1.4; }
+body.proma-v2 .proma-contract-card-footer { gap: 6px; font-size: 11px; }
+body.proma-v2 .proma-contract-card-actions { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+body.proma-v2 .proma-contract-card-actions .proma-icon-button { width: 100%; min-width: 0; height: 34px; min-height: 34px; flex-basis: auto; padding: 0; }
+
+/* Closed advanced-filter drawers must stay closed, including their grid contents. */
+body.proma-v2 .proma-filter-drawer:not([open]) > :not(summary) { display: none; }
+body.proma-v2 .proma-overdue-page .proma-filter-card { display: flex; flex-direction: column; margin: 0; }
+body.proma-v2 .proma-overdue-page .proma-filter-card .card-header { padding: 12px 16px 5px; }
+body.proma-v2 .proma-overdue-page .proma-filter-card .card-header h5 { font-size: 16px; }
+body.proma-v2 .proma-overdue-page .proma-filter-card .card-body { padding: 8px 16px 12px; }
+body.proma-v2 .proma-overdue-page .proma-operational-filter { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 9px 10px; }
+body.proma-v2 .proma-overdue-page .proma-operational-filter label { gap: 4px; font-size: 10px; }
+body.proma-v2 .proma-overdue-page .proma-operational-filter :is(input, select) { min-height: 38px; height: 38px; }
+body.proma-v2 .proma-overdue-page .proma-operational-filter .proma-filter-search { grid-column: span 2; }
+body.proma-v2 .proma-overdue-page .proma-operational-filter .proma-filter-check { grid-column: span 2; min-height: 38px; padding: 5px 8px; }
+body.proma-v2 .proma-overdue-page .proma-operational-filter .proma-filter-submit { grid-column: span 2; min-height: 38px; }
+body.proma-v2 .proma-overdue-page .proma-operational-filter .proma-filter-submit .btn { min-height: 36px; padding: 6px 10px; }
+body.proma-v2 .proma-overdue-page .proma-operational-filter .proma-filter-drawer { padding-top: 5px; }
+body.proma-v2 .proma-overdue-page .proma-filter-drawer > summary { min-height: 30px; font-size: 11px; }
+body.proma-v2 .proma-overdue-page .proma-status-tabs { gap: 6px; padding: 2px 0 0; }
+body.proma-v2 .proma-overdue-page .proma-status-tabs a { min-height: 34px; padding-inline: 10px; font-size: 11px; }
+
+@media (max-width: 991px) {
+  body.proma-v2 .proma-overdue-page .proma-operational-filter { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  body.proma-v2 .proma-overdue-page .proma-operational-filter .proma-filter-search,
+  body.proma-v2 .proma-overdue-page .proma-operational-filter .proma-filter-check,
+  body.proma-v2 .proma-overdue-page .proma-operational-filter .proma-filter-submit,
+  body.proma-v2 .proma-overdue-page .proma-operational-filter .proma-filter-drawer { grid-column: 1 / -1; }
+}
+
+/* Keep the admin overview balanced: three aligned metric cards per row. */
+body.proma-v2 .proma-admin-dashboard {
+  --bs-gutter-x: 14px;
+  --bs-gutter-y: 0;
+  row-gap: 12px;
+}
+
+body.proma-v2 .proma-admin-dashboard > div {
+  padding-block-end: 0;
+}
+
+body.proma-v2 .proma-admin-dashboard .proma-workspace-intro {
+  min-height: 104px;
+  gap: 16px;
+  padding: 16px 20px;
+  border: 1px solid var(--pp-line);
+  border-radius: 16px;
+  color: var(--pp-text);
+  background: linear-gradient(110deg, #fff 45%, var(--pp-v7-violet-wash));
+  box-shadow: var(--pp-shadow-sm);
+}
+
+body.proma-v2 .proma-admin-dashboard .proma-workspace-intro::after {
+  display: none;
+}
+
+body.proma-v2 .proma-admin-dashboard .proma-workspace-intro h2 {
+  margin: 4px 0;
+  color: var(--pp-navy);
+  font-size: clamp(20px, 1.8vw, 25px);
+}
+
+body.proma-v2 .proma-admin-dashboard .proma-workspace-intro p {
+  color: var(--pp-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+body.proma-v2 .proma-admin-dashboard .proma-workspace-intro .proma-eyebrow {
+  color: var(--pp-primary-700);
+  background: var(--pp-v7-violet-wash);
+}
+
+body.proma-v2 .proma-admin-dashboard .proma-workspace-intro .btn {
+  min-height: 42px;
+  padding: 9px 15px;
+  border: 0;
+  color: #fff;
+  background: var(--pp-primary-600);
+  box-shadow: 0 5px 14px rgba(91, 47, 232, .16);
+}
+
+body.proma-v2 .proma-admin-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+body.proma-v2 .proma-admin-dashboard .proma-admin-kpi {
+  min-width: 0;
+  min-height: 94px;
+  border: 1px solid var(--pp-line);
+  border-radius: 14px;
+  box-shadow: var(--pp-shadow-sm);
+}
+
+body.proma-v2 .proma-admin-dashboard .proma-admin-kpi .card-body {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 12px;
+  min-height: 92px;
+  padding: 13px 14px;
+}
+
+body.proma-v2 .proma-admin-kpi-icon {
+  flex-basis: 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+body.proma-v2 .proma-admin-dashboard .proma-admin-kpi .card-body > div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+body.proma-v2 .proma-admin-dashboard .proma-admin-kpi small {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+body.proma-v2 .proma-admin-dashboard .proma-admin-kpi strong {
+  overflow-wrap: anywhere;
+  font-size: clamp(16px, 1.4vw, 21px);
+  line-height: 1.4;
+}
+
+body.proma-v2 .proma-admin-dashboard .proma-admin-kpi em {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+body.proma-v2 .proma-admin-dashboard .proma-workspace-shortcuts {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-block: 0;
+}
+
+body.proma-v2 .proma-admin-dashboard .proma-workspace-shortcuts a {
+  min-height: 54px;
+  padding: 11px 13px;
+  border-radius: 12px;
+}
+
+/* The customer, operator, lawyer, and technician workspaces share one rhythm. */
+body.proma-v2 .proma-role-dashboard {
+  --bs-gutter-x: 14px;
+  --bs-gutter-y: 0;
+  row-gap: 12px;
+}
+
+body.proma-v2 .proma-role-dashboard > div {
+  padding-block-end: 0;
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-hero {
+  min-height: 0;
+  border: 1px solid var(--pp-line);
+  border-radius: 16px;
+  color: var(--pp-text);
+  background: linear-gradient(110deg, #fff 48%, var(--pp-v7-violet-wash));
+  box-shadow: var(--pp-shadow-sm);
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-hero::after {
+  display: none;
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-hero .card-body {
+  min-height: 136px;
+  gap: 14px;
+  padding: 18px;
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-hero h4 {
+  margin: 4px 0;
+  color: var(--pp-navy);
+  font-size: clamp(20px, 1.8vw, 25px);
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-hero p {
+  color: var(--pp-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-hero .proma-eyebrow,
+body.proma-v2 .proma-role-dashboard .proma-role-hero .badge {
+  color: var(--pp-primary-700);
+  background: var(--pp-v7-violet-wash);
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-kpi {
+  min-height: 94px;
+  border: 1px solid var(--pp-line);
+  border-radius: 14px;
+  box-shadow: var(--pp-shadow-sm);
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-kpi .card-body {
+  align-items: center;
+  flex-direction: row;
+  gap: 11px;
+  min-height: 92px;
+  padding: 13px 14px;
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-kpi-icon {
+  flex-basis: 40px;
+  width: 40px;
+  height: 40px;
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-kpi small {
+  margin: 0;
+  font-size: 11px;
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-kpi strong {
+  margin: 1px 0;
+  font-size: clamp(16px, 1.4vw, 21px);
+  line-height: 1.4;
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-kpi em {
+  margin: 0;
+  font-size: 10px;
+}
+
+body.proma-v2 .proma-role-dashboard .proma-role-panel,
+body.proma-v2 .v7-role-dashboard .v7-role-panel {
+  border-radius: 15px;
+  box-shadow: var(--pp-shadow-sm);
+}
+
+body.proma-v2 .v7-role-dashboard {
+  gap: 12px;
+}
+
+body.proma-v2 .v7-role-hero {
+  min-height: 136px;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 16px;
+  background: linear-gradient(110deg, #fff 48%, var(--pp-v7-violet-wash));
+}
+
+body.proma-v2 .v7-role-hero h1 {
+  margin-block: 3px 5px;
+  font-size: clamp(20px, 1.8vw, 25px);
+}
+
+body.proma-v2 .v7-role-hero p {
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+body.proma-v2 .v7-role-metrics {
+  gap: 10px;
+}
+
+body.proma-v2 .v7-role-metric {
+  min-height: 84px;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 13px;
+}
+
+body.proma-v2 .v7-role-metric__icon {
+  flex-basis: 38px;
+  width: 38px;
+  height: 38px;
+}
+
+body.proma-v2 .v7-role-columns {
+  gap: 12px;
+}
+
+body.proma-v2 .v7-role-panel {
+  padding: 14px;
+}
+
+body.proma-v2 .v7-role-panel__head {
+  margin-block-end: 9px;
+}
+
+body.proma-v2 .v7-role-record {
+  padding-block: 8px;
+}
+
+body.proma-v2 .v7-role-table th,
+body.proma-v2 .v7-role-table td {
+  padding-block: 8px;
+}
+
+body.proma-v2 .v7-customer-hero .card-body {
+  min-height: 144px;
+  gap: 14px;
+  padding: 18px;
+}
+
+body.proma-v2 .v7-customer-hero.proma-customer-balance {
+  color: var(--pp-text);
+  background: linear-gradient(110deg, #fff 48%, var(--pp-v7-violet-wash));
+}
+
+body.proma-v2 .v7-customer-hero.proma-customer-balance :is(h4, .proma-eyebrow, p) {
+  color: var(--pp-navy);
+}
+
+body.proma-v2 .v7-customer-hero.proma-customer-balance p,
+body.proma-v2 .v7-customer-hero.proma-customer-balance small {
+  color: var(--pp-muted);
+}
+
+body.proma-v2 .v7-customer-hero .proma-balance-amount {
+  margin-block: 4px 0;
+  color: var(--pp-primary-700);
+  font-size: clamp(20px, 2vw, 27px);
+}
+
+body.proma-v2 .pr-technician-dashboard {
+  gap: 12px;
+}
+
+body.proma-v2 .pr-tech-hero {
+  padding: 16px 18px;
+  border-radius: 15px;
+}
+
+body.proma-v2 .pr-tech-metrics,
+body.proma-v2 .pr-tech-columns {
+  gap: 10px;
+}
+
+body.proma-v2 .pr-tech-metric {
+  min-height: 82px;
+  padding: 12px;
+  border-radius: 13px;
+}
+
+body.proma-v2 .pr-tech-columns .pr-card {
+  border-radius: 15px;
+}
+
+@media (max-width: 991.98px) {
+  body.proma-v2 .proma-admin-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.proma-v2 .proma-admin-dashboard .proma-workspace-shortcuts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767.98px) {
+  body.proma-v2 .proma-page-content {
+    gap: 10px;
+    padding-block-end: 16px;
+  }
+
+  body.proma-v2 .proma-page-content .proma-page-intro {
+    align-items: flex-start;
+    padding: 12px 14px;
+  }
+
+  body.proma-v2 .proma-page-content > .card > .card-header,
+  body.proma-v2 .proma-page-content > .card > .card-body,
+  body.proma-v2 .proma-page-content > .card > .card-footer {
+    padding-inline: 12px;
+  }
+
+  body.proma-v2 .proma-admin-dashboard {
+    --bs-gutter-x: 10px;
+    row-gap: 10px;
+  }
+
+  body.proma-v2 .proma-admin-dashboard .proma-workspace-intro {
+    align-items: flex-start;
+    min-height: 0;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  body.proma-v2 .proma-admin-dashboard .proma-workspace-intro .btn {
+    width: auto;
+  }
+
+  body.proma-v2 .proma-admin-kpi-grid {
+    gap: 8px;
+  }
+
+  body.proma-v2 .proma-admin-dashboard .proma-admin-kpi,
+  body.proma-v2 .proma-admin-dashboard .proma-admin-kpi .card-body {
+    min-height: 78px;
+  }
+
+  body.proma-v2 .proma-admin-dashboard .proma-admin-kpi .card-body {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  body.proma-v2 .proma-admin-kpi-icon {
+    flex-basis: 34px;
+    width: 34px;
+    height: 34px;
+  }
+
+  body.proma-v2 .proma-admin-dashboard .proma-admin-kpi strong,
+  body.proma-v2 .proma-role-dashboard .proma-role-kpi strong {
+    font-size: 15px;
+  }
+
+  body.proma-v2 .proma-admin-dashboard .proma-admin-kpi em,
+  body.proma-v2 .proma-role-dashboard .proma-role-kpi em {
+    display: none;
+  }
+
+  body.proma-v2 .proma-admin-dashboard .proma-workspace-shortcuts {
+    gap: 7px;
+  }
+
+  body.proma-v2 .proma-admin-dashboard .proma-workspace-shortcuts a {
+    min-height: 46px;
+    padding: 9px;
+  }
+
+  body.proma-v2 .proma-role-dashboard {
+    --bs-gutter-x: 10px;
+    row-gap: 9px;
+  }
+
+  body.proma-v2 .proma-role-dashboard .proma-role-hero .card-body {
+    min-height: 0;
+    gap: 11px;
+    padding: 14px;
+  }
+
+  body.proma-v2 .proma-role-dashboard .proma-role-hero-actions {
+    justify-content: stretch;
+  }
+
+  body.proma-v2 .proma-role-dashboard .proma-role-hero-actions .btn {
+    min-height: 38px;
+    flex: 1 1 130px;
+    padding-inline: 11px;
+  }
+
+  body.proma-v2 .proma-role-dashboard .proma-role-kpi,
+  body.proma-v2 .proma-role-dashboard .proma-role-kpi .card-body {
+    min-height: 78px;
+  }
+
+  body.proma-v2 .proma-role-dashboard .proma-role-kpi .card-body {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  body.proma-v2 .proma-role-dashboard .proma-role-kpi-icon {
+    flex-basis: 34px;
+    width: 34px;
+    height: 34px;
+  }
+
+  body.proma-v2 .v7-role-hero {
+    min-height: 0;
+    padding: 14px;
+  }
+
+  body.proma-v2 .v7-role-metrics {
+    gap: 8px;
+  }
+
+  body.proma-v2 .v7-role-metric {
+    min-height: 76px;
+    padding: 9px;
+  }
+
+  body.proma-v2 .v7-role-metric__icon {
+    flex-basis: 32px;
+    width: 32px;
+    height: 32px;
+  }
+
+  body.proma-v2 .v7-role-shortcuts {
+    gap: 7px;
+  }
+
+  body.proma-v2 .v7-role-shortcuts > a {
+    padding: 9px;
+  }
+
+  body.proma-v2 .v7-role-panel {
+    padding: 11px;
+  }
+
+  body.proma-v2 .v7-customer-hero .card-body {
+    min-height: 0;
+    padding: 14px;
+  }
+
+  body.proma-v2 .pr-technician-dashboard {
+    gap: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.proma-v2 .proma-page-content *,
+  body.proma-v2 .proma-page-content *::before,
+  body.proma-v2 .proma-page-content *::after {
+    scroll-behavior: auto;
+    animation-duration: .01ms;
+    animation-iteration-count: 1;
+    transition-duration: .01ms;
+  }
+}
+
+/* Compact the collections command center while keeping long queues usable. */
+body.proma-v2 .proma-collections-workspace { gap: 10px; }
+body.proma-v2 .proma-collections-workspace > .proma-page-intro { min-height: 0; margin: 0; padding: 12px 16px; gap: 12px; }
+body.proma-v2 .proma-collections-workspace > .proma-page-intro h1 { margin: 1px 0 3px; font-size: 23px; }
+body.proma-v2 .proma-collections-workspace > .proma-page-intro p { font-size: 11px; line-height: 1.55; }
+body.proma-v2 .proma-collections-workspace > .proma-page-intro .btn { min-height: 36px; padding: 7px 11px; }
+body.proma-v2 .proma-collection-center > .card-body { gap: 12px; padding: 13px; }
+body.proma-v2 .proma-collection-center .kpi-grid { gap: 9px; }
+body.proma-v2 .proma-collection-center .kpi-card { min-height: 84px; padding: 11px 12px; border-radius: 13px; }
+body.proma-v2 .proma-collection-center .collection-queues { gap: 11px; }
+body.proma-v2 .proma-collection-center .collection-queue { overflow: hidden; }
+body.proma-v2 .proma-collection-center .collection-queue .card-header { min-height: 42px; padding: 9px 13px; }
+body.proma-v2 .proma-collection-center .collection-queue .card-body { max-height: 320px; overflow-y: auto; overscroll-behavior: contain; padding: 0 13px 8px; scrollbar-width: thin; }
+body.proma-v2 .proma-collection-center .collection-row { gap: 8px; padding: 8px 0; }
+body.proma-v2 .proma-collection-center .collection-row strong { font-size: 12px; }
+body.proma-v2 .proma-collection-center .collection-row small { font-size: 10px; line-height: 1.55; }
+body.proma-v2 .proma-collection-center .collection-row .btn { min-height: 30px; padding: 5px 8px; font-size: 10px; }
+
+/* Match the risk overview to the denser KPI rhythm of the supplied references. */
+body.proma-v2 .proma-risk-workspace { gap: 11px; }
+body.proma-v2 .proma-risk-workspace .proma-risk-intro { min-height: 0; padding: 12px 16px; }
+body.proma-v2 .proma-risk-workspace .proma-risk-intro h1 { font-size: 23px; }
+body.proma-v2 .proma-risk-summary { gap: 9px; }
+body.proma-v2 .proma-risk-metric { min-height: 88px; gap: 9px; padding: 11px; border-radius: 13px; }
+body.proma-v2 .proma-risk-metric__icon { flex-basis: 36px; width: 36px; height: 36px; border-radius: 11px; }
+body.proma-v2 .proma-risk-metric strong { font-size: 20px; }
+body.proma-v2 .proma-risk-filter-card .card-header { padding: 12px 15px 6px; }
+body.proma-v2 .proma-risk-filter-card .card-body { padding: 9px 15px 12px; }
+body.proma-v2 .proma-risk-filter { gap: 8px; }
+body.proma-v2 .proma-risk-filter :is(input, select) { min-height: 37px; height: 37px; }
+
+@media (max-width: 767px) {
+  body.proma-v2 .proma-collection-center .collection-queues { grid-template-columns: minmax(0, 1fr); }
+  body.proma-v2 .proma-collection-center .collection-queue .card-body { max-height: 280px; }
+  body.proma-v2 .proma-risk-summary { gap: 8px; }
+  body.proma-v2 .proma-risk-metric { min-height: 78px; padding: 9px; }
+}
+
+/* Keep broadcast authoring at the same compact rhythm as the inbox and tables. */
+body.proma-v2 .proma-announcement-composer > .card-body { gap: 11px; padding: 13px; }
+body.proma-v2 .proma-announcement-composer form.form-grid { gap: 9px; }
+body.proma-v2 .proma-announcement-composer form.form-grid > label { gap: 4px; line-height: 1.45; }
+body.proma-v2 .proma-announcement-composer form.form-grid > label:not(.full) :is(input, select) { height: 38px; min-height: 38px; }
+body.proma-v2 .proma-announcement-composer form.form-grid > label.full textarea { min-height: 90px; }
+body.proma-v2 .proma-announcement-composer form.form-grid fieldset.full.form-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px 9px; padding: 9px; }
+body.proma-v2 .proma-announcement-composer form.form-grid fieldset.full.form-grid label { min-height: 30px; display: flex; align-items: center; gap: 6px; margin: 0; font-size: 11px; }
+body.proma-v2 .proma-announcement-composer form.form-grid fieldset.full.form-grid input[type="checkbox"] { flex: 0 0 auto; width: 16px; height: 16px; min-height: 16px; margin: 0; }
+body.proma-v2 .proma-announcement-composer form.form-grid > .actions.full { min-height: 0; display: flex; align-items: center; gap: 8px; padding: 0; }
+body.proma-v2 .proma-announcement-composer form.form-grid > .actions.full small { line-height: 1.55; }
+body.proma-v2 .proma-announcement-composer .table-responsive { max-height: 240px; }
+
+/* Reduce legal queue density without hiding case actions or identity details. */
+body.proma-v2 [data-ajax-results="legal"] > .row > .col-12 > .card > .card-header { padding: 12px 16px 8px; }
+body.proma-v2 [data-ajax-results="legal"] > .row > .col-12 > .card > .card-body { padding: 8px 16px; }
+body.proma-v2 [data-ajax-results="legal"] .proma-contract-tabs { gap: 7px; margin-block: 2px 8px; }
+body.proma-v2 [data-ajax-results="legal"] .proma-contract-tabs a { min-height: 34px; padding: 7px 11px; font-size: 11px; }
+body.proma-v2 [data-ajax-results="legal"] .proma-legal-summary { gap: 8px; margin: 8px 0 10px; }
+body.proma-v2 [data-ajax-results="legal"] .proma-legal-summary article { min-height: 54px; padding: 8px 11px; }
+body.proma-v2 [data-ajax-results="legal"] .proma-legal-summary article span { font-size: 11px; }
+body.proma-v2 [data-ajax-results="legal"] .proma-legal-summary article strong { font-size: 18px; }
+body.proma-v2 [data-ajax-results="legal"] form.form-grid.three { gap: 9px; }
+body.proma-v2 [data-ajax-results="legal"] form.form-grid.three > label { gap: 4px; font-size: 11px; }
+body.proma-v2 [data-ajax-results="legal"] form.form-grid.three :is(input, select) { min-height: 37px; height: 37px; }
+body.proma-v2 [data-ajax-results="legal"] .proma-list-meta { padding: 0 16px 7px; }
+body.proma-v2 [data-ajax-results="legal"] .table-wrap { overflow: auto; }
+body.proma-v2 [data-ajax-results="legal"] table th,
+body.proma-v2 [data-ajax-results="legal"] table td { padding: 7px 9px; vertical-align: middle; }
+body.proma-v2 [data-ajax-results="legal"] .proma-legal-row-actions { display: flex; align-items: center; gap: 5px; min-width: 0; white-space: nowrap; }
+body.proma-v2 [data-ajax-results="legal"] .proma-legal-row-actions .btn { flex: 0 0 31px; width: 31px; min-width: 31px; height: 31px; min-height: 31px; padding: 5px; }
+body.proma-v2 [data-ajax-results="legal"] .proma-legal-row-actions .btn svg { width: 15px; height: 15px; }
+
+@media (max-width: 767px) {
+  body.proma-v2 .proma-announcement-composer form.form-grid fieldset.full.form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.proma-v2 .proma-announcement-composer form.form-grid > .actions.full { align-items: flex-start; flex-direction: column; }
+  body.proma-v2 [data-ajax-results="legal"] .proma-legal-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.proma-v2 [data-ajax-results="legal"] .proma-legal-row-actions { gap: 4px; }
+  body.proma-v2 [data-ajax-results="legal"] .proma-legal-row-actions .btn { flex-basis: 29px; width: 29px; min-width: 29px; height: 29px; min-height: 29px; }
+}

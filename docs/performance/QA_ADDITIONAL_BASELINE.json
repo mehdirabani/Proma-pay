@@ -1,0 +1,22 @@
+[
+  {
+    "role": "admin",
+    "route": "plugin/accounting/dashboard",
+    "samples": 30,
+    "http_errors": 0,
+    "wall_p50_ms": 67.75,
+    "wall_p95_ms": 94.33,
+    "wall_p99_ms": 117.77,
+    "response_bytes_p50": 38181
+  },
+  {
+    "role": "customer",
+    "route": "dashboard",
+    "samples": 30,
+    "http_errors": 0,
+    "wall_p50_ms": 70.44,
+    "wall_p95_ms": 110.8,
+    "wall_p99_ms": 149.38,
+    "response_bytes_p50": 27069
+  }
+]

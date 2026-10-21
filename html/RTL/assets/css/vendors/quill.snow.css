@@ -42,6 +42,9 @@
   white-space: pre-wrap;
   word-wrap: break-word;
 }
+.ql-editor.ql-white-space-normal {
+  white-space: normal;
+}
 .ql-editor > * {
   cursor: text;
 }

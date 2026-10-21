@@ -1,0 +1,110 @@
+[
+  {
+    "route": "dashboard",
+    "samples": 30,
+    "http_errors": 0,
+    "wall_p50_ms": 98.23,
+    "wall_p95_ms": 118.1,
+    "wall_p99_ms": 121.29,
+    "response_bytes_p50": 53691
+  },
+  {
+    "route": "customers",
+    "samples": 30,
+    "http_errors": 0,
+    "wall_p50_ms": 413.17,
+    "wall_p95_ms": 439.99,
+    "wall_p99_ms": 453.45,
+    "response_bytes_p50": 288963
+  },
+  {
+    "route": "customers/show/5",
+    "samples": 30,
+    "http_errors": 0,
+    "wall_p50_ms": 102.11,
+    "wall_p95_ms": 121.17,
+    "wall_p99_ms": 136.9,
+    "response_bytes_p50": 45318
+  },
+  {
+    "route": "contracts",
+    "samples": 30,
+    "http_errors": 0,
+    "wall_p50_ms": 92.06,
+    "wall_p95_ms": 115.45,
+    "wall_p99_ms": 116.05,
+    "response_bytes_p50": 374834
+  },
+  {
+    "route": "contracts/show/3",
+    "samples": 30,
+    "http_errors": 0,
+    "wall_p50_ms": 122.42,
+    "wall_p95_ms": 146.48,
+    "wall_p99_ms": 147.8,
+    "response_bytes_p50": 111989
+  },
+  {
+    "route": "installments",
+    "samples": 30,
+    "http_errors": 0,
+    "wall_p50_ms": 82.52,
+    "wall_p95_ms": 104.47,
+    "wall_p99_ms": 104.67,
+    "response_bytes_p50": 171092
+  },
+  {
+    "route": "payments",
+    "samples": 30,
+    "http_errors": 0,
+    "wall_p50_ms": 71.32,
+    "wall_p95_ms": 97.36,
+    "wall_p99_ms": 103.8,
+    "response_bytes_p50": 284544
+  },
+  {
+    "route": "overdue",
+    "samples": 30,
+    "http_errors": 0,
+    "wall_p50_ms": 89.8,
+    "wall_p95_ms": 103.28,
+    "wall_p99_ms": 103.95,
+    "response_bytes_p50": 160747
+  },
+  {
+    "route": "legal",
+    "samples": 30,
+    "http_errors": 0,
+    "wall_p50_ms": 67.68,
+    "wall_p95_ms": 81.44,
+    "wall_p99_ms": 82.12,
+    "response_bytes_p50": 85948
+  },
+  {
+    "route": "calendar",
+    "samples": 30,
+    "http_errors": 0,
+    "wall_p50_ms": 65.72,
+    "wall_p95_ms": 89.28,
+    "wall_p99_ms": 132.17,
+    "response_bytes_p50": 40681
+  },
+  {
+    "route": "review",
+    "samples": 30,
+    "http_errors": 0,
+    "wall_p50_ms": 57.44,
+    "wall_p95_ms": 78.8,
+    "wall_p99_ms": 79.66,
+    "response_bytes_p50": 31259
+  },
+  {
+    "route": "plugin/accounting",
+    "samples": 30,
+    "http_errors": 30,
+    "wall_p50_ms": 25.77,
+    "wall_p95_ms": 47.22,
+    "wall_p99_ms": 47.32,
+    "response_bytes_p50": null
+  }
+]

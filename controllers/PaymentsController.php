@@ -10,38 +10,291 @@ class PaymentsController extends Controller
             'date_to' => parse_jalali_date($_GET['date_to'] ?? '') ?: null,
             'contract_number' => $_GET['contract_number'] ?? null,
             'customer' => $_GET['customer'] ?? null,
+            'limit' => 80,
         ];
         $this->render('payments/index', [
             'title' => 'گزارش پرداخت‌ها',
             'payments' => Payment::logs($filters),
-        ]);
+            'gatewayReviewGroups' => Model::fetchAll(
+                "SELECT pg.*, c.contract_number, u.full_name AS customer_name
+                 FROM payment_groups pg
+                 JOIN contracts c ON c.id = pg.contract_id
+                 JOIN users u ON u.id = pg.customer_id
+                 WHERE pg.status = 'review_required'
+                 ORDER BY pg.created_at ASC, pg.id ASC LIMIT 50"
+            ),
+        ], is_ajax_request() ? null : 'app');
+    }
+
+    public function export()
+    {
+        $this->requireRole('admin');
+        $filters = [
+            'date_from' => parse_jalali_date($_GET['date_from'] ?? '') ?: null,
+            'date_to' => parse_jalali_date($_GET['date_to'] ?? '') ?: null,
+            'contract_number' => trim((string) ($_GET['contract_number'] ?? '')),
+            'customer' => trim((string) ($_GET['customer'] ?? '')),
+        ];
+        $total = null;
+        SpreadsheetHelper::downloadPaginatedXlsx(
+            'پرداخت‌ها.xlsx',
+            'پرداخت‌ها',
+            ['تاریخ پرداخت', 'شماره قرارداد', 'مشتری', 'شماره قسط', 'نوع پرداخت', 'مبلغ (تومان)', 'وضعیت', 'شناسه پیگیری درگاه', 'شناسه مرجع درگاه'],
+            static function (int $page, int $perPage) use ($filters, &$total): array {
+                if ($total === null) {
+                    $countFilters = $filters;
+                    $countFilters['count_only'] = true;
+                    $total = Payment::logs($countFilters);
+                }
+                $pageFilters = $filters;
+                $pageFilters['limit'] = min(200, $perPage);
+                $pageFilters['offset'] = ($page - 1) * min(200, $perPage);
+                return [
+                    'items' => Payment::logs($pageFilters),
+                    'total' => $total,
+                    'pages' => max(1, (int) ceil($total / max(1, $perPage))),
+                ];
+            },
+            static fn (array $payment): array => [
+                jdatetime($payment['paid_at'] ?: ($payment['payment_date'] ?: ($payment['created_at'] ?? ''))),
+                (string) ($payment['contract_number'] ?? ''), (string) ($payment['customer_name'] ?? ''),
+                (int) ($payment['installment_number'] ?? 0), payment_type_label($payment['payment_type'] ?? 'installment'),
+                normalize_money($payment['amount'] ?? 0), status_label($payment['status'] ?? ''),
+                (string) ($payment['gateway_track_id'] ?? ''), (string) ($payment['gateway_ref_id'] ?? ''),
+            ],
+            100
+        );
     }
 
     public function zibal()
+    {
+        $_POST['gateway_id'] = 'zibal';
+        $_POST['_legacy_gateway'] = 'zibal';
+        return $this->gateway();
+    }
+
+    public function gateway()
     {
         $this->requireRole('customer');
         $this->onlyPost();
         $installment = Installment::find((int) ($_POST['installment_id'] ?? 0));
         if (!$installment || (int) $installment['customer_id'] !== (int) Auth::id()) {
             set_flash('error', 'قسط برای پرداخت پیدا نشد.');
-            redirect('portal/installments');
+            redirect('installments/panel');
         }
-        $amount = normalize_money($_POST['amount'] ?? $installment['payable']);
-        if ($amount <= 0 || $amount > $installment['payable']) {
-            set_flash('error', 'مبلغ پرداخت معتبر نیست.');
-            redirect('portal/installments');
+        try {
+            if ($this->hasUnresolvedGatewayReview((int) $installment['contract_id'], (int) Auth::id())) {
+                throw new InvalidArgumentException('یک پرداخت تأییدشدهٔ این قرارداد در حال بررسی مالی است. پیش از پرداخت دوباره، نتیجهٔ آن را پیگیری کنید.', 409);
+            }
+            $amount = normalize_money($_POST['amount'] ?? $installment['payable']);
+            $quote = SettlementQuoteService::create((int) $installment['contract_id'], [(int) $installment['id']], Auth::id(), 'selected');
+            if ($amount <= 0 || $amount > normalize_money($quote['full_settlement_total'] ?? 0)) {
+                throw new InvalidArgumentException('مبلغ پرداخت معتبر نیست.', 422);
+            }
+            $registry = PaymentGatewayRegistry::boot();
+            $gateway = ($_POST['_legacy_gateway'] ?? '') === 'zibal'
+                ? $registry->get('zibal')
+                : $registry->resolveCustomerGateway($_POST['gateway_id'] ?? '', false);
+            if (!$gateway || !$gateway->isEnabled()) {
+                throw new InvalidArgumentException('درگاه پرداخت انتخاب‌شده فعال یا تنظیم نشده است.');
+            }
+            $user = User::find((int) Auth::id());
+            $result = $gateway->createPayment([
+                'type' => 'single',
+                'installment_id' => (int) $installment['id'],
+                'installment_number' => (int) $installment['installment_number'],
+                'contract_id' => (int) $installment['contract_id'],
+                'contract_number' => (string) $installment['contract_number'],
+                'customer_id' => (int) Auth::id(),
+                'customer_name' => (string) ($installment['customer_name'] ?? ''),
+                'customer_mobile' => (string) ($user['mobile'] ?? ''),
+                'customer_email' => (string) ($user['email'] ?? ''),
+                'amount_toman' => (int) $amount,
+                'quote_uuid' => (string) ($quote['quote_uuid'] ?? ''),
+                'description' => 'پرداخت قسط قرارداد ' . $installment['contract_number'],
+                'idempotency_key' => $this->paymentIdempotencyKey($_POST['idempotency_key'] ?? '', 'single', (int) $installment['id']),
+            ]);
+            if (empty($result['redirect_url'])) {
+                throw new RuntimeException('نشانی انتقال درگاه دریافت نشد.');
+            }
+            redirect_raw($result['redirect_url']);
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException || $e instanceof RuntimeException ? $e->getMessage() : 'اتصال به درگاه پرداخت انجام نشد.');
+            redirect('installments/panel');
         }
-        $settings = Settings::allKeyed();
-        $base = rtrim($settings['callback_base_url'] ?: ((isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . dirname($_SERVER['SCRIPT_NAME'])), '/');
-        $callback = $base . '/index.php?route=payments/callback';
-        $client = new ZibalClient($settings['zibal_merchant']);
-        $request = $client->request($amount, $callback, 'پرداخت قسط قرارداد ' . $installment['contract_number']);
-        if (!$request['ok']) {
-            set_flash('error', $request['message']);
-            redirect('portal/installments');
+    }
+
+    public function zibalGroup()
+    {
+        $_POST['gateway_id'] = 'zibal';
+        $_POST['_legacy_gateway'] = 'zibal';
+        return $this->gatewayGroup();
+    }
+
+    public function gatewayGroup()
+    {
+        $this->requireRole('customer');
+        $this->onlyPost();
+        $contractId = (int) ($_POST['contract_id'] ?? 0);
+        $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['installment_ids'] ?? [])))));
+        $selectedIds = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['selected_installment_ids'] ?? [])))));
+        $amount = normalize_money($_POST['amount'] ?? 0);
+        $scope = in_array(($_POST['settlement_scope'] ?? 'selected'), ['contract', 'contract_legal_first', 'schedule'], true) ? (string) $_POST['settlement_scope'] : 'selected';
+        if ((!$ids && !in_array($scope, ['contract', 'contract_legal_first'], true)) || $amount <= 0) {
+            set_flash('error', 'مبلغ و محدوده پرداخت را کامل انتخاب کنید.');
+            redirect('installments/panel');
         }
-        Payment::createPendingGateway($installment['id'], $installment['contract_id'], Auth::id(), $amount, $request['track_id']);
-        redirect_raw($request['start_url']);
+        try {
+            $contract = Contract::find($contractId);
+            if (!$contract || (int) ($contract['customer_id'] ?? 0) !== (int) Auth::id()) throw new InvalidArgumentException('قرارداد برای پرداخت پیدا نشد.', 403);
+            if ($this->hasUnresolvedGatewayReview($contractId, (int) Auth::id())) {
+                throw new InvalidArgumentException('یک پرداخت تأییدشدهٔ این قرارداد در حال بررسی مالی است. پیش از پرداخت دوباره، نتیجهٔ آن را پیگیری کنید.', 409);
+            }
+            $installments = $ids ? SettlementQuoteService::loadInstallments($contractId, $scope === 'schedule' ? $selectedIds : $ids) : [];
+            $states = InstallmentFinancialStateService::statesForRows($installments);
+            foreach ($installments as $installment) {
+                $state = $states[(int) $installment['id']] ?? [];
+                if (empty($state['payment_allowed'])) throw new InvalidArgumentException(InstallmentSettlementService::SETTLED_MESSAGE, 409);
+            }
+            if ($scope === 'schedule' && (!$selectedIds || !$ids)) throw new InvalidArgumentException('یک قسط برای شروع تخصیص انتخاب کنید.', 422);
+            $quote = SettlementQuoteService::create($contractId, in_array($scope, ['contract', 'contract_legal_first', 'schedule'], true) ? [] : $ids, Auth::id(), $scope);
+            $quotedIds = array_values(array_unique(array_map('intval', json_decode((string) ($quote['selected_installment_ids_json'] ?? '[]'), true) ?: [])));
+            if (in_array($scope, ['contract', 'contract_legal_first'], true)) $ids = $quotedIds;
+            if ($scope === 'schedule' && (array_diff($ids, $quotedIds) || array_diff($selectedIds, $quotedIds))) {
+                throw new InvalidArgumentException('پیش‌فاکتور تخصیص اقساط تغییر کرده است؛ صفحه را تازه‌سازی کنید.', 409);
+            }
+            if ($amount > normalize_money($quote['full_settlement_total'] ?? 0)) throw new InvalidArgumentException('مبلغ از مجموع بدهی قابل پرداخت این قرارداد بیشتر است.', 422);
+            $registry = PaymentGatewayRegistry::boot();
+            $gateway = ($_POST['_legacy_gateway'] ?? '') === 'zibal'
+                ? $registry->get('zibal')
+                : $registry->resolveCustomerGateway($_POST['gateway_id'] ?? '', true);
+            if (!$gateway || !$gateway->isEnabled() || !$gateway->supportsPaymentGroups()) {
+                throw new InvalidArgumentException('درگاه پرداخت انتخاب‌شده فعال یا تنظیم نشده است.');
+            }
+            $user = User::find((int) Auth::id());
+            $result = $gateway->createPayment([
+                'type' => 'group',
+                'contract_id' => $contractId,
+                'contract_number' => (string) ($installments[0]['contract_number'] ?? $contract['contract_number'] ?? $contractId),
+                'installment_ids' => $ids,
+                'customer_id' => (int) Auth::id(),
+                'customer_name' => (string) ($installments[0]['customer_name'] ?? $contract['customer_name'] ?? ''),
+                'customer_mobile' => (string) ($user['mobile'] ?? ''),
+                'customer_email' => (string) ($user['email'] ?? ''),
+                'amount_toman' => (int) $amount,
+                'quote_uuid' => (string) ($quote['quote_uuid'] ?? ''),
+                'settlement_scope' => $scope,
+                'description' => 'پرداخت قرارداد ' . ($installments[0]['contract_number'] ?? $contract['contract_number'] ?? $contractId),
+                'idempotency_key' => $this->paymentIdempotencyKey($_POST['idempotency_key'] ?? '', 'group', $contractId),
+            ]);
+            if (empty($result['redirect_url'])) {
+                throw new RuntimeException('نشانی انتقال درگاه دریافت نشد.');
+            }
+            redirect_raw($result['redirect_url']);
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException || $e instanceof RuntimeException ? $e->getMessage() : 'ذخیره پرداخت گروهی آنلاین انجام نشد.');
+            redirect('installments/panel');
+        }
+    }
+
+    protected function paymentIdempotencyKey($provided, $type, $scopeId)
+    {
+        $provided = strtolower(trim((string) $provided));
+        if (!preg_match('/^[a-f0-9]{32,64}$/', $provided)) {
+            $provided = bin2hex(random_bytes(24));
+        }
+        return 'gateway:' . preg_replace('/[^a-z]/', '', (string) $type) . ':' . (int) Auth::id() . ':' . (int) $scopeId . ':' . $provided;
+    }
+
+    private function hasUnresolvedGatewayReview($contractId, $customerId)
+    {
+        return Model::fetch(
+            "SELECT id FROM payment_groups WHERE contract_id = ? AND customer_id = ? AND status = 'review_required' LIMIT 1",
+            [(int) $contractId, (int) $customerId]
+        ) !== null;
+    }
+
+    public function cardTransfer()
+    {
+        $this->requireRole('customer');
+        $this->onlyPost();
+        if ((string) Settings::get('card_transfer_enabled', '1') !== '1') {
+            set_flash('error', 'پرداخت کارت به کارت در حال حاضر فعال نیست.');
+            redirect('installments/panel');
+        }
+        $installment = Installment::find((int) ($_POST['installment_id'] ?? 0));
+        if (!$installment || (int) $installment['customer_id'] !== (int) Auth::id()) {
+            set_flash('error', 'قسط برای پرداخت پیدا نشد.');
+            redirect('installments/panel');
+        }
+        try {
+            $path = UploadHelper::storeImage($_FILES['receipt'] ?? [], 'payment_receipts/' . Auth::id());
+            if (!$path) {
+                throw new InvalidArgumentException('تصویر رسید پرداخت را انتخاب کنید.');
+            }
+            PaymentReceipt::submit((int) $installment['id'], Auth::id(), $_POST['amount'] ?? $installment['payable'], $path);
+            set_flash('success', 'رسید پرداخت برای بررسی مدیریت ثبت شد.');
+        } catch (Throwable $e) {
+            if (!empty($path)) {
+                UploadHelper::deleteRelative($path);
+            }
+            set_flash('error', $e->getMessage());
+        }
+        redirect('installments/panel');
+    }
+
+    public function receiptFile($id)
+    {
+        Auth::requireLogin();
+        $receipt = PaymentReceipt::find((int) $id);
+        if (!$receipt || empty($receipt['receipt_path'])) {
+            http_response_code(404);
+            echo 'فایل پیدا نشد.';
+            return;
+        }
+        if (Auth::role() !== 'admin' && (int) $receipt['customer_id'] !== (int) Auth::id()) {
+            http_response_code(403);
+            echo 'دسترسی غیرمجاز';
+            return;
+        }
+        $path = UploadHelper::absolutePath($receipt['receipt_path']);
+        if (!$path) {
+            http_response_code(404);
+            echo 'فایل پیدا نشد.';
+            return;
+        }
+        $mime = function_exists('mime_content_type') ? (mime_content_type($path) ?: 'application/octet-stream') : 'application/octet-stream';
+        header('Content-Type: ' . $mime);
+        header('Content-Disposition: inline; filename="' . basename($path) . '"');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
+    }
+
+    public function approveReceipt($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            PaymentReceipt::approve((int) $id, Auth::id(), $_POST['review_note'] ?? '', $_POST['approved_amount'] ?? null);
+            set_flash('success', 'رسید پرداخت تأیید و فایل آن حذف شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('review', ['tab' => 'receipts']);
+    }
+
+    public function rejectReceipt($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            PaymentReceipt::reject((int) $id, Auth::id(), $_POST['review_note'] ?? '');
+            set_flash('success', 'رسید پرداخت رد و فایل آن حذف شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e->getMessage());
+        }
+        redirect('review', ['tab' => 'receipts']);
     }
 
     public function correct($id)
@@ -58,23 +311,95 @@ class PaymentsController extends Controller
         ]);
     }
 
+    public function reconcileGatewayGroup($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            if (empty($_POST['confirm_bank_receipt'])) {
+                throw new InvalidArgumentException('تأیید تطبیق با گزارش درگاه الزامی است.', 422);
+            }
+            PaymentGroupService::reconcileGatewayReview(
+                (int) $id,
+                (int) Auth::id(),
+                $_POST['gateway_ref_id'] ?? '',
+                $_POST['reconciliation_reason'] ?? ''
+            );
+            set_flash('success', 'وجه تأییدشده با بدهی فعلی قرارداد تطبیق و تخصیص داده شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'تطبیق پرداخت انجام نشد. شناسه درخواست را به پشتیبانی اعلام کنید: ' . ErrorHandler::requestId());
+        }
+        redirect('payments');
+    }
+
     public function callback()
     {
         require_once __DIR__ . '/../bootstrap.php';
         $trackId = to_english_digits($_GET['trackId'] ?? $_GET['trackid'] ?? '');
         if ($trackId === '') {
             set_flash('error', 'شناسه پیگیری پرداخت دریافت نشد.');
-            redirect('portal/installments');
+            redirect('installments/panel');
         }
         $settings = Settings::allKeyed();
-        $client = new ZibalClient($settings['zibal_merchant']);
+        $client = new ZibalClient($settings['zibal_merchant'], (string) ($settings['zibal_test_mode'] ?? '0') === '1');
         $verify = $client->verify($trackId);
+        $group = Model::fetch('SELECT * FROM payment_groups WHERE gateway_track_id = ? LIMIT 1', [$trackId]);
         if (!$verify['ok']) {
+            if ($group && !empty($verify['gateway_verified'])) {
+                try {
+                    PaymentGroupService::recordGatewayReview((int) $group['id'], $verify['amount_toman'] ?? null, $verify['ref_id'] ?? null, 'پاسخ تأییدشدهٔ درگاه ناقص یا نامعتبر است.');
+                } catch (Throwable $reviewError) {
+                    if (class_exists('PluginRegistry')) PluginRegistry::logRuntimeError('payment_gateway.review_record', $reviewError);
+                }
+            }
             set_flash('error', $verify['message']);
-            redirect('portal/installments');
+            redirect('installments/panel');
         }
-        $result = Payment::completeGateway($trackId, $verify['ref_id'], $verify['amount_toman']);
-        set_flash($result['ok'] ? 'success' : 'error', $result['message']);
-        redirect('portal/installments');
+        try {
+            $completed = false;
+            $paymentRecordId = 0;
+            if ($group) {
+                $completedGroup = PaymentGroupService::completeGateway((int) $group['id'], $verify['amount_toman'], $verify['ref_id'], (int) $group['customer_id']);
+                if (($completedGroup['status'] ?? '') === 'review_required') {
+                    set_flash('error', 'پرداخت درگاه تأیید شده، اما تخصیص آن نیازمند بررسی واحد مالی است. شناسه پیگیری را نگه دارید.');
+                    redirect('installments/panel');
+                }
+                if (class_exists('SystemOutbox')) {
+                    SystemOutbox::safeEnqueueNotification((int) $group['customer_id'], 'پرداخت چندقسطی موفق شد', 'پرداخت آنلاین گروهی شما با موفقیت ثبت شد.', 'payment', url('installments/panel'), 'payment_group', (int) ($completedGroup['id'] ?? $group['id']));
+                    SystemOutbox::processPending(10, 'payment_group', (int) ($completedGroup['id'] ?? $group['id']));
+                }
+                set_flash('success', 'پرداخت چندقسطی با موفقیت ثبت شد.');
+                $completed = true;
+                $paymentRecordId = (int) ($completedGroup['id'] ?? $group['id']);
+            } else {
+                $result = Payment::completeGateway($trackId, $verify['ref_id'], $verify['amount_toman']);
+                set_flash($result['ok'] ? 'success' : 'error', $result['message']);
+                $completed = !empty($result['ok']);
+                $paymentRecordId = (int) ($result['payment_id'] ?? 0);
+            }
+            if ($completed) {
+                try {
+                    if (class_exists('AuditLog')) {
+                        \AuditLog::record('payment_gateway', (int) $verify['code'] === 101 ? 'zarinpal_recovered' : 'zarinpal_verified', 'zarinpal_transaction', $paymentRecordId, [
+                            'actor_type' => 'gateway',
+                            'customer_id' => (int) ($group['customer_id'] ?? 0),
+                            'contract_id' => (int) ($group['contract_id'] ?? 0),
+                            'new_values' => [
+                                'status' => 'paid',
+                                'ref_id' => substr((string) $verify['ref_id'], 0, 100),
+                                'verify_code' => (int) $verify['code'],
+                            ],
+                        ]);
+                    }
+                } catch (Throwable $auditError) {
+                    if (class_exists('PluginRegistry')) {
+                        PluginRegistry::logRuntimeError('payment_gateway.audit', $auditError);
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت نتیجه پرداخت انجام نشد.');
+        }
+        redirect('installments/panel');
     }
 }

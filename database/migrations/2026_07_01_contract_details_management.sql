@@ -1,0 +1,4 @@
+ALTER TABLE installments
+ADD COLUMN is_custom TINYINT(1) NOT NULL DEFAULT 0,
+ADD COLUMN custom_title VARCHAR(190) NULL,
+ADD COLUMN custom_description TEXT NULL;

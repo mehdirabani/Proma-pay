@@ -1,0 +1,302 @@
+<?php
+
+namespace Proma\Plugins\Accounting\Services;
+
+class AccountingRepository
+{
+    public static function dashboard()
+    {
+        $row = \Model::fetch(
+            "SELECT user_totals.users,
+                    sale_totals.sales,
+                    commission_totals.commission,
+                    commission_totals.pending_commissions,
+                    commission_totals.payable_commissions,
+                    account_totals.positive_balances,
+                    account_totals.negative_balances,
+                    account_totals.ledger,
+                    month_totals.payments_this_month,
+                    month_totals.receipts_this_month
+             FROM
+                (SELECT COUNT(*) AS users FROM users WHERE role IN ('admin','operator','lawyer','repair_technician') AND status = 'active') user_totals
+             CROSS JOIN
+                (SELECT COUNT(*) AS sales FROM plugin_accounting_sales WHERE status NOT IN ('cancelled','deleted')) sale_totals
+             CROSS JOIN
+                (SELECT COALESCE(SUM(CASE WHEN cm.status IN ('pending','payable','approved','posted') THEN cm.calculated_amount ELSE 0 END), 0) AS commission,
+                        COALESCE(SUM(CASE WHEN cm.status = 'pending' THEN cm.calculated_amount ELSE 0 END), 0) AS pending_commissions,
+                        COALESCE(SUM(CASE WHEN cm.status IN ('payable','approved','posted') THEN cm.calculated_amount ELSE 0 END), 0) AS payable_commissions
+                 FROM plugin_accounting_commissions cm
+                 JOIN users commission_user ON commission_user.id = cm.seller_user_id
+                 WHERE commission_user.role IN ('admin','operator','lawyer','repair_technician')) commission_totals
+             CROSS JOIN
+                (SELECT COALESCE(SUM(CASE WHEN current_balance > 0 THEN current_balance ELSE 0 END), 0) AS positive_balances,
+                        COALESCE(SUM(CASE WHEN current_balance < 0 THEN current_balance ELSE 0 END), 0) AS negative_balances,
+                        COALESCE(SUM(current_balance), 0) AS ledger
+                 FROM accounting_user_accounts a
+                 JOIN users account_user ON account_user.id = a.user_id
+                 WHERE account_user.role IN ('admin','operator','lawyer','repair_technician')) account_totals
+             CROSS JOIN
+                (SELECT COALESCE(SUM(CASE WHEN l.direction = 'decrease' AND l.entry_type IN ('payment','payment_to_user') THEN l.amount ELSE 0 END), 0) AS payments_this_month,
+                        COALESCE(SUM(CASE WHEN l.direction = 'increase' AND l.entry_type IN ('receipt','receipt_from_user') THEN l.amount ELSE 0 END), 0) AS receipts_this_month
+                 FROM accounting_ledger_entries l
+                 JOIN users ledger_user ON ledger_user.id = l.user_id
+                 WHERE l.created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
+                   AND ledger_user.role IN ('admin','operator','lawyer','repair_technician')) month_totals"
+        ) ?: [];
+
+        return [
+            'users' => (int) ($row['users'] ?? 0),
+            'sales' => (int) ($row['sales'] ?? 0),
+            'commission' => (string) ($row['commission'] ?? '0'),
+            'pending_commissions' => (string) ($row['pending_commissions'] ?? '0'),
+            'payable_commissions' => (string) ($row['payable_commissions'] ?? '0'),
+            'positive_balances' => (string) ($row['positive_balances'] ?? '0'),
+            'negative_balances' => (string) ($row['negative_balances'] ?? '0'),
+            'ledger' => (string) ($row['ledger'] ?? '0'),
+            'payments_this_month' => (string) ($row['payments_this_month'] ?? '0'),
+            'receipts_this_month' => (string) ($row['receipts_this_month'] ?? '0'),
+        ];
+    }
+
+    public static function dashboardSeries()
+    {
+        $rows = \Model::fetchAll(
+            "SELECT DATE_FORMAT(l.created_at, '%Y-%m') AS period,
+                    COALESCE(SUM(CASE WHEN l.direction = 'increase' THEN l.amount ELSE 0 END), 0) AS receipts,
+                    COALESCE(SUM(CASE WHEN l.direction = 'decrease' THEN l.amount ELSE 0 END), 0) AS payments
+             FROM accounting_ledger_entries l
+             JOIN users u ON u.id = l.user_id
+             WHERE l.created_at >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 5 MONTH), '%Y-%m-01')
+               AND u.role IN ('admin','operator','lawyer','repair_technician')
+             GROUP BY DATE_FORMAT(l.created_at, '%Y-%m')
+             ORDER BY period"
+        );
+        $indexed = [];
+        foreach ($rows as $row) {
+            $indexed[(string) $row['period']] = $row;
+        }
+        $labels = [];
+        $receipts = [];
+        $payments = [];
+        $cursor = new \DateTimeImmutable('first day of this month');
+        for ($offset = 5; $offset >= 0; $offset--) {
+            $month = $cursor->modify('-' . $offset . ' months');
+            $key = $month->format('Y-m');
+            $labels[] = \jdate($month->format('Y-m-01'));
+            $receipts[] = (int) ($indexed[$key]['receipts'] ?? 0);
+            $payments[] = (int) ($indexed[$key]['payments'] ?? 0);
+        }
+        return ['labels' => $labels, 'receipts' => $receipts, 'payments' => $payments];
+    }
+
+    public static function recentLedger($limit = 8)
+    {
+        $limit = max(1, min(20, (int) $limit));
+        return \Model::fetchAll(
+            "SELECT l.*, u.full_name, u.role, u.mobile
+             FROM accounting_ledger_entries l
+             JOIN users u ON u.id = l.user_id
+             WHERE u.role IN ('admin','operator','lawyer','repair_technician')
+             ORDER BY l.id DESC LIMIT {$limit}"
+        );
+    }
+
+    public static function topSellers($limit = 5)
+    {
+        $limit = max(1, min(12, (int) $limit));
+        return \Model::fetchAll(
+            "SELECT u.id, u.full_name, u.role, u.mobile, COUNT(s.id) AS sales_count,
+                    COALESCE(SUM(s.financed_amount), 0) AS financed_total
+             FROM plugin_accounting_sales s
+             JOIN users u ON u.id = s.seller_user_id
+             WHERE s.status NOT IN ('cancelled', 'deleted')
+               AND u.role IN ('admin','operator','lawyer','repair_technician')
+             GROUP BY u.id, u.full_name, u.role, u.mobile
+             ORDER BY financed_total DESC, sales_count DESC LIMIT {$limit}"
+        );
+    }
+
+    public static function accounts($search = '', $page = 1, $perPage = 50, $filters = [])
+    {
+        $params = [];
+        $where = ["u.role IN ('admin','operator','lawyer','repair_technician')", "u.status = 'active'"];
+        if (trim((string) $search) !== '') {
+            $needle = '%' . trim((string) $search) . '%';
+            $where[] = '(u.full_name LIKE ? OR u.mobile LIKE ? OR u.username LIKE ?)';
+            $params = [$needle, $needle, $needle];
+        }
+        if (($filters['balance'] ?? '') === 'positive') {
+            $where[] = 'COALESCE(a.current_balance, 0) > 0';
+        } elseif (($filters['balance'] ?? '') === 'negative') {
+            $where[] = 'COALESCE(a.current_balance, 0) < 0';
+        } elseif (($filters['balance'] ?? '') === 'zero') {
+            $where[] = 'COALESCE(a.current_balance, 0) = 0';
+        }
+        if (in_array($filters['role'] ?? '', ['admin', 'operator', 'lawyer', 'repair_technician'], true)) {
+            $where[] = 'u.role = ?';
+            $params[] = $filters['role'];
+        }
+        if (in_array($filters['status'] ?? '', ['active', 'inactive'], true)) {
+            $where[] = "COALESCE(a.status, 'open') = ?";
+            $params[] = $filters['status'];
+        }
+        $perPage = max(10, min(100, (int) $perPage));
+        $page = max(1, (int) $page);
+        $whereSql = implode(' AND ', $where);
+        $total = (int) ((\Model::fetch("SELECT COUNT(*) AS total FROM users u LEFT JOIN accounting_user_accounts a ON a.user_id = u.id WHERE {$whereSql}", $params)['total'] ?? 0));
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $pages);
+        $offset = ($page - 1) * $perPage;
+        $sorts = [
+            'name' => 'u.full_name ASC',
+            'balance_desc' => 'COALESCE(a.current_balance, 0) DESC, u.full_name ASC',
+            'balance_asc' => 'COALESCE(a.current_balance, 0) ASC, u.full_name ASC',
+            'recent' => 'last_transaction_at DESC, u.full_name ASC',
+        ];
+        $orderBy = $sorts[$filters['sort'] ?? 'name'] ?? $sorts['name'];
+        $items = \Model::fetchAll(
+            "SELECT u.id, u.full_name, u.username, u.role, u.mobile, a.account_number, a.current_balance AS balance, a.opening_balance, a.status AS account_status,
+                    (SELECT COALESCE(SUM(l.amount), 0) FROM accounting_ledger_entries l WHERE l.user_id = u.id AND l.direction = 'increase') AS total_increase,
+                    (SELECT COALESCE(SUM(l.amount), 0) FROM accounting_ledger_entries l WHERE l.user_id = u.id AND l.direction = 'decrease') AS total_decrease,
+                    (SELECT MAX(l.created_at) FROM accounting_ledger_entries l WHERE l.user_id = u.id) AS last_transaction_at,
+                    (SELECT COALESCE(SUM(cm.calculated_amount), 0) FROM plugin_accounting_commissions cm WHERE cm.seller_user_id = u.id AND cm.status IN ('approved','payable','posted','paid')) AS total_commission
+             FROM users u
+             LEFT JOIN accounting_user_accounts a ON a.user_id = u.id
+             WHERE {$whereSql}
+             ORDER BY {$orderBy}
+             LIMIT {$perPage} OFFSET {$offset}",
+            $params
+        );
+        return ['items' => $items, 'total' => $total, 'page' => $page, 'pages' => $pages, 'per_page' => $perPage];
+    }
+
+    public static function ledger($userId, $page = 1, $perPage = 100)
+    {
+        $perPage = max(10, min(200, (int) $perPage));
+        $page = max(1, (int) $page);
+        $total = (int) ((\Model::fetch('SELECT COUNT(*) AS total FROM accounting_ledger_entries WHERE user_id = ?', [(int) $userId])['total'] ?? 0));
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $pages);
+        $offset = ($page - 1) * $perPage;
+        $items = \Model::fetchAll(
+            "SELECT l.*, u.full_name, a.account_number, c.title AS category_title
+             FROM accounting_ledger_entries l
+             JOIN users u ON u.id = l.user_id
+             JOIN accounting_user_accounts a ON a.id = l.account_id
+             LEFT JOIN accounting_categories c ON c.id = l.category_id
+             WHERE l.user_id = ?
+             ORDER BY l.id DESC
+             LIMIT {$perPage} OFFSET {$offset}",
+            [(int) $userId]
+        );
+        return ['items' => $items, 'total' => $total, 'page' => $page, 'pages' => $pages, 'per_page' => $perPage];
+    }
+
+    public static function accountSummary($userId)
+    {
+        return \Model::fetch(
+            "SELECT COALESCE(SUM(CASE WHEN direction = 'increase' THEN amount ELSE 0 END), 0) AS total_increase,
+                    COALESCE(SUM(CASE WHEN direction = 'decrease' THEN amount ELSE 0 END), 0) AS total_decrease,
+                    COALESCE(SUM(CASE WHEN entry_type IN ('commission') AND direction = 'increase' THEN amount ELSE 0 END), 0) AS total_commission,
+                    COALESCE(SUM(CASE WHEN entry_type IN ('payment','payment_to_user') AND direction = 'decrease' THEN amount ELSE 0 END), 0) AS paid_to_user,
+                    COALESCE(SUM(CASE WHEN entry_type IN ('receipt','receipt_from_user') AND direction = 'increase' THEN amount ELSE 0 END), 0) AS received_from_user,
+                    MAX(created_at) AS last_transaction_at
+             FROM accounting_ledger_entries WHERE user_id = ?",
+            [(int) $userId]
+        ) ?: [];
+    }
+
+    public static function sales($page = 1, $perPage = 50, array $filters = [])
+    {
+        $perPage = max(10, min(100, (int) $perPage));
+        $page = max(1, (int) $page);
+        $params = [];
+        $where = ['1 = 1'];
+        if (trim((string) ($filters['q'] ?? '')) !== '') {
+            $needle = '%' . trim((string) $filters['q']) . '%';
+            $where[] = '(c.contract_number LIKE ? OR cu.full_name LIKE ? OR su.full_name LIKE ?)';
+            $params = [$needle, $needle, $needle];
+        }
+        if (in_array($filters['status'] ?? '', ['active', 'cancelled', 'deleted', 'pending'], true)) {
+            $where[] = 's.status = ?';
+            $params[] = $filters['status'];
+        }
+        $whereSql = implode(' AND ', $where);
+        $total = (int) ((\Model::fetch("SELECT COUNT(*) AS total FROM plugin_accounting_sales s JOIN contracts c ON c.id = s.contract_id JOIN users cu ON cu.id = s.customer_id LEFT JOIN users su ON su.id = s.seller_user_id WHERE {$whereSql}", $params)['total'] ?? 0));
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $pages);
+        $offset = ($page - 1) * $perPage;
+        return ['items' => \Model::fetchAll(
+            "SELECT s.*, c.contract_number, cu.full_name AS customer_name, su.full_name AS seller_name
+             FROM plugin_accounting_sales s
+             JOIN contracts c ON c.id = s.contract_id
+             JOIN users cu ON cu.id = s.customer_id
+             LEFT JOIN users su ON su.id = s.seller_user_id
+             WHERE {$whereSql}
+             ORDER BY s.id DESC LIMIT {$perPage} OFFSET {$offset}",
+            $params
+        ), 'total' => $total, 'page' => $page, 'pages' => $pages, 'per_page' => $perPage];
+    }
+
+    public static function commissions($page = 1, $perPage = 50, array $filters = [])
+    {
+        $perPage = max(10, min(100, (int) $perPage));
+        $page = max(1, (int) $page);
+        $params = [];
+        $where = ["u.role IN ('admin','operator','lawyer','repair_technician')"];
+        if (in_array($filters['status'] ?? '', ['pending', 'approved', 'payable', 'posted', 'paid', 'reversed', 'cancelled'], true)) {
+            $where[] = 'cm.status = ?';
+            $params[] = $filters['status'];
+        }
+        if (!empty($filters['seller_user_id'])) {
+            $where[] = 'cm.seller_user_id = ?';
+            $params[] = (int) $filters['seller_user_id'];
+        }
+        if (trim((string) ($filters['q'] ?? '')) !== '') {
+            $needle = '%' . trim((string) $filters['q']) . '%';
+            $where[] = '(c.contract_number LIKE ? OR u.full_name LIKE ?)';
+            $params[] = $needle;
+            $params[] = $needle;
+        }
+        $whereSql = implode(' AND ', $where);
+        $total = (int) ((\Model::fetch("SELECT COUNT(*) AS total FROM plugin_accounting_commissions cm JOIN contracts c ON c.id = cm.contract_id JOIN users u ON u.id = cm.seller_user_id WHERE {$whereSql}", $params)['total'] ?? 0));
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $pages);
+        $offset = ($page - 1) * $perPage;
+        return ['items' => \Model::fetchAll(
+            "SELECT cm.*, c.contract_number, u.full_name AS seller_name
+             FROM plugin_accounting_commissions cm
+             JOIN contracts c ON c.id = cm.contract_id
+             JOIN users u ON u.id = cm.seller_user_id
+             WHERE {$whereSql}
+             ORDER BY cm.id DESC LIMIT {$perPage} OFFSET {$offset}",
+            $params
+        ), 'total' => $total, 'page' => $page, 'pages' => $pages, 'per_page' => $perPage];
+    }
+
+    public static function rules()
+    {
+        return \Model::fetchAll('SELECT r.*, u.full_name AS user_name FROM plugin_accounting_commission_rules r LEFT JOIN users u ON u.id = r.user_id ORDER BY r.priority DESC, r.id DESC');
+    }
+
+    public static function settings()
+    {
+        $rows = \Model::fetchAll('SELECT setting_key, setting_value FROM plugin_accounting_settings ORDER BY setting_key');
+        $settings = [];
+        foreach ($rows as $row) {
+            $settings[(string) $row['setting_key']] = (string) ($row['setting_value'] ?? '');
+        }
+        return $settings;
+    }
+
+    public static function categories()
+    {
+        return \Model::fetchAll('SELECT * FROM accounting_categories WHERE is_active = 1 ORDER BY sort_order, id');
+    }
+
+    public static function staff($search = '')
+    {
+        $needle = '%' . trim((string) $search) . '%';
+        return \Model::fetchAll("SELECT id, full_name, role, mobile FROM users WHERE role IN ('admin','operator','lawyer','repair_technician') AND status = 'active' AND (full_name LIKE ? OR mobile LIKE ? OR username LIKE ?) ORDER BY full_name LIMIT 100", [$needle, $needle, $needle]);
+    }
+}

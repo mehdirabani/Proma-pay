@@ -1,0 +1,100 @@
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Keep VCS metadata, dotfiles and environment files private. ACME challenge
+    # paths remain available for certificate provisioning.
+    RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,L,NC]
+
+    # PHP source, configuration, operational scripts, tests and internal docs
+    # are application internals. They are loaded by PHP, never by HTTP.
+    RewriteRule ^(?:config|core|controllers|models|helpers|services|views|database|cron|scripts|tools|tests|docs)(?:/|$) - [F,L,NC]
+    RewriteRule ^bootstrap\.php$ - [F,L,NC]
+    # Keep plugin implementation files private while leaving public plugin assets accessible.
+    RewriteRule ^plugins/[^/]+/(?:src|tests|migrations|views|lang)(?:/|$) - [F,L,NC]
+    RewriteRule ^plugins/[^/]+/(?:bootstrap|routes)\.php$ - [F,L,NC]
+
+    # Only validated public media below uploads is directly served. This also
+    # protects nested QA/release snapshots and private keys in storage copies.
+    RewriteRule ^storage/(?!uploads(?:/|$)) - [F,L,NC]
+    # Public media is image-only. Never allow executable payloads below uploads.
+    RewriteRule ^storage/uploads/.*\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh)$ - [F,L,NC]
+
+    # Health endpoints bypass the generic rewrite so uptime monitors can call
+    # /health/live and /health/ready without an application-specific query string.
+    RewriteRule ^health/(live|ready)/?$ index.php?route=health/$1 [L,QSA,NC]
+
+    # HTTPS redirect is intentionally not forced here. Some shared hosts and
+    # reverse proxies terminate SSL before PHP; forcing HTTPS in app code can
+    # create redirect loops. Enable HTTPS from the hosting panel/CDN instead.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+ErrorDocument 400 /static-errors/400.html
+ErrorDocument 403 /static-errors/403.html
+ErrorDocument 404 /static-errors/404.html
+ErrorDocument 429 /static-errors/429.html
+ErrorDocument 500 /static-errors/500.html
+ErrorDocument 502 /static-errors/502.html
+ErrorDocument 503 /static-errors/503.html
+ErrorDocument 504 /static-errors/504.html
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+</IfModule>
+
+# Runtime assets use versioned URLs. Caching them prevents every navigation or
+# refresh from re-downloading dozens of CSS, JS, font and image files on a
+# shared host. Dynamic PHP routes, service-worker.js and health-static.txt are
+# deliberately excluded below and remain non-cacheable.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(?:css|js|mjs|woff2?|ttf|otf|svg|png|jpe?g|gif|webp|ico)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+<FilesMatch "^(installed\.lock|\.env(?:\..*)?|composer\.(json|lock)|package(-lock)?\.json|pnpm(-lock|-workspace)?\.yaml|yarn\.lock)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<FilesMatch "^(service-worker\.js|reset-service-worker\.html)$">
+    <IfModule mod_headers.c>
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </IfModule>
+</FilesMatch>
+
+<Files "health-static.txt">
+    <IfModule mod_headers.c>
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header set X-Proma-Probe "static"
+    </IfModule>
+</Files>

@@ -9,10 +9,11 @@ class Settings extends Model
         if (self::$schemaReady) {
             return;
         }
-        try {
-            self::execute('ALTER TABLE settings MODIFY setting_value LONGTEXT NULL');
-        } catch (Throwable $e) {
-        }
+        SchemaGuard::requireColumns('settings', ['setting_key', 'setting_value', 'is_secret']);
+        // Seed and data-normalization work belongs to the installer or an
+        // explicit migration. Running writes from this method made every page
+        // view contend on the settings table, which is especially harmful on
+        // shared hosts with a small database worker pool.
         self::$schemaReady = true;
     }
 
@@ -20,9 +21,12 @@ class Settings extends Model
     {
         $jalaliYear = substr(to_english_digits(jdate(date('Y-m-d'))), 0, 4) ?: '1404';
         return [
-            'system_name' => 'پرما پرداخت',
-            'logo_text' => 'پرما پرداخت',
-            'footer_text' => 'پنل مدیریت مالی راست‌چین',
+            'system_name' => 'پروما',
+            'logo_text' => 'پروما',
+            'logo_path' => '',
+            'logo_icon_path' => '',
+            'favicon_path' => '',
+            'footer_text' => 'پروما پی سامانه جامع پرداخت',
             'company_name' => 'موبایل پروما',
             'company_representative_name' => '',
             'company_representative_national_id' => '',
@@ -30,15 +34,141 @@ class Settings extends Model
             'company_postal_code' => '',
             'company_phone' => '',
             'contract_prefix' => 'PR',
-            'contract_next_serial' => '1001',
+            'contract_next_serial' => '1',
             'contract_year' => $jalaliYear,
+            'contract_number_format' => 'PR-{SERIAL:6}',
+            'contract_document_title' => 'قرارداد اجاره به شرط تملیک / امانت‌داری',
+            'contract_document_header' => "{{company_name}}\nشماره قرارداد: {{contract_number}} | تاریخ: {{contract_date}}\nامانت‌دار: {{customer_full_name}} | کد ملی: {{customer_national_id}}",
+            'contract_seller_signature_path' => '',
             'contract_template_body' => '',
-            'monthly_penalty_rate' => '2',
+            'contract_print_preset' => 'official_compact',
+            'contract_print_page_size' => 'A4',
+            'contract_print_orientation' => 'portrait',
+            'contract_print_margin_top' => '4',
+            'contract_print_margin_right' => '7',
+            'contract_print_margin_bottom' => '7',
+            'contract_print_margin_left' => '7',
+            'contract_print_body_font_size' => '8',
+            'contract_print_important_font_size' => '9',
+            'contract_print_heading_font_size' => '9',
+            'contract_print_body_line_height' => '1.18',
+            'contract_print_important_line_height' => '1.18',
+            'contract_print_heading_line_height' => '1.16',
+            'contract_print_paragraph_spacing' => '.5',
+            'contract_print_section_top_spacing' => '1',
+            'contract_print_section_bottom_spacing' => '.5',
+            'contract_print_list_spacing' => '1',
+            'contract_print_list_indent' => '10',
+            'contract_print_header_top_spacing' => '0',
+            'contract_print_header_bottom_spacing' => '1',
+            'contract_print_header_divider_spacing' => '1',
+            'contract_print_logo_width' => '32',
+            'contract_print_logo_height' => '12',
+            'contract_print_table_font_size' => '7.2',
+            'contract_print_table_heading_font_size' => '7.7',
+            'contract_print_table_line_height' => '1.12',
+            'contract_print_table_cell_vertical_padding' => '.5',
+            'contract_print_table_cell_horizontal_padding' => '2',
+            'contract_print_table_margin' => '1',
+            'contract_print_signature_top_spacing' => '5',
+            'contract_print_signature_box_height' => '15',
+            'contract_print_show_footer' => '0',
+            'contract_print_show_customer_header' => '1',
+            'contract_print_show_contract_title' => '1',
+            'contract_print_color_mode' => 'color',
+            'monthly_penalty_rate' => '10',
+            'legal_monthly_penalty_rate' => '20',
+            'show_projected_legal_penalty_to_customer' => '1',
+            'projected_legal_penalty_customer_message' => 'جریمه حقوقی نمایش‌داده‌شده صرفاً برآورد مقایسه‌ای است و تا ثبت ارجاع رسمی، به مبلغ قابل پرداخت شما اضافه نمی‌شود.',
+            'late_penalty_grace_days' => '0',
+            'contract_legal_penalty_clause' => 'اینجانب امانت‌دار اعلام می‌کنم بند جریمه دیرکرد عادی و جریمه دیرکرد مرحله حقوقی را مطالعه کرده و می‌پذیرم. تا پیش از ثبت ارجاع رسمی و قابل‌پیگیری، جریمه دیرکرد با نرخ عادی ماهانه محاسبه می‌شود؛ پس از ثبت ارجاع رسمی، نرخ حقوقی از تاریخ سررسید هر قسط معوق محاسبه خواهد شد.',
+            'legal_delay_value' => '30',
+            'legal_delay_unit' => 'day',
+            'legal_overdue_count_threshold' => '1',
+            'legal_overdue_amount_enabled' => '0',
+            'legal_overdue_amount_threshold' => '0',
+            'legal_eligibility_operator' => 'delay_only',
+            'legal_warning_before_days' => '0',
+            'legal_allow_self_initiation' => '1',
+            'legal_contractual_warning_template' => "این سند «اخطار قراردادی داخلی» است و ابلاغ قضایی رسمی محسوب نمی‌شود.\n\nطرف قرارداد: {{customer_name}}\nشماره قرارداد: {{contract_number}}\nمبلغ معوق فعلی: {{overdue_amount}}\nمهلت پیشنهادی اقدام: {{deadline_date}}",
+            'legal_petition_draft_template' => "این متن صرفاً پیش‌نویس داخلی دادخواست است و تا ثبت واقعی در مرجع صالح، دادخواست ثبت‌شده محسوب نمی‌شود.\n\nخواهان: {{company_name}}\nخوانده: {{customer_name}}\nشماره قرارداد: {{contract_number}}\nمبلغ معوق فعلی: {{overdue_amount}}\nخواسته و شرح: {{legal_notes}}",
+            'legal_complaint_draft_template' => "این متن صرفاً پیش‌نویس داخلی شکواییه/درخواست حقوقی است و تا ثبت واقعی در مرجع صالح، ثبت رسمی محسوب نمی‌شود.\n\nمتقاضی: {{company_name}}\nطرف قرارداد: {{customer_name}}\nشماره قرارداد: {{contract_number}}\nشرح اولیه: {{legal_notes}}",
             'monthly_reward_rate' => '1',
+            // Shared by management, customer and gateway settlement quotes.
+            'settlement_quote_ttl_seconds' => '300',
+            // Contract-wide payment forms default to collecting approved legal costs first.
+            'payment_legal_cost_priority' => '1',
+            'zibal_enabled' => '1',
+            'zibal_test_mode' => '0',
             'zibal_merchant' => '',
+            'payment_default_gateway' => 'zibal',
+            'payment_allow_gateway_selection' => '1',
             'callback_base_url' => '',
+            'card_transfer_enabled' => '1',
+            'card_transfer_bank_name' => '',
+            'card_transfer_bank_logo_text' => '',
+            'card_transfer_account_name' => '',
+            'card_transfer_card_number' => '',
+            'card_transfer_sheba' => '',
+            'card_transfer_account_number' => '',
+            'card_transfer_primary_color' => '#7366ff',
+            'card_transfer_secondary_color' => '#16c7f9',
+            'card_transfer_show_sheba' => '1',
+            'card_transfer_show_account_number' => '0',
+            'card_transfer_qr_text' => '',
+            'notifications_sound_enabled' => '1',
+            'notifications_sound_volume' => '0.45',
+            'notification_event_types_json' => '["payment","payment_receipt","legal","identity","profile","overdue","calendar","message","bot","repair","installment","due_soon","due_today","followup","system"]',
+            'web_push_enabled' => '0',
+            'web_push_event_types_json' => '["payment","payment_receipt","legal","identity","profile","overdue","calendar","message","bot","repair","installment","due_soon","due_today","followup","system"]',
+            'credit_risk_rules_json' => '{"starting_score":700,"successful_contract_points":20,"successful_contract_cap":100,"on_time_points_cap":150,"early_installment_points":3,"early_installment_cap":60,"average_delay_penalty_per_day":4,"average_delay_penalty_cap":180,"open_legal_case_penalty":60,"open_legal_case_penalty_cap":240,"broken_promise_penalty":25,"broken_promise_penalty_cap":100,"debt_penalty_per_million":2,"debt_penalty_cap":150}',
+            'collection_stage_rules_json' => '{"reminder_min_days":1,"reminder_max_days":3,"operator_task_min_days":4,"operator_task_max_days":10,"serious_warning_min_days":11,"serious_warning_max_days":20,"legal_review_min_days":21}',
+            'chat_file_auto_delete_days' => '7',
+            'password_reset_enabled' => '1',
+            'ippanel_api_key' => '',
+            'ippanel_from_number' => '',
+            'ippanel_password_reset_pattern_code' => '',
+            'ippanel_password_reset_pattern_key' => 'code',
             'openrouter_api_key' => '',
             'openrouter_model' => 'openai/gpt-4.1-mini',
+            'calendar_notifications_enabled' => '1',
+            'calendar_default_reminder_type' => '1_day',
+            'calendar_notify_admin_without_user' => '1',
+            'calendar_due_day_repeat_enabled' => '1',
+            'calendar_cron_token' => '',
+            'social_instagram_url' => '',
+            'social_telegram_url' => '',
+            'social_whatsapp_url' => '',
+            'social_facebook_url' => '',
+            'social_x_url' => '',
+            'social_youtube_url' => '',
+            'social_linkedin_url' => '',
+            'social_website_url' => '',
+            // کلیدهای تاریخی حفظ شده‌اند تا upgrade نصب‌های قبلی بدون حذف داده انجام شود.
+            'ecommerce_enabled' => '0',
+            'landing_enabled' => '0',
+            'landing_kicker' => 'فروشگاه {{system_name}}',
+            'landing_title' => 'خرید نقدی و اقساطی با {{system_name}}',
+            'landing_subtitle' => 'محصولات منتخب را ببینید، سفارش نقدی ثبت کنید یا درخواست خرید اقساطی بفرستید.',
+            'landing_primary_cta' => 'مشاهده محصولات',
+            'landing_secondary_cta' => 'درخواست خرید اقساطی',
+            'landing_featured_eyebrow' => 'پیشنهادهای فروشگاه',
+            'landing_featured_title' => 'محصولات آماده خرید',
+            'landing_steps_eyebrow' => 'مسیر خرید',
+            'landing_steps_title' => 'از انتخاب محصول تا پیگیری سفارش',
+            'email_enabled' => '0',
+            'email_transport' => 'mail',
+            'email_from_name' => 'پروما',
+            'email_from_address' => '',
+            'email_reply_to' => '',
+            'email_header_note' => 'برخی توضیحات',
+            'email_footer_address' => '',
+            'email_order_subject' => 'سفارش {{order_number}} با موفقیت ثبت شد',
+            'smtp_host' => '',
+            'smtp_port' => '587',
+            'smtp_username' => '',
+            'smtp_password' => '',
+            'smtp_encryption' => 'tls',
         ];
     }
 
@@ -76,17 +206,66 @@ class Settings extends Model
     public static function saveMany(array $values)
     {
         foreach ($values as $key => $value) {
-            self::set($key, $value, in_array($key, ['openrouter_api_key', 'zibal_merchant'], true));
+            self::set($key, $value, in_array($key, self::secretKeys(), true));
         }
     }
 
     public static function seedDefaults()
     {
         foreach (self::defaults() as $key => $value) {
+            if ($key === 'calendar_cron_token' && $value === '') {
+                $value = self::generateToken();
+            }
             self::execute(
                 'INSERT IGNORE INTO settings (setting_key, setting_value, is_secret) VALUES (?, ?, ?)',
-                [$key, $value, in_array($key, ['openrouter_api_key', 'zibal_merchant'], true) ? 1 : 0]
+                [$key, $value, in_array($key, self::secretKeys(), true) ? 1 : 0]
             );
+        }
+    }
+
+    public static function secretKeys()
+    {
+        return ['openrouter_api_key', 'zibal_merchant', 'calendar_cron_token', 'ippanel_api_key', 'smtp_password'];
+    }
+
+    protected static function seedCalendarDefaults()
+    {
+        static $seeded = false;
+        if ($seeded) {
+            return;
+        }
+        $seeded = true;
+        $defaults = [
+            'calendar_notifications_enabled' => '1',
+            'calendar_default_reminder_type' => '1_day',
+            'calendar_notify_admin_without_user' => '1',
+            'calendar_due_day_repeat_enabled' => '1',
+            'calendar_cron_token' => self::generateToken(),
+        ];
+        foreach ($defaults as $key => $value) {
+            try {
+                self::execute(
+                    'INSERT IGNORE INTO settings (setting_key, setting_value, is_secret) VALUES (?, ?, ?)',
+                    [$key, $value, $key === 'calendar_cron_token' ? 1 : 0]
+                );
+            } catch (Throwable $e) {
+            }
+        }
+        try {
+            self::execute(
+                "UPDATE settings SET setting_value = ?, is_secret = 1 WHERE setting_key = 'calendar_cron_token' AND (setting_value IS NULL OR setting_value = '')",
+                [self::generateToken()]
+            );
+        } catch (Throwable $e) {
+        }
+    }
+
+    protected static function generateToken()
+    {
+        try {
+            return bin2hex(random_bytes(24));
+        } catch (Throwable $e) {
+            return hash('sha256', __DIR__ . microtime(true) . mt_rand());
         }
     }
 }

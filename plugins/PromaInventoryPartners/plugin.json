@@ -1,0 +1,95 @@
+{
+  "id": "proma-inventory-partners",
+  "name": "انبار و شرکا",
+  "description": "مدیریت موجودی دیجیتال و لوازم جانبی، خرید و فروش اقساطی، سهم شرکا و هزینه‌های شراکت",
+  "version": "1.1.2",
+  "author": "Proma Pay",
+  "plugin_api_version": "1.1",
+  "requires_core": ">=6.0.2",
+  "requires_php": ">=8.1",
+  "provider": "Proma\\Plugins\\InventoryPartners\\InventoryPartnersServiceProvider",
+  "permissions": [
+    {"key":"plugin.proma-inventory-partners.view_inventory","label":"مشاهده داشبورد انبار"},
+    {"key":"plugin.proma-inventory-partners.view_products","label":"مشاهده کالاها"},
+    {"key":"plugin.proma-inventory-partners.manage_products","label":"مدیریت کالاها"},
+    {"key":"plugin.proma-inventory-partners.view_purchases","label":"مشاهده خریدها"},
+    {"key":"plugin.proma-inventory-partners.record_purchases","label":"ثبت خرید و ورود کالا"},
+    {"key":"plugin.proma-inventory-partners.view_stock","label":"مشاهده موجودی"},
+    {"key":"plugin.proma-inventory-partners.adjust_stock","label":"تعدیل موجودی"},
+    {"key":"plugin.proma-inventory-partners.view_pricing","label":"مشاهده قیمت‌گذاری"},
+    {"key":"plugin.proma-inventory-partners.change_prices","label":"تغییر قیمت‌ها"},
+    {"key":"plugin.proma-inventory-partners.view_sales","label":"مشاهده فروش‌ها"},
+    {"key":"plugin.proma-inventory-partners.record_sales","label":"ثبت فروش"},
+    {"key":"plugin.proma-inventory-partners.manage_sales","label":"مدیریت و تطبیق فروش‌ها"},
+    {"key":"plugin.proma-inventory-partners.view_partners","label":"مشاهده شرکا"},
+    {"key":"plugin.proma-inventory-partners.manage_partners","label":"مدیریت شرکا"},
+    {"key":"plugin.proma-inventory-partners.record_capital","label":"ثبت آورده سرمایه"},
+    {"key":"plugin.proma-inventory-partners.view_partner_ledger","label":"مشاهده دفتر شرکا"},
+    {"key":"plugin.proma-inventory-partners.view_settlements","label":"مشاهده تسویه‌ها"},
+    {"key":"plugin.proma-inventory-partners.view_expenses","label":"مشاهده هزینه‌های شراکت"},
+    {"key":"plugin.proma-inventory-partners.record_expenses","label":"ثبت هزینه‌های شراکت"},
+    {"key":"plugin.proma-inventory-partners.request_settlement","label":"درخواست تسویه"},
+    {"key":"plugin.proma-inventory-partners.approve_settlement","label":"تأیید تسویه"},
+    {"key":"plugin.proma-inventory-partners.pay_settlement","label":"ثبت پرداخت تسویه"},
+    {"key":"plugin.proma-inventory-partners.view_transfers","label":"مشاهده انتقال انبار"},
+    {"key":"plugin.proma-inventory-partners.transfer_stock","label":"ثبت و دریافت انتقال"},
+    {"key":"plugin.proma-inventory-partners.view_financial_reports","label":"مشاهده گزارش سود و زیان"},
+    {"key":"plugin.proma-inventory-partners.view_reports","label":"مشاهده گزارش‌ها"},
+    {"key":"plugin.proma-inventory-partners.view_audit","label":"مشاهده تاریخچه فعالیت‌ها"},
+    {"key":"plugin.proma-inventory-partners.manage_settings","label":"مدیریت تنظیمات انبار و شرکا"},
+    {"key":"plugin.proma-inventory-partners.view_costs","label":"مشاهده بهای خرید و سود"}
+  ],
+  "dependencies": [],
+  "routes": [
+    {"path":"plugin/inventory-partners/dashboard","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@dashboard","method":"GET","permission":"plugin.proma-inventory-partners.view_inventory"},
+    {"path":"plugin/inventory-partners/products","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@products","method":"GET","permission":"plugin.proma-inventory-partners.view_products"},
+    {"path":"plugin/inventory-partners/products/create","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@createProduct","method":"POST","permission":"plugin.proma-inventory-partners.manage_products"},
+    {"path":"plugin/inventory-partners/products/update","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@updateProduct","method":"POST","permission":"plugin.proma-inventory-partners.manage_products"},
+    {"path":"plugin/inventory-partners/products/prices","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@updatePrices","method":"POST","permission":"plugin.proma-inventory-partners.change_prices"},
+    {"path":"plugin/inventory-partners/purchases","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@purchases","method":"GET","permission":"plugin.proma-inventory-partners.view_purchases"},
+    {"path":"plugin/inventory-partners/purchases/create","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@createPurchase","method":"POST","permission":"plugin.proma-inventory-partners.record_purchases"},
+    {"path":"plugin/inventory-partners/stock","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@stock","method":"GET","permission":"plugin.proma-inventory-partners.view_stock"},
+    {"path":"plugin/inventory-partners/stock/adjust","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@adjustStock","method":"POST","permission":"plugin.proma-inventory-partners.adjust_stock"},
+    {"path":"plugin/inventory-partners/pricing","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@pricing","method":"GET","permission":"plugin.proma-inventory-partners.view_pricing"},
+    {"path":"plugin/inventory-partners/sales","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@sales","method":"GET","permission":"plugin.proma-inventory-partners.view_sales"},
+    {"path":"plugin/inventory-partners/sales/cash","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@createCashSale","method":"POST","permission":"plugin.proma-inventory-partners.record_sales"},
+    {"path":"plugin/inventory-partners/sales/contract","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@createContractSale","method":"POST","permission":"plugin.proma-inventory-partners.record_sales"},
+    {"path":"plugin/inventory-partners/sales/reconcile/{saleId}","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@reconcileSale","method":"POST","permission":"plugin.proma-inventory-partners.manage_sales"},
+    {"path":"plugin/inventory-partners/sales/return/{saleId}","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@returnSale","method":"POST","permission":"plugin.proma-inventory-partners.manage_sales"},
+    {"path":"plugin/inventory-partners/partners","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@partners","method":"GET","permission":"plugin.proma-inventory-partners.view_partners"},
+    {"path":"plugin/inventory-partners/partners/create","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@createPartner","method":"POST","permission":"plugin.proma-inventory-partners.manage_partners"},
+    {"path":"plugin/inventory-partners/partners/capital","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@recordCapital","method":"POST","permission":"plugin.proma-inventory-partners.record_capital"},
+    {"path":"plugin/inventory-partners/ledger","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@partnerLedgers","method":"GET","permission":"plugin.proma-inventory-partners.view_partner_ledger"},
+    {"path":"plugin/inventory-partners/ledger/{partnerId}","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@partnerLedger","method":"GET","permission":"plugin.proma-inventory-partners.view_partner_ledger"},
+    {"path":"plugin/inventory-partners/settlements","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@settlements","method":"GET","permission":"plugin.proma-inventory-partners.view_settlements"},
+    {"path":"plugin/inventory-partners/settlements/request","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@requestSettlement","method":"POST","permission":"plugin.proma-inventory-partners.request_settlement"},
+    {"path":"plugin/inventory-partners/settlements/approve/{settlementId}","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@approveSettlement","method":"POST","permission":"plugin.proma-inventory-partners.approve_settlement"},
+    {"path":"plugin/inventory-partners/settlements/reject/{settlementId}","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@rejectSettlement","method":"POST","permission":"plugin.proma-inventory-partners.approve_settlement"},
+    {"path":"plugin/inventory-partners/settlements/pay/{settlementId}","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@paySettlement","method":"POST","permission":"plugin.proma-inventory-partners.pay_settlement"},
+    {"path":"plugin/inventory-partners/settlements/reverse/{settlementId}","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@reverseSettlement","method":"POST","permission":"plugin.proma-inventory-partners.pay_settlement"},
+    {"path":"plugin/inventory-partners/transfers","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@transfers","method":"GET","permission":"plugin.proma-inventory-partners.view_transfers"},
+    {"path":"plugin/inventory-partners/transfers/create","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@createTransfer","method":"POST","permission":"plugin.proma-inventory-partners.transfer_stock"},
+    {"path":"plugin/inventory-partners/transfers/receive/{transferId}","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@receiveTransfer","method":"POST","permission":"plugin.proma-inventory-partners.transfer_stock"},
+    {"path":"plugin/inventory-partners/transfers/cancel/{transferId}","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@cancelTransfer","method":"POST","permission":"plugin.proma-inventory-partners.transfer_stock"},
+    {"path":"plugin/inventory-partners/profit-loss","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@profitLoss","method":"GET","permission":"plugin.proma-inventory-partners.view_financial_reports"},
+    {"path":"plugin/inventory-partners/reports","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@reports","method":"GET","permission":"plugin.proma-inventory-partners.view_reports"},
+    {"path":"plugin/inventory-partners/reports/export","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@exportReport","method":"GET","permission":"plugin.proma-inventory-partners.view_reports"},
+    {"path":"plugin/inventory-partners/activity","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@activity","method":"GET","permission":"plugin.proma-inventory-partners.view_audit"},
+    {"path":"plugin/inventory-partners/settings","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@settings","method":"GET","permission":"plugin.proma-inventory-partners.manage_settings"},
+    {"path":"plugin/inventory-partners/settings/save","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@saveSettings","method":"POST","permission":"plugin.proma-inventory-partners.manage_settings"}
+    ,{"path":"plugin/inventory-partners/settings/warehouse","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@createWarehouse","method":"POST","permission":"plugin.proma-inventory-partners.manage_settings"}
+    ,{"path":"plugin/inventory-partners/settings/supplier","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@createSupplier","method":"POST","permission":"plugin.proma-inventory-partners.manage_settings"}
+    ,{"path":"plugin/inventory-partners/settings/brand","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@createBrand","method":"POST","permission":"plugin.proma-inventory-partners.manage_settings"}
+    ,{"path":"plugin/inventory-partners/settings/category","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@createCategory","method":"POST","permission":"plugin.proma-inventory-partners.manage_settings"}
+    ,{"path":"plugin/inventory-partners/expenses","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@expenses","method":"GET","permission":"plugin.proma-inventory-partners.view_expenses"}
+    ,{"path":"plugin/inventory-partners/expenses/create","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@createExpense","method":"POST","permission":"plugin.proma-inventory-partners.record_expenses"}
+    ,{"path":"api/plugin/inventory-partners/brands","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@apiBrands","method":"GET","permission":"plugin.proma-inventory-partners.view_products"}
+    ,{"path":"api/plugin/inventory-partners/categories","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@apiCategories","method":"GET","permission":"plugin.proma-inventory-partners.view_products"}
+    ,{"path":"api/plugin/inventory-partners/contracts","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@apiContracts","method":"GET","permission":"plugin.proma-inventory-partners.view_sales"}
+    ,{"path":"api/plugin/inventory-partners/dashboard","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@apiDashboard","method":"GET","permission":"plugin.proma-inventory-partners.view_inventory"}
+    ,{"path":"api/plugin/inventory-partners/products","handler":"Proma\\Plugins\\InventoryPartners\\Controllers\\InventoryPartnersController@apiProducts","method":"GET","permission":"plugin.proma-inventory-partners.view_products"}
+  ],
+  "migrations": ["migrations/2026_10_13_inventory_partners_core.sql", "migrations/2026_10_13_inventory_partners_v110.sql"],
+  "assets": ["assets/css/inventory-partners-v111.css", "assets/js/inventory-partners-v111.js"],
+  "settings": []
+}

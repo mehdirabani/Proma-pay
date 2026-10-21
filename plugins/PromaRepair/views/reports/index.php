@@ -1,0 +1,16 @@
+<?php
+$summary = $reports['summary'] ?? [];
+$reportKpis = [['پرونده‌ها', $summary['repair_count'] ?? 0], ['تحویل‌شده', $summary['delivered'] ?? 0], ['نرخ موفقیت', to_persian_digits(($summary['success_rate'] ?? null) === null ? '—' : $summary['success_rate'] . '%')], ['میانگین زمان (ساعت)', round((float) ($summary['average_hours'] ?? 0), 1)], ['غیرقابل تعمیر', $summary['unable_to_repair'] ?? 0], ['لغوشده', $summary['cancelled'] ?? 0], ['فروش', money_toman(\Proma\Plugins\Repair\Domain\RepairMoney::stored($summary['revenue'] ?? 0))], ['هزینه', money_toman(\Proma\Plugins\Repair\Domain\RepairMoney::stored($summary['cost'] ?? 0))]];
+if (!empty($canProfit)) {
+  $reportKpis[] = ['سود خالص', money_toman(\Proma\Plugins\Repair\Domain\RepairMoney::stored($summary['revenue'] ?? 0) - \Proma\Plugins\Repair\Domain\RepairMoney::stored($summary['cost'] ?? 0))];
+}
+$reportKpis[] = ['مانده دریافتی', money_toman(max(0, \Proma\Plugins\Repair\Domain\RepairMoney::stored($summary['revenue'] ?? 0) - \Proma\Plugins\Repair\Domain\RepairMoney::stored($summary['received'] ?? 0)))];
+?>
+<div class="proma-repair">
+  <header class="pr-hero"><span class="pr-hero-icon"><i data-feather="bar-chart-2"></i></span><div class="pr-hero-copy"><small>Last 30 Days</small><h2>گزارش تعمیرات</h2><p>نمای عملیاتی و مالی ۳۰ روز گذشته</p></div></header>
+  <section class="pr-kpis"><?php foreach ($reportKpis as $item): ?><article class="pr-kpi"><div><span><?= e($item[0]) ?></span><strong><?= is_numeric($item[1]) ? to_persian_digits($item[1]) : $item[1] ?></strong></div></article><?php endforeach; ?></section>
+  <section class="pr-card"><div class="pr-card-head"><div><h3>عملکرد تعمیرکاران</h3></div></div><?php if (empty($reports['technicians'])): ?><div class="pr-empty">اطلاعاتی برای نمایش نیست.</div><?php else: ?><div class="pr-table-wrap"><table class="pr-table"><thead><tr><th scope="col">تعمیرکار</th><th scope="col">پرونده‌های ارجاع‌شده</th><th scope="col">تحویل‌شده</th><th scope="col">میانگین زمان (ساعت)</th><th scope="col">فروش پرونده‌های اصلی</th><th scope="col">هزینه ثبت‌شده</th></tr></thead><tbody><?php foreach ($reports['technicians'] as $tech): ?><tr><td data-label="تعمیرکار"><?= e($tech['full_name']) ?></td><td data-label="ارجاع‌شده"><?= to_persian_digits($tech['assigned_repairs']) ?></td><td data-label="تحویل‌شده"><?= to_persian_digits($tech['completed_repairs']) ?></td><td data-label="میانگین زمان"><?= to_persian_digits(round((float) ($tech['average_hours'] ?? 0), 1)) ?></td><td data-label="فروش"><?= money_toman($tech['revenue_generated']) ?></td><td data-label="هزینه"><?= money_toman($tech['recorded_cost']) ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?></section>
+  <section class="pr-grid two">
+    <?php foreach (['brands'=>'برندهای پرتکرار','models'=>'مدل‌های پرتکرار','failures'=>'شرح‌های پرتکرار تشخیص'] as $key=>$title): ?><div class="pr-card"><div class="pr-card-head"><div><h3><?= e($title) ?></h3></div></div><?php if (empty($reports[$key])): ?><div class="pr-empty">اطلاعاتی برای نمایش نیست.</div><?php else: ?><div class="pr-row-list"><?php foreach ($reports[$key] as $row): ?><div><span><?= e($row['label']) ?></span><b><?= to_persian_digits($row['total']) ?></b></div><?php endforeach; ?></div><?php endif; ?></div><?php endforeach; ?>
+  </section>
+</div>

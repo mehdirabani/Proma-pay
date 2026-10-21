@@ -1,81 +1,63 @@
-<?php $sprite = template_asset_url('svg/icon-sprite.svg'); ?>
-<div class="row widget-grid">
-  <div class="col-xxl-4 col-sm-6 box-col-6">
-    <div class="card profile-box">
-      <div class="card-body">
-        <div class="media media-wrapper justify-content-between">
-          <div class="media-body">
-            <div class="greeting-user">
-              <h4 class="f-w-600">پنل حقوقی</h4>
-              <p>پرونده‌های حقوقی، قراردادهای آماده شکایت و وضعیت ارجاع‌ها اینجا دیده می‌شود.</p>
-              <div class="whatsnew-btn"><a class="btn btn-outline-white" href="<?= e(url('lawyer')) ?>">مدیریت پرونده‌ها</a></div>
-            </div>
-          </div>
-        </div>
-        <div class="cartoon"><img class="img-fluid" src="<?= e(template_asset_url('images/dashboard/cartoon.svg')) ?>" alt=""></div>
+<?php
+$accountingBalance = $accountingBalance ?? null;
+$metrics = $metrics ?? [];
+$cases = $cases ?? [];
+$eligible = $eligible ?? [];
+$openCases = array_values(array_filter($cases, static fn ($case) => ($case['status'] ?? '') !== 'closed'));
+?>
+<main class="v7-role-dashboard v7-role-dashboard--lawyer" dir="rtl">
+  <?php if ($accountingBalance && is_array($accountingBalance)): ?><div class="v7-role-account-balance"><?php require dirname(__DIR__, 2) . '/plugins/PromaAccounting/views/components/account-balance.php'; ?></div><?php endif; ?>
+  <section class="v7-role-hero v7-role-hero--lawyer">
+    <div class="v7-role-hero__copy"><span class="v7-role-eyebrow">میز کار حقوقی</span><h1>پرونده‌های حقوقی</h1><p>پرونده‌های باز، ارجاع‌های تازه و قراردادهای آماده بررسی را در یک صف کاری ببینید.</p></div>
+    <div class="v7-role-hero__actions"><a class="btn primary" href="<?= e(url('legal')) ?>"><i data-feather="folder"></i> باز کردن پرونده‌ها</a><a class="btn secondary" href="<?= e(url('legal/eligible')) ?>"><i data-feather="scale"></i> بررسی واجد شرایط‌ها</a></div>
+    <div class="v7-role-hero__focus"><span>هزینه ثبت‌شده پرونده‌ها</span><strong><?= money_toman($metrics['expenses'] ?? 0) ?></strong><small><?= to_persian_digits(count($cases)) ?> پرونده تخصیص‌یافته</small></div>
+  </section>
+
+  <section class="v7-role-metrics" aria-label="خلاصه پرونده‌های حقوقی">
+    <?php foreach ([
+      ['همه پرونده‌ها', $metrics['cases'] ?? count($cases), 'تخصیص‌یافته به شما', 'folder', 'violet'],
+      ['پرونده‌های باز', $metrics['open_cases'] ?? count($openCases), 'در انتظار اقدام', 'activity', 'blue'],
+      ['آماده بررسی حقوقی', $metrics['eligible'] ?? count($eligible), 'قرارداد واجد شرایط', 'scale', 'rose'],
+      ['هزینه ثبت‌شده', money_toman($metrics['expenses'] ?? 0), 'جمع هزینه پرونده‌ها', 'credit-card', 'amber'],
+    ] as $metric): ?>
+      <article class="v7-role-metric v7-role-metric--<?= e($metric[4]) ?>"><span class="v7-role-metric__icon"><i data-feather="<?= e($metric[3]) ?>"></i></span><div><small><?= e($metric[0]) ?></small><strong><?= is_numeric($metric[1]) ? to_persian_digits($metric[1]) : $metric[1] ?></strong><em><?= e($metric[2]) ?></em></div></article>
+    <?php endforeach; ?>
+  </section>
+
+  <nav class="v7-role-shortcuts" aria-label="دسترسی‌های حقوقی">
+    <a href="<?= e(url('legal')) ?>"><i data-feather="folder"></i><span><b>پرونده‌های من</b><small>مرحله و وضعیت رسیدگی</small></span><i data-feather="chevron-left"></i></a>
+    <a href="<?= e(url('legal/eligible')) ?>"><i data-feather="scale"></i><span><b>آماده بررسی حقوقی</b><small><?= to_persian_digits(count($eligible)) ?> قرارداد در صف</small></span><i data-feather="chevron-left"></i></a>
+    <a href="<?= e(url('legal/costs')) ?>"><i data-feather="credit-card"></i><span><b>هزینه‌های حقوقی</b><small>ثبت و بررسی هزینه پرونده</small></span><i data-feather="chevron-left"></i></a>
+    <a href="<?= e(url('calendar')) ?>"><i data-feather="calendar"></i><span><b>تقویم جلسات</b><small>موعدهای پیش‌رو</small></span><i data-feather="chevron-left"></i></a>
+  </nav>
+
+  <div class="v7-role-columns v7-role-columns--lawyer">
+    <section class="v7-role-panel v7-role-panel--legal-queue">
+      <header class="v7-role-panel__head"><div><span class="v7-role-section-mark is-rose"><i data-feather="scale"></i></span><div><h2>قراردادهای آماده بررسی</h2><p>پرونده‌های قابل ارجاع به واحد حقوقی</p></div></div><a href="<?= e(url('legal/eligible')) ?>">مشاهده همه <i data-feather="chevron-left"></i></a></header>
+      <div class="v7-role-records">
+        <?php foreach (array_slice($eligible, 0, 7) as $contract): ?>
+          <a class="v7-role-record v7-role-record--linked" href="<?= e(url('contracts/show/' . (int) ($contract['id'] ?? 0))) ?>"><span class="v7-role-record__date"><i data-feather="file-text"></i><small><?= e($contract['contract_number'] ?? '—') ?></small></span><span class="v7-role-record__main"><strong><?= e($contract['customer_name'] ?? 'مشتری') ?></strong><small><?= to_persian_digits($contract['overdue_count'] ?? 0) ?> قسط معوق</small></span><b class="v7-role-record__amount"><?= money_toman($contract['debt'] ?? $contract['overdue_amount'] ?? 0) ?></b><i data-feather="chevron-left"></i></a>
+        <?php endforeach; ?>
+        <?php if (!$eligible): ?><div class="v7-role-empty"><i data-feather="check-circle"></i><strong>موردی در صف ارجاع نیست</strong><span>قراردادهای واجد شرایط پس از بررسی در اینجا نمایش داده می‌شوند.</span></div><?php endif; ?>
       </div>
-    </div>
+    </section>
+
+    <section class="v7-role-panel v7-role-panel--legal-cases">
+      <header class="v7-role-panel__head"><div><span class="v7-role-section-mark is-violet"><i data-feather="briefcase"></i></span><div><h2>پرونده‌های در جریان</h2><p>پرونده‌های باز تخصیص‌یافته به شما</p></div></div><a href="<?= e(url('legal')) ?>">همه پرونده‌ها <i data-feather="chevron-left"></i></a></header>
+      <div class="v7-role-records">
+        <?php foreach (array_slice($openCases, 0, 7) as $case): ?>
+          <article class="v7-role-record"><span class="v7-role-record__date"><i data-feather="briefcase"></i><small><?= e($case['contract_number'] ?? '—') ?></small></span><div class="v7-role-record__main"><strong><?= e($case['customer_name'] ?? 'مشتری') ?></strong><small><?= e($case['stage'] ?? 'مرحله ثبت نشده') ?></small></div><span class="badge <?= e(badge_class($case['status'] ?? '')) ?>"><?= e(status_label($case['status'] ?? '')) ?></span><a class="v7-icon-action" href="<?= e(url('legal/show/' . (int) ($case['id'] ?? 0))) ?>" aria-label="جزئیات پرونده"><i data-feather="arrow-up-left"></i></a></article>
+        <?php endforeach; ?>
+        <?php if (!$openCases): ?><div class="v7-role-empty"><i data-feather="folder"></i><strong>پرونده بازی ندارید</strong><span>پرونده‌های جدید پس از تخصیص در این قسمت قرار می‌گیرند.</span></div><?php endif; ?>
+      </div>
+    </section>
   </div>
 
-  <div class="col-xxl-4 col-sm-6 box-col-6">
-    <div class="card widget-1">
-      <div class="card-body">
-        <div class="widget-content">
-          <div class="widget-round warning"><div class="bg-round"><svg class="svg-fill"><use href="<?= e($sprite) ?>#return-box"></use></svg><svg class="half-circle svg-fill"><use href="<?= e($sprite) ?>#halfcircle"></use></svg></div></div>
-          <div><h4><?= to_persian_digits(count($cases)) ?></h4><span class="f-light">پرونده حقوقی</span></div>
-        </div>
-        <div class="font-warning f-w-500"><i class="icon-arrow-up icon-rotate me-1"></i><span>در جریان</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-xxl-4 col-sm-6 box-col-6">
-    <div class="card widget-1">
-      <div class="card-body">
-        <div class="widget-content">
-          <div class="widget-round secondary"><div class="bg-round"><svg class="svg-fill"><use href="<?= e($sprite) ?>#new-order"></use></svg><svg class="half-circle svg-fill"><use href="<?= e($sprite) ?>#halfcircle"></use></svg></div></div>
-          <div><h4><?= to_persian_digits(count($eligible)) ?></h4><span class="f-light">آماده شکایت</span></div>
-        </div>
-        <div class="font-secondary f-w-500"><i class="icon-arrow-up icon-rotate me-1"></i><span>قابل ارجاع</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-xl-7 box-col-7">
-    <div class="card">
-      <div class="card-header card-no-border"><div class="header-top"><h5>پرونده‌های حقوقی</h5><a class="link-only" href="<?= e(url('lawyer')) ?>">مدیریت پرونده‌ها</a></div></div>
-      <div class="card-body pt-0">
-        <div class="table-responsive">
-          <table class="table table-bordernone">
-            <thead><tr><th>قرارداد</th><th>مشتری</th><th>مرحله</th><th>وضعیت</th></tr></thead>
-            <tbody>
-            <?php foreach ($cases as $case): ?>
-              <tr><td><?= e($case['contract_number']) ?></td><td><?= e($case['customer_name']) ?></td><td><?= e($case['stage']) ?></td><td><span class="badge badge-light-<?= e(badge_class($case['status'])) ?>"><?= e(status_label($case['status'])) ?></span></td></tr>
-            <?php endforeach; ?>
-            <?php if (!$cases): ?><tr><td colspan="4" class="text-center f-light">پرونده‌ای ثبت نشده است.</td></tr><?php endif; ?>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-xl-5 box-col-5">
-    <div class="card">
-      <div class="card-header card-no-border"><div class="header-top"><h5>قراردادهای آماده شکایت</h5></div></div>
-      <div class="card-body pt-0">
-        <div class="table-responsive">
-          <table class="table table-bordernone">
-            <thead><tr><th>قرارداد</th><th>مشتری</th><th>موبایل</th></tr></thead>
-            <tbody>
-            <?php foreach (array_slice($eligible, 0, 10) as $contract): ?>
-              <tr><td><?= e($contract['contract_number']) ?></td><td><?= e($contract['customer_name']) ?></td><td><?= to_persian_digits($contract['mobile']) ?></td></tr>
-            <?php endforeach; ?>
-            <?php if (!$eligible): ?><tr><td colspan="3" class="text-center f-light">قرارداد واجد شرایط وجود ندارد.</td></tr><?php endif; ?>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+  <section class="v7-role-panel v7-role-panel--cost-ledger">
+    <header class="v7-role-panel__head"><div><span class="v7-role-section-mark is-amber"><i data-feather="credit-card"></i></span><div><h2>هزینه پرونده‌ها</h2><p>مبالغ ثبت‌شده برای پرونده‌های شما</p></div></div><a href="<?= e(url('legal/costs')) ?>">مدیریت هزینه‌ها <i data-feather="chevron-left"></i></a></header>
+    <div class="v7-role-table-wrap"><table class="v7-role-table"><thead><tr><th>قرارداد</th><th>مشتری</th><th>مرحله</th><th>وضعیت</th><th>هزینه ثبت‌شده</th><th></th></tr></thead><tbody>
+      <?php foreach (array_slice($cases, 0, 8) as $case): ?><tr><td><b><?= e($case['contract_number'] ?? '—') ?></b></td><td><?= e($case['customer_name'] ?? '—') ?></td><td><?= e($case['stage'] ?? '—') ?></td><td><span class="badge <?= e(badge_class($case['status'] ?? '')) ?>"><?= e(status_label($case['status'] ?? '')) ?></span></td><td><?= money_toman($case['expense_amount'] ?? 0) ?></td><td><a class="v7-text-action" href="<?= e(url('legal/show/' . (int) ($case['id'] ?? 0))) ?>">جزئیات <i data-feather="chevron-left"></i></a></td></tr><?php endforeach; ?>
+      <?php if (!$cases): ?><tr><td colspan="6" class="v7-role-empty">پرونده‌ای برای نمایش وجود ندارد.</td></tr><?php endif; ?>
+    </tbody></table></div>
+  </section>
+</main>

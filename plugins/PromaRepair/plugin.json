@@ -1,0 +1,473 @@
+{
+  "id": "proma-repair",
+  "name": "مدیریت تعمیرات Proma Pay",
+  "description": "مدیریت پذیرش، گردش تعمیر، تعمیرکاران، مالی، رسید و پیگیری مشتری",
+  "version": "1.2.13",
+  "author": "Proma Pay",
+  "plugin_api_version": "1.1",
+  "requires_core": ">=6.0.2",
+  "requires_php": ">=8.1",
+  "provider": "Proma\\Plugins\\Repair\\RepairServiceProvider",
+  "permissions": [
+    {
+      "key": "plugin.proma-repair.view_orders",
+      "label": "مشاهده تعمیرات"
+    },
+    {
+      "key": "plugin.proma-repair.create_orders",
+      "label": "ثبت تعمیر جدید"
+    },
+    {
+      "key": "plugin.proma-repair.manage_orders",
+      "label": "ویرایش تعمیرات"
+    },
+    {
+      "key": "plugin.proma-repair.change_status",
+      "label": "تغییر وضعیت تعمیر"
+    },
+    {
+      "key": "plugin.proma-repair.assign_technicians",
+      "label": "ارجاع تعمیرکار"
+    },
+    {
+      "key": "plugin.proma-repair.manage_technicians",
+      "label": "مدیریت تعمیرکاران"
+    },
+    {
+      "key": "plugin.proma-repair.view_financial",
+      "label": "مشاهده اطلاعات مالی تعمیرات"
+    },
+    {
+      "key": "plugin.proma-repair.manage_financial",
+      "label": "ثبت دریافت وجه و هزینه"
+    },
+    {
+      "key": "plugin.proma-repair.record_costs",
+      "label": "ثبت هزینه قطعه و دستمزد برای پرونده ارجاع‌شده"
+    },
+    {
+      "key": "plugin.proma-repair.approve_expenses",
+      "label": "تأیید هزینه‌های ثبت‌شده تعمیرکاران"
+    },
+    {
+      "key": "plugin.proma-repair.settle_expenses",
+      "label": "تسویه هزینه‌های تأییدشده تعمیرکاران"
+    },
+    {
+      "key": "plugin.proma-repair.view_profit",
+      "label": "مشاهده سود تعمیرات"
+    },
+    {
+      "key": "plugin.proma-repair.view_device_password",
+      "label": "مشاهده رمز دستگاه"
+    },
+    {
+      "key": "plugin.proma-repair.delete_device_password",
+      "label": "حذف دستی رمز دستگاه"
+    },
+    {
+      "key": "plugin.proma-repair.upload_attachments",
+      "label": "بارگذاری تصویر و پیوست تعمیر"
+    },
+    {
+      "key": "plugin.proma-repair.print_receipt",
+      "label": "چاپ رسید تعمیر"
+    },
+    {
+      "key": "plugin.proma-repair.manage_warranty",
+      "label": "مدیریت گارانتی تعمیر"
+    },
+    {
+      "key": "plugin.proma-repair.manage_settings",
+      "label": "مدیریت تنظیمات تعمیرات"
+    },
+    {
+      "key": "plugin.proma-repair.view_audit",
+      "label": "مشاهده گزارش ممیزی تعمیرات"
+    }
+  ],
+  "dependencies": [],
+  "routes": [
+    {
+      "path": "plugin/repair/dashboard",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@dashboard",
+      "method": "GET",
+      "permission": "plugin.proma-repair.view_orders"
+    },
+    {
+      "path": "plugin/repair/orders",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@orders",
+      "method": "GET",
+      "permission": "plugin.proma-repair.view_orders"
+    },
+    {
+      "path": "plugin/repair/intake",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@intake",
+      "method": "GET",
+      "permission": "plugin.proma-repair.create_orders"
+    },
+    {
+      "path": "plugin/repair/create",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@create",
+      "method": "POST",
+      "permission": "plugin.proma-repair.create_orders"
+    },
+    {
+      "path": "plugin/repair/warranty-return/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@warrantyReturnIntake",
+      "method": "GET",
+      "permission": "plugin.proma-repair.create_orders"
+    },
+    {
+      "path": "plugin/repair/customer-lookup",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@customerLookup",
+      "method": "GET",
+      "permission": "plugin.proma-repair.create_orders"
+    },
+    {
+      "path": "plugin/repair/detail/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@detail",
+      "method": "GET",
+      "permission": "plugin.proma-repair.view_orders"
+    },
+    {
+      "path": "plugin/repair/status/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@changeStatus",
+      "method": "POST",
+      "permission": "plugin.proma-repair.change_status"
+    },
+    {
+      "path": "plugin/repair/diagnosis/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@diagnosis",
+      "method": "POST",
+      "permission": "plugin.proma-repair.manage_orders"
+    },
+    {
+      "path": "plugin/repair/customer-decision/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@customerDecision",
+      "method": "POST",
+      "permission": "plugin.proma-repair.manage_orders"
+    },
+    {
+      "path": "plugin/repair/warranty/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@saveWarranty",
+      "method": "POST",
+      "permission": "plugin.proma-repair.manage_warranty"
+    },
+    {
+      "path": "plugin/repair/notes/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@addNote",
+      "method": "POST",
+      "permission": "plugin.proma-repair.manage_orders"
+    },
+    {
+      "path": "plugin/repair/assign/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@assign",
+      "method": "POST",
+      "permission": "plugin.proma-repair.assign_technicians"
+    },
+    {
+      "path": "plugin/repair/delete/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@deleteRepair",
+      "method": "POST",
+      "permission": "plugin.proma-repair.manage_orders"
+    },
+    {
+      "path": "plugin/repair/payments/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@addPayment",
+      "method": "POST",
+      "permission": "plugin.proma-repair.manage_financial"
+    },
+    {
+      "path": "plugin/repair/expenses/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@addExpense",
+      "method": "POST",
+      "permission": "plugin.proma-repair.manage_financial"
+    },
+    {
+      "path": "plugin/repair/technician-expenses/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@addTechnicianExpense",
+      "method": "POST",
+      "permission": "plugin.proma-repair.record_costs"
+    },
+    {
+      "path": "plugin/repair/expenses/{id}/{expenseId}/approve",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@approveTechnicianExpense",
+      "method": "POST",
+      "permission": "plugin.proma-repair.approve_expenses"
+    },
+    {
+      "path": "plugin/repair/expenses/{id}/{expenseId}/reject",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@rejectTechnicianExpense",
+      "method": "POST",
+      "permission": "plugin.proma-repair.approve_expenses"
+    },
+    {
+      "path": "plugin/repair/expenses/{id}/{expenseId}/settle",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@settleTechnicianExpense",
+      "method": "POST",
+      "permission": "plugin.proma-repair.settle_expenses"
+    },
+    {
+      "path": "plugin/repair/technician-profile",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@technicianProfile",
+      "method": "GET",
+      "permission": "plugin.proma-repair.view_orders"
+    },
+    {
+      "path": "plugin/repair/technician-profile",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@saveTechnicianProfile",
+      "method": "POST",
+      "permission": "plugin.proma-repair.view_orders"
+    },
+    {
+      "path": "plugin/repair/technician-expenses",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@technicianExpenses",
+      "method": "GET",
+      "permission": "plugin.proma-repair.view_orders"
+    },
+    {
+      "path": "plugin/repair/technician-requests",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@technicianRequests",
+      "method": "GET",
+      "permission": "plugin.proma-repair.view_orders"
+    },
+    {
+      "path": "plugin/repair/technician-history",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@technicianHistory",
+      "method": "GET",
+      "permission": "plugin.proma-repair.view_orders"
+    },
+    {
+      "path": "plugin/repair/expense-approvals",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@expenseApprovals",
+      "method": "GET",
+      "permission": "plugin.proma-repair.approve_expenses"
+    },
+    {
+      "path": "plugin/repair/financial/void/{id}/{kind}/{entryId}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@voidFinancial",
+      "method": "POST",
+      "permission": "plugin.proma-repair.manage_financial"
+    },
+    {
+      "path": "plugin/repair/reveal-password/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@revealPassword",
+      "method": "POST",
+      "permission": "plugin.proma-repair.view_device_password"
+    },
+    {
+      "path": "plugin/repair/delete-password/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@deleteDevicePassword",
+      "method": "POST",
+      "permission": "plugin.proma-repair.delete_device_password"
+    },
+    {
+      "path": "plugin/repair/receipt/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@receipt",
+      "method": "GET",
+      "permission": "plugin.proma-repair.print_receipt"
+    },
+    {
+      "path": "plugin/repair/attachment/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@attachment",
+      "method": "GET",
+      "permission": "plugin.proma-repair.view_orders"
+    },
+    {
+      "path": "plugin/repair/upload/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@upload",
+      "method": "POST",
+      "permission": "plugin.proma-repair.upload_attachments"
+    },
+    {
+      "path": "plugin/repair/technicians",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@technicians",
+      "method": "GET",
+      "permission": "plugin.proma-repair.manage_technicians"
+    },
+    {
+      "path": "plugin/repair/technicians",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@saveTechnician",
+      "method": "POST",
+      "permission": "plugin.proma-repair.manage_technicians"
+    },
+    {
+      "path": "plugin/repair/settings",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@settings",
+      "method": "GET",
+      "permission": "plugin.proma-repair.manage_settings"
+    },
+    {
+      "path": "plugin/repair/settings",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@saveSettings",
+      "method": "POST",
+      "permission": "plugin.proma-repair.manage_settings"
+    },
+    {
+      "path": "plugin/repair/permissions",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@permissions",
+      "method": "GET",
+      "permission": "plugin.proma-repair.manage_settings"
+    },
+    {
+      "path": "plugin/repair/permissions",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@savePermissions",
+      "method": "POST",
+      "permission": "plugin.proma-repair.manage_settings"
+    },
+    {
+      "path": "plugin/repair/reports",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@reports",
+      "method": "GET",
+      "permission": "plugin.proma-repair.view_financial"
+    },
+    {
+      "path": "plugin/repair/audit",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@audit",
+      "method": "GET",
+      "permission": "plugin.proma-repair.view_audit"
+    },
+    {
+      "path": "portal/repairs",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@customerRepairs",
+      "method": "GET",
+      "permission": "",
+      "auth": true
+    },
+    {
+      "path": "portal/repairs/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@customerDetail",
+      "method": "GET",
+      "permission": "",
+      "auth": true
+    },
+    {
+      "path": "customer/repairs",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@customerRepairs",
+      "method": "GET",
+      "permission": "",
+      "auth": true
+    },
+    {
+      "path": "customer/repairs/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@customerDetail",
+      "method": "GET",
+      "permission": "",
+      "auth": true
+    },
+    {
+      "path": "portal/repairs/{id}/decision",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@customerRespond",
+      "method": "POST",
+      "permission": "",
+      "auth": true
+    },
+    {
+      "path": "portal/repairs/image/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@customerImage",
+      "method": "GET",
+      "permission": "",
+      "auth": true
+    },
+    {
+      "path": "plugin/repair/track",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@tracking",
+      "method": "GET",
+      "permission": "",
+      "auth": false
+    },
+    {
+      "path": "plugin/repair/track",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairController@trackLookup",
+      "method": "POST",
+      "permission": "",
+      "auth": false
+    },
+    {
+      "path": "plugin/repair/api/repairs",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairApiController@index",
+      "method": "GET",
+      "permission": "plugin.proma-repair.view_orders"
+    },
+    {
+      "path": "plugin/repair/api/repairs",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairApiController@create",
+      "method": "POST",
+      "permission": "plugin.proma-repair.create_orders"
+    },
+    {
+      "path": "plugin/repair/api/repairs/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairApiController@show",
+      "method": "GET",
+      "permission": "plugin.proma-repair.view_orders"
+    },
+    {
+      "path": "plugin/repair/api/repairs/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairApiController@update",
+      "method": "PATCH",
+      "permission": "plugin.proma-repair.manage_orders"
+    },
+    {
+      "path": "plugin/repair/api/repairs/{id}/status",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairApiController@status",
+      "method": "POST",
+      "permission": "plugin.proma-repair.change_status"
+    },
+    {
+      "path": "plugin/repair/api/repairs/{id}/payments",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairApiController@payment",
+      "method": "POST",
+      "permission": "plugin.proma-repair.manage_financial"
+    },
+    {
+      "path": "plugin/repair/api/repairs/{id}/expenses",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairApiController@expense",
+      "method": "POST",
+      "permission": "plugin.proma-repair.manage_financial"
+    },
+    {
+      "path": "plugin/repair/api/repairs/{id}/technician-expenses",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairApiController@technicianExpense",
+      "method": "POST",
+      "permission": "plugin.proma-repair.record_costs"
+    },
+    {
+      "path": "plugin/repair/api/repairs/{id}/assign",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairApiController@assign",
+      "method": "POST",
+      "permission": "plugin.proma-repair.assign_technicians"
+    },
+    {
+      "path": "plugin/repair/api/customer/repairs",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairApiController@customerIndex",
+      "method": "GET",
+      "permission": "",
+      "auth": true
+    },
+    {
+      "path": "plugin/repair/api/customer/repairs/{id}",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\RepairApiController@customerShow",
+      "method": "GET",
+      "permission": "",
+      "auth": true
+    },
+    {
+      "path": "plugin/repair/technician-account",
+      "handler": "Proma\\Plugins\\Repair\\Controllers\\CoreCompatibilityController@createTechnician",
+      "method": "POST",
+      "permission": "plugin.proma-repair.manage_technicians"
+    }
+  ],
+  "migrations": [
+    "migrations/2026_10_01_repair_core.sql",
+    "migrations/2026_10_02_repair_expense_approval.sql",
+    "migrations/2026_10_03_repair_soft_delete.sql",
+    "migrations/2026_10_09_repair_technician_device_password.sql"
+  ],
+  "assets": [
+    "assets/css/repair.css",
+    "assets/js/repair.js"
+  ],
+  "settings": []
+}
