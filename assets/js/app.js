@@ -2268,7 +2268,15 @@
     const yearInput = modal.querySelector('[data-jalali-year]');
     const monthSelect = modal.querySelector('[data-jalali-month]');
     let activeInput = null;
+    let ownerDialog = null;
     let view = todayJalali();
+
+    const restoreModalToDocument = function () {
+      if (modal.parentElement !== document.body) document.body.appendChild(modal);
+      ownerDialog = null;
+    };
+
+    modal.addEventListener('proma:modal-closed', restoreModalToDocument);
 
     if (monthSelect && !monthSelect.options.length) {
       monthNames.forEach(function (name, index) {
@@ -2314,6 +2322,8 @@
             activeInput.dispatchEvent(new Event('change', { bubbles: true }));
           }
           modal.classList.remove('open');
+          modal.setAttribute('aria-hidden', 'true');
+          modal.dispatchEvent(new CustomEvent('proma:modal-closed'));
         });
         grid.appendChild(button);
       }
@@ -2321,9 +2331,13 @@
 
     const openForInput = function (input) {
       activeInput = input;
+      ownerDialog = input.closest('dialog[open]');
+      if (ownerDialog) ownerDialog.appendChild(modal);
+      else restoreModalToDocument();
       view = parseJalaliParts(input.value);
       render();
       modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
     };
 
     const bindInput = function (input) {
