@@ -18,7 +18,7 @@ Date: 2026-10-21 (Asia/Tehran)
 - Plugin manifest integrity reported six manifests and 174 registered routes.
 - The installation SQL contains 86 `CREATE TABLE` statements and three seed inserts; review found no customer records or contact, national-ID, or payment-card data.
 - An integration test exposed unread result rows from SQL-level `EXECUTE` commands in plugin migrations. `PluginManager::executeMigrationStatement()` now drains and closes those cursors; the regression check and full database gate pass.
-- `git diff --check` passed. Real payment and messaging provider calls were not made.
+- The full staged diff against the previous GitHub `main` reported 427 whitespace diagnostics (trailing spaces or extra blank lines at EOF) in files carried into the release. These were left unchanged rather than applying a repository-wide formatting sweep. Real payment and messaging provider calls were not made.
 
 ## Security review
 
