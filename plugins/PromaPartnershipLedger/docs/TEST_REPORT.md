@@ -2,14 +2,24 @@
 
 تاریخ: ۲۰۲۶-۱۰-۲۱
 
-| بررسی | نتیجه | شاهد/محدودیت |
-|---|---|---|
-| JavaScript syntax | موفق | `node --check plugins/PromaPartnershipLedger/assets/js/inventory-partners-v111.js` با exit code صفر |
-| Manifest/static route check | موفق | JSON parse، 31 مجوز، 50 route، handler names، migration/asset paths و نبود ارجاع namespace runtime قدیمی بررسی شدند |
-| PHP domain smoke | اجرا نشد | `php` روی PATH نیست و runtime محلی در محیط یافت نشد |
-| PHP manifest/route smoke | اجرا نشد | به PHP CLI وابسته است |
-| PHP syntax (`php -l`) | اجرا نشد | به PHP CLI وابسته است |
-| MySQL migration/integration/concurrency | اجرا نشد | DB fixture و PHP CLI این محیط آماده نبودند |
-| نصب/فعال‌سازی/نمایش UI | اجرا نشد | runtime Proma Pay/DB staging در این بررسی اجرا نشد |
+## آزمون‌های موفق
 
-نتیجه‌های آزمون `PromaInventoryPartners 1.1.2` در گزارش قدیمی متعلق به نسخه و محیط قبلی‌اند و به successor تعمیم داده نمی‌شوند. این build از نظر اجرا و Production readiness تأیید نشده است.
+| بررسی | نتیجه | شاهد |
+|---|---|---|
+| JavaScript syntax | موفق | `node --check` برای asset اصلی افزونه با exit code صفر |
+| Manifest و مسیرها | موفق | ۳۱ مجوز، ۵۰ route، handlerها، migrationها و assetها در آزمون قراردادی بررسی شدند |
+| PHP syntax | موفق | ۲۴ فایل PHP؛ بدون خطای `php -l` با PHP 8.3.33 |
+| منطق دامنه | موفق | ۲۵ بررسی برای تبدیل ریال/تومان، گردکردن و تخصیص، زیان، سود ساده/مرکب، اقساط و اعتبارسنجی سیاست |
+| migration MySQL | موفق | migration دو بار روی `proma_test` اجرا شد؛ جدول سیاست دقیقاً یک‌بار ایجاد شد و constraint شریک/کاربر بررسی شد |
+| ذخیره و audit دیتابیسی | موفق | ذخیرهٔ سیاست مالی در تراکنش آزمایشی، hash برابر SHA-256، ثبت audit و rollback کامل دو شریک و سیاست آزمایشی بررسی شد؛ هیچ رکورد QA باقی نماند |
+| سازگاری runtime | موفق | `proma.test` با Proma Pay 7.0.3، Apache 2.4.68، PHP 8.3.33 و MySQL 8.4.3 پاسخ HTTP 200 داد |
+
+## وضعیت آزمون محلی
+
+- نسخهٔ `PromaPartnershipLedger 2.0.0-alpha.1` با تطبیق ۵۱ فایل در `C:\laragon\www\proma\plugins\PromaPartnershipLedger` برای آزمون محلی stage شد.
+- دیتابیس فعال `proma_test` است. پیش از migration از آن نسخهٔ پشتیبان گرفته شد: `C:\laragon\backup\mysql\proma_test-before-ledger-2026-10-21.sql`.
+- افزونهٔ قدیمی `proma-inventory-partners 1.1.2` در `proma_test` فعال باقی است. جدول‌های عملیاتی شریک، کالا، خرید، موجودی، فروش، journal، هزینه و تسویه پیش از آزمون خالی بودند.
+- افزونهٔ جدید هنوز در Plugin Manager نصب یا فعال نشده است. صفحهٔ ورود `proma.test` در دسترس است، اما حساب QA پیدا نشد؛ مسیر مالی جدید بدون نصب/فعال‌سازی HTTP 404 می‌دهد.
+- فعال‌سازی واقعی نسخهٔ جدید نیازمند ورود مدیر و cutover موقت افزونهٔ قدیمی است. برای تکمیل آزمون رابط و جریان‌های عملیاتی باید کاربر در مرورگر وارد شود یا حساب مدیر QA موقت مجاز شود.
+
+نتیجه‌های آزمون `PromaInventoryPartners 1.1.2` به successor تعمیم داده نمی‌شوند. این build هنوز از نظر آزمون رابط کامل، cutover و Production readiness تأیید نشده است.
