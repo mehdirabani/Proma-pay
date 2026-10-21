@@ -273,7 +273,7 @@ $warehouseOptions = static function (array $warehouses) {
           <form method="post" action="<?= e(url($base . 'financial-policies/save')) ?>" class="pip-form"><?= csrf_field() ?>
             <div class="pip-form-grid">
               <label>نام سیاست *<input name="policy_name" maxlength="100" required></label>
-              <label>تاریخ مؤثر *<input name="effective_on" type="date" required></label>
+              <label>تاریخ مؤثر *<input name="effective_on" data-jalali-input inputmode="numeric" required></label>
               <label>نرخ ماهانه (%) *<input name="monthly_rate_pct" inputmode="decimal" required placeholder="۰ تا ۱۰۰"></label>
               <label>تعداد ماه *<input name="months" type="number" min="1" max="120" required></label>
               <label>روش محاسبه *<select name="method" required><option value="">انتخاب</option><option value="simple">ساده</option><option value="compound">مرکب</option></select></label>

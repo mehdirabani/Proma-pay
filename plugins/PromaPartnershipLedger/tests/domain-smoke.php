@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/../../../helpers/functions.php';
 require_once __DIR__ . '/../src/Domain/Money.php';
 require_once __DIR__ . '/../src/Domain/ProfitCalculator.php';
 require_once __DIR__ . '/../src/Domain/InstallmentPricingCalculator.php';
@@ -84,6 +85,20 @@ $policy = FinancialPolicyService::validatePolicyInput([
     'reinvestment_pct' => [1 => '25', 2 => '40'],
 ], [['id' => 1, 'full_name' => 'Partner A'], ['id' => 2, 'full_name' => 'Partner B']]);
 pipSame(250, $policy['monthly_rate_bp'], 'Policy rate stored in basis points');
+pipSame('2026-10-22', FinancialPolicyService::validatePolicyInput([
+    'policy_name' => 'jalali-policy', 'effective_on' => '۱۴۰۵/۰۷/۳۰', 'monthly_rate_pct' => '2.5', 'months' => '6',
+    'method' => 'simple', 'basis' => 'full_base_price', 'settlement_policy' => 'collection_based',
+    'base_profit_shares' => [1 => '60', 2 => '40'], 'financing_profit_shares' => [1 => '0', 2 => '100'],
+    'reinvestment_pct' => [1 => '25', 2 => '40'],
+], [['id' => 1, 'full_name' => 'Partner A'], ['id' => 2, 'full_name' => 'Partner B']])['effective_on'], 'Persian Jalali policy date stored as Gregorian ISO');
+pipThrows(static function () {
+    FinancialPolicyService::validatePolicyInput([
+        'policy_name' => 'invalid-jalali-policy', 'effective_on' => '۱۴۰۵/۱۳/۰۱', 'monthly_rate_pct' => '2.5', 'months' => '6',
+        'method' => 'simple', 'basis' => 'full_base_price', 'settlement_policy' => 'instant',
+        'base_profit_shares' => [1 => '60', 2 => '40'], 'financing_profit_shares' => [1 => '0', 2 => '100'],
+        'reinvestment_pct' => [1 => '25', 2 => '40'],
+    ], [['id' => 1, 'full_name' => 'Partner A'], ['id' => 2, 'full_name' => 'Partner B']]);
+}, 'Invalid Jalali policy date rejection');
 pipSame([1 => 6000, 2 => 4000], $policy['base_profit_shares'], 'Independent base profit shares');
 pipSame([1 => 0, 2 => 10000], $policy['financing_profit_shares'], 'Independent financing profit shares');
 pipThrows(static function () {

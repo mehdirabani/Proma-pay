@@ -23,8 +23,25 @@ final class FinancialPolicyService
     public static function validatePolicyInput(array $input, array $activePartners)
     {
         $name = trim((string) ($input['policy_name'] ?? ''));
-        $effectiveOn = trim((string) ($input['effective_on'] ?? ''));
-        if ($name === '' || strlen($name) > 100 || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $effectiveOn)) {
+        $rawEffectiveOn = \to_english_digits(trim((string) ($input['effective_on'] ?? '')));
+        $effectiveOn = '';
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/D', $rawEffectiveOn)) {
+            $effectiveOn = $rawEffectiveOn;
+        } elseif (preg_match('/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/D', $rawEffectiveOn, $dateParts)) {
+            $jalaliYear = (int) $dateParts[1];
+            $jalaliMonth = (int) $dateParts[2];
+            $jalaliDay = (int) $dateParts[3];
+            $monthLength = $jalaliMonth >= 1 && $jalaliMonth <= 6 ? 31 : ($jalaliMonth >= 7 && $jalaliMonth <= 11 ? 30 : 0);
+            if ($jalaliMonth === 12) {
+                [$lastGy, $lastGm, $lastGd] = \jalali_to_gregorian($jalaliYear, 12, 30);
+                [$lastJy, $lastJm, $lastJd] = \gregorian_to_jalali($lastGy, $lastGm, $lastGd);
+                $monthLength = $lastJy === $jalaliYear && $lastJm === 12 && $lastJd === 30 ? 30 : 29;
+            }
+            if ($jalaliYear >= 1 && $jalaliMonth >= 1 && $jalaliMonth <= 12 && $jalaliDay >= 1 && $jalaliDay <= $monthLength) {
+                $effectiveOn = \parse_jalali_date($rawEffectiveOn) ?: '';
+            }
+        }
+        if ($name === '' || strlen($name) > 100 || $effectiveOn === '') {
             throw new \InvalidArgumentException('نام سیاست و تاریخ مؤثر معتبر را وارد کنید.');
         }
         $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $effectiveOn);
