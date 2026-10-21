@@ -47,25 +47,28 @@ if (is_post() && $step === 2) {
     } else {
         try {
             $pdo = installer_pdo($db);
+            ensure_installer_writable();
             create_schema($pdo);
-            write_database_config($db);
-            $stmt = $pdo->prepare("INSERT INTO users (role, username, full_name, national_id, mobile, email, password_hash, status, created_at)
-                VALUES ('admin', ?, ?, ?, ?, ?, ?, 'active', NOW())");
-            $stmt->execute([
-                $username,
-                $fullName,
-                to_english_digits($_POST['national_id'] ?? '') ?: null,
-                to_english_digits($_POST['mobile'] ?? '') ?: null,
-                trim($_POST['email'] ?? '') ?: null,
-                password_hash($password, PASSWORD_DEFAULT),
+            $adminId = create_or_update_initial_admin($pdo, [
+                'username' => $username,
+                'full_name' => $fullName,
+                'national_id' => to_english_digits($_POST['national_id'] ?? '') ?: null,
+                'mobile' => to_english_digits($_POST['mobile'] ?? '') ?: null,
+                'email' => trim($_POST['email'] ?? '') ?: null,
+                'password_hash' => password_hash($password, PASSWORD_DEFAULT),
             ]);
+            seed_system_announcements($pdo, $adminId);
             seed_settings($pdo);
-            file_put_contents(__DIR__ . '/installed.lock', 'installed=' . date('c'));
+            write_database_config($db);
+            if (file_put_contents(__DIR__ . '/installed.lock', 'installed=' . date('c')) === false) {
+                throw new RuntimeException('Cannot write installed.lock.');
+            }
             unset($_SESSION['install_db']);
             echo installer_page('نصب کامل شد', '<div class="notice success">سامانه با موفقیت نصب شد و حساب مدیر ساخته شد.</div><a class="btn" href="index.php?route=auth/login">ورود به سامانه</a>');
             exit;
         } catch (Throwable $e) {
-            $message = '<div class="notice error">نصب کامل نشد. دسترسی نوشتن فایل‌ها و اطلاعات پایگاه داده را بررسی کنید.</div>';
+            installer_log_error($e);
+            $message = '<div class="notice error">نصب کامل نشد. دسترسی نوشتن فایل‌ها و اطلاعات پایگاه داده را بررسی کنید. جزئیات خطا در storage/logs/install.log ثبت شد.</div>';
         }
     }
 }
@@ -97,11 +100,16 @@ echo installer_page('تنظیم پایگاه داده', $message . '
 function installer_pdo(array $db)
 {
     $dsn = 'mysql:host=' . $db['host'] . ';dbname=' . $db['database'] . ';charset=' . ($db['charset'] ?: 'utf8mb4');
-    return new PDO($dsn, $db['username'], $db['password'], [
+    $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
-    ]);
+    ];
+    $mysqlBufferedQueryAttribute = defined('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')
+        ? constant('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')
+        : (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY') ? constant('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY') : null);
+    if ($mysqlBufferedQueryAttribute !== null) $options[$mysqlBufferedQueryAttribute] = true;
+    return new PDO($dsn, $db['username'], $db['password'], $options);
 }
 
 function write_database_config(array $db)
@@ -113,11 +121,112 @@ function write_database_config(array $db)
         . "    'password' => " . var_export($db['password'], true) . ",\n"
         . "    'charset' => " . var_export($db['charset'], true) . ",\n"
         . "];\n";
-    file_put_contents(__DIR__ . '/config/database.php', $content);
+    if (file_put_contents(__DIR__ . '/config/database.php', $content) === false) {
+        throw new RuntimeException('Cannot write database config.');
+    }
+}
+
+function ensure_installer_writable()
+{
+    $configDir = __DIR__ . '/config';
+    $logDir = __DIR__ . '/storage/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0775, true);
+    }
+    if (!is_dir($configDir) || !is_writable($configDir)) {
+        throw new RuntimeException('Config directory is not writable.');
+    }
+    if (!is_writable(__DIR__)) {
+        throw new RuntimeException('Application root is not writable for installed.lock.');
+    }
+}
+
+function installer_log_error(Throwable $e)
+{
+    $logDir = __DIR__ . '/storage/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0775, true);
+    }
+    $line = '[' . date('c') . '] ' . get_class($e) . ': ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() . PHP_EOL;
+    @file_put_contents($logDir . '/install.log', $line, FILE_APPEND);
+    error_log($line);
+}
+
+function create_or_update_initial_admin(PDO $pdo, array $admin)
+{
+    $existing = $pdo->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
+    $existing->execute([$admin['username']]);
+    $adminId = (int) ($existing->fetchColumn() ?: 0);
+    $existing->closeCursor();
+
+    if ($adminId > 0) {
+        $stmt = $pdo->prepare(
+            "UPDATE users
+             SET role = 'admin', full_name = ?, national_id = ?, mobile = ?, email = ?,
+                 password_hash = ?, status = 'active', updated_at = NOW()
+             WHERE id = ?"
+        );
+        $stmt->execute([
+            $admin['full_name'],
+            $admin['national_id'],
+            $admin['mobile'],
+            $admin['email'],
+            $admin['password_hash'],
+            $adminId,
+        ]);
+        return $adminId;
+    }
+
+    $stmt = $pdo->prepare(
+        "INSERT INTO users (role, username, full_name, national_id, mobile, email, password_hash, status, created_at)
+         VALUES ('admin', ?, ?, ?, ?, ?, ?, 'active', NOW())"
+    );
+    $stmt->execute([
+        $admin['username'],
+        $admin['full_name'],
+        $admin['national_id'],
+        $admin['mobile'],
+        $admin['email'],
+        $admin['password_hash'],
+    ]);
+    return (int) $pdo->lastInsertId();
 }
 
 function create_schema(PDO $pdo)
 {
+    // A fresh installation must use the canonical schema shipped with the
+    // release. Keeping a second hand-maintained schema here caused new
+    // installations to miss columns added by later releases.
+    if (!installer_table_exists($pdo, 'users')) {
+        $schemaPath = __DIR__ . '/database/proma-pay-install.sql';
+        $schemaSql = is_file($schemaPath) ? file_get_contents($schemaPath) : false;
+        if (!is_string($schemaSql) || trim($schemaSql) === '') {
+            throw new RuntimeException('Canonical installation schema is missing or empty.');
+        }
+        preg_match_all('/^\s*(?:DROP\s+TABLE\s+IF\s+EXISTS|CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?|ALTER\s+TABLE)\s+`([^`]+)`/im', $schemaSql, $targetMatches);
+        $schemaTables = array_values(array_unique($targetMatches[1] ?? []));
+        if (!$schemaTables) {
+            throw new RuntimeException('Canonical installation schema has no verifiable table-safety inventory.');
+        }
+        $tablePlaceholders = implode(',', array_fill(0, count($schemaTables), '?'));
+        $existingTargets = $pdo->prepare(
+            'SELECT TABLE_NAME FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (' . $tablePlaceholders . ')'
+        );
+        $existingTargets->execute($schemaTables);
+        $collisions = $existingTargets->fetchAll(PDO::FETCH_COLUMN);
+        $existingTargets->closeCursor();
+        if ($collisions) {
+            throw new RuntimeException('Fresh installation refused because one or more schema target tables already exist. Use an empty database or resolve the existing tables before retrying.');
+        }
+        $pdo->exec($schemaSql);
+        $pdo->exec(
+            "INSERT IGNORE INTO chat_channels (title, slug, type, is_pinned, is_system, created_at)
+             VALUES ('پرما پرداخت', 'public-announcements', 'public', 1, 1, NOW())"
+        );
+        return;
+    }
+
     $statements = [
         "CREATE TABLE IF NOT EXISTS users (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -145,6 +254,31 @@ function create_schema(PDO $pdo)
             UNIQUE KEY uq_users_mobile (mobile),
             KEY idx_users_role_status (role, status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS password_resets (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            user_id BIGINT UNSIGNED NOT NULL,
+            mobile VARCHAR(30) NOT NULL,
+            code_hash VARCHAR(255) NOT NULL,
+            attempts INT NOT NULL DEFAULT 0,
+            expires_at DATETIME NOT NULL,
+            used_at DATETIME NULL,
+            ip_address VARCHAR(45) NULL,
+            user_agent VARCHAR(255) NULL,
+            created_at DATETIME NOT NULL,
+            KEY idx_password_resets_user (user_id, used_at, expires_at),
+            KEY idx_password_resets_expiry (expires_at, used_at),
+            CONSTRAINT fk_password_resets_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS customer_merge_logs (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            keep_customer_id BIGINT UNSIGNED NOT NULL,
+            merged_customer_id BIGINT UNSIGNED NOT NULL,
+            merged_by BIGINT UNSIGNED NULL,
+            snapshot_json LONGTEXT NULL,
+            created_at DATETIME NOT NULL,
+            KEY idx_customer_merge_keep (keep_customer_id),
+            KEY idx_customer_merge_merged (merged_customer_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS contracts (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             customer_id BIGINT UNSIGNED NOT NULL,
@@ -159,6 +293,11 @@ function create_schema(PDO $pdo)
             start_date DATE NOT NULL,
             first_due_date DATE NOT NULL,
             status VARCHAR(30) NOT NULL DEFAULT 'active',
+            cancelled_at DATETIME NULL,
+            cancelled_by BIGINT UNSIGNED NULL,
+            cancellation_reason TEXT NULL,
+            previous_status VARCHAR(30) NULL,
+            cancellation_metadata_json LONGTEXT NULL,
             assigned_operator_id BIGINT UNSIGNED NULL,
             legal_status VARCHAR(30) NULL,
             notes TEXT NULL,
@@ -220,6 +359,10 @@ function create_schema(PDO $pdo)
         "CREATE TABLE IF NOT EXISTS generated_contract_documents (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             contract_id BIGINT UNSIGNED NOT NULL,
+            template_version_id BIGINT UNSIGNED NULL,
+            template_status VARCHAR(30) NOT NULL DEFAULT 'legacy',
+            rendered_title VARCHAR(190) NULL,
+            rendered_header TEXT NULL,
             rendered_body LONGTEXT NOT NULL,
             generated_by BIGINT UNSIGNED NULL,
             created_at DATETIME NOT NULL,
@@ -252,9 +395,17 @@ function create_schema(PDO $pdo)
             manual_reward_adjustment DECIMAL(18,2) NOT NULL DEFAULT 0,
             penalty_discount_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
             status VARCHAR(30) NOT NULL DEFAULT 'pending',
+            cancelled_at DATETIME NULL,
+            cancelled_by BIGINT UNSIGNED NULL,
+            cancellation_reason TEXT NULL,
             notes TEXT NULL,
             guarantee_serial VARCHAR(190) NULL,
             is_custom TINYINT(1) NOT NULL DEFAULT 0,
+            custom_title VARCHAR(190) NULL,
+            custom_description TEXT NULL,
+            internal_note TEXT NULL,
+            customer_visible TINYINT(1) NOT NULL DEFAULT 1,
+            created_reason VARCHAR(100) NULL,
             created_at DATETIME NOT NULL,
             updated_at DATETIME NULL,
             UNIQUE KEY uq_contract_installment (contract_id, installment_number),
@@ -264,6 +415,7 @@ function create_schema(PDO $pdo)
         "CREATE TABLE IF NOT EXISTS payments (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             installment_id BIGINT UNSIGNED NULL,
+            payment_group_id BIGINT UNSIGNED NULL,
             contract_id BIGINT UNSIGNED NOT NULL,
             user_id BIGINT UNSIGNED NULL,
             amount DECIMAL(18,2) NOT NULL,
@@ -307,6 +459,27 @@ function create_schema(PDO $pdo)
             CONSTRAINT fk_correction_payment FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE,
             CONSTRAINT fk_correction_admin FOREIGN KEY (corrected_by) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS payment_receipts (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            payment_id BIGINT UNSIGNED NOT NULL,
+            installment_id BIGINT UNSIGNED NOT NULL,
+            contract_id BIGINT UNSIGNED NOT NULL,
+            customer_id BIGINT UNSIGNED NOT NULL,
+            amount DECIMAL(18,2) NOT NULL,
+            receipt_path VARCHAR(255) NOT NULL,
+            status VARCHAR(30) NOT NULL DEFAULT 'pending',
+            review_note TEXT NULL,
+            reviewed_by BIGINT UNSIGNED NULL,
+            submitted_at DATETIME NOT NULL,
+            reviewed_at DATETIME NULL,
+            KEY idx_payment_receipts_status (status),
+            KEY idx_payment_receipts_customer (customer_id),
+            CONSTRAINT fk_payment_receipts_payment FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE,
+            CONSTRAINT fk_payment_receipts_installment FOREIGN KEY (installment_id) REFERENCES installments(id) ON DELETE CASCADE,
+            CONSTRAINT fk_payment_receipts_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
+            CONSTRAINT fk_payment_receipts_customer FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_payment_receipts_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS penalties (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             installment_id BIGINT UNSIGNED NOT NULL,
@@ -323,14 +496,17 @@ function create_schema(PDO $pdo)
             operator_id BIGINT UNSIGNED NOT NULL,
             customer_id BIGINT UNSIGNED NOT NULL,
             contract_id BIGINT UNSIGNED NOT NULL,
+            installment_id BIGINT UNSIGNED NULL,
             call_result VARCHAR(190) NOT NULL,
             notes TEXT NULL,
             next_followup_date DATE NULL,
+            promise_payment_date DATE NULL,
             created_at DATETIME NOT NULL,
             KEY idx_operator_calls_operator (operator_id),
             CONSTRAINT fk_call_operator FOREIGN KEY (operator_id) REFERENCES users(id) ON DELETE CASCADE,
             CONSTRAINT fk_call_customer FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
-            CONSTRAINT fk_call_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
+            CONSTRAINT fk_call_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
+            CONSTRAINT fk_call_installment FOREIGN KEY (installment_id) REFERENCES installments(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS legal_cases (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -340,6 +516,9 @@ function create_schema(PDO $pdo)
             status VARCHAR(30) NOT NULL,
             stage VARCHAR(190) NOT NULL,
             complaint_number VARCHAR(100) NULL,
+            notice_date DATE NULL,
+            court_date DATE NULL,
+            hearing_date DATE NULL,
             expense_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
             expense_reason TEXT NULL,
             notes TEXT NULL,
@@ -350,18 +529,95 @@ function create_schema(PDO $pdo)
             CONSTRAINT fk_legal_customer FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
             CONSTRAINT fk_legal_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS legal_case_logs (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            contract_id BIGINT UNSIGNED NOT NULL,
+            legal_case_id BIGINT UNSIGNED NULL,
+            action_stage VARCHAR(80) NOT NULL,
+            action_title VARCHAR(190) NOT NULL,
+            description TEXT NULL,
+            action_date DATE NOT NULL,
+            action_time TIME NULL,
+            registered_by BIGINT UNSIGNED NULL,
+            assigned_lawyer_id BIGINT UNSIGNED NULL,
+            next_status VARCHAR(80) NULL,
+            attachment_path VARCHAR(255) NULL,
+            cost_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
+            cost_type VARCHAR(80) NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NULL,
+            INDEX idx_legal_case_logs_contract (contract_id),
+            INDEX idx_legal_case_logs_case (legal_case_id),
+            INDEX idx_legal_case_logs_stage (action_stage),
+            INDEX idx_legal_case_logs_date (action_date),
+            CONSTRAINT fk_legal_case_logs_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
+            CONSTRAINT fk_legal_case_logs_case FOREIGN KEY (legal_case_id) REFERENCES legal_cases(id) ON DELETE SET NULL,
+            CONSTRAINT fk_legal_case_logs_registered_by FOREIGN KEY (registered_by) REFERENCES users(id) ON DELETE SET NULL,
+            CONSTRAINT fk_legal_case_logs_lawyer FOREIGN KEY (assigned_lawyer_id) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS legal_policy_versions (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, policy_code VARCHAR(64) NOT NULL DEFAULT 'default', version_number INT UNSIGNED NOT NULL, policy_json LONGTEXT NOT NULL, approved_by BIGINT UNSIGNED NULL, approved_at DATETIME NULL, is_active TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
+            UNIQUE KEY uq_legal_policy_version (policy_code, version_number), KEY idx_legal_policy_active (policy_code, is_active, version_number)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS contract_legal_policy_snapshots (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, contract_id BIGINT UNSIGNED NOT NULL, policy_version_id BIGINT UNSIGNED NULL, policy_version_number INT UNSIGNED NOT NULL DEFAULT 0, policy_json LONGTEXT NOT NULL, source VARCHAR(40) NOT NULL DEFAULT 'legacy_review_required', created_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, updated_at DATETIME NULL,
+            UNIQUE KEY uq_contract_legal_policy_snapshot (contract_id), KEY idx_contract_legal_policy_version (policy_version_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS legal_case_requests (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, request_uuid VARCHAR(64) NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, legal_case_id BIGINT UNSIGNED NULL, requested_by BIGINT UNSIGNED NOT NULL, payload_hash CHAR(64) NOT NULL, created_at DATETIME NOT NULL,
+            UNIQUE KEY uq_legal_case_request_uuid (request_uuid), KEY idx_legal_case_request_contract (contract_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS legal_documents (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, document_uuid VARCHAR(64) NOT NULL, request_uuid VARCHAR(64) NOT NULL, legal_case_id BIGINT UNSIGNED NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, document_type VARCHAR(40) NOT NULL, title VARCHAR(190) NOT NULL, body LONGTEXT NOT NULL, document_status VARCHAR(50) NOT NULL DEFAULT 'internal_draft', deadline_date DATE NULL, policy_snapshot_json LONGTEXT NULL, debt_snapshot_json LONGTEXT NULL, external_reference VARCHAR(190) NULL, external_authority VARCHAR(190) NULL, external_submitted_at DATE NULL, created_by BIGINT UNSIGNED NULL, externally_confirmed_by BIGINT UNSIGNED NULL, externally_confirmed_at DATETIME NULL, created_at DATETIME NOT NULL, updated_at DATETIME NULL,
+            UNIQUE KEY uq_legal_document_uuid (document_uuid), UNIQUE KEY uq_legal_document_request (request_uuid), KEY idx_legal_document_case (legal_case_id, document_status), KEY idx_legal_document_contract (contract_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS settlement_quotes (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, quote_uuid VARCHAR(64) NOT NULL, actor_id BIGINT UNSIGNED NULL, customer_id BIGINT UNSIGNED NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, scope VARCHAR(20) NOT NULL DEFAULT 'selected', selected_installment_ids_json LONGTEXT NOT NULL, calculation_date DATE NOT NULL, calculated_at DATETIME NOT NULL, principal_total DECIMAL(18,2) NOT NULL DEFAULT 0, normal_penalty_total DECIMAL(18,2) NOT NULL DEFAULT 0, legal_penalty_total DECIMAL(18,2) NOT NULL DEFAULT 0, reward_total DECIMAL(18,2) NOT NULL DEFAULT 0, final_payable DECIMAL(18,2) NOT NULL DEFAULT 0, snapshot_hash CHAR(64) NOT NULL, calculation_version VARCHAR(120) NOT NULL, status VARCHAR(30) NOT NULL DEFAULT 'open', expires_at DATETIME NOT NULL, used_at DATETIME NULL, payment_group_id BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL,
+            UNIQUE KEY uq_settlement_quotes_uuid (quote_uuid), KEY idx_settlement_quotes_contract_status (contract_id, status, expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS chat_channels (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            title VARCHAR(190) NOT NULL,
+            slug VARCHAR(100) NOT NULL,
+            type VARCHAR(40) NOT NULL DEFAULT 'public',
+            is_pinned TINYINT(1) NOT NULL DEFAULT 0,
+            is_system TINYINT(1) NOT NULL DEFAULT 0,
+            created_at DATETIME NOT NULL,
+            UNIQUE KEY uq_chat_channels_slug (slug)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS messages (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             sender_id BIGINT UNSIGNED NOT NULL,
-            receiver_id BIGINT UNSIGNED NOT NULL,
+            receiver_id BIGINT UNSIGNED NULL,
+            channel_id BIGINT UNSIGNED NULL,
             body TEXT NOT NULL,
             is_read TINYINT(1) NOT NULL DEFAULT 0,
+            target_unit VARCHAR(80) NULL,
+            is_system TINYINT(1) NOT NULL DEFAULT 0,
             read_at DATETIME NULL,
             created_at DATETIME NOT NULL,
             KEY idx_message_pair (sender_id, receiver_id, id),
             KEY idx_message_unread (receiver_id, is_read),
+            KEY idx_message_channel (channel_id, id),
             CONSTRAINT fk_message_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-            CONSTRAINT fk_message_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+            CONSTRAINT fk_message_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_message_channel FOREIGN KEY (channel_id) REFERENCES chat_channels(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS chat_attachments (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            message_id BIGINT UNSIGNED NOT NULL,
+            file_path VARCHAR(255) NOT NULL,
+            file_type VARCHAR(40) NOT NULL,
+            status VARCHAR(30) NOT NULL DEFAULT 'pending',
+            reviewed_by BIGINT UNSIGNED NULL,
+            review_note TEXT NULL,
+            reviewed_at DATETIME NULL,
+            deleted_at DATETIME NULL,
+            created_at DATETIME NOT NULL,
+            KEY idx_chat_attachments_message (message_id),
+            KEY idx_chat_attachments_status (status),
+            CONSTRAINT fk_chat_attachment_message FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
+            CONSTRAINT fk_chat_attachment_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS notifications (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -375,6 +631,68 @@ function create_schema(PDO $pdo)
             created_at DATETIME NOT NULL,
             KEY idx_notification_user (user_id, is_read),
             CONSTRAINT fk_notification_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS system_plugins (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            plugin_id VARCHAR(100) NOT NULL,
+            name VARCHAR(190) NOT NULL,
+            description TEXT NULL,
+            version VARCHAR(40) NOT NULL,
+            path VARCHAR(255) NOT NULL,
+            status VARCHAR(30) NOT NULL DEFAULT 'discovered',
+            installed_at DATETIME NULL,
+            activated_at DATETIME NULL,
+            deactivated_at DATETIME NULL,
+            updated_at DATETIME NULL,
+            installed_by BIGINT UNSIGNED NULL,
+            last_error TEXT NULL,
+            manifest_json LONGTEXT NULL,
+            deleted_at DATETIME NULL,
+            UNIQUE KEY uq_system_plugins_plugin_id (plugin_id),
+            KEY idx_system_plugins_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS system_plugin_migrations (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            plugin_id VARCHAR(100) NOT NULL,
+            migration_name VARCHAR(190) NOT NULL,
+            batch INT UNSIGNED NOT NULL DEFAULT 1,
+            checksum CHAR(64) NOT NULL,
+            executed_at DATETIME NULL,
+            execution_time_ms INT UNSIGNED NOT NULL DEFAULT 0,
+            status VARCHAR(30) NOT NULL DEFAULT 'running',
+            error_message TEXT NULL,
+            UNIQUE KEY uq_system_plugin_migration (plugin_id, migration_name),
+            KEY idx_system_plugin_migrations_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS system_plugin_permissions (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            plugin_id VARCHAR(100) NOT NULL,
+            permission_key VARCHAR(190) NOT NULL,
+            label VARCHAR(190) NOT NULL,
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            created_at DATETIME NOT NULL,
+            UNIQUE KEY uq_system_plugin_permission (plugin_id, permission_key)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS system_plugin_role_permissions (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            plugin_id VARCHAR(100) NOT NULL,
+            permission_key VARCHAR(190) NOT NULL,
+            role VARCHAR(40) NOT NULL,
+            is_allowed TINYINT(1) NOT NULL DEFAULT 0,
+            granted_by BIGINT UNSIGNED NULL,
+            updated_at DATETIME NULL,
+            UNIQUE KEY uq_system_plugin_role_permission (plugin_id, permission_key, role)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS system_plugin_logs (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            plugin_id VARCHAR(100) NOT NULL,
+            log_level VARCHAR(20) NOT NULL,
+            log_type VARCHAR(50) NOT NULL,
+            message TEXT NOT NULL,
+            context_json LONGTEXT NULL,
+            created_at DATETIME NOT NULL,
+            KEY idx_system_plugin_logs_plugin (plugin_id),
+            KEY idx_system_plugin_logs_created (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS settings (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -390,6 +708,10 @@ function create_schema(PDO $pdo)
             description TEXT NULL,
             points INT NOT NULL DEFAULT 0,
             code VARCHAR(80) NULL,
+            icon_key VARCHAR(40) NULL DEFAULT 'award',
+            source VARCHAR(40) NOT NULL DEFAULT 'manual',
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            updated_at DATETIME NULL,
             created_at DATETIME NOT NULL,
             UNIQUE KEY uq_medals_user_code (user_id, code),
             CONSTRAINT fk_medal_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -397,12 +719,24 @@ function create_schema(PDO $pdo)
         "CREATE TABLE IF NOT EXISTS events (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             user_id BIGINT UNSIGNED NULL,
+            assigned_user_id BIGINT UNSIGNED NULL,
+            created_by BIGINT UNSIGNED NULL,
             title VARCHAR(190) NOT NULL,
             event_date DATE NOT NULL,
+            event_time TIME NULL,
+            event_type VARCHAR(40) NOT NULL DEFAULT 'general',
+            priority VARCHAR(20) NOT NULL DEFAULT 'normal',
+            status VARCHAR(20) NOT NULL DEFAULT 'scheduled',
             description TEXT NULL,
             color VARCHAR(20) NOT NULL DEFAULT 'primary',
+            reminder_type VARCHAR(40) NULL,
+            reminder_at DATETIME NULL,
+            reminder_sent_at DATETIME NULL,
+            due_day_sent_at DATETIME NULL,
             created_at DATETIME NOT NULL,
             KEY idx_events_date (event_date),
+            KEY idx_events_assigned (assigned_user_id),
+            KEY idx_events_reminder (reminder_at, reminder_sent_at),
             CONSTRAINT fk_event_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS profile_update_requests (
@@ -419,6 +753,83 @@ function create_schema(PDO $pdo)
             CONSTRAINT fk_profile_request_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             CONSTRAINT fk_profile_request_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS identity_documents (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            user_id BIGINT UNSIGNED NOT NULL,
+            document_type VARCHAR(40) NOT NULL,
+            file_path VARCHAR(255) NOT NULL,
+            status VARCHAR(30) NOT NULL DEFAULT 'pending',
+            reviewed_by BIGINT UNSIGNED NULL,
+            review_note TEXT NULL,
+            uploaded_at DATETIME NOT NULL,
+            reviewed_at DATETIME NULL,
+            KEY idx_identity_documents_user (user_id),
+            KEY idx_identity_documents_status (status),
+            CONSTRAINT fk_identity_documents_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_identity_documents_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS files (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            file_uuid CHAR(32) NOT NULL,
+            original_name VARCHAR(255) NOT NULL,
+            stored_name VARCHAR(255) NOT NULL,
+            display_name VARCHAR(190) NOT NULL,
+            extension VARCHAR(20) NOT NULL,
+            mime_type VARCHAR(190) NOT NULL,
+            size_bytes BIGINT UNSIGNED NOT NULL DEFAULT 0,
+            storage_disk VARCHAR(30) NOT NULL DEFAULT 'private',
+            storage_path VARCHAR(500) NOT NULL,
+            checksum_sha256 CHAR(64) NULL,
+            category VARCHAR(50) NOT NULL DEFAULT 'general',
+            status VARCHAR(20) NOT NULL DEFAULT 'active',
+            visibility VARCHAR(20) NOT NULL DEFAULT 'private',
+            uploader_user_id BIGINT UNSIGNED NULL,
+            uploader_role VARCHAR(40) NULL,
+            related_entity_type VARCHAR(60) NULL,
+            related_entity_id BIGINT UNSIGNED NULL,
+            parent_file_id BIGINT UNSIGNED NULL,
+            version_number INT UNSIGNED NOT NULL DEFAULT 1,
+            description TEXT NULL,
+            tags_json LONGTEXT NULL,
+            metadata_json LONGTEXT NULL,
+            archived_at DATETIME NULL,
+            deleted_at DATETIME NULL,
+            deleted_by BIGINT UNSIGNED NULL,
+            deletion_reason TEXT NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NULL,
+            UNIQUE KEY uq_files_uuid (file_uuid),
+            UNIQUE KEY uq_files_storage_path (storage_path),
+            KEY idx_files_status_created (status, created_at),
+            KEY idx_files_category (category),
+            KEY idx_files_uploader (uploader_user_id),
+            KEY idx_files_related (related_entity_type, related_entity_id),
+            KEY idx_files_parent (parent_file_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS file_relations (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            file_id BIGINT UNSIGNED NOT NULL,
+            entity_type VARCHAR(60) NOT NULL,
+            entity_id BIGINT UNSIGNED NOT NULL,
+            relation_type VARCHAR(60) NOT NULL DEFAULT 'attachment',
+            created_by BIGINT UNSIGNED NULL,
+            created_at DATETIME NOT NULL,
+            UNIQUE KEY uq_file_relation (file_id, entity_type, entity_id, relation_type),
+            KEY idx_file_relations_entity (entity_type, entity_id),
+            KEY idx_file_relations_file (file_id),
+            CONSTRAINT fk_file_relations_file FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS file_audit_logs (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            file_id BIGINT UNSIGNED NOT NULL,
+            action VARCHAR(80) NOT NULL,
+            actor_user_id BIGINT UNSIGNED NULL,
+            details_json LONGTEXT NULL,
+            created_at DATETIME NOT NULL,
+            KEY idx_file_audit_file (file_id, created_at),
+            KEY idx_file_audit_actor (actor_user_id),
+            CONSTRAINT fk_file_audit_file FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         "CREATE TABLE IF NOT EXISTS import_batches (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             user_id BIGINT UNSIGNED NOT NULL,
@@ -433,7 +844,7 @@ function create_schema(PDO $pdo)
         "CREATE TABLE IF NOT EXISTS import_rows (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             batch_id BIGINT UNSIGNED NOT NULL,
-            row_number INT NOT NULL,
+            row_index INT NOT NULL,
             raw_json LONGTEXT NOT NULL,
             parsed_json LONGTEXT NULL,
             status VARCHAR(40) NOT NULL,
@@ -455,18 +866,276 @@ function create_schema(PDO $pdo)
             KEY idx_ai_action_status (status),
             CONSTRAINT fk_ai_action_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS audit_logs (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            audit_number VARCHAR(50) NOT NULL,
+            event_type VARCHAR(100) NOT NULL,
+            event_action VARCHAR(100) NOT NULL,
+            event_result VARCHAR(50) NOT NULL DEFAULT 'success',
+            severity VARCHAR(50) NOT NULL DEFAULT 'medium',
+            actor_type VARCHAR(50) NOT NULL DEFAULT 'user',
+            actor_user_id BIGINT UNSIGNED NULL,
+            related_type VARCHAR(100) NOT NULL,
+            related_id BIGINT UNSIGNED NOT NULL,
+            customer_id BIGINT UNSIGNED NULL,
+            contract_id BIGINT UNSIGNED NULL,
+            installment_id BIGINT UNSIGNED NULL,
+            old_values JSON NULL,
+            new_values JSON NULL,
+            description TEXT NULL,
+            ip_address VARCHAR(45) NULL,
+            user_agent TEXT NULL,
+            request_method VARCHAR(20) NULL,
+            request_path VARCHAR(255) NULL,
+            created_at DATETIME NOT NULL,
+            UNIQUE KEY uniq_audit_logs_audit_number (audit_number),
+            KEY idx_audit_logs_event_type (event_type),
+            KEY idx_audit_logs_event_action (event_action),
+            KEY idx_audit_logs_related (related_type, related_id),
+            KEY idx_audit_logs_contract_id (contract_id),
+            KEY idx_audit_logs_created_at (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
     ];
     foreach ($statements as $sql) {
         $pdo->exec($sql);
     }
+    $pdo->exec("INSERT IGNORE INTO system_plugin_permissions (plugin_id, permission_key, label, is_active, created_at) VALUES
+        ('core', 'view_plugins', 'مشاهده پلاگین‌ها', 1, NOW()),
+        ('core', 'manage_plugins', 'مدیریت پلاگین‌ها', 1, NOW()),
+        ('core', 'install_plugins', 'نصب پلاگین‌ها', 1, NOW()),
+        ('core', 'activate_plugins', 'فعال‌سازی پلاگین‌ها', 1, NOW()),
+        ('core', 'deactivate_plugins', 'غیرفعال‌سازی پلاگین‌ها', 1, NOW()),
+        ('core', 'update_plugins', 'بروزرسانی پلاگین‌ها', 1, NOW()),
+        ('core', 'uninstall_plugins', 'حذف پلاگین‌ها', 1, NOW()),
+        ('core', 'purge_plugin_data', 'حذف کامل داده پلاگین', 1, NOW())");
+    create_v126_core_schema($pdo);
+    ensure_install_schema_compatibility($pdo);
+    $pdo->exec(
+        "INSERT IGNORE INTO chat_channels (title, slug, type, is_pinned, is_system, created_at)
+         VALUES ('پرما پرداخت', 'public-announcements', 'public', 1, 1, NOW())"
+    );
+}
+
+function create_v126_core_schema(PDO $pdo)
+{
+    $statements = [
+        "CREATE TABLE IF NOT EXISTS auth_login_attempts (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, scope_type VARCHAR(20) NOT NULL, scope_hash CHAR(64) NOT NULL, failed_count INT UNSIGNED NOT NULL DEFAULT 0, first_failed_at DATETIME NULL, last_failed_at DATETIME NULL, locked_until DATETIME NULL, created_at DATETIME NOT NULL, updated_at DATETIME NULL, UNIQUE KEY uq_auth_login_attempt_scope (scope_type, scope_hash), KEY idx_auth_login_attempt_lock (locked_until), KEY idx_auth_login_attempt_last_failure (last_failed_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS chat_channel_reads (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, channel_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED NOT NULL, last_read_message_id BIGINT UNSIGNED NOT NULL DEFAULT 0, read_at DATETIME NULL, created_at DATETIME NOT NULL, updated_at DATETIME NULL, UNIQUE KEY uq_chat_channel_read_user (channel_id, user_id), KEY idx_chat_channel_reads_user (user_id, last_read_message_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS contract_requests (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, request_uuid VARCHAR(64) NOT NULL, user_id BIGINT UNSIGNED NULL, request_hash CHAR(64) NOT NULL, status VARCHAR(30) NOT NULL DEFAULT 'processing', contract_id BIGINT UNSIGNED NULL, error_message TEXT NULL, created_at DATETIME NOT NULL, completed_at DATETIME NULL, updated_at DATETIME NULL, UNIQUE KEY uq_contract_requests_uuid (request_uuid), KEY idx_contract_requests_contract (contract_id), KEY idx_contract_requests_status (status, created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS payment_requests (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, request_uuid VARCHAR(64) NOT NULL, user_id BIGINT UNSIGNED NULL, installment_id BIGINT UNSIGNED NOT NULL, request_hash CHAR(64) NOT NULL, status VARCHAR(30) NOT NULL DEFAULT 'processing', payment_id BIGINT UNSIGNED NULL, response_code VARCHAR(60) NULL, error_message TEXT NULL, created_at DATETIME NOT NULL, completed_at DATETIME NULL, updated_at DATETIME NULL, UNIQUE KEY uq_payment_requests_uuid (request_uuid), KEY idx_payment_requests_installment (installment_id), KEY idx_payment_requests_payment (payment_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS system_outbox (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, event_type VARCHAR(80) NOT NULL, aggregate_type VARCHAR(80) NULL, aggregate_id BIGINT UNSIGNED NULL, payload_json LONGTEXT NOT NULL, status VARCHAR(30) NOT NULL DEFAULT 'pending', attempts INT UNSIGNED NOT NULL DEFAULT 0, max_attempts INT UNSIGNED NOT NULL DEFAULT 5, last_error TEXT NULL, next_attempt_at DATETIME NULL, processed_at DATETIME NULL, created_at DATETIME NOT NULL, updated_at DATETIME NULL, KEY idx_system_outbox_status (status, next_attempt_at, id), KEY idx_system_outbox_aggregate (aggregate_type, aggregate_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS contract_duplicate_repairs (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, canonical_contract_id BIGINT UNSIGNED NOT NULL, duplicate_contract_id BIGINT UNSIGNED NOT NULL, action VARCHAR(40) NOT NULL, confidence VARCHAR(20) NOT NULL, snapshot_json LONGTEXT NULL, repaired_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, UNIQUE KEY uq_contract_duplicate_repair (duplicate_contract_id), KEY idx_contract_duplicate_canonical (canonical_contract_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS backup_logs (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NULL, action VARCHAR(40) NOT NULL, file_name VARCHAR(255) NULL, status VARCHAR(40) NOT NULL, message TEXT NULL, created_at DATETIME NOT NULL, KEY idx_backup_logs_user (user_id), KEY idx_backup_logs_action (action)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS ecommerce_products (id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, title VARCHAR(190) NOT NULL, slug VARCHAR(220) NOT NULL, sku VARCHAR(100) NULL, category VARCHAR(120) NULL, brand VARCHAR(120) NULL, price BIGINT UNSIGNED NOT NULL DEFAULT 0, sale_price BIGINT UNSIGNED NULL, stock_quantity INT NOT NULL DEFAULT 0, short_description VARCHAR(500) NULL, description LONGTEXT NULL, image_path VARCHAR(255) NULL, status VARCHAR(30) NOT NULL DEFAULT 'active', is_featured TINYINT(1) NOT NULL DEFAULT 0, created_by INT UNSIGNED NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NULL, UNIQUE KEY ux_ecommerce_products_slug (slug), KEY idx_ecommerce_products_status (status), KEY idx_ecommerce_products_category (category)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS ecommerce_orders (id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, order_number VARCHAR(40) NOT NULL, customer_id INT UNSIGNED NULL, full_name VARCHAR(190) NOT NULL, mobile VARCHAR(30) NOT NULL, email VARCHAR(190) NULL, address TEXT NULL, payment_method VARCHAR(40) NOT NULL DEFAULT 'manual', payment_status VARCHAR(30) NOT NULL DEFAULT 'pending', order_status VARCHAR(30) NOT NULL DEFAULT 'pending', subtotal_amount BIGINT UNSIGNED NOT NULL DEFAULT 0, total_amount BIGINT UNSIGNED NOT NULL DEFAULT 0, notes TEXT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NULL, UNIQUE KEY ux_ecommerce_orders_number (order_number), KEY idx_ecommerce_orders_customer (customer_id), KEY idx_ecommerce_orders_status (order_status, payment_status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS ecommerce_order_items (id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, order_id INT UNSIGNED NOT NULL, product_id INT UNSIGNED NULL, product_title VARCHAR(190) NOT NULL, product_sku VARCHAR(100) NULL, quantity INT UNSIGNED NOT NULL DEFAULT 1, unit_price BIGINT UNSIGNED NOT NULL DEFAULT 0, total_price BIGINT UNSIGNED NOT NULL DEFAULT 0, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY idx_ecommerce_order_items_order (order_id), KEY idx_ecommerce_order_items_product (product_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS ecommerce_installment_requests (id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, customer_id INT UNSIGNED NULL, product_id INT UNSIGNED NULL, full_name VARCHAR(190) NOT NULL, mobile VARCHAR(30) NOT NULL, product_needed VARCHAR(255) NOT NULL, notes TEXT NULL, review_note TEXT NULL, reviewed_by INT UNSIGNED NULL, reviewed_at DATETIME NULL, status VARCHAR(30) NOT NULL DEFAULT 'new', created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NULL, KEY idx_ecommerce_installment_requests_customer (customer_id), KEY idx_ecommerce_installment_requests_product (product_id), KEY idx_ecommerce_installment_requests_status (status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS contract_templates (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(190) NOT NULL, description TEXT NULL, status VARCHAR(30) NOT NULL DEFAULT 'active', current_version_id BIGINT UNSIGNED NULL, created_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, updated_at DATETIME NULL, KEY idx_contract_templates_status (status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS contract_template_versions (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, template_id BIGINT UNSIGNED NOT NULL, version_number INT UNSIGNED NOT NULL, body_source LONGTEXT NOT NULL, body_format VARCHAR(30) NOT NULL DEFAULT 'plain_text_v1', content_hash CHAR(64) NOT NULL, change_reason TEXT NULL, status VARCHAR(30) NOT NULL DEFAULT 'draft', created_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, published_by BIGINT UNSIGNED NULL, published_at DATETIME NULL, superseded_at DATETIME NULL, archived_at DATETIME NULL, archived_by BIGINT UNSIGNED NULL, UNIQUE KEY uq_contract_template_version (template_id, version_number), KEY idx_contract_template_versions_status (template_id, status, version_number)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS contract_template_audit_logs (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, action VARCHAR(80) NOT NULL, actor_id BIGINT UNSIGNED NULL, template_id BIGINT UNSIGNED NULL, version_id BIGINT UNSIGNED NULL, old_values_json LONGTEXT NULL, new_values_json LONGTEXT NULL, reason TEXT NULL, ip_address VARCHAR(45) NULL, created_at DATETIME NOT NULL, KEY idx_contract_template_audit_created (created_at), KEY idx_contract_template_audit_template (template_id, version_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS contract_document_rebuild_jobs (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, target_template_version_id BIGINT UNSIGNED NOT NULL, status VARCHAR(30) NOT NULL DEFAULT 'pending', total_documents INT UNSIGNED NOT NULL DEFAULT 0, processed_documents INT UNSIGNED NOT NULL DEFAULT 0, failed_documents INT UNSIGNED NOT NULL DEFAULT 0, last_contract_id BIGINT UNSIGNED NOT NULL DEFAULT 0, failure_report_json LONGTEXT NULL, created_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, started_at DATETIME NULL, completed_at DATETIME NULL, updated_at DATETIME NULL, KEY idx_contract_rebuild_status (status, id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS contract_deletion_archives (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, contract_id BIGINT UNSIGNED NOT NULL, contract_number VARCHAR(80) NOT NULL, customer_id BIGINT UNSIGNED NOT NULL, deletion_reason TEXT NOT NULL, gateway_warning TEXT NULL, corrected_payment_count INT UNSIGNED NOT NULL DEFAULT 0, snapshot_json LONGTEXT NOT NULL, deleted_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, UNIQUE KEY uq_contract_deletion_archive (contract_id, created_at), KEY idx_contract_deletion_archives_customer (customer_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS contract_document_versions (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, contract_id BIGINT UNSIGNED NOT NULL, version_number INT UNSIGNED NOT NULL, rendered_title VARCHAR(190) NULL, rendered_header TEXT NULL, rendered_body LONGTEXT NOT NULL, source VARCHAR(30) NOT NULL DEFAULT 'generated', checksum CHAR(64) NOT NULL, is_published TINYINT(1) NOT NULL DEFAULT 1, is_finalized TINYINT(1) NOT NULL DEFAULT 0, generated_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, UNIQUE KEY uq_contract_document_version (contract_id, version_number), KEY idx_contract_document_versions_published (contract_id, is_published, version_number)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS payment_groups (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, group_number VARCHAR(80) NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, customer_id BIGINT UNSIGNED NOT NULL, created_by BIGINT UNSIGNED NULL, requested_amount DECIMAL(18,2) NOT NULL, allocated_amount DECIMAL(18,2) NOT NULL DEFAULT 0, method VARCHAR(30) NOT NULL DEFAULT 'manual', status VARCHAR(30) NOT NULL DEFAULT 'paid', gateway_track_id VARCHAR(100) NULL, idempotency_key VARCHAR(120) NULL, description TEXT NULL, selection_json LONGTEXT NULL, created_at DATETIME NOT NULL, completed_at DATETIME NULL, UNIQUE KEY uq_payment_groups_number (group_number), UNIQUE KEY uq_payment_groups_idempotency (idempotency_key), KEY idx_payment_groups_contract (contract_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS payment_allocations (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, payment_group_id BIGINT UNSIGNED NOT NULL, payment_id BIGINT UNSIGNED NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, installment_id BIGINT UNSIGNED NOT NULL, allocated_amount DECIMAL(18,2) NOT NULL, created_at DATETIME NOT NULL, UNIQUE KEY uq_payment_allocation_installment (payment_group_id, installment_id), KEY idx_payment_allocations_payment (payment_id), CONSTRAINT fk_payment_allocation_group FOREIGN KEY (payment_group_id) REFERENCES payment_groups(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS installment_bulk_operations (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, operation_number VARCHAR(80) NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, operation_type VARCHAR(40) NOT NULL, installment_ids_json LONGTEXT NOT NULL, old_snapshot_json LONGTEXT NULL, new_snapshot_json LONGTEXT NULL, reason TEXT NOT NULL, performed_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, UNIQUE KEY uq_installment_bulk_operation_number (operation_number), KEY idx_installment_bulk_operations_contract (contract_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS installment_change_requests (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, request_id VARCHAR(48) NOT NULL, installment_id BIGINT UNSIGNED NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, request_type VARCHAR(24) NOT NULL, status VARCHAR(24) NOT NULL, before_snapshot_json LONGTEXT NOT NULL, requested_snapshot_json LONGTEXT NOT NULL, dependency_snapshot_json LONGTEXT NULL, reason TEXT NOT NULL, requested_by BIGINT UNSIGNED NOT NULL, approved_by BIGINT UNSIGNED NULL, affected_installment_ids_json TEXT NULL, calculation_version VARCHAR(64) NOT NULL, created_at DATETIME NOT NULL, applied_at DATETIME NULL, UNIQUE KEY uq_installment_change_request (request_id), KEY idx_installment_change_contract_status (contract_id, status), KEY idx_installment_change_installment (installment_id, created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS installment_voids (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, installment_id BIGINT UNSIGNED NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, previous_amount BIGINT NOT NULL, previous_due_date DATE NOT NULL, void_reason TEXT NOT NULL, voided_by BIGINT UNSIGNED NOT NULL, request_id VARCHAR(48) NOT NULL, created_at DATETIME NOT NULL, UNIQUE KEY uq_installment_void_once (installment_id), KEY idx_installment_void_contract (contract_id, created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS portal_banners (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, placement VARCHAR(40) NOT NULL DEFAULT 'customer_dashboard', audience_role VARCHAR(30) NOT NULL DEFAULT 'customer', title VARCHAR(190) NOT NULL, body VARCHAR(500) NULL, eyebrow VARCHAR(80) NULL, desktop_image_path VARCHAR(255) NULL, mobile_image_path VARCHAR(255) NULL, image_alt VARCHAR(190) NULL, cta_label VARCHAR(80) NULL, link_type VARCHAR(20) NOT NULL DEFAULT 'none', link_target VARCHAR(500) NULL, open_in_new_tab TINYINT(1) NOT NULL DEFAULT 0, tone VARCHAR(20) NOT NULL DEFAULT 'primary', starts_at DATETIME NULL, ends_at DATETIME NULL, is_active TINYINT(1) NOT NULL DEFAULT 1, sort_order INT NOT NULL DEFAULT 0, created_by BIGINT UNSIGNED NULL, updated_by BIGINT UNSIGNED NULL, archived_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, archived_at DATETIME NULL, KEY idx_portal_banners_delivery (placement, audience_role, is_active, archived_at, sort_order), KEY idx_portal_banners_schedule (starts_at, ends_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS legal_case_costs (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, cost_uuid VARCHAR(64) NOT NULL, legal_case_id BIGINT UNSIGNED NULL, contract_id BIGINT UNSIGNED NOT NULL, source_legal_log_id BIGINT UNSIGNED NULL, category VARCHAR(100) NOT NULL, title VARCHAR(190) NOT NULL, amount_toman BIGINT NOT NULL, paid_amount_toman BIGINT NOT NULL DEFAULT 0, cost_date DATE NOT NULL, payment_status VARCHAR(30) NOT NULL DEFAULT 'pending', approval_status VARCHAR(30) NOT NULL DEFAULT 'pending_approval', paid_by BIGINT UNSIGNED NULL, chargeable_to_customer TINYINT(1) NOT NULL DEFAULT 1, description TEXT NULL, external_reference VARCHAR(190) NULL, attachment_path VARCHAR(255) NULL, created_by BIGINT UNSIGNED NULL, approved_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, approved_at DATETIME NULL, reversed_at DATETIME NULL, reversal_reason TEXT NULL, UNIQUE KEY uq_legal_case_cost_uuid (cost_uuid), UNIQUE KEY uq_legal_case_cost_source_log (source_legal_log_id), KEY idx_legal_case_cost_contract_status (contract_id, approval_status, payment_status), KEY idx_legal_case_cost_case_date (legal_case_id, cost_date)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS legal_cost_payment_allocations (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, payment_group_id BIGINT UNSIGNED NOT NULL, payment_id BIGINT UNSIGNED NOT NULL, legal_case_cost_id BIGINT UNSIGNED NOT NULL, contract_id BIGINT UNSIGNED NOT NULL, allocated_amount_toman BIGINT NOT NULL, reversal_of_allocation_id BIGINT UNSIGNED NULL, is_reversal TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL, KEY idx_legal_cost_payment_group (payment_group_id), KEY idx_legal_cost_payment_cost (legal_case_cost_id, is_reversal), UNIQUE KEY uq_legal_cost_payment_source (payment_id, legal_case_cost_id, is_reversal)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS medal_definitions (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, slug VARCHAR(100) NOT NULL, title VARCHAR(190) NOT NULL, short_description VARCHAR(255) NULL, full_description TEXT NULL, how_to_earn TEXT NULL, icon_key VARCHAR(50) NOT NULL DEFAULT 'award', icon_path VARCHAR(255) NULL, color VARCHAR(20) NOT NULL DEFAULT '#f59e0b', category VARCHAR(30) NOT NULL DEFAULT 'activity', points INT NOT NULL DEFAULT 0, award_type VARCHAR(30) NOT NULL DEFAULT 'automatic', behavior_type VARCHAR(30) NOT NULL DEFAULT 'permanent', revocation_behavior VARCHAR(30) NOT NULL DEFAULT 'never', reactivation_behavior VARCHAR(30) NOT NULL DEFAULT 'restore', criteria_type VARCHAR(50) NULL, criteria_json LONGTEXT NULL, is_repeatable TINYINT(1) NOT NULL DEFAULT 0, maximum_awards INT UNSIGNED NULL, is_active TINYINT(1) NOT NULL DEFAULT 1, sort_order INT NOT NULL DEFAULT 0, created_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, updated_at DATETIME NULL, last_evaluated_at DATETIME NULL, archived_at DATETIME NULL, UNIQUE KEY uq_medal_definition_slug (slug), KEY idx_medal_definitions_active_sort (is_active, sort_order), KEY idx_medal_definitions_behavior (behavior_type, revocation_behavior)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS user_medals (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, medal_definition_id BIGINT UNSIGNED NOT NULL, source VARCHAR(30) NOT NULL DEFAULT 'automatic', note TEXT NULL, related_contract_id BIGINT UNSIGNED NULL, related_payment_id BIGINT UNSIGNED NULL, awarded_by BIGINT UNSIGNED NULL, awarded_at DATETIME NOT NULL, revoked_at DATETIME NULL, revoked_by BIGINT UNSIGNED NULL, revoke_reason TEXT NULL, created_at DATETIME NOT NULL, KEY idx_user_medals_user_active (user_id, revoked_at), KEY idx_user_medals_definition (medal_definition_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        "CREATE TABLE IF NOT EXISTS user_medal_history (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_medal_id BIGINT UNSIGNED NOT NULL, action VARCHAR(30) NOT NULL, reason TEXT NULL, performed_by BIGINT UNSIGNED NULL, snapshot_json LONGTEXT NULL, created_at DATETIME NOT NULL, KEY idx_user_medal_history_medal (user_medal_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+    ];
+    foreach ($statements as $sql) {
+        $pdo->exec($sql);
+    }
+    $pdo->exec("INSERT INTO portal_banners (placement, audience_role, title, body, eyebrow, cta_label, link_type, link_target, tone, is_active, sort_order)
+        SELECT 'customer_dashboard', 'customer', 'پرداخت اقساط، ساده و شفاف', 'مانده، سررسید و مبلغ قابل پرداخت امروز را یکجا ببینید و با اطمینان پرداخت کنید.', 'پروما پی همراه شما', 'مشاهده اقساط', 'internal', 'installments/panel', 'primary', 1, 10
+        WHERE NOT EXISTS (SELECT 1 FROM portal_banners WHERE placement = 'customer_dashboard' AND archived_at IS NULL)");
+    $pdo->exec("INSERT IGNORE INTO contract_templates (id, name, description, status, created_at) VALUES (1, 'قالب اصلی قرارداد', 'قالب پیش فرض اسناد قرارداد', 'active', NOW())");
+    $pdo->exec("INSERT IGNORE INTO medal_definitions (slug, title, short_description, icon_key, color, category, points, criteria_type, criteria_json, sort_order, created_at) VALUES
+        ('first-contract', 'اولین قرارداد', 'اولین قرارداد اقساطی شما', 'file-text', '#2563eb', 'contract', 10, 'contract_count', '{\"minimum\":1}', 10, NOW()),
+        ('first-payment', 'اولین پرداخت موفق', 'اولین پرداخت موفق ثبت شد', 'check-circle', '#16a34a', 'payment', 15, 'payment_count', '{\"minimum\":1}', 20, NOW()),
+        ('on-time-payment', 'پرداخت به‌موقع', 'پرداخت در موعد انجام شد', 'clock', '#0f766e', 'early_payment', 20, 'on_time_count', '{\"minimum\":1}', 30, NOW()),
+        ('five-on-time-payments', '۵ پرداخت به‌موقع', 'پنج پرداخت خوش‌حسابانه', 'award', '#d97706', 'early_payment', 50, 'on_time_count', '{\"minimum\":5}', 40, NOW()),
+        ('first-settlement', 'تسویه اولین قرارداد', 'اولین قرارداد تسویه شد', 'shield-check', '#7c3aed', 'settlement', 60, 'completed_contract_count', '{\"minimum\":1}', 50, NOW()),
+        ('early-payment', 'پرداخت زودهنگام', 'پرداخت پیش از سررسید', 'zap', '#0891b2', 'early_payment', 25, 'early_payment_count', '{\"minimum\":1}', 35, NOW()),
+        ('five-early-payments', '۵ قسط زودتر از موعد', 'پنج پرداخت زودهنگام', 'trending-up', '#0284c7', 'early_payment', 55, 'early_payment_count', '{\"minimum\":5}', 45, NOW()),
+        ('ten-on-time-payments', '۱۰ پرداخت به‌موقع', 'ده پرداخت خوش‌حسابانه', 'star', '#ca8a04', 'early_payment', 90, 'on_time_count', '{\"minimum\":10}', 47, NOW()),
+        ('early-settlement', 'تسویه زودهنگام قرارداد', 'تسویه پیش از موعد', 'fast-forward', '#9333ea', 'settlement', 90, 'early_settlement_count', '{\"minimum\":1}', 55, NOW()),
+        ('three-successful-contracts', '۳ قرارداد موفق', 'سه قرارداد غیرلغوشده', 'layers', '#4f46e5', 'contract', 45, 'contract_count', '{\"minimum\":3}', 58, NOW()),
+        ('ten-successful-contracts', '۱۰ قرارداد موفق', 'ده قرارداد غیرلغوشده', 'briefcase', '#3730a3', 'contract', 120, 'contract_count', '{\"minimum\":10}', 59, NOW()),
+        ('no-overdue', 'بدون معوقه', 'اقساط معوق ندارید', 'shield', '#16a34a', 'activity', 35, 'overdue_count', '{\"maximum\":0}', 65, NOW()),
+        ('special-customer', 'مشتری ویژه', 'امتیاز ویژه مشتری', 'crown', '#be123c', 'special', 150, NULL, '{}', 70, NOW()),
+        ('loyal-customer', 'مشتری وفادار', 'پنج قرارداد موفق', 'heart', '#db2777', 'loyalty', 80, 'contract_count', '{\"minimum\":5}', 60, NOW())");
+    $pdo->exec("UPDATE medal_definitions SET behavior_type = 'reversible', revocation_behavior = 'automatic', reactivation_behavior = 'restore' WHERE slug = 'no-overdue'");
+}
+
+function ensure_install_schema_compatibility(PDO $pdo)
+{
+    foreach ([
+        'avatar_category' => 'VARCHAR(40) NULL AFTER avatar_key',
+        'avatar_path' => 'VARCHAR(500) NULL AFTER avatar_key',
+        'avatar_version' => 'BIGINT UNSIGNED NOT NULL DEFAULT 0 AFTER avatar_path',
+        'avatar_updated_at' => 'DATETIME NULL AFTER avatar_version',
+        'avatar_source' => "VARCHAR(30) NOT NULL DEFAULT 'fallback' AFTER avatar_category",
+        'avatar_locked' => 'TINYINT(1) NOT NULL DEFAULT 0 AFTER avatar_source',
+        'avatar_suggestion_reason' => 'VARCHAR(255) NULL AFTER avatar_locked',
+    ] as $column => $definition) {
+        if (!installer_column_exists($pdo, 'users', $column)) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN {$column} {$definition}");
+        }
+    }
+    foreach ([
+        'channel_id' => 'BIGINT UNSIGNED NULL AFTER receiver_id',
+        'target_unit' => 'VARCHAR(80) NULL AFTER is_read',
+        'is_system' => 'TINYINT(1) NOT NULL DEFAULT 0 AFTER target_unit',
+    ] as $column => $definition) {
+        if (!installer_column_exists($pdo, 'messages', $column)) {
+            $pdo->exec("ALTER TABLE messages ADD COLUMN {$column} {$definition}");
+        }
+    }
+
+    foreach ([
+        'previous_status' => 'VARCHAR(30) NULL AFTER cancellation_reason',
+        'cancellation_metadata_json' => 'LONGTEXT NULL AFTER previous_status',
+    ] as $column => $definition) {
+        if (!installer_column_exists($pdo, 'contracts', $column)) {
+            $pdo->exec("ALTER TABLE contracts ADD COLUMN {$column} {$definition}");
+        }
+    }
+
+    foreach ([
+        'request_uuid' => 'VARCHAR(64) NULL AFTER notes',
+        'legal_referred_at' => 'DATETIME NULL AFTER request_uuid',
+        'archived_at' => 'DATETIME NULL AFTER legal_referred_at',
+    ] as $column => $definition) {
+        if (!installer_column_exists($pdo, 'legal_cases', $column)) {
+            $pdo->exec("ALTER TABLE legal_cases ADD COLUMN {$column} {$definition}");
+        }
+    }
+    if (!installer_index_exists($pdo, 'legal_cases', 'uq_legal_case_request_uuid')) {
+        $pdo->exec('ALTER TABLE legal_cases ADD UNIQUE KEY uq_legal_case_request_uuid (request_uuid)');
+    }
+
+    try {
+        $pdo->exec('ALTER TABLE messages MODIFY receiver_id BIGINT UNSIGNED NULL');
+    } catch (Throwable $e) {
+        $receiverFk = installer_foreign_key_name($pdo, 'messages', 'receiver_id', 'users');
+        if (!$receiverFk) {
+            throw $e;
+        }
+        $pdo->exec('ALTER TABLE messages DROP FOREIGN KEY ' . installer_quote_identifier($receiverFk));
+        $pdo->exec('ALTER TABLE messages MODIFY receiver_id BIGINT UNSIGNED NULL');
+        if (!installer_foreign_key_name($pdo, 'messages', 'receiver_id', 'users')) {
+            $pdo->exec('ALTER TABLE messages ADD CONSTRAINT fk_message_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE');
+        }
+    }
+
+    if (!installer_index_exists($pdo, 'messages', 'idx_message_channel')) {
+        $pdo->exec('ALTER TABLE messages ADD INDEX idx_message_channel (channel_id, id)');
+    }
+    if (!installer_foreign_key_name($pdo, 'messages', 'channel_id', 'chat_channels')) {
+        $pdo->exec('ALTER TABLE messages ADD CONSTRAINT fk_message_channel FOREIGN KEY (channel_id) REFERENCES chat_channels(id) ON DELETE CASCADE');
+    }
+}
+
+function installer_table_exists(PDO $pdo, $table)
+{
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(*) FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+    );
+    $stmt->execute([(string) $table]);
+    $exists = (int) $stmt->fetchColumn() > 0;
+    $stmt->closeCursor();
+    return $exists;
+}
+
+function installer_column_exists(PDO $pdo, $table, $column)
+{
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(*) FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+    );
+    $stmt->execute([(string) $table, (string) $column]);
+    $exists = (int) $stmt->fetchColumn() > 0;
+    $stmt->closeCursor();
+    return $exists;
+}
+
+function installer_index_exists(PDO $pdo, $table, $index)
+{
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(*) FROM information_schema.STATISTICS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?'
+    );
+    $stmt->execute([(string) $table, (string) $index]);
+    $exists = (int) $stmt->fetchColumn() > 0;
+    $stmt->closeCursor();
+    return $exists;
+}
+
+function installer_foreign_key_name(PDO $pdo, $table, $column, $referencedTable)
+{
+    $stmt = $pdo->prepare(
+        'SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+           AND COLUMN_NAME = ?
+           AND REFERENCED_TABLE_NAME = ?
+         LIMIT 1'
+    );
+    $stmt->execute([(string) $table, (string) $column, (string) $referencedTable]);
+    $name = $stmt->fetchColumn();
+    $stmt->closeCursor();
+    return $name ? (string) $name : null;
+}
+
+function installer_quote_identifier($identifier)
+{
+    return '`' . str_replace('`', '``', (string) $identifier) . '`';
+}
+
+function seed_system_announcements(PDO $pdo, $adminId)
+{
+    if (!$adminId) {
+        return;
+    }
+    $channelStmt = $pdo->prepare("SELECT id, title FROM chat_channels WHERE slug = 'public-announcements' LIMIT 1");
+    $channelStmt->execute();
+    $channel = $channelStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$channel) {
+        return;
+    }
+    $exists = $pdo->prepare('SELECT id FROM messages WHERE channel_id = ? AND is_system = 1 LIMIT 1');
+    $exists->execute([(int) $channel['id']]);
+    if ($exists->fetch(PDO::FETCH_ASSOC)) {
+        return;
+    }
+    $stmt = $pdo->prepare(
+        'INSERT INTO messages (sender_id, receiver_id, channel_id, body, is_read, target_unit, is_system, created_at)
+         VALUES (?, NULL, ?, ?, 1, ?, 1, NOW())'
+    );
+    $stmt->execute([
+        (int) $adminId,
+        (int) $channel['id'],
+        'به ' . $channel['title'] . ' خوش آمدید. اعلان‌های مهم سامانه در همین بخش منتشر می‌شود.',
+        $channel['title'],
+    ]);
 }
 
 function seed_settings(PDO $pdo)
 {
     $defaults = [
-        'system_name' => 'پرما پرداخت',
-        'logo_text' => 'پرما پرداخت',
-        'footer_text' => 'پنل مدیریت مالی راست‌چین',
+        'system_name' => 'پروما',
+        'logo_text' => 'پروما',
+        'logo_path' => '',
+        'logo_icon_path' => '',
+        'favicon_path' => '',
+        'footer_text' => 'پروما پی سامانه جامع پرداخت',
         'company_name' => 'موبایل پروما',
         'company_representative_name' => '',
         'company_representative_national_id' => '',
@@ -474,19 +1143,53 @@ function seed_settings(PDO $pdo)
         'company_postal_code' => '',
         'company_phone' => '',
         'contract_prefix' => 'PR',
-        'contract_next_serial' => '1001',
+        'contract_next_serial' => '1',
         'contract_year' => substr(to_english_digits(jdate(date('Y-m-d'))), 0, 4) ?: '1404',
+        'contract_number_format' => 'PR-{SERIAL:6}',
         'contract_template_body' => '',
         'monthly_penalty_rate' => '2',
+        'legal_monthly_penalty_rate' => '4',
+        'late_penalty_grace_days' => '0',
+        'contract_legal_penalty_clause' => 'اینجانب امانت‌دار اعلام می‌کنم بند جریمه دیرکرد عادی و جریمه دیرکرد مرحله حقوقی را مطالعه کرده و می‌پذیرم. تا پیش از ثبت یا ارجاع پرونده حقوقی، جریمه دیرکرد با نرخ عادی ماهانه محاسبه می‌شود؛ از زمان ورود قرارداد به مرحله حقوقی یا شکایت، جریمه دیرکرد با نرخ حقوقی ماهانه محاسبه خواهد شد.',
         'monthly_reward_rate' => '1',
+        'zibal_enabled' => '1',
+        'zibal_test_mode' => '0',
         'zibal_merchant' => '',
         'callback_base_url' => '',
+        'card_transfer_enabled' => '1',
+        'card_transfer_account_name' => '',
+        'card_transfer_card_number' => '',
+        'card_transfer_sheba' => '',
+        'card_transfer_qr_text' => '',
+        'notifications_sound_enabled' => '1',
+        'notifications_sound_volume' => '0.45',
+        'chat_file_auto_delete_days' => '7',
+        'password_reset_enabled' => '1',
+        'ippanel_api_key' => '',
+        'ippanel_from_number' => '',
+        'ippanel_password_reset_pattern_code' => '',
+        'ippanel_password_reset_pattern_key' => 'code',
         'openrouter_api_key' => '',
         'openrouter_model' => 'openai/gpt-4.1-mini',
+        'calendar_notifications_enabled' => '1',
+        'calendar_default_reminder_type' => '1_day',
+        'calendar_notify_admin_without_user' => '1',
+        'calendar_due_day_repeat_enabled' => '1',
+        'calendar_cron_token' => bin2hex(random_bytes(24)),
+        'social_instagram_url' => '',
+        'social_telegram_url' => '',
+        'social_whatsapp_url' => '',
+        'social_facebook_url' => '',
+        'social_x_url' => '',
+        'social_youtube_url' => '',
+        'social_linkedin_url' => '',
+        'social_website_url' => '',
+        'ecommerce_enabled' => '1',
+        'landing_enabled' => '1',
     ];
     $stmt = $pdo->prepare('INSERT IGNORE INTO settings (setting_key, setting_value, is_secret) VALUES (?, ?, ?)');
     foreach ($defaults as $key => $value) {
-        $stmt->execute([$key, $value, in_array($key, ['zibal_merchant', 'openrouter_api_key'], true) ? 1 : 0]);
+        $stmt->execute([$key, $value, in_array($key, ['zibal_merchant', 'openrouter_api_key', 'calendar_cron_token', 'ippanel_api_key'], true) ? 1 : 0]);
     }
 }
 
@@ -498,5 +1201,6 @@ function installer_page($title, $body)
         . '<link rel="stylesheet" href="' . e(template_asset_url('css/style.css')) . '">'
         . '<link rel="stylesheet" href="' . e(template_asset_url('css/responsive.css')) . '">'
         . '<link rel="stylesheet" href="' . e(asset_url('assets/css/app.css')) . '">'
-        . '</head><body class="installer-template"><main class="install-shell"><section class="install-panel"><span class="auth-logo-mark">پ</span><h1>' . e($title) . '</h1><p>راه‌اندازی سامانه مدیریت قرارداد و اقساط</p>' . $body . '</section></main><script src="' . e(asset_url('assets/js/app.js')) . '"></script></body></html>';
+        . '<link rel="stylesheet" href="' . e(asset_url('assets/css/design-system/tokens.css')) . '">'
+        . '</head><body class="installer-template"><main class="install-shell"><section class="install-panel"><h1>' . e($title) . '</h1><p>راه‌اندازی سامانه مدیریت قرارداد و اقساط</p>' . $body . '</section></main><script src="' . e(asset_url('assets/js/app.js')) . '"></script></body></html>';
 }

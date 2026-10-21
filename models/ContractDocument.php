@@ -9,138 +9,60 @@ class ContractDocument extends Model
         if (self::$schemaReady) {
             return;
         }
-
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS contract_items (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                contract_id BIGINT UNSIGNED NOT NULL,
-                product_model VARCHAR(190) NOT NULL,
-                imei_1 VARCHAR(80) NULL,
-                imei_2 VARCHAR(80) NULL,
-                description TEXT NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
-                INDEX idx_contract_items_contract (contract_id),
-                CONSTRAINT fk_contract_items_contract
-                    FOREIGN KEY (contract_id) REFERENCES contracts(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS contract_guarantees (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                contract_id BIGINT UNSIGNED NOT NULL,
-                guarantee_type VARCHAR(50) NOT NULL,
-                guarantee_count INT NOT NULL DEFAULT 1,
-                guarantee_serial VARCHAR(190) NULL,
-                guarantee_description TEXT NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
-                INDEX idx_contract_guarantees_contract (contract_id),
-                CONSTRAINT fk_contract_guarantees_contract
-                    FOREIGN KEY (contract_id) REFERENCES contracts(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS contract_guarantor_people (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                contract_id BIGINT UNSIGNED NOT NULL,
-                full_name VARCHAR(190) NOT NULL,
-                father_name VARCHAR(190) NULL,
-                national_id VARCHAR(20) NULL,
-                mobile VARCHAR(30) NULL,
-                address TEXT NULL,
-                relationship VARCHAR(100) NULL,
-                description TEXT NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
-                INDEX idx_contract_guarantor_people_contract (contract_id),
-                CONSTRAINT fk_contract_guarantor_people_contract
-                    FOREIGN KEY (contract_id) REFERENCES contracts(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS generated_contract_documents (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                contract_id BIGINT UNSIGNED NOT NULL,
-                rendered_body LONGTEXT NOT NULL,
-                generated_by BIGINT UNSIGNED NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
-                UNIQUE KEY uq_generated_contract (contract_id),
-                CONSTRAINT fk_generated_contract_documents_contract
-                    FOREIGN KEY (contract_id) REFERENCES contracts(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-        self::execute(
-            "CREATE TABLE IF NOT EXISTS contract_change_logs (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                contract_id BIGINT UNSIGNED NOT NULL,
-                changed_by BIGINT UNSIGNED NULL,
-                change_type VARCHAR(80) NOT NULL,
-                old_value_json LONGTEXT NULL,
-                new_value_json LONGTEXT NULL,
-                reason TEXT NULL,
-                created_at DATETIME NOT NULL,
-                INDEX idx_contract_change_logs_contract (contract_id),
-                CONSTRAINT fk_contract_change_logs_contract
-                    FOREIGN KEY (contract_id) REFERENCES contracts(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-        );
-
-        try {
-            self::execute('ALTER TABLE installments ADD COLUMN guarantee_serial VARCHAR(190) NULL AFTER notes');
-        } catch (Throwable $e) {
-        }
-
+        // Contract-document schema is provisioned by installation and migrations, never by a page request.
         self::$schemaReady = true;
     }
 
     public static function variables()
     {
+        return array_keys(self::variableDescriptions());
+    }
+
+    public static function variableDescriptions()
+    {
         return [
-            '{{contract_number}}',
-            '{{contract_date}}',
-            '{{company_name}}',
-            '{{company_representative_name}}',
-            '{{company_representative_national_id}}',
-            '{{company_address}}',
-            '{{company_postal_code}}',
-            '{{company_phone}}',
-            '{{customer_full_name}}',
-            '{{customer_father_name}}',
-            '{{customer_national_id}}',
-            '{{customer_issued_from}}',
-            '{{customer_mobile}}',
-            '{{customer_secondary_phone}}',
-            '{{customer_address}}',
-            '{{items_table}}',
-            '{{installments_guarantees_table}}',
-            '{{guarantors_section}}',
-            '{{guarantee_type}}',
-            '{{guarantee_count}}',
-            '{{guarantee_serial}}',
-            '{{guarantee_description}}',
-            '{{installment_count}}',
-            '{{total_contract_amount}}',
-            '{{down_payment_amount}}',
-            '{{remaining_amount}}',
-            '{{monthly_penalty_rate}}',
-            '{{first_due_date}}',
-            '{{last_due_date}}',
-            '{{signature_section}}',
+            '{{contract_number}}' => 'شماره قرارداد',
+            '{{contract_date}}' => 'تاریخ قرارداد',
+            '{{document_title}}' => 'عنوان چاپی قرارداد',
+            '{{document_header}}' => 'هدر چاپی قرارداد',
+            '{{company_name}}' => 'نام مجموعه',
+            '{{company_representative_name}}' => 'نام نماینده مجموعه',
+            '{{company_representative_national_id}}' => 'کد ملی نماینده مجموعه',
+            '{{company_address}}' => 'آدرس مجموعه',
+            '{{company_postal_code}}' => 'کد پستی مجموعه',
+            '{{company_phone}}' => 'شماره تماس مجموعه',
+            '{{customer_full_name}}' => 'نام و نام خانوادگی مشتری',
+            '{{customer_father_name}}' => 'نام پدر مشتری',
+            '{{customer_national_id}}' => 'کد ملی مشتری',
+            '{{customer_issued_from}}' => 'محل صدور مشتری',
+            '{{customer_mobile}}' => 'شماره موبایل مشتری',
+            '{{customer_secondary_phone}}' => 'شماره تماس دوم مشتری',
+            '{{customer_address}}' => 'آدرس مشتری',
+            '{{items_table}}' => 'جدول کالاهای قرارداد',
+            '{{installments_guarantees_table}}' => 'جدول اقساط و ضمانت',
+            '{{guarantors_section}}' => 'بخش مشخصات ضامن‌ها',
+            '{{guarantee_type}}' => 'نوع ضمانت',
+            '{{guarantee_count}}' => 'تعداد ضمانت',
+            '{{guarantee_amount}}' => 'مبلغ ضمانت',
+            '{{guarantee_serial}}' => 'شناسه چک یا سفته',
+            '{{guarantee_description}}' => 'توضیحات ضمانت',
+            '{{installment_count}}' => 'تعداد اقساط',
+            '{{total_contract_amount}}' => 'مبلغ اصل قرارداد',
+            '{{down_payment_amount}}' => 'مبلغ پیش‌پرداخت',
+            '{{remaining_amount}}' => 'مانده قابل تقسیط',
+            '{{monthly_penalty_rate}}' => 'نرخ جریمه عادی ماهانه',
+            '{{legal_monthly_penalty_rate}}' => 'نرخ جریمه حقوقی ماهانه',
+            '{{late_penalty_grace_days}}' => 'مدت تنفس دیرکرد به روز',
+            '{{legal_penalty_clause}}' => 'متن تایید جریمه حقوقی',
+            '{{first_due_date}}' => 'تاریخ اولین سررسید',
+            '{{last_due_date}}' => 'تاریخ آخرین سررسید',
+            '{{signature_section}}' => 'محل امضاها',
         ];
     }
 
     public static function defaultTemplate()
     {
         return <<<'TEXT'
-قرارداد اجاره به شرط تملیک
-
 این قرارداد فیمابین:
 
 موجر: {{company_representative_name}} به شماره ملی {{company_representative_national_id}} به نشانی {{company_address}}، کدپستی {{company_postal_code}} که از این پس "موبایل پروما" نامیده می‌شود.
@@ -170,7 +92,10 @@ class ContractDocument extends Model
 
 ماده ۴ - شرایط تأخیر در پرداخت و عواقب آن
 
-- در صورت تأخیر در پرداخت هر قسط، بابت هر ماه دیرکرد، {{monthly_penalty_rate}} درصد مرکب از مبلغ قسط به عنوان جریمه تأخیر اضافه می‌شود.
+- در صورت تأخیر در پرداخت هر قسط، تا پیش از ارجاع یا ثبت پرونده حقوقی، بابت هر ماه دیرکرد، {{monthly_penalty_rate}} درصد از مانده قسط به عنوان جریمه تأخیر عادی محاسبه می‌شود.
+- در صورت ورود قرارداد به مرحله حقوقی یا شکایت، از همان تاریخ به بعد بابت هر ماه دیرکرد، {{legal_monthly_penalty_rate}} مرکب درصد از مانده قسط به عنوان جریمه تأخیر حقوقی محاسبه می‌شود.
+- تا {{late_penalty_grace_days}} روز پس از سررسید هر قسط، جریمه دیرکرد محاسبه نمی‌شود و پس از پایان این مهلت، جریمه از روز بعد محاسبه خواهد شد.
+- {{legal_penalty_clause}}
 - در صورت تأخیر بیش از ۲۰ روز، موبایل پروما مجاز است کالای امانت را بازپس گیرد و ضمانت ارائه‌شده را وصول نماید.
 - اگر ظرف ۷ روز پس از اخطار رسمی، کالای امانت در شرایط اولیه بازگردانده نشود، موبایل پروما حق شکایت و اعلام سرقت را دارد.
 - در صورت نقص یا خسارت به کالای امانت، امانت‌دار موظف به جبران خسارت طبق نظر کارشناس رسمی می‌باشد.
@@ -197,10 +122,20 @@ TEXT;
         return self::fetchAll('SELECT * FROM contract_items WHERE contract_id = ? ORDER BY id', [(int) $contractId]);
     }
 
+    public static function itemsForContracts(array $contractIds)
+    {
+        return self::groupedByContract('contract_items', $contractIds);
+    }
+
     public static function guarantees($contractId)
     {
         self::ensureSchema();
         return self::fetchAll('SELECT * FROM contract_guarantees WHERE contract_id = ? ORDER BY id', [(int) $contractId]);
+    }
+
+    public static function guaranteesForContracts(array $contractIds)
+    {
+        return self::groupedByContract('contract_guarantees', $contractIds);
     }
 
     public static function guarantorPeople($contractId)
@@ -209,10 +144,205 @@ TEXT;
         return self::fetchAll('SELECT * FROM contract_guarantor_people WHERE contract_id = ? ORDER BY id', [(int) $contractId]);
     }
 
+    /**
+     * Canonical document guarantors. Existing customer guarantors are attached
+     * through contract_guarantors, while the legacy "new guarantor" form
+     * creates a contract-bound person. Both render identically in the document.
+     */
+    public static function guarantorsForDocument($contractId)
+    {
+        self::ensureSchema();
+        $contractId = (int) $contractId;
+        $linked = [];
+        try {
+            $linked = self::fetchAll(
+                'SELECT cg.guarantor_id, COALESCE(s.full_name, u.full_name) AS full_name,
+                        COALESCE(s.father_name, u.father_name) AS father_name,
+                        COALESCE(s.national_id, u.national_id) AS national_id,
+                        COALESCE(s.mobile, u.mobile) AS mobile,
+                        COALESCE(s.address, u.address) AS address,
+                        COALESCE(s.relationship, \'ضامن قرارداد\') AS relationship,
+                        COALESCE(s.description, \'\') AS description,
+                        CASE WHEN s.id IS NULL THEN \'live_fallback\' ELSE \'linked_snapshot\' END AS source_type
+                 FROM contract_guarantors cg
+                 JOIN users u ON u.id = cg.guarantor_id
+                 LEFT JOIN contract_guarantor_snapshots s
+                    ON s.contract_id = cg.contract_id AND s.guarantor_id = cg.guarantor_id
+                 WHERE cg.contract_id = ?
+                 ORDER BY cg.guarantor_id ASC',
+                [$contractId]
+            );
+        } catch (Throwable $e) {
+            if (!self::missingGuarantorSnapshotTable($e)) {
+                throw $e;
+            }
+            $linked = self::fetchAll(
+                'SELECT cg.guarantor_id, u.full_name, u.father_name, u.national_id, u.mobile, u.address,
+                        \'ضامن قرارداد\' AS relationship, \'\' AS description, \'live_fallback\' AS source_type
+                 FROM contract_guarantors cg
+                 JOIN users u ON u.id = cg.guarantor_id
+                 WHERE cg.contract_id = ?
+                 ORDER BY cg.guarantor_id ASC',
+                [$contractId]
+            );
+        }
+
+        $manual = self::guarantorPeople($contractId);
+        foreach ($manual as &$person) {
+            $person['guarantor_id'] = null;
+            $person['source_type'] = 'contract_person';
+            // A new guarantor now also has a customer account. Keep the contract
+            // snapshot (including relationship/address), but render that person once.
+            foreach ($linked as $key => $account) {
+                $identity = trim(to_english_digits($person['national_id'] ?? ''));
+                if ($identity !== '' && $identity === trim(to_english_digits($account['national_id'] ?? ''))) {
+                    $person['guarantor_id'] = (int) $account['guarantor_id'];
+                    unset($linked[$key]);
+                }
+            }
+        }
+        unset($person);
+
+        return array_merge($linked, $manual);
+    }
+
+    /** Captures linked profile data when it first becomes part of a contract. */
+    public static function snapshotLinkedGuarantors($contractId, $actorId = null)
+    {
+        self::ensureSchema();
+        try {
+            self::execute(
+                'INSERT IGNORE INTO contract_guarantor_snapshots
+                    (contract_id, guarantor_id, full_name, father_name, national_id, mobile, address, relationship, description, created_by, created_at)
+                 SELECT cg.contract_id, u.id, u.full_name, u.father_name, u.national_id, u.mobile, u.address,
+                        \'ضامن قرارداد\', NULL, ?, NOW()
+                 FROM contract_guarantors cg
+                 JOIN users u ON u.id = cg.guarantor_id
+                 WHERE cg.contract_id = ?',
+                [$actorId ? (int) $actorId : null, (int) $contractId]
+            );
+        } catch (Throwable $e) {
+            if (!self::missingGuarantorSnapshotTable($e)) {
+                throw $e;
+            }
+        }
+    }
+
+    public static function guarantorPeopleForContracts(array $contractIds)
+    {
+        return self::groupedByContract('contract_guarantor_people', $contractIds);
+    }
+
+    /**
+     * Contract index pages preload edit dialogs. Fetch every relation for the
+     * visible page at once instead of issuing one query per contract/dialog.
+     */
+    protected static function groupedByContract($table, array $contractIds)
+    {
+        self::ensureSchema();
+        $allowed = ['contract_items', 'contract_guarantees', 'contract_guarantor_people'];
+        if (!in_array($table, $allowed, true)) {
+            throw new InvalidArgumentException('رابط سند قرارداد معتبر نیست.');
+        }
+        $contractIds = array_values(array_unique(array_filter(array_map('intval', $contractIds))));
+        if (!$contractIds) {
+            return [];
+        }
+
+        $result = array_fill_keys($contractIds, []);
+        $placeholders = implode(',', array_fill(0, count($contractIds), '?'));
+        $rows = self::fetchAll(
+            'SELECT * FROM `' . $table . '` WHERE contract_id IN (' . $placeholders . ') ORDER BY contract_id ASC, id ASC',
+            $contractIds
+        );
+        foreach ($rows as $row) {
+            $result[(int) $row['contract_id']][] = $row;
+        }
+        return $result;
+    }
+
     public static function document($contractId)
     {
         self::ensureSchema();
+        try {
+            $version = self::fetch(
+                'SELECT id AS document_version_id, contract_id, version_number, rendered_title, rendered_header, rendered_body, source, checksum, is_published, is_finalized, generated_by, created_at
+                 FROM contract_document_versions
+                 WHERE contract_id = ? AND is_published = 1
+                 ORDER BY version_number DESC, id DESC LIMIT 1',
+                [(int) $contractId]
+            );
+            if ($version) {
+                return $version;
+            }
+        } catch (Throwable $e) {
+            if (!self::missingVersionTable($e)) {
+                throw $e;
+            }
+        }
         return self::fetch('SELECT * FROM generated_contract_documents WHERE contract_id = ?', [(int) $contractId]);
+    }
+
+    /**
+     * The canonical, immutable-at-read-time representation used by both the
+     * on-screen contract preview and the printable document. Keeping this
+     * assembly in one place prevents a future view change from reintroducing
+     * divergent guarantor, title or fallback-rendering queries.
+     *
+     * This method deliberately does not regenerate persisted documents. A
+     * finalized legal document must only change through its explicit version
+     * workflow, never because somebody opened a preview or print route.
+     */
+    public static function viewModel($contractId)
+    {
+        $contractId = (int) $contractId;
+        $document = self::document($contractId);
+
+        return [
+            'document' => $document,
+            'title' => trim((string) ($document['rendered_title'] ?? '')) ?: self::renderTitle($contractId),
+            'header' => trim((string) ($document['rendered_header'] ?? '')) ?: self::renderHeader($contractId),
+            'body' => (string) ($document['rendered_body'] ?? self::render($contractId)),
+            'guarantors' => self::guarantorsForDocument($contractId),
+        ];
+    }
+
+    /** Put the configured representative signature into the seller's print box only. */
+    public static function injectSellerSignature($body, array $settings, array $contract)
+    {
+        $body = (string) $body;
+        $signaturePath = trim((string) ($settings['contract_seller_signature_path'] ?? ''));
+        if ($signaturePath === '' || strpos($body, 'data-contract-seller-signature') !== false) return $body;
+
+        $sellerName = trim((string) ($settings['company_representative_name'] ?? ''))
+            ?: trim((string) ($settings['company_name'] ?? ''))
+            ?: 'نماینده مجموعه';
+        $imageUrl = asset_url($signaturePath);
+        $signatureBox = '<div class="contract-signature-box contract-seller-signature" data-contract-seller-signature>'
+            . '<img src="' . e($imageUrl) . '" alt="امضای ' . e($sellerName) . '">'
+            . '<span>امضای ' . e($sellerName) . '</span></div>';
+
+        $boxPattern = '~<div\b(?=[^>]*\bclass\s*=\s*(["\'])[^"\']*\bcontract-signature-box\b[^"\']*\1)[^>]*>.*?</div>~isu';
+        $bodyWithSeller = preg_replace_callback($boxPattern, static function () use ($signatureBox) { return $signatureBox; }, $body, 1, $replaced);
+        if (is_string($bodyWithSeller) && $replaced > 0) return $bodyWithSeller;
+
+        $gridPattern = '~(<(?:section|div)\b(?=[^>]*\bclass\s*=\s*(["\'])[^"\']*\bcontract-signature-grid\b[^"\']*\2)[^>]*>)~i';
+        $bodyWithSeller = preg_replace_callback($gridPattern, static function ($match) use ($signatureBox) { return $match[1] . $signatureBox; }, $body, 1, $gridCount);
+        if (is_string($bodyWithSeller) && $gridCount > 0) return $bodyWithSeller;
+        return $body . '<section class="contract-signature-grid">' . $signatureBox . '</section>';
+    }
+
+    public static function versions($contractId)
+    {
+        self::ensureSchema();
+        try {
+            return self::fetchAll('SELECT v.*, u.full_name AS generated_by_name FROM contract_document_versions v LEFT JOIN users u ON u.id = v.generated_by WHERE v.contract_id = ? ORDER BY v.version_number DESC, v.id DESC', [(int) $contractId]);
+        } catch (Throwable $e) {
+            if (!self::missingVersionTable($e)) {
+                throw $e;
+            }
+            return [];
+        }
     }
 
     public static function logs($contractId)
@@ -265,12 +395,13 @@ TEXT;
             $description = 'نوع ضمانت: ' . $other . ($description !== '' ? "\n" . $description : '');
         }
         self::execute(
-            'INSERT INTO contract_guarantees (contract_id, guarantee_type, guarantee_count, guarantee_serial, guarantee_description, created_at)
-             VALUES (?, ?, ?, ?, ?, NOW())',
+            'INSERT INTO contract_guarantees (contract_id, guarantee_type, guarantee_count, guarantee_amount, guarantee_serial, guarantee_description, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, NOW())',
             [
                 (int) $contractId,
                 $type,
                 max(1, (int) to_english_digits($data['guarantee_count'] ?? 1)),
+                normalize_money($data['guarantee_amount'] ?? 0),
                 trim(to_english_digits($data['guarantee_serial'] ?? '')) ?: null,
                 $description ?: null,
             ]
@@ -307,47 +438,177 @@ TEXT;
     public static function generate($contractId, $generatedBy = null)
     {
         self::ensureSchema();
+        self::assertEditableContract($contractId);
+        $effectiveTemplate = ContractTemplateService::getEffectiveTemplate();
+        $templateVersionId = !empty($effectiveTemplate['id']) ? (int) $effectiveTemplate['id'] : null;
         $rendered = self::render((int) $contractId);
+        $title = self::renderTitle((int) $contractId);
+        $header = self::renderHeader((int) $contractId);
         $existing = self::document((int) $contractId);
         self::execute(
-            'INSERT INTO generated_contract_documents (contract_id, rendered_body, generated_by, created_at, updated_at)
-             VALUES (?, ?, ?, NOW(), NULL)
-             ON DUPLICATE KEY UPDATE rendered_body = VALUES(rendered_body), generated_by = VALUES(generated_by), updated_at = NOW()',
-            [(int) $contractId, $rendered, $generatedBy ? (int) $generatedBy : null]
+            'INSERT INTO generated_contract_documents (contract_id, template_version_id, template_status, rendered_title, rendered_header, rendered_body, generated_by, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NULL)
+             ON DUPLICATE KEY UPDATE template_version_id = VALUES(template_version_id), template_status = VALUES(template_status), rendered_title = VALUES(rendered_title), rendered_header = VALUES(rendered_header), rendered_body = VALUES(rendered_body), generated_by = VALUES(generated_by), updated_at = NOW()',
+            [(int) $contractId, $templateVersionId, 'current', $title, $header, $rendered, $generatedBy ? (int) $generatedBy : null]
         );
+        self::recordVersion((int) $contractId, $title, $header, $rendered, 'generated', $generatedBy, $templateVersionId);
         self::log(
             (int) $contractId,
             $existing ? 'regenerate_document' : 'generate_document',
             $existing ? ['rendered_body' => $existing['rendered_body']] : null,
-            ['rendered_body' => $rendered],
+            ['rendered_title' => $title, 'rendered_header' => $header, 'rendered_body' => $rendered],
             $existing ? 'تولید مجدد متن قرارداد' : 'تولید متن قرارداد',
             $generatedBy
         );
         return $rendered;
     }
 
-    public static function saveRenderedBody($contractId, $body, $userId, $reason)
+    public static function saveRenderedBody($contractId, $body, $userId, $reason, $title = null, $header = null)
     {
         self::ensureSchema();
+        self::assertEditableContract($contractId);
         $body = trim((string) $body);
         if ($body === '') {
             throw new InvalidArgumentException('متن قرارداد نمی‌تواند خالی باشد.');
         }
+        $body = ContractTemplateRenderer::sanitizeHtml($body);
+        $title = trim((string) ($title ?? '')) ?: self::renderTitle((int) $contractId);
+        $header = trim((string) ($header ?? '')) ?: self::renderHeader((int) $contractId);
         $existing = self::document((int) $contractId);
         self::execute(
-            'INSERT INTO generated_contract_documents (contract_id, rendered_body, generated_by, created_at, updated_at)
-             VALUES (?, ?, ?, NOW(), NULL)
-             ON DUPLICATE KEY UPDATE rendered_body = VALUES(rendered_body), generated_by = VALUES(generated_by), updated_at = NOW()',
-            [(int) $contractId, $body, $userId ? (int) $userId : null]
+            'INSERT INTO generated_contract_documents (contract_id, rendered_title, rendered_header, rendered_body, generated_by, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, NOW(), NULL)
+             ON DUPLICATE KEY UPDATE rendered_title = VALUES(rendered_title), rendered_header = VALUES(rendered_header), rendered_body = VALUES(rendered_body), generated_by = VALUES(generated_by), updated_at = NOW()',
+            [(int) $contractId, $title, $header, $body, $userId ? (int) $userId : null]
         );
+        self::recordVersion((int) $contractId, $title, $header, $body, 'manual', $userId);
         self::log(
             (int) $contractId,
             'edit_document',
             $existing ? ['rendered_body' => $existing['rendered_body']] : null,
-            ['rendered_body' => $body],
+            ['rendered_title' => $title, 'rendered_header' => $header, 'rendered_body' => $body],
             $reason ?: 'ویرایش دستی متن قرارداد',
             $userId
         );
+    }
+
+    public static function publishVersion($versionId, $userId = null)
+    {
+        self::ensureSchema();
+        $version = self::fetch('SELECT * FROM contract_document_versions WHERE id = ? LIMIT 1', [(int) $versionId]);
+        if (!$version) {
+            throw new InvalidArgumentException('نسخه قرارداد پیدا نشد.');
+        }
+        self::assertEditableContract((int) $version['contract_id']);
+        self::begin();
+        try {
+            self::execute('UPDATE contract_document_versions SET is_published = 0 WHERE contract_id = ?', [(int) $version['contract_id']]);
+            self::execute('UPDATE contract_document_versions SET is_published = 1 WHERE id = ?', [(int) $versionId]);
+            self::log((int) $version['contract_id'], 'publish_document_version', null, ['version_id' => (int) $versionId], 'انتشار نسخه قرارداد', $userId);
+            self::commit();
+        } catch (Throwable $e) {
+            self::rollBack();
+            throw $e;
+        }
+    }
+
+    public static function finalizeVersion($versionId, $userId = null)
+    {
+        self::ensureSchema();
+        $version = self::fetch('SELECT * FROM contract_document_versions WHERE id = ? LIMIT 1', [(int) $versionId]);
+        if (!$version) {
+            throw new InvalidArgumentException('نسخه قرارداد پیدا نشد.');
+        }
+        self::assertEditableContract((int) $version['contract_id']);
+        self::begin();
+        try {
+            self::execute('UPDATE contract_document_versions SET is_published = 0 WHERE contract_id = ?', [(int) $version['contract_id']]);
+            self::execute('UPDATE contract_document_versions SET is_published = 1, is_finalized = 1 WHERE id = ?', [(int) $versionId]);
+            self::log((int) $version['contract_id'], 'finalize_document_version', null, ['version_id' => (int) $versionId], 'نهایی‌سازی نسخه قرارداد', $userId);
+            self::commit();
+        } catch (Throwable $e) {
+            self::rollBack();
+            throw $e;
+        }
+    }
+
+    protected static function recordVersion($contractId, $title, $header, $body, $source, $userId = null, $templateVersionId = null)
+    {
+        try {
+            $checksum = hash('sha256', (string) $title . "\0" . (string) $header . "\0" . (string) $body);
+            $latest = self::fetch('SELECT * FROM contract_document_versions WHERE contract_id = ? ORDER BY version_number DESC, id DESC LIMIT 1', [(int) $contractId]);
+            if ($latest && hash_equals((string) $latest['checksum'], $checksum)) {
+                return (int) $latest['id'];
+            }
+            $versionNumber = ((int) ($latest['version_number'] ?? 0)) + 1;
+            $finalized = self::fetch('SELECT id FROM contract_document_versions WHERE contract_id = ? AND is_finalized = 1 LIMIT 1', [(int) $contractId]);
+            $published = $finalized ? 0 : 1;
+            if ($published) {
+                self::execute('UPDATE contract_document_versions SET is_published = 0 WHERE contract_id = ?', [(int) $contractId]);
+            }
+            self::execute(
+                'INSERT INTO contract_document_versions (contract_id, template_version_id, version_number, rendered_title, rendered_header, rendered_body, source, checksum, is_published, is_finalized, generated_by, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, NOW())',
+                [(int) $contractId, $templateVersionId ? (int) $templateVersionId : null, $versionNumber, $title, $header, $body, trim((string) $source) ?: 'generated', $checksum, $published, $userId ? (int) $userId : null]
+            );
+            return (int) self::lastInsertId();
+        } catch (Throwable $e) {
+            if (!self::missingVersionTable($e)) {
+                throw $e;
+            }
+            return null;
+        }
+    }
+
+    protected static function assertEditableContract($contractId)
+    {
+        $contract = Contract::find((int) $contractId);
+        if (!$contract) {
+            throw new InvalidArgumentException('قرارداد پیدا نشد.');
+        }
+        if (($contract['status'] ?? '') === 'cancelled') {
+            throw new InvalidArgumentException('قرارداد لغوشده فقط قابل مشاهده و چاپ است و متن آن قابل تغییر نیست.');
+        }
+    }
+
+    protected static function missingVersionTable(Throwable $e)
+    {
+        return $e instanceof PDOException && (int) ($e->errorInfo[1] ?? 0) === 1146;
+    }
+
+    protected static function missingGuarantorSnapshotTable(Throwable $e)
+    {
+        return $e instanceof PDOException && (int) ($e->errorInfo[1] ?? 0) === 1146;
+    }
+
+    public static function renderTitle($contractId)
+    {
+        return self::renderPlainTemplate((int) $contractId, 'contract_document_title', 'قرارداد اجاره به شرط تملیک / امانت‌داری');
+    }
+
+    public static function renderHeader($contractId)
+    {
+        return self::renderPlainTemplate((int) $contractId, 'contract_document_header', "{{company_name}}\nشماره قرارداد: {{contract_number}} | تاریخ: {{contract_date}}\nامانت‌دار: {{customer_full_name}} | کد ملی: {{customer_national_id}}");
+    }
+
+    protected static function renderPlainTemplate($contractId, $settingKey, $fallback)
+    {
+        $contract = Contract::find((int) $contractId);
+        if (!$contract) {
+            throw new InvalidArgumentException('قرارداد پیدا نشد.');
+        }
+        $settings = Settings::allKeyed();
+        $template = trim((string) ($settings[$settingKey] ?? '')) ?: $fallback;
+        return trim(strtr($template, self::plainReplacements($contract, $settings)));
+    }
+
+    public static function previewTemplateHtml($template)
+    {
+        $template = trim((string) $template);
+        if ($template === '') {
+            $template = self::defaultTemplate();
+        }
+        return '<div class="contract-document-body">' . ContractTemplateRenderer::render($template, ContractTemplateRenderer::FORMAT_PLAIN) . '</div>';
     }
 
     public static function render($contractId)
@@ -357,22 +618,23 @@ TEXT;
             throw new InvalidArgumentException('قرارداد پیدا نشد.');
         }
         $settings = Settings::allKeyed();
-        $template = trim((string) ($settings['contract_template_body'] ?? ''));
-        if ($template === '') {
-            $template = self::defaultTemplate();
-        }
+        $effectiveTemplate = ContractTemplateService::getEffectiveTemplate();
+        $template = (string) ($effectiveTemplate['body_source'] ?? self::defaultTemplate());
+        $templateFormat = (string) ($effectiveTemplate['body_format'] ?? ContractTemplateRenderer::FORMAT_PLAIN);
         $items = self::items((int) $contractId);
         $guarantees = self::guarantees((int) $contractId);
-        $guarantorPeople = self::guarantorPeople((int) $contractId);
+        $guarantors = self::guarantorsForDocument((int) $contractId);
         $installments = Installment::all(['contract_id' => (int) $contractId]);
         $firstGuarantee = $guarantees[0] ?? [];
         $lastInstallment = $installments ? end($installments) : null;
-        $remaining = max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0));
+        $remaining = max(0, normalize_money($contract['principal_amount'] ?? 0) - normalize_money($contract['down_payment_amount'] ?? 0));
+        $legalPenaltyClause = self::legalPenaltyClause($settings);
 
-        $html = nl2br(e($template), false);
         $replace = [
             '{{contract_number}}' => e($contract['contract_number']),
             '{{contract_date}}' => e(jdate($contract['start_date'])),
+            '{{document_title}}' => e(self::renderTitle((int) $contractId)),
+            '{{document_header}}' => nl2br(e(self::renderHeader((int) $contractId)), false),
             '{{company_name}}' => e($settings['company_name'] ?? ''),
             '{{company_representative_name}}' => e($settings['company_representative_name'] ?? ''),
             '{{company_representative_national_id}}' => e(to_persian_digits($settings['company_representative_national_id'] ?? '')),
@@ -388,9 +650,10 @@ TEXT;
             '{{customer_address}}' => e($contract['customer_address'] ?? ''),
             '{{items_table}}' => self::itemsTable($items),
             '{{installments_guarantees_table}}' => self::installmentsGuaranteesTable($installments, $firstGuarantee),
-            '{{guarantors_section}}' => self::guarantorsSection($guarantorPeople),
+            '{{guarantors_section}}' => self::guarantorsSection($guarantors),
             '{{guarantee_type}}' => e($firstGuarantee['guarantee_type'] ?? ''),
             '{{guarantee_count}}' => e(to_persian_digits($firstGuarantee['guarantee_count'] ?? 0)),
+            '{{guarantee_amount}}' => e(money_toman($firstGuarantee['guarantee_amount'] ?? 0)),
             '{{guarantee_serial}}' => e(to_persian_digits($firstGuarantee['guarantee_serial'] ?? '')),
             '{{guarantee_description}}' => e($firstGuarantee['guarantee_description'] ?? ''),
             '{{installment_count}}' => e(to_persian_digits(count($installments))),
@@ -398,14 +661,125 @@ TEXT;
             '{{down_payment_amount}}' => money_toman($contract['down_payment_amount'] ?? 0),
             '{{remaining_amount}}' => money_toman($remaining),
             '{{monthly_penalty_rate}}' => e(to_persian_digits($settings['monthly_penalty_rate'] ?? $contract['monthly_interest_rate'] ?? '0')),
+            '{{legal_monthly_penalty_rate}}' => e(to_persian_digits($settings['legal_monthly_penalty_rate'] ?? $settings['monthly_penalty_rate'] ?? '0')),
+            '{{late_penalty_grace_days}}' => e(to_persian_digits($settings['late_penalty_grace_days'] ?? '0')),
+            '{{legal_penalty_clause}}' => e($legalPenaltyClause),
             '{{first_due_date}}' => e(jdate($contract['first_due_date'])),
             '{{last_due_date}}' => e($lastInstallment ? jdate($lastInstallment['due_date']) : ''),
-            '{{signature_section}}' => self::signatureSection($guarantorPeople),
+            '{{signature_section}}' => self::signatureSection($guarantors),
         ];
-        foreach ($replace as $placeholder => $value) {
-            $html = str_replace($placeholder, $value, $html);
+        $html = ContractTemplateRenderer::render($template, $templateFormat, $replace);
+        if (!self::templateContainsLegalPenalty($template)) {
+            $html .= '<p class="contract-paragraph contract-note">' . e($legalPenaltyClause) . '</p>';
         }
         return '<div class="contract-document-body">' . $html . '</div>';
+    }
+
+    protected static function plainReplacements(array $contract, array $settings)
+    {
+        return [
+            '{{contract_number}}' => (string) ($contract['contract_number'] ?? ''),
+            '{{contract_date}}' => jdate($contract['start_date'] ?? date('Y-m-d')),
+            '{{company_name}}' => (string) ($settings['company_name'] ?? ''),
+            '{{company_representative_name}}' => (string) ($settings['company_representative_name'] ?? ''),
+            '{{company_representative_national_id}}' => to_persian_digits($settings['company_representative_national_id'] ?? ''),
+            '{{company_address}}' => (string) ($settings['company_address'] ?? ''),
+            '{{company_postal_code}}' => to_persian_digits($settings['company_postal_code'] ?? ''),
+            '{{company_phone}}' => to_persian_digits($settings['company_phone'] ?? ''),
+            '{{customer_full_name}}' => (string) ($contract['customer_name'] ?? ''),
+            '{{customer_father_name}}' => (string) ($contract['customer_father_name'] ?? ''),
+            '{{customer_national_id}}' => to_persian_digits($contract['national_id'] ?? ''),
+            '{{customer_issued_from}}' => (string) ($contract['customer_issued_from'] ?? ''),
+            '{{customer_mobile}}' => to_persian_digits($contract['mobile'] ?? ''),
+            '{{customer_secondary_phone}}' => to_persian_digits($contract['secondary_phone'] ?? ''),
+            '{{customer_address}}' => (string) ($contract['customer_address'] ?? ''),
+            '{{monthly_penalty_rate}}' => to_persian_digits($settings['monthly_penalty_rate'] ?? '0'),
+            '{{legal_monthly_penalty_rate}}' => to_persian_digits($settings['legal_monthly_penalty_rate'] ?? $settings['monthly_penalty_rate'] ?? '0'),
+            '{{late_penalty_grace_days}}' => to_persian_digits($settings['late_penalty_grace_days'] ?? '0'),
+        ];
+    }
+
+    protected static function legalPenaltyClause(array $settings)
+    {
+        $clause = trim((string) ($settings['contract_legal_penalty_clause'] ?? ''));
+        if ($clause === '') {
+            $clause = 'اینجانب امانت‌دار اعلام می‌کنم بند جریمه دیرکرد عادی و جریمه دیرکرد مرحله حقوقی را مطالعه کرده و می‌پذیرم. تا پیش از ثبت یا ارجاع پرونده حقوقی، جریمه دیرکرد با نرخ عادی ماهانه محاسبه می‌شود؛ پس از ورود قرارداد به مرحله حقوقی یا شکایت، نرخ حقوقی از تاریخ سررسید هر قسط معوق محاسبه خواهد شد.';
+        }
+        return strtr($clause, [
+            '{{monthly_penalty_rate}}' => to_persian_digits($settings['monthly_penalty_rate'] ?? '0'),
+            '{{legal_monthly_penalty_rate}}' => to_persian_digits($settings['legal_monthly_penalty_rate'] ?? $settings['monthly_penalty_rate'] ?? '0'),
+            '{{late_penalty_grace_days}}' => to_persian_digits($settings['late_penalty_grace_days'] ?? '0'),
+        ]);
+    }
+
+    protected static function templateContainsLegalPenalty($template)
+    {
+        return strpos((string) $template, '{{legal_monthly_penalty_rate}}') !== false
+            || strpos((string) $template, '{{legal_penalty_clause}}') !== false;
+    }
+
+    protected static function templateToHtml($template)
+    {
+        return ContractTemplateRenderer::render($template, self::looksLikeHtml($template) ? ContractTemplateRenderer::FORMAT_HTML : ContractTemplateRenderer::FORMAT_PLAIN);
+    }
+
+    public static function sanitizeHtml($html)
+    {
+        return ContractTemplateRenderer::sanitizeHtml($html);
+    }
+
+    protected static function sanitizeInlineStyle($style)
+    {
+        $allowed = [
+            'color',
+            'background-color',
+            'text-align',
+            'direction',
+            'font-weight',
+            'font-style',
+            'text-decoration',
+        ];
+        $safe = [];
+        foreach (explode(';', (string) $style) as $rule) {
+            if (!preg_match('/^\s*([a-z-]+)\s*:\s*([^;]+)\s*$/i', $rule, $match)) {
+                continue;
+            }
+            $property = strtolower($match[1]);
+            $value = trim($match[2]);
+            if (!in_array($property, $allowed, true) || preg_match('/url\s*\(|expression\s*\(|javascript:|behavior\s*:/i', $value)) {
+                continue;
+            }
+            if ($property === 'text-align' && !in_array(strtolower($value), ['right', 'left', 'center', 'justify'], true)) {
+                continue;
+            }
+            if ($property === 'direction' && !in_array(strtolower($value), ['rtl', 'ltr'], true)) {
+                continue;
+            }
+            if (in_array($property, ['color', 'background-color'], true) && !preg_match('/^(#[0-9a-f]{3,8}|rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)|rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|1|0?\.\d+)\s*\)|[a-z]+)$/i', $value)) {
+                continue;
+            }
+            $safe[] = $property . ':' . $value;
+        }
+        return implode(';', $safe);
+    }
+
+    protected static function looksLikeHtml($value)
+    {
+        $value = (string) $value;
+        return (bool) preg_match('/<\s*\/?\s*(p|br|div|span|strong|b|em|i|u|s|ul|ol|li|blockquote|h[1-6]|table|thead|tbody|tfoot|tr|th|td|small|sup|sub|a|pre|code)\b/i', $value);
+    }
+
+    protected static function decodeHtmlEntities($value)
+    {
+        $value = (string) $value;
+        for ($i = 0; $i < 2; $i++) {
+            $decoded = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if ($decoded === $value) {
+                break;
+            }
+            $value = $decoded;
+        }
+        return $value;
     }
 
     public static function log($contractId, $type, $oldValue = null, $newValue = null, $reason = '', $userId = null)
@@ -472,7 +846,9 @@ TEXT;
 
     protected static function signatureSection(array $people)
     {
-        $labels = ['امضای موبایل پروما', 'امضای امانت‌دار'];
+        // The buyer is named «امانت‌دار» in parts of the legal body, but the
+        // signature block must identify the contracting customer explicitly.
+        $labels = ['امضای موبایل پروما', 'امضای مشتری'];
         foreach ($people as $index => $person) {
             $labels[] = count($people) === 1 ? 'امضای ضامن' : 'امضای ضامن ' . to_persian_digits($index + 1);
         }

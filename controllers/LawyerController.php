@@ -5,19 +5,34 @@ class LawyerController extends Controller
     public function index()
     {
         $this->requireRole('lawyer');
-        $this->render('lawyer/index', [
-            'title' => 'پنل حقوقی',
-            'cases' => LegalCase::all(['lawyer_id' => Auth::id()]),
-            'eligible' => LegalCase::eligibleContracts(),
-        ]);
+        $params = array_filter([
+            'q' => trim((string) ($_GET['q'] ?? '')),
+            'status' => in_array($_GET['status'] ?? '', ['open', 'closed'], true) ? $_GET['status'] : '',
+            'page' => max(1, (int) ($_GET['page'] ?? 1)),
+        ], static fn ($value) => $value !== '' && $value !== 1);
+        redirect('legal', $params);
+    }
+
+    public function export()
+    {
+        $this->requireRole('lawyer');
+        redirect('legal/export', array_filter([
+            'q' => trim((string) ($_GET['q'] ?? '')),
+            'status' => in_array($_GET['status'] ?? '', ['open', 'closed'], true) ? $_GET['status'] : '',
+        ], static fn ($value) => $value !== ''));
     }
 
     public function create()
     {
         $this->requireRole('lawyer');
         $this->onlyPost();
-        LegalCase::createCase(Auth::id(), (int) $_POST['contract_id'], $_POST['notes'] ?? '');
-        set_flash('success', 'پرونده شکایت ثبت شد.');
+        try {
+            $caseId = LegalCase::createSelfInitiated(Auth::id(), (int) ($_POST['contract_id'] ?? 0), $_POST['notes'] ?? '', $_POST['legal_case_request_uuid'] ?? '');
+            set_flash('success', 'پرونده داخلی حقوقی ایجاد شد. این ثبت، ثبت رسمی قضایی یا ابلاغ رسمی نیست.');
+            redirect('legal/show/' . $caseId);
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ایجاد پرونده داخلی انجام نشد.');
+        }
         redirect('lawyer');
     }
 
@@ -26,7 +41,7 @@ class LawyerController extends Controller
         $this->requireRole('lawyer');
         $this->onlyPost();
         $case = LegalCase::find((int) $id);
-        if (!$case || ($case['lawyer_id'] && (int) $case['lawyer_id'] !== (int) Auth::id())) {
+        if (!$case || !LegalCase::canAccess($case, Auth::user())) {
             set_flash('error', 'دسترسی به این پرونده مجاز نیست.');
             redirect('lawyer');
         }
@@ -37,6 +52,6 @@ class LawyerController extends Controller
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'به‌روزرسانی پرونده انجام نشد.');
         }
-        redirect('lawyer');
+        redirect('legal/show/' . (int) $id);
     }
 }

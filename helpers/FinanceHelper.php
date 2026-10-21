@@ -1,27 +1,34 @@
 <?php
 
+require_once __DIR__ . '/InstallmentSettlementService.php';
+require_once __DIR__ . '/InstallmentFinancialStateService.php';
+require_once __DIR__ . '/PaymentAllocationService.php';
+require_once __DIR__ . '/CustomerPenaltyPresentationService.php';
+
 class FinanceHelper
 {
     public static function installmentAmount($principal, $months, $monthlyRate, $interestType)
     {
-        $principal = max(0, (float) $principal);
+        $principal = normalize_money($principal);
         $months = max(1, (int) $months);
         if ($principal <= 0) {
             return 0;
         }
-        $rate = (float) $monthlyRate / 100;
+        $rate = MoneyMath::rateUnits($monthlyRate);
         if ($interestType === 'compound') {
-            $total = $principal * pow(1 + $rate, $months);
+            $total = $principal;
+            for ($month = 0; $month < $months; $month++) {
+                $total = MoneyMath::applyMonthlyRate($total, $rate);
+            }
         } else {
-            $total = $principal * (1 + ($rate * $months));
+            $total = $principal + MoneyMath::rateForDays($principal, $rate, $months * 30);
         }
-        return self::roundInstallmentAmount($total / $months);
+        return self::roundInstallmentAmount(MoneyMath::ceilDiv($total, $months));
     }
 
     public static function roundInstallmentAmount($amount)
     {
-        $step = 100000;
-        return (int) (ceil(max(0, (float) $amount) / $step) * $step);
+        return MoneyMath::ceilToStep(normalize_money($amount), 100000);
     }
 
     public static function addMonths($date, $months)
@@ -36,58 +43,55 @@ class FinanceHelper
 
     public static function preview(array $installment, array $payments, array $settings, $date = null)
     {
-        $date = $date ?: date('Y-m-d');
-        $state = self::stateOnDate($installment, $payments, $settings, $date);
-        $reward = self::potentialReward($installment, $state['remaining_amount'], $settings, $date);
-        $payable = max(0, ceil($state['remaining_amount'] + $state['penalty'] - $reward));
-
-        return [
-            'base_amount' => $state['base_amount'],
-            'paid_amount' => $state['paid_amount'],
-            'remaining_amount' => $state['remaining_amount'],
-            'penalty' => $state['penalty'],
-            'reward' => $reward,
-            'payable' => $payable,
-            'status' => self::status($state['base_amount'], $state['paid_amount'], $installment['due_date'], $date),
-        ];
+        $state = InstallmentFinancialStateService::state($installment, $payments, $settings, $date ?: date('Y-m-d'));
+        return array_merge($state, CustomerPenaltyPresentationService::forState($state, $settings));
     }
 
     public static function paymentPreview(array $installment, array $payments, array $settings, $paymentAmount = 0, $paymentDate = null)
     {
         $paymentDate = $paymentDate ?: date('Y-m-d');
         $paymentAmount = normalize_money($paymentAmount);
-        $state = self::stateOnDate($installment, $payments, $settings, $paymentDate);
-        $possibleReward = self::potentialReward($installment, $state['remaining_amount'], $settings, $paymentDate);
-        $fullPayableWithReward = max(0, ceil($state['remaining_amount'] + $state['penalty'] - $possibleReward));
-        $fullPayableWithoutReward = max(0, ceil($state['remaining_amount'] + $state['penalty']));
-        $isFull = $state['remaining_amount'] <= 0 || ($paymentAmount > 0 && $paymentAmount >= min($fullPayableWithReward, $fullPayableWithoutReward));
-        $reward = $isFull ? $possibleReward : 0;
-        $payable = max(0, ceil($state['remaining_amount'] + $state['penalty'] - $reward));
-        $remainingAfter = $isFull ? 0 : max(0, ceil($state['remaining_amount'] - min($paymentAmount, $state['remaining_amount'])));
-        $paidAfter = max(0, ceil($state['base_amount'] - $remainingAfter));
-        $finalStatus = self::status($state['base_amount'], $paidAfter, $installment['due_date'], $paymentDate);
-        $message = 'محاسبه پرداخت انجام شد.';
-        if (!$isFull && $paymentDate <= $installment['due_date']) {
-            $message = 'پرداخت جزئی شامل پاداش تسویه زودتر از موعد نمی‌شود.';
-        } elseif ($paymentDate > $installment['due_date']) {
-            $message = 'جریمه دیرکرد تا تاریخ پرداخت محاسبه شده است.';
-        } elseif ($isFull && $reward > 0) {
-            $message = 'این پرداخت مشمول پاداش تسویه به‌موقع است.';
+        $state = self::preview($installment, $payments, $settings, $paymentDate);
+        $payable = normalize_money($state['final_payable'] ?? 0);
+        $allocation = [];
+        if ($payable > 0 && $paymentAmount > 0) {
+            $plan = PaymentAllocationService::plan([$installment], min($paymentAmount, $payable), $paymentDate, $settings);
+            $allocation = $plan['allocations'][0] ?? [];
         }
-
+        $remainingAfter = normalize_money($allocation['remaining_after'] ?? $state['remaining_principal']);
         return [
-            'base_amount' => $state['base_amount'],
-            'paid_amount' => $state['paid_amount'],
-            'remaining_before_payment' => $state['remaining_amount'],
-            'calculated_penalty' => $state['penalty'],
-            'calculated_reward' => $reward,
-            'payable_on_payment_date' => $payable,
-            'remaining_after_payment' => $remainingAfter,
-            'paid_amount_after_payment' => $paidAfter,
-            'final_status' => $finalStatus,
-            'is_full_payment' => $isFull,
-            'message' => $message,
+            'base_amount' => $state['original_principal'], 'paid_amount' => $state['effective_paid_principal'],
+            'remaining_before_payment' => $state['remaining_principal'], 'penalty' => $state['total_penalty'],
+            'calculated_penalty' => $state['total_penalty'], 'normal_penalty' => $state['normal_penalty'],
+            'legal_penalty' => $state['legal_penalty'], 'penalty_mode' => $state['penalty_mode'],
+            'normal_penalty_accrued' => $state['normal_penalty_accrued'],
+            'legal_penalty_accrued' => $state['legal_penalty_accrued'],
+            'effective_penalty_payable' => $state['effective_penalty_payable'],
+            'projected_legal_penalty' => $state['projected_legal_penalty'],
+            'show_projected_legal_penalty' => $state['show_projected_legal_penalty'],
+            'projected_legal_penalty_customer_message' => $state['projected_legal_penalty_customer_message'],
+            'penalty_rate' => $state['penalty_rate'], 'normal_penalty_rate' => $state['normal_penalty_rate'],
+            'legal_penalty_rate' => $state['legal_penalty_rate'], 'grace_days' => $state['grace_days'],
+            'penalty_start_date' => $state['penalty_start_date'], 'overdue_days' => $state['overdue_days'],
+            'calculated_reward' => normalize_money($allocation['reward_applied'] ?? 0),
+            'payable_on_payment_date' => $payable, 'remaining_after_payment' => $remainingAfter,
+            'paid_amount_after_payment' => max(0, $state['original_principal'] - $remainingAfter),
+            'final_status' => $allocation['final_status'] ?? $state['status'],
+            'is_full_payment' => !empty($allocation['is_full_settlement']),
+            'message' => $paymentAmount > 0 && empty($allocation['is_full_settlement']) ? 'پرداخت جزئی شامل پاداش تسویه زودتر از موعد نمی‌شود.' : 'محاسبه پرداخت انجام شد.',
         ];
+    }
+
+    public static function previewForMode(array $installment, array $payments, array $settings, $penaltyMode, $date = null)
+    {
+        $state = self::preview($installment, $payments, $settings, $date);
+        $mode = $penaltyMode === 'legal' ? 'legal' : 'normal';
+        $state['penalty_mode'] = $mode;
+        $state['penalty'] = normalize_money($state[$mode . '_penalty'] ?? 0);
+        $state['payable'] = $mode === 'legal'
+            ? normalize_money($state['final_payable'] ?? 0)
+            : max(0, normalize_money($state['remaining_principal'] ?? 0) + normalize_money($state['normal_penalty'] ?? 0) - normalize_money($state['eligible_reward'] ?? 0));
+        return $state;
     }
 
     public static function contractPreview($principal, $downPayment, $months, $monthlyRate, $interestType)
@@ -102,73 +106,10 @@ class FinanceHelper
             'down_payment_amount' => $downPayment,
             'financed_amount' => $financed,
             'installment_amount' => $installment,
-            'total_payable' => ceil($installment * $months),
+            'total_payable' => MoneyMath::ceilMulDiv($installment, $months, 1),
             'months' => $months,
             'interest_type' => $interestType === 'compound' ? 'compound' : 'simple',
         ];
-    }
-
-    protected static function stateOnDate(array $installment, array $payments, array $settings, $date)
-    {
-        $dueDate = $installment['due_date'];
-        $baseAmount = (float) $installment['base_amount'];
-        $remaining = $baseAmount;
-        $penalty = 0;
-        $dailyPenaltyRate = ((float) ($settings['monthly_penalty_rate'] ?? 0)) / 100 / 30;
-
-        usort($payments, function ($a, $b) {
-            return strcmp($a['payment_date'] ?? $a['paid_at'] ?? $a['created_at'] ?? '', $b['payment_date'] ?? $b['paid_at'] ?? $b['created_at'] ?? '');
-        });
-
-        $lastPenaltyDate = $dueDate;
-        foreach ($payments as $payment) {
-            if (($payment['status'] ?? '') !== 'paid' || ($payment['payment_type'] ?? 'installment') === 'down_payment') {
-                continue;
-            }
-            $paymentDate = substr($payment['payment_date'] ?? $payment['paid_at'] ?? $payment['created_at'], 0, 10);
-            if ($paymentDate > $date) {
-                continue;
-            }
-            if ($paymentDate > $dueDate && $remaining > 0) {
-                $days = max(0, (int) ((strtotime($paymentDate) - strtotime($lastPenaltyDate)) / 86400));
-                $penalty += $remaining * $dailyPenaltyRate * $days;
-                $lastPenaltyDate = $paymentDate;
-            }
-            if (isset($payment['remaining_after_payment']) && $payment['remaining_after_payment'] !== null) {
-                $remaining = max(0, (float) $payment['remaining_after_payment']);
-            } else {
-                $remaining = max(0, $remaining - (float) $payment['amount']);
-            }
-        }
-
-        if ($remaining > 0 && $date > $dueDate) {
-            $days = max(0, (int) ((strtotime($date) - strtotime($lastPenaltyDate)) / 86400));
-            $penalty += $remaining * $dailyPenaltyRate * $days;
-        }
-
-        $manualPenalty = (float) ($installment['manual_penalty_adjustment'] ?? 0);
-        $manualReward = (float) ($installment['manual_reward_adjustment'] ?? 0);
-        $discount = (float) ($installment['penalty_discount_amount'] ?? 0);
-        $penalty = max(0, ceil($penalty + $manualPenalty - $discount));
-
-        return [
-            'base_amount' => $baseAmount,
-            'paid_amount' => max(0, ceil($baseAmount - $remaining)),
-            'remaining_amount' => max(0, ceil($remaining)),
-            'penalty' => $penalty,
-            'manual_reward' => max(0, ceil($manualReward)),
-        ];
-    }
-
-    protected static function potentialReward(array $installment, $remainingAmount, array $settings, $date)
-    {
-        if ($remainingAmount <= 0 || $date > $installment['due_date']) {
-            return 0;
-        }
-        $dailyRewardRate = ((float) ($settings['monthly_reward_rate'] ?? 0)) / 100 / 30;
-        $days = max(1, (int) ((strtotime($installment['due_date']) - strtotime($date)) / 86400));
-        $manualReward = (float) ($installment['manual_reward_adjustment'] ?? 0);
-        return max(0, ceil(((float) $remainingAmount * $dailyRewardRate * $days) + $manualReward));
     }
 
     public static function status($baseAmount, $paidAmount, $dueDate, $date = null)
@@ -182,4 +123,5 @@ class FinanceHelper
         }
         return $date > $dueDate ? 'overdue' : 'pending';
     }
+
 }

@@ -1,0 +1,101 @@
+[
+  {
+    "route": "dashboard",
+    "n": 30,
+    "php_p50_ms": 91.58,
+    "php_p95_ms": 110.51,
+    "sql_count_p95": 71,
+    "sql_p95_ms": 74.21,
+    "memory_p95_bytes": 4194304
+  },
+  {
+    "route": "customers",
+    "n": 30,
+    "php_p50_ms": 404.31,
+    "php_p95_ms": 431.19,
+    "sql_count_p95": 1100,
+    "sql_p95_ms": 359.68,
+    "memory_p95_bytes": 4194304
+  },
+  {
+    "route": "customers/show/5",
+    "n": 30,
+    "php_p50_ms": 95.64,
+    "php_p95_ms": 115.65,
+    "sql_count_p95": 53,
+    "sql_p95_ms": 77.44,
+    "memory_p95_bytes": 6291456
+  },
+  {
+    "route": "contracts",
+    "n": 30,
+    "php_p50_ms": 83.98,
+    "php_p95_ms": 107.42,
+    "sql_count_p95": 48,
+    "sql_p95_ms": 66.39,
+    "memory_p95_bytes": 6291456
+  },
+  {
+    "route": "contracts/show/3",
+    "n": 30,
+    "php_p50_ms": 116.74,
+    "php_p95_ms": 139.72,
+    "sql_count_p95": 136,
+    "sql_p95_ms": 88.78,
+    "memory_p95_bytes": 6291456
+  },
+  {
+    "route": "installments",
+    "n": 30,
+    "php_p50_ms": 75.73,
+    "php_p95_ms": 98.58,
+    "sql_count_p95": 48,
+    "sql_p95_ms": 60.76,
+    "memory_p95_bytes": 6291456
+  },
+  {
+    "route": "payments",
+    "n": 30,
+    "php_p50_ms": 62.98,
+    "php_p95_ms": 90.46,
+    "sql_count_p95": 39,
+    "sql_p95_ms": 56.54,
+    "memory_p95_bytes": 4194304
+  },
+  {
+    "route": "overdue",
+    "n": 30,
+    "php_p50_ms": 83.53,
+    "php_p95_ms": 97.17,
+    "sql_count_p95": 65,
+    "sql_p95_ms": 58.52,
+    "memory_p95_bytes": 6291456
+  },
+  {
+    "route": "legal",
+    "n": 30,
+    "php_p50_ms": 62.13,
+    "php_p95_ms": 76.12,
+    "sql_count_p95": 40,
+    "sql_p95_ms": 45.51,
+    "memory_p95_bytes": 4194304
+  },
+  {
+    "route": "calendar",
+    "n": 30,
+    "php_p50_ms": 60.36,
+    "php_p95_ms": 83.43,
+    "sql_count_p95": 42,
+    "sql_p95_ms": 53.68,
+    "memory_p95_bytes": 4194304
+  },
+  {
+    "route": "review",
+    "n": 30,
+    "php_p50_ms": 52.37,
+    "php_p95_ms": 74.09,
+    "sql_count_p95": 41,
+    "sql_p95_ms": 47.76,
+    "memory_p95_bytes": 4194304
+  }
+]

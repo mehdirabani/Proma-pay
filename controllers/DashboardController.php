@@ -6,6 +6,10 @@ class DashboardController extends Controller
     {
         Auth::requireLogin();
         $role = Auth::role();
+        $pluginLanding = PluginManager::roleLandingRoute($role);
+        if ($pluginLanding !== null) {
+            redirect($pluginLanding);
+        }
         if ($role === 'admin') {
             $this->admin();
             return;
@@ -18,7 +22,11 @@ class DashboardController extends Controller
             $this->lawyer();
             return;
         }
-        $this->customer();
+        if ($role === 'customer') {
+            $this->customer();
+            return;
+        }
+        ErrorHandler::abort(403);
     }
 
     protected function admin()
@@ -39,39 +47,44 @@ class DashboardController extends Controller
         $dueMonth = $this->sumValue(
             "SELECT COALESCE(SUM(base_amount),0) AS total
              FROM installments
-             WHERE due_date >= ? AND due_date < ?",
+             WHERE status != 'cancelled' AND due_date >= ? AND due_date < ?",
             [$monthStart, $nextMonthStart]
         );
         $outstanding = $this->sumValue(
             "SELECT COALESCE(SUM(GREATEST(base_amount - paid_amount, 0)),0) AS total
              FROM installments
-             WHERE status != 'paid'"
+             WHERE status NOT IN ('paid', 'cancelled')"
         );
         $overdueAmount = $this->sumValue(
             "SELECT COALESCE(SUM(GREATEST(base_amount - paid_amount, 0)),0) AS total
              FROM installments
-             WHERE status != 'paid' AND due_date < CURDATE()"
+             WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE()"
         );
         $pendingPayment = Model::fetch(
             "SELECT COUNT(*) AS total, COALESCE(SUM(amount),0) AS amount
              FROM payments
              WHERE status = 'pending'"
         ) ?: ['total' => 0, 'amount' => 0];
+        $pendingReceipts = PaymentReceipt::pendingCount();
+        $pendingIdentity = IdentityDocument::pendingCount();
 
         $kpis = [
             'customers' => $this->countValue("SELECT COUNT(*) AS total FROM users WHERE role = 'customer' AND status = 'active'"),
             'contracts' => $this->countValue("SELECT COUNT(*) AS total FROM contracts WHERE status = 'active'"),
             'contracts_total' => $this->countValue('SELECT COUNT(*) AS total FROM contracts'),
             'installments_total' => $this->countValue('SELECT COUNT(*) AS total FROM installments'),
-            'overdue' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status != 'paid' AND due_date < CURDATE()"),
-            'due_today' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status != 'paid' AND due_date = CURDATE()"),
-            'due_week' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status != 'paid' AND due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)"),
+            'overdue' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE()"),
+            'due_today' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date = CURDATE()"),
+            'due_week' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)"),
             'received' => $receivedMonth,
             'due_month' => $dueMonth,
             'outstanding' => $outstanding,
             'overdue_amount' => $overdueAmount,
             'pending_payments' => (int) $pendingPayment['total'],
             'pending_payment_amount' => (float) $pendingPayment['amount'],
+            'pending_receipts' => $pendingReceipts,
+            'pending_identity' => $pendingIdentity,
+            'pending_reviews' => $pendingReceipts + $pendingIdentity,
             'legal_open' => $this->countValue("SELECT COUNT(*) AS total FROM legal_cases WHERE status != 'closed'"),
             'collection_rate' => $dueMonth > 0 ? round(min(100, ($receivedMonth / $dueMonth) * 100), 1) : 0,
             'overdue_share' => $outstanding > 0 ? round(min(100, ($overdueAmount / $outstanding) * 100), 1) : 0,
@@ -85,6 +98,7 @@ class DashboardController extends Controller
                 'partial' => '#16c7f9',
                 'pending' => '#ffaa05',
                 'overdue' => '#fc4438',
+                'cancelled' => '#8b8d98',
             ]
         );
         $contractStatus = $this->statusChart(
@@ -94,15 +108,16 @@ class DashboardController extends Controller
                 'closed' => '#54ba4a',
                 'referred' => '#ffaa05',
                 'inactive' => '#8b8d98',
+                'cancelled' => '#8b8d98',
             ]
         );
         $overdueBuckets = [
             'labels' => ['امروز', '۱ تا ۷ روز', '۸ تا ۳۰ روز', 'بیش از ۳۰ روز'],
             'data' => [
                 $kpis['due_today'],
-                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status != 'paid' AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) BETWEEN 1 AND 7"),
-                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status != 'paid' AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) BETWEEN 8 AND 30"),
-                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status != 'paid' AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) > 30"),
+                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) BETWEEN 1 AND 7"),
+                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) BETWEEN 8 AND 30"),
+                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) > 30"),
             ],
         ];
         $upcoming = Model::fetchAll(
@@ -110,7 +125,7 @@ class DashboardController extends Controller
              FROM installments i
              JOIN contracts c ON c.id = i.contract_id
              JOIN users u ON u.id = c.customer_id
-             WHERE i.status != 'paid'
+              WHERE c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled')
              AND i.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 14 DAY)
              ORDER BY i.due_date ASC, i.id ASC
              LIMIT 8"
@@ -132,7 +147,7 @@ class DashboardController extends Controller
              FROM installments i
              JOIN contracts c ON c.id = i.contract_id
              JOIN users u ON u.id = c.customer_id
-             WHERE i.status != 'paid' AND i.due_date < CURDATE()
+              WHERE c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE()
              GROUP BY u.id, u.full_name, u.mobile
              ORDER BY debt DESC, overdue_count DESC
              LIMIT 6"
@@ -142,17 +157,20 @@ class DashboardController extends Controller
              COUNT(i.id) AS overdue_count
              FROM users op
              LEFT JOIN contracts c ON c.assigned_operator_id = op.id
-             LEFT JOIN installments i ON i.contract_id = c.id AND i.status != 'paid' AND i.due_date < CURDATE()
+              LEFT JOIN installments i ON i.contract_id = c.id AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE()
              WHERE op.role = 'operator'
              GROUP BY op.id, op.full_name
              ORDER BY overdue_count DESC, contracts DESC
             LIMIT 5"
         );
-        $bestCustomers = $this->customerRanking('best');
-        $worstCustomers = $this->customerRanking('worst');
+        $dashboardWidgets = (array) PluginManager::filter('dashboard.admin.widgets', [], [
+            'admin_id' => (int) Auth::id(),
+            'kpis' => $kpis,
+        ]);
 
         $this->render('dashboard/admin', [
             'title' => 'داشبورد مدیریت',
+            'dashboardWidgets' => $dashboardWidgets,
             'kpis' => $kpis,
             'chartLabels' => $paymentTrend['labels'],
             'chartData' => $paymentTrend['data'],
@@ -162,10 +180,8 @@ class DashboardController extends Controller
             'upcoming' => $upcoming,
             'recentPayments' => $recentPayments,
             'riskCustomers' => $riskCustomers,
-            'bestCustomers' => $bestCustomers,
-            'worstCustomers' => $worstCustomers,
             'operatorLoad' => $operatorLoad,
-            'overdue' => array_slice(Installment::overdue(), 0, 8),
+            'overdue' => Installment::overdue(null, null, null, 8),
         ]);
     }
 
@@ -229,64 +245,76 @@ class DashboardController extends Controller
         ];
     }
 
-    protected function customerRanking($mode)
-    {
-        $rows = Model::fetchAll(
-            "SELECT u.id, u.full_name, u.mobile,
-             (SELECT COUNT(*) FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE c.customer_id = u.id AND i.status = 'paid') AS paid_count,
-             (SELECT COUNT(*) FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE c.customer_id = u.id AND i.status != 'paid' AND i.due_date < CURDATE()) AS overdue_count,
-             (SELECT COALESCE(AVG(DATEDIFF(CURDATE(), i.due_date)),0) FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE c.customer_id = u.id AND i.status != 'paid' AND i.due_date < CURDATE()) AS avg_delay,
-             (SELECT COALESCE(SUM(p.amount),0) FROM payments p JOIN contracts c ON c.id = p.contract_id WHERE c.customer_id = u.id AND p.status = 'paid') AS total_paid,
-             (SELECT COUNT(*) FROM contracts c WHERE c.customer_id = u.id AND c.status = 'active') AS active_contracts,
-             (SELECT COUNT(*) FROM legal_cases lc WHERE lc.customer_id = u.id AND lc.status != 'closed') AS legal_count
-             FROM users u
-             WHERE u.role = 'customer' AND u.status = 'active'"
-        );
-        foreach ($rows as &$row) {
-            $score = ((int) $row['paid_count'] * 12)
-                + ((float) $row['total_paid'] / 1000000)
-                + ((int) $row['active_contracts'] * 5)
-                - ((int) $row['overdue_count'] * 15)
-                - ((float) $row['avg_delay'])
-                - ((int) $row['legal_count'] * 20);
-            $row['score'] = max(0, (int) round($score));
-        }
-        unset($row);
-        usort($rows, function ($a, $b) use ($mode) {
-            return $mode === 'worst' ? ($a['score'] <=> $b['score']) : ($b['score'] <=> $a['score']);
-        });
-        return array_slice($rows, 0, 6);
-    }
-
     protected function operator()
     {
+        $contracts = Contract::all(['operator_id' => Auth::id()]);
+        $calls = OperatorCall::all(Auth::id());
+        $overdue = Installment::overdue(null, null, Auth::id(), 100);
+        $today = date('Y-m-d');
+        $metrics = [
+            'contracts' => count($contracts),
+            'active_contracts' => count(array_filter($contracts, static fn ($item) => ($item['status'] ?? '') === 'active')),
+            'overdue' => count($overdue),
+            'today' => count(array_filter($overdue, static fn ($item) => ($item['due_date'] ?? '') === $today)),
+            'calls' => count($calls),
+            'followups' => count(array_filter($calls, static fn ($item) => !empty($item['next_followup_date']) && $item['next_followup_date'] >= $today)),
+        ];
         $this->render('dashboard/operator', [
             'title' => 'داشبورد اپراتور',
-            'contracts' => Contract::all(['operator_id' => Auth::id()]),
-            'calls' => OperatorCall::all(Auth::id()),
+            'accountingBalance' => $this->accountingBalance(),
+            'contracts' => $contracts,
+            'calls' => $calls,
+            'overdue' => $overdue,
+            'metrics' => $metrics,
         ]);
     }
 
     protected function lawyer()
     {
+        $cases = LegalCase::all(['lawyer_id' => Auth::id()]);
+        $eligible = LegalCase::eligibleContracts();
+        $metrics = [
+            'cases' => count($cases),
+            'open_cases' => count(array_filter($cases, static fn ($item) => ($item['status'] ?? '') !== 'closed')),
+            'eligible' => count($eligible),
+            'expenses' => array_sum(array_map(static fn ($item) => (float) ($item['expense_amount'] ?? 0), $cases)),
+        ];
         $this->render('dashboard/lawyer', [
             'title' => 'داشبورد وکیل',
-            'cases' => LegalCase::all(['lawyer_id' => Auth::id()]),
-            'eligible' => LegalCase::eligibleContracts(),
+            'accountingBalance' => $this->accountingBalance(),
+            'cases' => $cases,
+            'eligible' => $eligible,
+            'metrics' => $metrics,
         ]);
     }
 
     protected function customer()
     {
         $customerId = Auth::id();
-        User::syncAutomaticMedals((int) $customerId);
         $contracts = Contract::all(['customer_id' => $customerId]);
+        $installments = Installment::all(['customer_id' => $customerId]);
+        $customerWidgets = PluginManager::filter('dashboard.customer.widgets', [], ['customer_id' => (int) $customerId]);
+        $customerWidgets = is_array($customerWidgets) ? $customerWidgets : [];
+        $loyaltyProfile = CustomerLoyalty::profile((int) $customerId, 6);
+        $activeInstallments = array_filter($installments, static fn ($item) => !in_array(($item['status'] ?? ''), ['paid', 'cancelled'], true));
         $this->render('dashboard/customer', [
             'title' => 'داشبورد مشتری',
+            'banners' => PortalBanner::activeForCustomer(),
             'contracts' => $contracts,
-            'installments' => Installment::all(['customer_id' => $customerId]),
+            'installments' => $installments,
             'payments' => Payment::recentForCustomer($customerId, 9),
-            'medals' => Model::fetchAll('SELECT * FROM medals WHERE user_id = ? ORDER BY id DESC', [$customerId]),
+            'medals' => $loyaltyProfile['medals'] ?? [],
+            'loyaltyProfile' => $loyaltyProfile,
+            'socialLinks' => configured_social_links(Settings::allKeyed()),
+            'customerWidgets' => $customerWidgets,
+            'ecommerceOrders' => ecommerce_is_enabled() ? Ecommerce::ordersForCustomer($customerId, 6) : [],
+            'metrics' => [
+                'contracts' => count($contracts),
+                'installments' => count($installments),
+                'open_installments' => count($activeInstallments),
+                'overdue' => count(array_filter($activeInstallments, static fn ($item) => ($item['status'] ?? '') === 'overdue')),
+                'payable' => array_sum(array_map(static fn ($item) => (float) ($item['payable'] ?? 0), $activeInstallments)),
+            ],
             'givenGuarantees' => Contract::all(['guarantor_id' => $customerId]),
             'receivedGuarantees' => Model::fetchAll(
                 "SELECT c.contract_number, c.id AS contract_id, u.full_name, u.mobile, u.national_id
@@ -299,4 +327,21 @@ class DashboardController extends Controller
             ),
         ]);
     }
+
+    /** Return the signed balance for the current user without making dashboards depend on the plugin. */
+    protected function accountingBalance()
+    {
+        if (!class_exists('PluginManager') || !PluginManager::isActive('proma-accounting') || !class_exists('Proma\\Plugins\\Accounting\\Services\\AccountBalanceService')) {
+            return null;
+        }
+        try {
+            return \Proma\Plugins\Accounting\Services\AccountBalanceService::snapshot((int) Auth::id());
+        } catch (\Throwable $e) {
+            if (class_exists('ErrorHandler')) {
+                ErrorHandler::log('dashboard_accounting_balance', $e, 503);
+            }
+            return null;
+        }
+    }
+
 }

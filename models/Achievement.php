@@ -9,7 +9,7 @@ class Achievement extends Model
             return;
         }
 
-        $contractCount = (int) self::fetch('SELECT COUNT(*) AS total FROM contracts WHERE customer_id = ?', [$customerId])['total'];
+        $contractCount = (int) self::fetch("SELECT COUNT(*) AS total FROM contracts WHERE customer_id = ? AND status != 'cancelled'", [$customerId])['total'];
         if ($contractCount >= 5) {
             User::addMedalIfMissing($customerId, 'five_contracts', 'خریدار وفادار', 'خرید حداقل ۵ قرارداد اقساطی', 50);
         }
@@ -19,7 +19,7 @@ class Achievement extends Model
              FROM installments i
              JOIN contracts c ON c.id = i.contract_id
              JOIN payments p ON p.installment_id = i.id
-             WHERE c.customer_id = ? AND i.status = 'paid'
+             WHERE c.customer_id = ? AND c.status != 'cancelled' AND i.status = 'paid'
              AND p.status = 'paid' AND COALESCE(p.is_corrected,0) = 0
              AND DATE(COALESCE(p.paid_at, p.created_at)) < i.due_date",
             [$customerId]
@@ -31,9 +31,9 @@ class Achievement extends Model
         $earlyClosedContracts = (int) self::fetch(
             "SELECT COUNT(*) AS total
              FROM contracts c
-             WHERE c.customer_id = ?
+              WHERE c.customer_id = ? AND c.status != 'cancelled'
              AND EXISTS (SELECT 1 FROM installments i WHERE i.contract_id = c.id)
-             AND NOT EXISTS (SELECT 1 FROM installments i WHERE i.contract_id = c.id AND i.status != 'paid')
+              AND NOT EXISTS (SELECT 1 FROM installments i WHERE i.contract_id = c.id AND i.status NOT IN ('paid', 'cancelled'))
              AND (SELECT MAX(DATE(COALESCE(p.paid_at, p.created_at)))
                   FROM payments p
                   JOIN installments pi ON pi.id = p.installment_id
@@ -50,7 +50,7 @@ class Achievement extends Model
              FROM installments i
              JOIN contracts c ON c.id = i.contract_id
              JOIN payments p ON p.installment_id = i.id
-             WHERE c.customer_id = ? AND i.status = 'paid'
+             WHERE c.customer_id = ? AND c.status != 'cancelled' AND i.status = 'paid'
              AND p.status = 'paid' AND COALESCE(p.is_corrected,0) = 0
              AND DATE(COALESCE(p.paid_at, p.created_at)) <= i.due_date",
             [$customerId]

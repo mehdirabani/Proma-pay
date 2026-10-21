@@ -31,6 +31,6 @@ PREPARE stmt FROM @legal_expense_reason_sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-INSERT INTO settings (`key`, `value`)
-VALUES ('footer_text', 'پنل مدیریت مالی راست‌چین')
-ON DUPLICATE KEY UPDATE `value` = `value`;
+INSERT INTO settings (setting_key, setting_value, is_secret)
+VALUES ('footer_text', 'توسعه‌دهنده: مهدی ربانی - pgm.mehdirabani@gmail.com - github.com/mehdirabani', 0)
+ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);

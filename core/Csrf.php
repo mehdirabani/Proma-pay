@@ -18,9 +18,7 @@ class Csrf
     public static function verify()
     {
         if (!self::validate($_POST['_csrf'] ?? '')) {
-            http_response_code(419);
-            echo 'درخواست معتبر نیست. صفحه را تازه‌سازی کنید.';
-            exit;
+            ErrorHandler::abort(419);
         }
     }
 }

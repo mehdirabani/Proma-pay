@@ -1,9 +1,9 @@
 <div class="grid cols-2">
   <section class="card">
-    <div class="card-header card-no-border"><h2>قراردادهایی که ضامنشان هستم</h2></div>
+    <div class="card-header card-no-border"><h2>قراردادهایی که من ضمانت کرده‌ام</h2></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>قرارداد</th><th>مشتری</th><th>تماس</th><th>وضعیت</th></tr></thead>
+        <thead><tr><th scope="col">قرارداد</th><th scope="col">مشتری</th><th scope="col">تماس</th><th scope="col">وضعیت</th></tr></thead>
         <tbody>
         <?php foreach ($contracts as $contract): ?>
           <tr>
@@ -20,10 +20,10 @@
   </section>
 
   <section class="card">
-    <div class="card-header card-no-border"><h2>ضامن‌های قراردادهای من</h2></div>
+    <div class="card-header card-no-border"><h2>ضمانت‌هایی که برای قراردادهای من ثبت شده‌اند</h2></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>قرارداد</th><th>ضامن</th><th>تماس</th><th>کد ملی</th></tr></thead>
+        <thead><tr><th scope="col">قرارداد</th><th scope="col">ضامن</th><th scope="col">تماس</th><th scope="col">کد ملی</th></tr></thead>
         <tbody>
         <?php foreach ($guarantors as $guarantor): ?>
           <tr>

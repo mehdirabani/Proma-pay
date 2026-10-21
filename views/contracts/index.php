@@ -1,54 +1,119 @@
 <?php
 $readOnly = $readOnly ?? false;
+$contractsRoute = $contractsRoute ?? ($readOnly ? 'portal/guaranteed' : 'contracts');
+$pageTitle = $readOnlyTitle ?? ($readOnly ? 'قراردادهای ضمانت شده' : 'فهرست قراردادها');
+$singleOperator = !$readOnly && count($operators ?? []) === 1 ? $operators[0] : null;
+$contractStats = $contractStats ?? [];
+$contractTrends = $contractTrends ?? [];
+$contractTimelines = $contractTimelines ?? [];
+$contractGuarantors = $contractGuarantors ?? [];
+$contractItems = $contractItems ?? [];
+$contractGuarantees = $contractGuarantees ?? [];
+$contractGuarantorPeople = $contractGuarantorPeople ?? [];
+$contractContacts = $contractContacts ?? [];
 $viewMode = in_array($_GET['view'] ?? '', ['cards', 'list'], true) ? $_GET['view'] : 'cards';
+$pagination = $pagination ?? ['total' => count($contracts ?? []), 'page' => 1, 'pages' => 1, 'per_page' => count($contracts ?? []) ?: 24];
+$pageUrl = function ($page) use ($contractsRoute, $viewMode) {
+    $params = [
+        'q' => $_GET['q'] ?? null,
+        'view' => $viewMode,
+        'page' => (int) $page > 1 ? (int) $page : null,
+    ];
+    return url($contractsRoute, array_filter($params, fn($value) => $value !== null && $value !== ''));
+};
 $contractTrendLabels = [];
 $contractTrendStart = (new DateTime('first day of this month'))->modify('-5 months');
 for ($i = 0; $i < 6; $i++) {
     $contractTrendLabels[] = mb_substr(jdate((clone $contractTrendStart)->modify('+' . $i . ' months')->format('Y-m-01')), 0, 7, 'UTF-8');
 }
+$contractPageSummary = ['shown' => count($contracts ?? []), 'active' => 0, 'overdue' => 0, 'outstanding' => 0];
+foreach (($contracts ?? []) as $summaryContract) {
+    if (($summaryContract['status'] ?? '') === 'active') $contractPageSummary['active']++;
+    $summaryStats = $contractStats[(int) ($summaryContract['id'] ?? 0)] ?? [];
+    $contractPageSummary['overdue'] += (int) ($summaryStats['overdue'] ?? 0);
+    $contractPageSummary['outstanding'] += normalize_money($summaryStats['outstanding'] ?? 0);
+}
 ?>
-<section class="card">
+<div class="proma-contracts-page">
+<header class="proma-page-intro proma-contracts-intro">
+  <div><span class="proma-eyebrow"><?= $readOnly ? 'پرونده‌های شما' : 'عملیات مشتریان' ?></span><h1><?= e($pageTitle) ?></h1><p>مشاهدهٔ قراردادها، وضعیت اقساط و دسترسی به جزئیات هر پرونده.</p></div>
+  <div class="proma-contracts-intro__actions">
+    <?php if (!$readOnly): ?><a class="btn secondary" data-xlsx-export href="<?= e(url('contracts/export')) ?>"><?= proma_icon('download') ?><span>خروجی Excel</span></a><button class="btn" type="button" data-open-modal="create-contract"><?= proma_icon('plus') ?><span>قرارداد جدید</span></button><?php endif; ?>
+  </div>
+</header>
+<div class="proma-contracts-summary" aria-label="خلاصه قراردادها">
+  <article><span class="proma-contracts-summary__icon"><?= proma_icon('file') ?></span><div><small>کل قراردادها</small><strong><?= to_persian_digits($pagination['total'] ?? 0) ?></strong></div></article>
+  <article class="is-success"><span class="proma-contracts-summary__icon"><?= proma_icon('check-circle') ?></span><div><small>فعال در این صفحه</small><strong><?= to_persian_digits($contractPageSummary['active']) ?></strong></div></article>
+  <article class="is-danger"><span class="proma-contracts-summary__icon"><?= proma_icon('alert-circle') ?></span><div><small>اقساط معوق در این صفحه</small><strong><?= to_persian_digits($contractPageSummary['overdue']) ?></strong></div></article>
+  <article class="is-primary"><span class="proma-contracts-summary__icon"><?= proma_icon('wallet') ?></span><div><small>ماندهٔ قابل وصول در این صفحه</small><strong><?= money_toman($contractPageSummary['outstanding']) ?></strong></div></article>
+</div>
+<section class="card proma-filter-card">
   <div class="card-header card-no-border">
     <div class="header-top">
-      <h2><?= $readOnly ? 'قراردادهای ضمانت شده' : 'فهرست قراردادها' ?></h2>
+      <h2>جستجو و نمایش</h2>
       <div class="actions">
-        <a class="btn small <?= $viewMode === 'cards' ? '' : 'secondary' ?>" href="<?= e(url($readOnly ? 'portal/guaranteed' : 'contracts', array_filter(['q' => $_GET['q'] ?? null, 'view' => 'cards']))) ?>">کارت‌ها</a>
-        <a class="btn small <?= $viewMode === 'list' ? '' : 'secondary' ?>" href="<?= e(url($readOnly ? 'portal/guaranteed' : 'contracts', array_filter(['q' => $_GET['q'] ?? null, 'view' => 'list']))) ?>">لیست</a>
-        <?php if (!$readOnly): ?><button class="btn" type="button" data-open-modal="create-contract">افزودن قرارداد</button><?php endif; ?>
+        <?php if (!$readOnly): ?><a class="btn small secondary" href="<?= e(url('contracts/duplicates')) ?>"><?= proma_icon('copy') ?> بررسی تکراری‌ها</a><?php endif; ?>
+        <a class="btn small <?= $viewMode === 'cards' ? '' : 'secondary' ?>" href="<?= e(url($contractsRoute, array_filter(['q' => $_GET['q'] ?? null, 'view' => 'cards', 'page' => $_GET['page'] ?? null]))) ?>">کارت‌ها</a>
+        <a class="btn small <?= $viewMode === 'list' ? '' : 'secondary' ?>" href="<?= e(url($contractsRoute, array_filter(['q' => $_GET['q'] ?? null, 'view' => 'list', 'page' => $_GET['page'] ?? null]))) ?>">لیست</a>
       </div>
     </div>
   </div>
   <div class="card-body">
-    <form method="get" action="<?= e(url($readOnly ? 'portal/guaranteed' : 'contracts')) ?>" class="form-grid three">
-      <input type="hidden" name="route" value="<?= e($readOnly ? 'portal/guaranteed' : 'contracts') ?>">
+    <form method="get" action="<?= e(url($contractsRoute)) ?>" class="form-grid three proma-filter-toolbar proma-filter-toolbar--contracts" data-ajax-filter data-ajax-target="[data-ajax-results='contracts']">
+      <input type="hidden" name="route" value="<?= e($contractsRoute) ?>">
       <input type="hidden" name="view" value="<?= e($viewMode) ?>">
       <label class="full">جستجو در قرارداد و مشتری<input name="q" value="<?= e($_GET['q'] ?? '') ?>" placeholder="شماره قرارداد، نام، کد ملی یا موبایل"></label>
-      <div class="actions"><button class="btn secondary" type="submit">جستجو</button></div>
+      <div class="proma-filter-actions"><button class="btn secondary" type="submit">جستجو</button><span class="proma-ajax-status" data-ajax-status></span></div>
     </form>
   </div>
+</section>
+
+<div data-ajax-results="contracts">
+<div class="proma-list-meta">
+  <span class="badge info">کل قراردادها: <?= to_persian_digits($pagination['total'] ?? count($contracts ?? [])) ?></span>
+  <span class="badge muted">صفحه <?= to_persian_digits($pagination['page'] ?? 1) ?> از <?= to_persian_digits($pagination['pages'] ?? 1) ?></span>
+</div>
+<section class="card">
   <?php if ($contracts && $viewMode === 'cards'): ?>
     <div class="card-body pt-0">
       <div class="proma-contract-card-grid">
         <?php foreach ($contracts as $cardContract): ?>
           <?php
-          $stats = Contract::installmentStats((int) $cardContract['id']);
-          $trend = Payment::monthlyTrendForContract((int) $cardContract['id']);
-          $timeline = Payment::recentForContract((int) $cardContract['id'], 3);
-          $remainingCount = max(0, (int) $stats['total'] - (int) $stats['paid']);
+          $stats = $contractStats[(int) $cardContract['id']] ?? ['total' => 0, 'paid' => 0, 'cancelled' => 0, 'active_remaining' => 0, 'overdue' => 0, 'outstanding' => 0];
+          $trend = $contractTrends[(int) $cardContract['id']] ?? array_fill(0, 6, 0);
+          $timeline = array_slice($contractTimelines[(int) $cardContract['id']] ?? [], 0, 3);
+          $cardContactJson = json_encode($contractContacts[(int) $cardContract['id']] ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+          $remainingCount = (int) ($stats['active_remaining'] ?? max(0, (int) $stats['total'] - (int) $stats['paid'] - (int) ($stats['cancelled'] ?? 0)));
           $financedAmount = max(0, (float) $cardContract['principal_amount'] - (float) ($cardContract['down_payment_amount'] ?? 0));
           $progress = (int) $stats['total'] > 0 ? (int) round(((int) $stats['paid'] / (int) $stats['total']) * 100) : 0;
+          $progress = max(0, min(100, $progress));
           ?>
-          <article class="proma-contract-card" data-card-href="<?= e(url('contracts/show/' . $cardContract['id'])) ?>">
-            <div class="proma-contract-card-main">
-              <span class="proma-progress-avatar" style="--progress: <?= $progress ?>">
-                <span class="proma-avatar-choice <?= e($cardContract['avatar_key'] ?? 'avatar-1') ?>"><?= e(mb_substr($cardContract['customer_name'], 0, 1, 'UTF-8')) ?></span>
-              </span>
-              <div>
-                <span class="proma-contract-badge"><?= e($cardContract['contract_number']) ?></span>
-                <h6><?= e($cardContract['customer_name']) ?></h6>
-                <p><?= money_toman($financedAmount) ?></p>
-              </div>
-            </div>
+            <article class="proma-contract-card" data-contract-card data-card-href="<?= e(url('contracts/show/' . $cardContract['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده جزئیات قرارداد <?= e($cardContract['contract_number']) ?>">
+              <header class="proma-contract-card__header">
+                <div class="proma-contract-card-main proma-contract-card__identity">
+                  <span class="proma-progress-avatar <?= $progress >= 100 ? 'is-complete' : '' ?>" data-progress="<?= $progress ?>" title="<?= to_persian_digits($progress) ?> درصد تسویه" aria-label="<?= to_persian_digits($progress) ?> درصد تسویه">
+                    <?php $cardAvatar = avatar_key_for($cardContract['avatar_key'] ?? null, $cardContract['customer_id'] ?? $cardContract['id']); ?>
+                    <span class="proma-avatar-choice <?= e($cardAvatar) ?>" aria-label="<?= e($cardContract['customer_name']) ?>"><img data-avatar-image src="<?= e(user_avatar_asset_url(['id' => $cardContract['customer_id'], 'full_name' => $cardContract['customer_name'], 'avatar_key' => $cardContract['avatar_key'] ?? null, 'avatar_path' => $cardContract['avatar_path'] ?? null, 'avatar_version' => $cardContract['avatar_version'] ?? 0])) ?>" alt="آواتار <?= e($cardContract['customer_name']) ?>" loading="lazy"></span>
+                    <small class="proma-progress-avatar__value"><?= to_persian_digits($progress) ?>٪</small>
+                  </span>
+                  <div>
+                    <h6><?= e($cardContract['customer_name']) ?></h6>
+                    <p><?= money_toman($financedAmount) ?></p>
+                  </div>
+                </div>
+                <div class="proma-contract-card__controls" aria-label="عملیات سریع قرارداد">
+                  <?php if (!$readOnly): ?>
+                    <div class="proma-card-top-actions" aria-label="عملیات سریع قرارداد">
+                      <button class="proma-icon-button" type="button" data-open-modal="edit-contract-<?= (int) $cardContract['id'] ?>" title="ویرایش قرارداد" aria-label="ویرایش قرارداد"><?= proma_icon('edit') ?></button>
+                      <button class="proma-icon-button danger" type="button" data-open-modal="delete-contract-<?= (int) $cardContract['id'] ?>" title="حذف دائمی قرارداد" aria-label="حذف دائمی قرارداد"><?= proma_icon('trash') ?></button>
+                    </div>
+                  <?php endif; ?>
+                </div>
+                <div class="proma-contract-card__meta">
+                  <span class="proma-contract-badge"><?= e($cardContract['contract_number']) ?></span>
+                  <span class="badge <?= e(badge_class($cardContract['status'] ?? '')) ?>"><?= e(status_label($cardContract['status'] ?? '')) ?></span>
+                </div>
+              </header>
             <div class="proma-contract-stats four">
               <span><strong><?= to_persian_digits($stats['total']) ?></strong><small>کل اقساط</small></span>
               <span><strong><?= to_persian_digits($stats['paid']) ?></strong><small>پرداخت‌شده</small></span>
@@ -56,11 +121,17 @@ for ($i = 0; $i < 6; $i++) {
               <span><strong><?= to_persian_digits($stats['overdue']) ?></strong><small>معوق</small></span>
             </div>
             <div class="proma-contract-card-footer">
-              <span>مانده: <?= money_toman($stats['outstanding']) ?></span>
-              <button class="btn small info" type="button" data-open-modal="contract-chart-<?= (int) $cardContract['id'] ?>">نمودار</button>
-              <button class="btn small warning" type="button" data-open-modal="contract-timeline-<?= (int) $cardContract['id'] ?>">تایم‌لاین</button>
-              <a href="<?= e(url('contracts/show/' . $cardContract['id'])) ?>">جزئیات</a>
-              <a href="<?= e(url('contracts/booklet/' . $cardContract['id'])) ?>" target="_blank">دفترچه</a>
+              <span class="proma-contract-card-balance">مانده: <?= money_toman($stats['outstanding']) ?></span>
+              <div class="proma-contract-card-actions" aria-label="عملیات قرارداد">
+                <button class="proma-icon-button info" type="button" data-open-modal="contact-directory" data-contact-directory="<?= e($cardContactJson) ?>" data-contact-title="تماس‌های قرارداد <?= e($cardContract['contract_number']) ?>" title="تماس با مشتری و ضامن‌ها" aria-label="تماس با مشتری و ضامن‌های قرارداد <?= e($cardContract['contract_number']) ?>"><?= proma_icon('phone') ?></button>
+                <button class="proma-icon-button info" type="button" data-open-modal="contract-chart-<?= (int) $cardContract['id'] ?>" title="مشاهده نمودار قرارداد" aria-label="مشاهده نمودار قرارداد"><?= proma_icon('chart') ?></button>
+                <button class="proma-icon-button warning" type="button" data-open-modal="contract-timeline-<?= (int) $cardContract['id'] ?>" title="مشاهده تایم‌لاین قرارداد" aria-label="مشاهده تایم‌لاین قرارداد"><?= proma_icon('history') ?></button>
+                <a class="proma-icon-button success" href="<?= e(url('contracts/printDocument/' . $cardContract['id'])) ?>" target="_blank" rel="noopener" title="چاپ قرارداد" aria-label="چاپ قرارداد"><?= proma_icon('printer') ?></a>
+                <a class="proma-icon-button success" href="<?= e(url('contracts/booklet/' . $cardContract['id'])) ?>" target="_blank" title="چاپ دفترچه اقساط" aria-label="چاپ دفترچه اقساط"><?= proma_icon('book') ?></a>
+                  <?php if (!$readOnly): ?>
+                  <?php if (($cardContract['status'] ?? '') !== 'cancelled'): ?><button class="proma-icon-button danger" type="button" data-open-modal="cancel-contract-<?= (int) $cardContract['id'] ?>" title="لغو قرارداد" aria-label="لغو قرارداد"><?= proma_icon('slash') ?></button><?php endif; ?>
+                <?php endif; ?>
+              </div>
             </div>
           </article>
         <?php endforeach; ?>
@@ -70,11 +141,11 @@ for ($i = 0; $i < 6; $i++) {
   <?php if ($viewMode === 'list'): ?>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>شماره</th><th>مشتری</th><th>مبالغ قرارداد</th><th>سود</th><th>اقساط</th><th>ضامنان</th><th>وضعیت</th><?php if (!$readOnly): ?><th>عملیات</th><?php endif; ?></tr></thead>
+      <thead><tr><th scope="col">شماره</th><th scope="col">مشتری</th><th scope="col">مبالغ قرارداد</th><th scope="col">سود</th><th scope="col">اقساط</th><th scope="col">ضامنان</th><th scope="col">وضعیت</th><th scope="col">عملیات</th></tr></thead>
       <tbody>
       <?php foreach ($contracts as $contract): ?>
-        <?php $guarantors = Contract::guarantors($contract['id']); ?>
-        <tr>
+        <?php $guarantors = $contractGuarantors[(int) $contract['id']] ?? []; $contractContactJson = json_encode($contractContacts[(int) $contract['id']] ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+        <tr data-contract-card data-card-href="<?= e(url('contracts/show/' . $contract['id'])) ?>" tabindex="0" role="link" aria-label="مشاهده جزئیات قرارداد <?= e($contract['contract_number']) ?>">
           <td><a href="<?= e(url('contracts/show/' . $contract['id'])) ?>"><?= e($contract['contract_number']) ?></a></td>
           <td><?= e($contract['customer_name']) ?><br><span class="badge muted"><?= to_persian_digits($contract['mobile']) ?></span></td>
           <?php $financedAmount = max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0)); ?>
@@ -87,30 +158,32 @@ for ($i = 0; $i < 6; $i++) {
           <td><?= to_persian_digits($contract['months']) ?></td>
           <td><?= $guarantors ? e(implode('، ', array_column($guarantors, 'full_name'))) : 'ندارد' ?></td>
           <td><span class="badge <?= e(badge_class($contract['status'])) ?>"><?= e(status_label($contract['status'])) ?></span></td>
-          <?php if (!$readOnly): ?>
           <td class="actions">
-            <button class="btn small secondary" type="button" data-open-modal="edit-contract-<?= (int) $contract['id'] ?>">ویرایش</button>
+            <button class="proma-icon-button info" type="button" data-open-modal="contact-directory" data-contact-directory="<?= e($contractContactJson) ?>" data-contact-title="تماس‌های قرارداد <?= e($contract['contract_number']) ?>" title="تماس با مشتری و ضامن‌ها" aria-label="تماس با مشتری و ضامن‌های قرارداد <?= e($contract['contract_number']) ?>"><?= proma_icon('phone') ?></button>
+            <?php if (!$readOnly): ?><button class="btn small secondary icon-only" type="button" data-open-modal="edit-contract-<?= (int) $contract['id'] ?>" title="ویرایش" aria-label="ویرایش"><i data-feather="edit-2"></i></button><?php endif; ?>
             <button class="btn small info" type="button" data-open-modal="contract-chart-<?= (int) $contract['id'] ?>">نمودار</button>
             <button class="btn small warning" type="button" data-open-modal="contract-timeline-<?= (int) $contract['id'] ?>">تایم‌لاین</button>
-            <a class="btn small secondary" href="<?= e(url('contracts/show/' . $contract['id'])) ?>">جزئیات</a>
-            <button class="btn small info" type="button" data-open-modal="custom-installment-<?= (int) $contract['id'] ?>">قسط دلخواه</button>
+            <a class="btn small success" href="<?= e(url('contracts/printDocument/' . $contract['id'])) ?>" target="_blank" rel="noopener"><i data-feather="printer"></i> چاپ قرارداد</a>
+            <?php if (!$readOnly): ?><button class="btn small info" type="button" data-open-modal="custom-installment-<?= (int) $contract['id'] ?>">قسط دلخواه</button><?php endif; ?>
             <a class="btn small success" href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank">چاپ دفترچه</a>
-            <button class="btn small danger" type="button" data-open-modal="delete-contract-<?= (int) $contract['id'] ?>">حذف</button>
+            <?php if (!$readOnly && ($contract['status'] ?? '') !== 'cancelled'): ?><button class="btn small danger" type="button" data-open-modal="cancel-contract-<?= (int) $contract['id'] ?>"><i data-feather="slash"></i> لغو</button><?php endif; ?>
+            <?php if (!$readOnly): ?><button class="btn small danger icon-only" type="button" data-open-modal="delete-contract-<?= (int) $contract['id'] ?>" title="حذف دائمی قرارداد" aria-label="حذف دائمی قرارداد"><i data-feather="trash-2"></i></button><?php endif; ?>
           </td>
-          <?php endif; ?>
         </tr>
       <?php endforeach; ?>
-      <?php if (!$contracts): ?><tr><td colspan="<?= $readOnly ? 7 : 8 ?>" class="empty">قراردادی ثبت نشده است.</td></tr><?php endif; ?>
+      <?php if (!$contracts): ?><tr><td colspan="8" class="empty">قراردادی ثبت نشده است.</td></tr><?php endif; ?>
       </tbody>
     </table>
   </div>
   <?php endif; ?>
 </section>
 
+<?= render_pagination($pagination, $pageUrl) ?>
+
 <?php foreach ($contracts as $contract): ?>
   <?php
-    $contractTrend = Payment::monthlyTrendForContract((int) $contract['id']);
-    $contractTimeline = Payment::recentForContract((int) $contract['id'], 8);
+    $contractTrend = $contractTrends[(int) $contract['id']] ?? array_fill(0, 6, 0);
+    $contractTimeline = $contractTimelines[(int) $contract['id']] ?? [];
   ?>
   <div class="modal" id="contract-chart-<?= (int) $contract['id'] ?>">
     <div class="modal-content">
@@ -151,43 +224,78 @@ for ($i = 0; $i < 6; $i++) {
 <div class="modal" id="create-contract">
   <div class="modal-content proma-modal-xl">
     <div class="modal-header"><h3>افزودن قرارداد</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-    <form method="post" action="<?= e(url('contracts/store')) ?>" id="create-contract-form" data-contract-form data-preview-url="<?= e(url('contracts/preview')) ?>" novalidate>
+    <form method="post" action="<?= e(url('contracts/store')) ?>" id="create-contract-form" data-contract-form data-disable-on-submit data-preview-url="<?= e(url('contracts/preview')) ?>" data-identity-check-url="<?= e(url('contracts/checkIdentity')) ?>" novalidate>
       <div class="modal-body proma-contract-form">
         <?= csrf_field() ?>
+        <input type="hidden" name="contract_request_uuid" value="<?= e(bin2hex(random_bytes(24))) ?>">
         <section class="proma-form-section">
           <div class="proma-section-title"><h4>اطلاعات قرارداد</h4><span>شماره قرارداد به صورت خودکار ساخته می‌شود.</span></div>
           <div class="form-grid three">
             <label>پیشوند قرارداد<input name="prefix" value="<?= e($settings['contract_prefix'] ?? 'Pr') ?>" dir="ltr"></label>
             <label>سریال بعدی<input value="<?= to_persian_digits($settings['contract_next_serial'] ?? '') ?>" disabled></label>
-            <label>اپراتور پیگیری
-              <select name="assigned_operator_id"><option value="">بدون ارجاع</option><?php foreach ($operators as $operator): ?><option value="<?= (int) $operator['id'] ?>"><?= e($operator['full_name']) ?></option><?php endforeach; ?></select>
+            <?php if ($singleOperator): ?>
+              <label>اپراتور پیگیری<input value="<?= e($singleOperator['full_name']) ?>" disabled><input type="hidden" name="assigned_operator_id" value="<?= (int) $singleOperator['id'] ?>"></label>
+            <?php else: ?>
+              <label>اپراتور پیگیری
+                <span class="proma-live-search" data-user-live-search data-search-url="<?= e(url('users/search', ['roles' => 'operator'])) ?>">
+                  <input data-user-search-input placeholder="جستجوی نام، موبایل یا واحد اپراتور">
+                  <input type="hidden" name="assigned_operator_id" data-user-id-input>
+                  <span class="proma-live-results" data-user-search-results hidden></span>
+                  <span class="proma-chip-row" data-user-chip></span>
+                </span>
+              </label>
+            <?php endif; ?>
+            <label>فروشنده
+              <select name="seller_user_id" required>
+                <option value="">انتخاب فروشنده</option>
+                <?php foreach (($salesPeople ?? []) as $person): ?><option value="<?= (int) $person['id'] ?>"<?= (int) $person['id'] === (int) ($currentUserId ?? 0) ? ' selected' : '' ?>><?= e($person['full_name']) ?> (<?= e(role_label($person['role'])) ?>)</option><?php endforeach; ?>
+              </select>
             </label>
+            <?php if (!empty($affiliateEnabled)): ?><label>معرف مشتری از افیلیت (اختیاری)
+              <span class="proma-live-search" data-user-live-search data-search-url="<?= e(url('plugin/affiliate/search-referrers')) ?>">
+                <input data-user-search-input autocomplete="off" placeholder="کد معرف، نام، موبایل یا کد ملی را جستجو کنید">
+                <input type="hidden" name="affiliate_referrer_id" data-user-id-input>
+                <span class="proma-live-results" data-user-search-results hidden></span>
+                <span class="proma-chip-row" data-user-chip></span>
+              </span>
+              <small>کمیسیون معرف طبق تنظیمات افیلیت و پس از رویداد واجدشرایط محاسبه می‌شود.</small>
+            </label><?php endif; ?>
           </div>
         </section>
 
         <section class="proma-form-section">
-          <div class="proma-section-title"><h4>اطلاعات مشتری</h4><button class="btn small secondary" type="button" data-toggle-new-customer data-new-customer-modal="contract-new-customer-popup">مشتری جدید</button></div>
-          <div class="form-grid two">
-            <label class="full">انتخاب مشتری موجود
-              <input data-select-filter="customer-select" placeholder="جست‌وجوی نام، کد ملی یا موبایل">
-              <select id="customer-select" name="customer_id" data-customer-select>
-                <option value="">انتخاب مشتری موجود</option>
-                <?php foreach ($customers as $customer): ?>
-                  <option value="<?= (int) $customer['id'] ?>"><?= e($customer['full_name']) ?> - <?= to_persian_digits($customer['national_id']) ?> - <?= to_persian_digits($customer['mobile']) ?></option>
-                <?php endforeach; ?>
-              </select>
+          <div class="proma-section-title"><h4>اطلاعات مشتری</h4><span>حالت پیش‌فرض، مشتری موجود است.</span></div>
+          <div class="proma-customer-mode" data-customer-mode role="tablist" aria-label="نوع مشتری">
+            <button type="button" class="active" data-customer-mode-tab="existing" role="tab" aria-selected="true">مشتری موجود</button>
+            <button type="button" data-customer-mode-tab="new" role="tab" aria-selected="false">مشتری جدید</button>
+          </div>
+          <div class="proma-customer-mode-panel" data-customer-mode-panel="existing">
+            <label class="full">جستجوی مشتری
+              <span class="proma-live-search" data-customer-live-search data-search-url="<?= e(url('contracts/search-customers')) ?>">
+                <input data-customer-search-input autocomplete="off" value="<?= e($preselectedCustomer['full_name'] ?? '') ?>" placeholder="نام، شماره موبایل، کد ملی یا شناسه مشتری را وارد کنید">
+                <input type="hidden" name="customer_id" data-customer-select<?= !empty($preselectedCustomer) ? ' value="' . (int) $preselectedCustomer['id'] . '" data-customer-label="' . e($preselectedCustomer['full_name']) . '" data-customer-name="' . e($preselectedCustomer['full_name']) . '" data-customer-mobile="' . e($preselectedCustomer['mobile'] ?? '') . '" data-customer-national-id="' . e($preselectedCustomer['national_id'] ?? '') . '"' : '' ?>>
+                <span class="proma-live-results" data-customer-search-results hidden></span>
+              </span>
             </label>
             <div class="proma-chip-row full" data-customer-chip></div>
-            <div class="proma-chip-row full" data-new-customer-summary hidden></div>
           </div>
-          <div data-new-customer-fields hidden>
-            <input type="hidden" name="new_customer_full_name">
-            <input type="hidden" name="new_customer_father_name">
-            <input type="hidden" name="new_customer_issued_from">
-            <input type="hidden" name="new_customer_national_id">
-            <input type="hidden" name="new_customer_mobile">
-            <input type="hidden" name="new_customer_secondary_phone">
-            <input type="hidden" name="new_customer_address">
+          <div class="proma-customer-mode-panel" data-customer-mode-panel="new" hidden>
+            <div class="notice info full">اطلاعات مشتری را همین‌جا وارد کنید؛ مشتری همراه با ثبت قرارداد ساخته می‌شود و صفحه یا مودال قرارداد بسته نخواهد شد.</div>
+            <div class="form-grid three" data-new-customer-fields>
+              <label>نام کامل<input name="new_customer_full_name" maxlength="190" data-new-customer-required></label>
+              <label>کد ملی<input name="new_customer_national_id" inputmode="numeric" maxlength="10" data-new-customer-required></label>
+              <label>موبایل<input name="new_customer_mobile" inputmode="tel" maxlength="20" data-new-customer-required></label>
+              <label>نام پدر<input name="new_customer_father_name" maxlength="100"></label>
+              <label>محل صدور<input name="new_customer_issued_from" maxlength="100"></label>
+              <label>تلفن دوم<input name="new_customer_secondary_phone" inputmode="tel" maxlength="20"></label>
+              <label class="full">آدرس<textarea name="new_customer_address" rows="2" maxlength="2000"></textarea></label>
+            </div>
+            <div class="actions"><button class="btn secondary" type="button" data-create-customer-in-contract data-create-url="<?= e(url('customers/store')) ?>">ثبت مشتری و ادامهٔ قرارداد</button></div>
+            <p class="proma-inline-error" data-new-customer-create-error role="alert" hidden></p>
+            <p class="form-help">مشتری تازه سابقهٔ اعتباری ندارد؛ رتبهٔ اولیه پس از ثبت مشتری و با داده‌های واقعی محاسبه می‌شود.</p>
+          </div>
+          <div class="notice info full" data-customer-credit-summary data-summary-url="<?= e(url('risk/summary/__ID__')) ?>" aria-live="polite" hidden>
+            <span data-credit-summary-text></span>
           </div>
         </section>
 
@@ -271,6 +379,7 @@ for ($i = 0; $i < 6; $i++) {
               </select>
             </label>
             <label>تعداد ضمانت<input name="guarantee[guarantee_count]" value="1" inputmode="numeric"></label>
+            <label>مبلغ ضمانت<input name="guarantee[guarantee_amount]" inputmode="numeric" data-money placeholder="تومان"></label>
             <label>شناسه / شماره سریال<input name="guarantee[guarantee_serial]" dir="ltr"></label>
             <label data-guarantee-other hidden>توضیح نوع ضمانت<input name="guarantee[guarantee_type_other]"></label>
             <label class="full">توضیحات ضمانت<textarea name="guarantee[guarantee_description]"></textarea></label>
@@ -278,6 +387,7 @@ for ($i = 0; $i < 6; $i++) {
         </section>
 
         <section class="proma-form-section" data-repeater="guarantor_people">
+          <p class="proma-form-help">ضامن جدید با کد ملی و موبایل معتبر به فهرست مشتریان هم اضافه می‌شود. حساب موجود تکرار نمی‌شود؛ برای ورود اولیه به حساب جدید، رمز را از مسیر بازیابی پیامکی تنظیم کنید.</p>
           <div class="proma-section-title">
             <h4>مشخصات ضامن‌ها</h4>
             <button class="btn small secondary" type="button" data-repeater-add>افزودن ضامن</button>
@@ -299,17 +409,15 @@ for ($i = 0; $i < 6; $i++) {
           </template>
         </section>
 
-        <section class="proma-form-section">
-          <div class="proma-section-title"><h4>ضامنان</h4><span>مشتری اصلی نمی‌تواند ضامن خودش باشد.</span></div>
-          <label class="full">انتخاب ضامن
-            <input data-select-filter="guarantor-select" placeholder="جست‌وجوی ضامن">
-            <select id="guarantor-select" name="guarantors[]" multiple data-guarantor-select>
-              <?php foreach ($customers as $customer): ?>
-                <option value="<?= (int) $customer['id'] ?>"><?= e($customer['full_name']) ?> - <?= to_persian_digits($customer['national_id']) ?> - <?= to_persian_digits($customer['mobile']) ?></option>
-              <?php endforeach; ?>
-            </select>
-          </label>
-          <div class="proma-chip-row" data-guarantor-chips></div>
+          <section class="proma-form-section">
+            <div class="proma-section-title"><h4>ضامنان</h4><span>مشتری اصلی نمی‌تواند ضامن خودش باشد.</span></div>
+            <label class="full">جستجوی ضامن
+              <span class="proma-live-search proma-guarantor-picker" data-guarantor-live-search data-search-url="<?= e(url('contracts/search-guarantors')) ?>">
+                <input data-guarantor-search-input autocomplete="off" placeholder="نام، موبایل، کد ملی یا شماره مشتری را وارد کنید">
+                <span class="proma-live-results" data-guarantor-search-results hidden></span>
+                <span class="proma-chip-row" data-guarantor-chips></span>
+              </span>
+            </label>
         </section>
 
         <section class="proma-form-section">
@@ -320,36 +428,15 @@ for ($i = 0; $i < 6; $i++) {
     </form>
   </div>
 </div>
-
-<div class="modal" id="contract-new-customer-popup" data-contract-customer-popup>
-  <div class="modal-content proma-modal-lg">
-    <div class="modal-header"><h3>ثبت مشتری تازه برای قرارداد</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-    <div class="modal-body">
-      <div class="form-grid three" data-new-customer-draft>
-        <label>نام و نام خانوادگی<input data-new-customer-field="full_name" placeholder="نام مشتری" required></label>
-        <label>نام پدر<input data-new-customer-field="father_name"></label>
-        <label>صادره از<input data-new-customer-field="issued_from"></label>
-        <label>کد ملی<input data-new-customer-field="national_id" inputmode="numeric"></label>
-        <label>موبایل<input data-new-customer-field="mobile" inputmode="tel"></label>
-        <label>تلفن دوم<input data-new-customer-field="secondary_phone" inputmode="tel"></label>
-        <label class="full">آدرس<input data-new-customer-field="address"></label>
-      </div>
-      <div class="notice info">پس از تأیید، مشتری همراه با قرارداد ذخیره می‌شود و نیازی به ثبت جداگانه در صفحه مشتریان نیست.</div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" type="button" data-apply-new-customer>افزودن به فرم قرارداد</button>
-      <button class="btn secondary" type="button" data-close-modal>بستن</button>
-    </div>
-  </div>
-</div>
+<?php require dirname(__DIR__) . '/customers/_create_modal.php'; ?>
 
 <?php foreach ($contracts as $contract): ?>
   <?php
-    $guarantors = Contract::guarantors($contract['id']);
-    $contractItems = ContractDocument::items((int) $contract['id']);
-    $contractGuarantees = ContractDocument::guarantees((int) $contract['id']);
-    $contractGuarantee = $contractGuarantees[0] ?? [];
-    $contractGuarantorPeople = ContractDocument::guarantorPeople((int) $contract['id']);
+    $guarantors = $contractGuarantors[(int) $contract['id']] ?? [];
+    $contractItemRows = $contractItems[(int) $contract['id']] ?? [];
+    $contractGuaranteeRows = $contractGuarantees[(int) $contract['id']] ?? [];
+    $contractGuarantee = $contractGuaranteeRows[0] ?? [];
+    $contractGuarantorPeopleRows = $contractGuarantorPeople[(int) $contract['id']] ?? [];
   ?>
   <div class="modal" id="edit-contract-<?= (int) $contract['id'] ?>">
     <div class="modal-content proma-modal-xl">
@@ -361,9 +448,30 @@ for ($i = 0; $i < 6; $i++) {
             <div class="proma-section-title"><h4>اطلاعات قرارداد</h4><span><?= e($contract['contract_number']) ?></span></div>
             <div class="form-grid two">
               <label>مشتری
-                <select name="customer_id" data-customer-select><?php foreach ($customers as $customer): ?><option value="<?= (int) $customer['id'] ?>"<?= selected($contract['customer_id'], $customer['id']) ?>><?= e($customer['full_name']) ?></option><?php endforeach; ?></select>
+                <span class="proma-live-search" data-customer-live-search data-search-url="<?= e(url('contracts/search-customers')) ?>">
+                  <input data-customer-search-input autocomplete="off" value="<?= e($contract['customer_name']) ?>" placeholder="نام، شماره تماس، کد ملی یا تلفن دوم">
+                  <input type="hidden" name="customer_id" value="<?= (int) $contract['customer_id'] ?>" data-customer-select data-customer-label="<?= e($contract['customer_name']) ?>" data-customer-name="<?= e($contract['customer_name']) ?>" data-customer-mobile="<?= e($contract['mobile'] ?? '') ?>" data-customer-national-id="<?= e($contract['national_id'] ?? '') ?>">
+                  <span class="proma-live-results" data-customer-search-results hidden></span>
+                </span>
               </label>
-              <label>اپراتور<select name="assigned_operator_id"><option value="">بدون ارجاع</option><?php foreach ($operators as $operator): ?><option value="<?= (int) $operator['id'] ?>"<?= selected($contract['assigned_operator_id'], $operator['id']) ?>><?= e($operator['full_name']) ?></option><?php endforeach; ?></select></label>
+              <?php if ($singleOperator): ?>
+                <label>اپراتور پیگیری<input value="<?= e($singleOperator['full_name']) ?>" disabled><input type="hidden" name="assigned_operator_id" value="<?= (int) $singleOperator['id'] ?>"></label>
+              <?php else: ?>
+                <label>اپراتور پیگیری
+                  <span class="proma-live-search" data-user-live-search data-search-url="<?= e(url('users/search', ['roles' => 'operator'])) ?>">
+                    <input data-user-search-input autocomplete="off" value="<?= e($contract['operator_name'] ?? '') ?>" placeholder="جستجوی نام، موبایل یا واحد اپراتور">
+                    <input type="hidden" name="assigned_operator_id" value="<?= (int) ($contract['assigned_operator_id'] ?? 0) ?>" data-user-id-input>
+                    <span class="proma-live-results" data-user-search-results hidden></span>
+                    <span class="proma-chip-row" data-user-chip></span>
+                  </span>
+                </label>
+              <?php endif; ?>
+              <label>فروشنده
+                <select name="seller_user_id" required>
+                  <option value="">انتخاب فروشنده</option>
+                  <?php foreach (($salesPeople ?? []) as $person): ?><option value="<?= (int) $person['id'] ?>"<?= (int) ($contract['seller_user_id'] ?? 0) === (int) $person['id'] ? ' selected' : '' ?>><?= e($person['full_name']) ?> (<?= e(role_label($person['role'])) ?>)</option><?php endforeach; ?>
+                </select>
+              </label>
             </div>
             <div class="proma-chip-row" data-customer-chip></div>
           </section>
@@ -411,7 +519,7 @@ for ($i = 0; $i < 6; $i++) {
               <button class="btn small secondary" type="button" data-repeater-add>افزودن کالا</button>
             </div>
             <div class="proma-repeat-list" data-repeater-list>
-              <?php foreach ($contractItems ?: [['product_model' => '', 'imei_1' => '', 'imei_2' => '', 'description' => '']] as $itemIndex => $item): ?>
+              <?php foreach ($contractItemRows ?: [['product_model' => '', 'imei_1' => '', 'imei_2' => '', 'description' => '']] as $itemIndex => $item): ?>
                 <div class="proma-repeat-row" data-repeater-row>
                   <div class="form-grid four">
                     <label>مدل کالا<input name="items[<?= (int) $itemIndex ?>][product_model]" value="<?= e($item['product_model'] ?? '') ?>"></label>
@@ -447,6 +555,7 @@ for ($i = 0; $i < 6; $i++) {
                 </select>
               </label>
               <label>تعداد ضمانت<input name="guarantee[guarantee_count]" value="<?= e(to_persian_digits($contractGuarantee['guarantee_count'] ?? 1)) ?>" inputmode="numeric"></label>
+              <label>مبلغ ضمانت<input name="guarantee[guarantee_amount]" value="<?= e(to_persian_digits($contractGuarantee['guarantee_amount'] ?? 0)) ?>" inputmode="numeric" data-money placeholder="تومان"></label>
               <label>شناسه / شماره سریال<input name="guarantee[guarantee_serial]" value="<?= e($contractGuarantee['guarantee_serial'] ?? '') ?>" dir="ltr"></label>
               <label data-guarantee-other<?= ($contractGuarantee['guarantee_type'] ?? '') === 'سایر' ? '' : ' hidden' ?>>توضیح نوع ضمانت<input name="guarantee[guarantee_type_other]"></label>
               <label class="full">توضیحات ضمانت<textarea name="guarantee[guarantee_description]"><?= e($contractGuarantee['guarantee_description'] ?? '') ?></textarea></label>
@@ -454,12 +563,13 @@ for ($i = 0; $i < 6; $i++) {
           </section>
 
           <section class="proma-form-section" data-repeater="guarantor_people">
+            <p class="proma-form-help">با ثبت ضامن جدید، حساب مشتری او هم ایجاد می‌شود. کد ملی و موبایل باید متعلق به یک نفر باشند.</p>
             <div class="proma-section-title">
               <h4>مشخصات ضامن‌ها</h4>
               <button class="btn small secondary" type="button" data-repeater-add>افزودن ضامن</button>
             </div>
             <div class="proma-repeat-list" data-repeater-list>
-              <?php foreach ($contractGuarantorPeople as $personIndex => $person): ?>
+              <?php foreach ($contractGuarantorPeopleRows as $personIndex => $person): ?>
                 <div class="proma-repeat-row" data-repeater-row>
                   <div class="form-grid four">
                     <label>نام و نام خانوادگی<input name="guarantor_people[<?= (int) $personIndex ?>][full_name]" value="<?= e($person['full_name'] ?? '') ?>"></label>
@@ -492,13 +602,26 @@ for ($i = 0; $i < 6; $i++) {
 
           <section class="proma-form-section">
             <div class="proma-section-title"><h4>ضامنان</h4><span>مشتری اصلی نمی‌تواند ضامن خودش باشد.</span></div>
-            <label class="full">ضامنان<select name="guarantors[]" multiple data-guarantor-select><?php $selectedGuarantors = array_column($guarantors, 'id'); foreach ($customers as $customer): ?><option value="<?= (int) $customer['id'] ?>"<?= in_array($customer['id'], $selectedGuarantors) ? ' selected' : '' ?>><?= e($customer['full_name']) ?></option><?php endforeach; ?></select></label>
-            <div class="proma-chip-row" data-guarantor-chips></div>
+            <label class="full">جستجوی ضامن
+              <span class="proma-live-search proma-guarantor-picker" data-guarantor-live-search data-search-url="<?= e(url('contracts/search-guarantors')) ?>">
+                <input data-guarantor-search-input autocomplete="off" placeholder="نام، موبایل، کد ملی یا شماره مشتری را وارد کنید">
+                <span class="proma-live-results" data-guarantor-search-results hidden></span>
+                <span class="proma-chip-row" data-guarantor-chips>
+                  <?php foreach ($guarantors as $guarantor): ?>
+                    <span class="proma-chip" data-guarantor-chip data-guarantor-id="<?= (int) $guarantor['id'] ?>">
+                      <?= e($guarantor['full_name']) ?>
+                      <input type="hidden" name="guarantors[]" value="<?= (int) $guarantor['id'] ?>">
+                      <button type="button" aria-label="حذف انتخاب">×</button>
+                    </span>
+                  <?php endforeach; ?>
+                </span>
+              </span>
+            </label>
           </section>
 
           <section class="proma-form-section">
             <label class="full">یادداشت<textarea name="notes"><?= e($contract['notes']) ?></textarea></label>
-            <label class="full">دلیل ویرایش<input name="change_reason" required placeholder="مثلاً اصلاح اطلاعات کالا یا ضمانت"></label>
+            <label class="full">دلیل ویرایش<input name="change_reason" placeholder="اختیاری؛ مثلاً اصلاح اطلاعات کالا یا ضمانت"></label>
           </section>
         </div>
         <div class="modal-footer"><button class="btn" type="submit">ذخیره تغییرات</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
@@ -517,26 +640,58 @@ for ($i = 0; $i < 6; $i++) {
           <label>قرارداد<input value="<?= e($contract['contract_number']) ?> - <?= e($contract['customer_name']) ?>" disabled></label>
           <label>سررسید<input name="due_date" value="<?= e($defaultFirstDueDate ?? '') ?>" required placeholder="۱۴۰۳/۰۱/۰۱"></label>
           <label>مبلغ پایه<input name="base_amount" data-money required></label>
+          <label>عنوان قسط<input name="custom_title" maxlength="100" placeholder="مثلاً هزینه خدمات اضافه"></label>
           <label>شناسه ضمانت<input name="guarantee_serial" dir="ltr" placeholder="شماره چک یا سفته"></label>
-          <label class="full">توضیحات<input name="notes" required placeholder="علت یا توضیح قسط دلخواه"></label>
+          <label class="full">توضیح قسط برای مشتری<textarea name="customer_description" required rows="3" placeholder="علت ایجاد این قسط را به زبان قابل نمایش برای مشتری بنویسید."></textarea><small class="proma-form-help">این توضیح در پنل مدیریت و پنل مشتری نمایش داده می‌شود.</small></label>
+          <label class="full">یادداشت داخلی<textarea name="internal_note" rows="2" placeholder="نکته داخلی برای مدیریت؛ این متن به مشتری نمایش داده نمی‌شود."></textarea><small class="proma-form-help">این یادداشت فقط برای کاربران مجاز مدیریت قابل مشاهده است.</small></label>
+          <label class="proma-confirm-check full"><input type="checkbox" name="customer_visible" value="1" checked> توضیح قسط در پنل مشتری نمایش داده شود.</label>
         </div>
         <div class="modal-footer"><button class="btn" type="submit">ثبت قسط</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
       </form>
     </div>
   </div>
 
-  <div class="modal" id="delete-contract-<?= (int) $contract['id'] ?>">
+  <div class="modal" id="cancel-contract-<?= (int) $contract['id'] ?>" data-contract-cancel-summary data-summary-url="<?= e(url('contracts/cancellationSummary/' . (int) $contract['id'])) ?>">
     <div class="modal-content">
-      <div class="modal-header"><h3>تأیید دو مرحله‌ای حذف</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('contracts/delete/' . $contract['id'])) ?>">
-        <div class="modal-body">
+      <div class="modal-header"><h3><?= proma_icon('slash') ?> لغو قرارداد</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن پنجره لغو قرارداد" title="بستن"><?= proma_icon('close') ?></button></div>
+      <form method="post" action="<?= e(url('contracts/cancel/' . $contract['id'])) ?>">
+        <div class="modal-body form-grid">
           <?= csrf_field() ?>
-          <p>برای حذف قرارداد <?= e($contract['contract_number']) ?> عبارت «حذف قطعی» را وارد کنید.</p>
-          <label>عبارت تأیید<input name="confirm_text" required></label>
+          <div class="notice error">لغو قرارداد باعث حذف سوابق مالی و پرداخت‌ها نمی‌شود و تنها قرارداد را از چرخه فعال وصول خارج می‌کند. تمام اقساط فعال نیز لغو می‌شوند و دیگر در مطالبات و معوقات قرار نمی‌گیرند.</div>
+          <div class="proma-cancellation-summary" data-cancel-summary-content>
+            <span><small>قرارداد</small><strong><?= e($contract['contract_number']) ?></strong></span>
+            <span><small>مشتری</small><strong><?= e($contract['customer_name']) ?></strong></span>
+            <span><small>وضعیت</small><strong><?= e(status_label($contract['status'] ?? '')) ?></strong></span>
+            <span><small>وضعیت مالی</small><strong data-cancel-summary-loading>در حال دریافت…</strong></span>
+          </div>
+          <label>علت لغو قرارداد<textarea name="cancellation_reason" required minlength="3" rows="3"></textarea></label>
+          <label class="proma-confirm-check"><input type="checkbox" name="confirm_cancel" value="1" required> پیامدهای لغو قرارداد را مطالعه کردم.</label>
+          <label class="proma-confirm-check proma-danger-check"><input type="checkbox" name="correct_contract_payments" value="1"> برای پرداخت‌های موفق همین قرارداد، اصلاحیه مالی ثبت شود و اثر آن‌ها در محاسبات داخلی صفر شود. این عملیات بازگشت وجه بانکی انجام نمی‌دهد.</label>
         </div>
-        <div class="modal-footer"><button class="btn danger" type="submit">حذف قرارداد</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
+        <div class="modal-footer"><button class="btn danger" type="submit"><?= proma_icon('slash') ?><span>لغو قطعی قرارداد</span></button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
+      </form>
+    </div>
+  </div>
+  <div class="modal" id="delete-contract-<?= (int) $contract['id'] ?>" data-contract-deletion-preview data-preview-url="<?= e(url('contracts/deletionPreview/' . (int) $contract['id'])) ?>">
+    <div class="modal-content">
+      <div class="modal-header"><h3>حذف قرارداد آزمایشی یا اشتباهی</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن"><i data-feather="x"></i></button></div>
+      <form method="post" action="<?= e(url('contracts/retire/' . $contract['id'])) ?>">
+        <div class="modal-body form-grid">
+          <?= csrf_field() ?>
+          <div class="notice warning full" data-delete-preview-notice>پیش‌نمایش سوابق وابسته در حال دریافت است. حذف تا پیش از بررسی دقیق سرور انجام نمی‌شود.</div>
+          <div class="proma-cancellation-summary full" data-delete-preview-stats hidden></div>
+          <p class="full small text-muted" data-delete-preview-labels hidden></p>
+          <label class="full required-field">علت حذف<textarea name="retirement_reason" required minlength="5" rows="3" placeholder="علت دقیق حذف قرارداد را ثبت کنید"></textarea></label>
+          <label class="full required-field">برای تأیید، شماره قرارداد را وارد کنید<input name="confirm_contract_number" required autocomplete="off" placeholder="<?= e($contract['contract_number']) ?>"></label>
+          <label class="proma-confirm-check proma-danger-check full" data-delete-history-option hidden><input type="checkbox" name="include_related_history" value="1"> قرارداد، پرداخت‌ها، اقساط، پرونده‌های حقوقی، اسناد و سوابق عملیاتی وابسته حذف شوند. پیش از حذف، آرشیو کامل و غیرقابل‌ویرایش ثبت می‌شود.</label>
+          <label class="proma-confirm-check proma-danger-check full" data-delete-gateway-option hidden><input type="checkbox" name="accept_gateway_notice" value="1"> می‌دانم حذف سابقه درگاه، بازگشت وجه بانکی انجام نمی‌دهد و مسئولیت بازپرداخت واقعی جداگانه است.</label>
+          <label class="proma-confirm-check proma-danger-check full"><input type="checkbox" name="confirm_mistake" value="1" required> حذف دائمی این قرارداد و پیامدهای آن را بررسی و تأیید می‌کنم.</label>
+        </div>
+        <div class="modal-footer"><button class="btn danger" type="submit"><?= proma_icon('trash') ?><span>حذف قطعی قرارداد</span></button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
       </form>
     </div>
   </div>
 <?php endforeach; ?>
 <?php endif; ?>
+</div>
+</div>

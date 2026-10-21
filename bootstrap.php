@@ -19,4 +19,19 @@ spl_autoload_register(function ($class) {
     }
 });
 
-Auth::start();
+ErrorHandler::install();
+RequestTelemetry::boot();
+RequestFloodGuard::enforce();
+try {
+    RequestMaintenanceLock::enter();
+} catch (RuntimeException $e) {
+    if (PHP_SAPI === 'cli') throw $e;
+    http_response_code(503);
+    header('Retry-After: 10');
+    echo 'سامانه موقتاً برای بازیابی بکاپ در دسترس نیست. چند لحظه بعد دوباره تلاش کنید.';
+    exit;
+}
+$healthRoute = trim((string) ($_GET['route'] ?? ''), '/');
+if (!in_array($healthRoute, ['health/live', 'health/ready'], true)) {
+    Auth::start();
+}

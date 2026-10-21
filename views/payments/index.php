@@ -1,23 +1,68 @@
-<section class="card">
+<section class="card proma-filter-card">
   <div class="card-header card-no-border">
     <div class="header-top">
       <h2>گزارش پرداخت‌ها</h2>
-      <span class="badge badge-light-info">اصلاحیه فقط وضعیت داخلی سامانه را تغییر می‌دهد.</span>
+      <div class="actions"><span class="badge badge-light-info">اصلاحیه فقط وضعیت داخلی سامانه را تغییر می‌دهد.</span><a class="btn small secondary" data-xlsx-export href="<?= e(url('payments/export')) ?>"><?= proma_icon('download') ?><span>خروجی Excel</span></a></div>
     </div>
   </div>
   <div class="card-body">
-    <form method="get" action="<?= e(url('payments')) ?>" class="form-grid four">
+    <form method="get" action="<?= e(url('payments')) ?>" class="form-grid four proma-filter-toolbar proma-filter-toolbar--payments" data-ajax-filter data-ajax-target="[data-ajax-results='payments']">
       <input type="hidden" name="route" value="payments">
       <label>از تاریخ<input name="date_from" value="<?= e($_GET['date_from'] ?? '') ?>" placeholder="۱۴۰۳/۰۱/۰۱"></label>
       <label>تا تاریخ<input name="date_to" value="<?= e($_GET['date_to'] ?? '') ?>" placeholder="۱۴۰۳/۱۲/۲۹"></label>
       <label>شماره قرارداد<input name="contract_number" value="<?= e($_GET['contract_number'] ?? '') ?>"></label>
       <label>مشتری<input name="customer" value="<?= e($_GET['customer'] ?? '') ?>" placeholder="نام، کد ملی یا موبایل"></label>
-      <div class="full actions"><button class="btn" type="submit">اعمال فیلتر</button></div>
+      <div class="proma-filter-actions"><button class="btn" type="submit">اعمال فیلتر</button><span class="proma-ajax-status" data-ajax-status></span></div>
     </form>
   </div>
 </section>
 
-<section class="card" style="margin-top:16px">
+<div data-ajax-results="payments">
+<?php if (!empty($gatewayReviewGroups)): ?>
+<section class="card proma-list-section" aria-labelledby="gateway-review-title">
+  <div class="card-header card-no-border"><div class="header-top"><h2 id="gateway-review-title">پرداخت‌های درگاه نیازمند تطبیق</h2><span class="badge warning"><?= to_persian_digits(count($gatewayReviewGroups)) ?> مورد</span></div></div>
+  <div class="card-body"><p class="notice warning">وجه این پرداخت‌ها توسط درگاه تأیید شده ولی هنوز به اقساط تخصیص نیافته است. پیش از هر اصلاحیه، نتیجه را با گزارش درگاه و سابقهٔ قرارداد تطبیق دهید.</p></div>
+  <div class="table-wrap"><table class="proma-v2-data-table"><thead><tr><th scope="col">قرارداد</th><th scope="col">مشتری</th><th scope="col">مبلغ تأییدشده</th><th scope="col">شناسه درگاه</th><th scope="col">دلیل بررسی</th><th scope="col">ثبت درخواست</th><th scope="col">عملیات</th></tr></thead><tbody>
+  <?php foreach ($gatewayReviewGroups as $review): ?><tr>
+    <td data-label="قرارداد"><?= e($review['contract_number']) ?></td><td data-label="مشتری"><?= e($review['customer_name']) ?></td>
+    <td data-label="مبلغ تأییدشده"><?= $review['gateway_verified_amount'] === null ? 'نیاز به استعلام درگاه' : money_toman($review['gateway_verified_amount']) ?></td>
+    <td data-label="شناسه درگاه"><small dir="ltr"><?= e($review['gateway_track_id'] ?? '') ?></small><br><small dir="ltr"><?= e($review['gateway_ref_id'] ?? '') ?></small></td>
+    <td data-label="دلیل بررسی"><?= e($review['reconciliation_reason'] ?? '') ?></td><td data-label="ثبت درخواست"><?= e(jdatetime($review['created_at'])) ?></td>
+    <td data-label="عملیات">
+      <div class="proma-table-actions">
+        <a class="btn small secondary" href="<?= e(url('contracts/show/' . (int) $review['contract_id'])) ?>">بررسی قرارداد</a>
+        <?php if ($review['gateway_verified_amount'] !== null && normalize_money($review['gateway_verified_amount']) === normalize_money($review['requested_amount']) && !empty($review['gateway_ref_id'])): ?>
+          <button class="btn small warning" type="button" data-open-modal="reconcile-gateway-<?= (int) $review['id'] ?>">تطبیق و تخصیص</button>
+        <?php else: ?>
+          <span class="badge warning">استعلام بانکی لازم است</span>
+        <?php endif; ?>
+      </div>
+    </td>
+  </tr><?php endforeach; ?>
+  </tbody></table></div>
+</section>
+<?php foreach ($gatewayReviewGroups as $review): ?>
+  <?php if ($review['gateway_verified_amount'] === null || normalize_money($review['gateway_verified_amount']) !== normalize_money($review['requested_amount']) || empty($review['gateway_ref_id'])) continue; ?>
+  <div class="modal" id="reconcile-gateway-<?= (int) $review['id'] ?>">
+    <div class="modal-content">
+      <div class="modal-header"><h3>تطبیق پرداخت درگاه</h3><button class="icon-btn" type="button" data-close-modal aria-label="بستن">×</button></div>
+      <form method="post" action="<?= e(url('payments/reconcileGatewayGroup/' . (int) $review['id'])) ?>">
+        <?= csrf_field() ?>
+        <div class="modal-body form-grid">
+          <div class="notice warning full">ابتدا دریافت قطعی وجه را در گزارش درگاه بررسی کنید. این عملیات وجه را بر پایهٔ بدهی فعلی قرارداد دوباره محاسبه و تخصیص می‌دهد؛ اگر مبلغ از بدهی فعلی بیشتر باشد، هیچ تخصیصی انجام نمی‌شود.</div>
+          <label>قرارداد<input value="<?= e($review['contract_number']) ?>" disabled></label>
+          <label>وجه تأییدشده<input value="<?= e(money_toman($review['gateway_verified_amount'])) ?>" disabled></label>
+          <label class="full">شناسه مرجع درگاه را دوباره وارد کنید<input name="gateway_ref_id" dir="ltr" autocomplete="off" required></label>
+          <label class="full">علت و مستند تطبیق<textarea name="reconciliation_reason" rows="3" required></textarea></label>
+          <label class="proma-confirm-check full"><input type="checkbox" name="confirm_bank_receipt" value="1" required> دریافت قطعی وجه و انطباق شناسه را با گزارش درگاه تأیید می‌کنم.</label>
+        </div>
+        <div class="modal-footer"><button class="btn secondary" type="button" data-close-modal>انصراف</button><button class="btn" type="submit">تطبیق و تخصیص وجه</button></div>
+      </form>
+    </div>
+  </div>
+<?php endforeach; ?>
+<?php endif; ?>
+<section class="card proma-list-section">
   <div class="card-header card-no-border">
     <div class="header-top">
       <h2>سوابق پرداخت</h2>
@@ -28,17 +73,17 @@
     <table>
       <thead>
         <tr>
-          <th>تاریخ</th>
-          <th>قرارداد</th>
-          <th>مشتری</th>
-          <th>قسط</th>
-          <th>نوع پرداخت</th>
-          <th>مبلغ</th>
-          <th>روش</th>
-          <th>کدها</th>
-          <th>وضعیت</th>
-          <th>اصلاحیه</th>
-          <th>عملیات</th>
+          <th scope="col">تاریخ</th>
+          <th scope="col">قرارداد</th>
+          <th scope="col">مشتری</th>
+          <th scope="col">قسط</th>
+          <th scope="col">نوع پرداخت</th>
+          <th scope="col">مبلغ</th>
+          <th scope="col">روش</th>
+          <th scope="col">کدها</th>
+          <th scope="col">وضعیت</th>
+          <th scope="col">اصلاحیه</th>
+          <th scope="col">عملیات</th>
         </tr>
       </thead>
       <tbody>
@@ -69,11 +114,13 @@
               <span class="badge badge-light-success">بدون اصلاحیه</span>
             <?php endif; ?>
           </td>
-          <td class="actions">
-            <a class="btn small secondary" href="<?= e(url('contracts')) ?>">مشاهده</a>
-            <?php if (($payment['status'] ?? '') === 'paid' && !$isCorrected && $paymentType !== 'down_payment'): ?>
-              <button class="btn small warning" type="button" data-open-modal="correct-payment-<?= (int) $payment['id'] ?>">اصلاحیه</button>
-            <?php endif; ?>
+          <td>
+            <div class="proma-table-actions proma-payment-row-actions">
+              <a class="btn small secondary" href="<?= e(url('contracts')) ?>">مشاهده</a>
+              <?php if (($payment['status'] ?? '') === 'paid' && !$isCorrected && $paymentType !== 'down_payment'): ?>
+                <button class="btn small warning" type="button" data-open-modal="correct-payment-<?= (int) $payment['id'] ?>">اصلاحیه</button>
+              <?php endif; ?>
+            </div>
           </td>
         </tr>
       <?php endforeach; ?>
@@ -115,3 +162,4 @@
     </div>
   </div>
 <?php endforeach; ?>
+</div>

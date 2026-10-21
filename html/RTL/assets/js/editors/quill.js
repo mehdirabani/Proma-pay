@@ -2242,7 +2242,7 @@
             this.history = this.theme.addModule("history");
             this.theme.init();
             this.pasteHTML(
-              "<div class='ql-editor' style=\"white-space: normal;\">" +
+              "<div class='ql-editor ql-white-space-normal'>" +
                 html +
                 "<p><br></p></div>"
             );

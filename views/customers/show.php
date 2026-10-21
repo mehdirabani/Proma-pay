@@ -1,132 +1,56 @@
 <?php
-$uniqueContracts = [];
-foreach ($contracts as $contract) {
-    $uniqueContracts[(int) $contract['id']] = $contract;
+$customerPhones = [];
+foreach ([['label' => 'شماره اصلی', 'value' => $customer['mobile'] ?? ''], ['label' => 'شماره دوم', 'value' => $customer['secondary_phone'] ?? '']] as $phoneEntry) {
+    $number = normalize_iran_phone($phoneEntry['value']);
+    if ($number !== '' && !isset($customerPhones[$number])) {
+        $customerPhones[$number] = ['label' => $phoneEntry['label'], 'number' => $number];
+    }
 }
-$contracts = array_values($uniqueContracts);
-$medals = $medals ?? [];
+$customerPhones = array_values($customerPhones);
+$activeTabData = is_array($activeTabData ?? null) ? $activeTabData : [];
+$contracts = Contract::paginated(['customer_id' => (int) $customer['id'], 'page' => 1, 'per_page' => 5]);
+$payments = Payment::recentForCustomer((int) $customer['id'], 5);
+$tabLabels = [
+    'overview' => 'نمای کلی', 'contracts' => 'قراردادها', 'installments' => 'اقساط', 'payments' => 'پرداخت‌ها',
+    'documents' => 'مدارک', 'accounting' => 'حسابداری', 'calls' => 'تماس و پیگیری', 'referrals' => 'معرفی مشتری',
+    'legal' => 'حقوقی', 'timeline' => 'تایم‌لاین', 'loyalty' => 'امتیاز و سطح‌بندی',
+];
+$activeTab = isset($activeTab) && isset($tabLabels[$activeTab]) ? $activeTab : 'overview';
 ?>
-<div class="proma-customer-summary">
-  <section class="card proma-customer-card">
-    <div class="card-body">
-      <div class="proma-customer-avatar"><?= e(mb_substr($customer['full_name'], 0, 1, 'UTF-8')) ?></div>
-      <h4><?= e($customer['full_name']) ?></h4>
-      <p><?= to_persian_digits($customer['mobile']) ?> · <?= to_persian_digits($customer['national_id']) ?></p>
-      <div class="proma-medal-row proma-medal-center">
-        <?php foreach (array_slice($medals, 0, 4) as $medal): ?><span class="badge badge-light-warning"><?= e($medal['title']) ?></span><?php endforeach; ?>
-        <?php if (!$medals): ?><span class="badge muted">بدون مدال</span><?php endif; ?>
-      </div>
-      <div class="proma-customer-stats">
-        <span><strong><?= to_persian_digits(count($contracts)) ?></strong><small>قرارداد</small></span>
-        <span><strong><?= to_persian_digits(count($installments)) ?></strong><small>قسط</small></span>
-        <span><strong><?= to_persian_digits(count($payments)) ?></strong><small>پرداخت</small></span>
-      </div>
+<section class="proma-customer-360" aria-label="پرونده یکپارچه مشتری" data-customer-360 data-customer-id="<?= (int) $customer['id'] ?>">
+  <section class="card proma-customer-360__hero">
+    <div class="proma-customer-360__identity">
+      <?php $customerAvatar = avatar_key_for($customer['avatar_key'] ?? null, $customer['id'] ?? $customer['full_name']); ?>
+      <div class="proma-customer-avatar <?= e($customerAvatar) ?>"><img data-avatar-image src="<?= e(user_avatar_asset_url($customer)) ?>" alt="آواتار <?= e($customer['full_name']) ?>"></div>
+      <div><span class="proma-customer-360__eyebrow">پرونده یکپارچه مشتری</span><h2 id="customer-name"><?= e($customer['full_name']) ?></h2><p><?= to_persian_digits($customer['national_id'] ?? '') ?><?php if ($customerPhones): ?> · <?= implode(' · ', array_map(static fn ($phone) => to_persian_digits(format_iran_phone($phone['number'])), $customerPhones)) ?><?php endif; ?></p><?php if (!empty($creditProfile)): ?><span class="badge <?= ($creditProfile['risk_level'] ?? '') === 'low' ? 'success' : (($creditProfile['risk_level'] ?? '') === 'medium' ? 'warning' : 'danger') ?>" title="رتبهٔ اعتباری مشتری">Proma Score <?= to_persian_digits($creditProfile['score'] ?? 0) ?> · <?= e(($creditProfile['risk_level'] ?? '') === 'low' ? 'کم‌ریسک' : (($creditProfile['risk_level'] ?? '') === 'medium' ? 'ریسک متوسط' : 'پرریسک')) ?></span><?php endif; ?></div>
+    </div>
+    <div class="proma-customer-360__actions">
+      <a class="btn secondary" href="<?= e(url('risk/profile/' . (int) $customer['id'])) ?>"><?= proma_icon('activity') ?><span>پروفایل ریسک</span></a>
+      <?php if ($customerPhones): ?><details class="proma-customer-360__phone-picker"><summary class="btn secondary"><?= proma_icon('phone') ?><span>تماس</span><span class="proma-customer-360__phone-count"><?= to_persian_digits(count($customerPhones)) ?></span></summary><div class="proma-customer-360__phone-menu" aria-label="شماره‌های تماس مشتری"><?php foreach ($customerPhones as $phone): ?><a href="tel:<?= e($phone['number']) ?>"><?= proma_icon('phone') ?><span><strong><?= e($phone['label']) ?></strong><small dir="ltr"><?= e(to_persian_digits(format_iran_phone($phone['number']))) ?></small></span></a><?php endforeach; ?></div></details><?php endif; ?>
+      <a class="btn" href="<?= e(url('contracts', ['customer_id' => (int) $customer['id'], 'open' => 'create-contract'])) ?>#create-contract"><?= proma_icon('file-plus') ?> قرارداد جدید</a>
+      <?php if (Auth::role() === 'admin'): ?><button class="btn success" type="button" data-open-modal="header-quick-payment"><?= proma_icon('credit-card') ?> ثبت پرداخت</button><?php endif; ?>
+      <details class="proma-customer-360__more"><summary class="btn secondary"><?= proma_icon('more') ?> اقدامات بیشتر</summary><div class="proma-customer-360__menu">
+        <button type="button" data-customer-open-tab="contracts">مشاهده قراردادها</button>
+        <button type="button" data-customer-open-tab="documents">مدارک مشتری</button>
+        <button type="button" data-customer-open-tab="accounting">گردش حساب</button>
+        <?php foreach ($customerPhones as $phone): ?><button type="button" data-copy-phone="<?= e($phone['number']) ?>">کپی <?= e($phone['label']) ?></button><?php endforeach; ?>
+      </div></details>
     </div>
   </section>
-  <section class="card proma-customer-card light">
-    <div class="card-body">
-      <h5>شاخص خوش‌حسابی</h5>
-      <?php $paidCount = count(array_filter($installments, function ($item) { return ($item['status'] ?? '') === 'paid'; })); ?>
-      <?php $score = count($installments) ? ceil(($paidCount / count($installments)) * 100) : 0; ?>
-      <strong class="proma-score"><?= to_persian_digits($score) ?>٪</strong>
-      <div class="progress sm-progress-bar"><div class="progress-bar bg-success" style="width: <?= e($score) ?>%"></div></div>
-      <p class="f-light mb-0"><?= to_persian_digits($paidCount) ?> قسط پرداخت شده از <?= to_persian_digits(count($installments)) ?></p>
-    </div>
+
+  <section class="proma-customer-360__metrics" aria-label="خلاصه وضعیت مشتری">
+    <article class="card"><span><?= $accountingAvailable ? 'مانده حساب' : 'مانده اقساط' ?></span><strong><?= $accountingAvailable && $account ? money_toman($account['balance'] ?? 0) : money_toman($summary['installment_balance'] ?? 0) ?></strong><small><?= $accountingAvailable && $account ? e($account['label'] ?? '') : 'جمع اصل اقساط پرداخت‌نشده' ?></small></article>
+    <article class="card"><span>قرارداد فعال</span><strong><?= to_persian_digits($summary['active_contract_count'] ?? 0) ?></strong><small>از <?= to_persian_digits($summary['contract_count'] ?? 0) ?> قرارداد</small></article>
+    <article class="card"><span>قسط عقب‌افتاده</span><strong><?= to_persian_digits($summary['overdue_installment_count'] ?? 0) ?></strong><small>بر اساس سررسید و وضعیت ثبت‌شده</small></article>
+    <article class="card"><span>وضعیت حساب</span><strong><?= e(($customer['status'] ?? '') === 'active' ? 'فعال' : 'غیرفعال') ?></strong><small><?= e($customer['mobile'] ?? 'شماره تماس ثبت نشده') ?></small></article>
   </section>
-</div>
 
-<section class="card" style="margin-top:16px">
-  <div class="card-header card-no-border">
-    <div class="header-top">
-      <h2>تاریخچه سفارشات و قراردادهای اخیر</h2>
-      <a class="link-only" href="<?= e(url('contracts', ['q' => $customer['national_id']])) ?>">مدیریت قراردادهای مشتری</a>
-    </div>
-  </div>
-  <div class="card-body pt-0">
-    <div class="proma-order-history-list">
-      <?php foreach ($contracts as $contract): ?>
-        <?php $financed = max(0, (float) $contract['principal_amount'] - (float) ($contract['down_payment_amount'] ?? 0)); ?>
-        <a class="proma-order-history-item" href="<?= e(url('contracts/show/' . $contract['id'])) ?>">
-          <span class="proma-order-icon"><?= e(mb_substr($contract['contract_number'], 0, 1, 'UTF-8')) ?></span>
-          <span>
-            <strong><?= e($contract['contract_number']) ?></strong>
-            <small><?= e(jdate($contract['start_date'])) ?> · <?= $contract['interest_type'] === 'compound' ? 'سود مرکب' : 'سود ساده' ?> · <?= to_persian_digits($contract['months']) ?> قسط</small>
-            <span class="proma-order-badges">
-              <em class="badge <?= e(badge_class($contract['status'])) ?>"><?= e(status_label($contract['status'])) ?></em>
-              <em class="badge badge-light-info">پیش‌پرداخت <?= money_toman($contract['down_payment_amount'] ?? 0) ?></em>
-              <em class="badge badge-light-primary">قابل تقسیط <?= money_toman($financed) ?></em>
-            </span>
-          </span>
-          <strong class="proma-order-amount"><?= money_toman($contract['principal_amount']) ?></strong>
-        </a>
-      <?php endforeach; ?>
-      <?php if (!$contracts): ?><div class="empty">قراردادی برای این مشتری ثبت نشده است.</div><?php endif; ?>
-    </div>
+  <nav class="proma-customer-360__tabs" role="tablist" aria-label="بخش‌های پرونده مشتری">
+    <?php foreach ($tabLabels as $key => $label): ?><a id="customer-tab-<?= e($key) ?>" role="tab" aria-controls="customer-tab-panel" aria-selected="<?= $key === $activeTab ? 'true' : 'false' ?>" tabindex="<?= $key === $activeTab ? '0' : '-1' ?>" class="<?= $key === $activeTab ? 'is-active' : '' ?>" data-customer-tab-btn="<?= e($key) ?>" href="<?= e(url('customers/tab/' . (int) $customer['id'] . '/' . $key)) ?>" data-tab-url="<?= e(url('customers/tab/' . (int) $customer['id'] . '/' . $key)) ?>"><?= e($label) ?></a><?php endforeach; ?>
+  </nav>
+
+  <div id="customer-tab-panel" class="proma-customer-360__panel" role="tabpanel" aria-labelledby="customer-tab-<?= e($activeTab) ?>" data-customer-tab-panel data-active-tab="<?= e($activeTab) ?>">
+    <?php if ($activeTab === 'overview'): ?><?php require __DIR__ . '/tabs/overview.php'; ?><?php else: ?><?php extract($activeTabData, EXTR_SKIP); require __DIR__ . '/tabs/' . $activeTab . '.php'; ?><?php endif; ?>
   </div>
 </section>
 
-<section class="card" style="margin-top:16px">
-  <div class="card-header card-no-border"><h5>خط زمانی پرداخت‌های موفق</h5></div>
-  <div class="card-body">
-    <div class="proma-payment-timeline">
-      <?php foreach ($paymentTimeline as $payment): ?>
-        <div class="proma-timeline-item">
-          <span class="proma-timeline-dot"></span>
-          <div>
-            <strong><?= money_toman($payment['amount']) ?></strong>
-            <p><?= e(payment_type_label($payment['payment_type'] ?? 'installment')) ?><?= !empty($payment['installment_number']) ? ' · قسط ' . to_persian_digits($payment['installment_number']) : '' ?> · قرارداد <?= e($payment['contract_number']) ?></p>
-          </div>
-          <time><?= e(jdatetime($payment['paid_at'] ?: ($payment['payment_date'] ?: $payment['created_at']))) ?></time>
-        </div>
-      <?php endforeach; ?>
-      <?php if (!$paymentTimeline): ?><div class="empty">پرداخت موفقی برای این مشتری ثبت نشده است.</div><?php endif; ?>
-    </div>
-  </div>
-</section>
-
-<section class="card" style="margin-top:16px">
-  <div class="card-header"><h2>نمای مالی پویا</h2></div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>قرارداد</th><th>قسط</th><th>سررسید</th><th>مبلغ پایه</th><th>جریمه امروز</th><th>پاداش امروز</th><th>قابل پرداخت</th><th>وضعیت</th></tr></thead>
-      <tbody>
-      <?php foreach ($installments as $item): ?>
-        <tr>
-          <td><?= e($item['contract_number']) ?></td>
-          <td><?= to_persian_digits($item['installment_number']) ?></td>
-          <td><?= e(jdate($item['due_date'])) ?></td>
-          <td><?= money_toman($item['base_amount']) ?></td>
-          <td><?= money_toman($item['penalty']) ?></td>
-          <td><?= money_toman($item['reward']) ?></td>
-          <td><?= money_toman($item['payable']) ?></td>
-          <td><span class="badge <?= e(badge_class($item['status'])) ?>"><?= e(status_label($item['status'])) ?></span></td>
-        </tr>
-      <?php endforeach; ?>
-      <?php if (!$installments): ?><tr><td colspan="8" class="empty">قسطی ثبت نشده است.</td></tr><?php endif; ?>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="card" style="margin-top:16px">
-  <div class="card-header"><h2>سوابق پرداخت</h2></div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>تاریخ</th><th>قرارداد</th><th>قسط</th><th>نوع پرداخت</th><th>مبلغ</th><th>روش</th><th>وضعیت</th></tr></thead>
-      <tbody>
-      <?php foreach ($payments as $payment): ?>
-        <tr>
-          <td><?= e(jdatetime($payment['paid_at'] ?: ($payment['payment_date'] ?: $payment['created_at']))) ?></td>
-          <td><?= e($payment['contract_number']) ?></td>
-          <td><?= $payment['installment_number'] ? to_persian_digits($payment['installment_number']) : '-' ?></td>
-          <td><span class="badge badge-light-info"><?= e(payment_type_label($payment['payment_type'] ?? 'installment')) ?></span></td>
-          <td><?= money_toman($payment['amount']) ?></td>
-          <td><?= e(payment_method_label($payment['method'])) ?></td>
-          <td><span class="badge <?= e(badge_class($payment['status'])) ?>"><?= e(status_label($payment['status'])) ?></span></td>
-        </tr>
-      <?php endforeach; ?>
-      <?php if (!$payments): ?><tr><td colspan="7" class="empty">پرداختی ثبت نشده است.</td></tr><?php endif; ?>
-      </tbody>
-    </table>
-  </div>
-</section>

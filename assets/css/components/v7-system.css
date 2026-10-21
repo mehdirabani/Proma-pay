@@ -1,0 +1,438 @@
+/* V7 shared workspace polish: consistent pages across all built-in roles. */
+body.proma-v2 {
+  --pp-v7-violet-wash: #f5f2ff;
+  --pp-v7-blue-wash: #eef5ff;
+  --pp-v7-green-wash: #effbf5;
+  --pp-v7-amber-wash: #fff8eb;
+  --pp-v7-red-wash: #fff1f2;
+}
+
+body.proma-v2 .proma-page-content :is(.proma-page-intro, .page-title) {
+  margin-block: 0 16px;
+}
+
+body.proma-v2 .proma-page-content .proma-page-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-width: 0;
+  padding: 18px 20px;
+  border: 1px solid var(--pp-line);
+  border-radius: var(--pp-radius);
+  background: linear-gradient(125deg, #fff 18%, var(--pp-v7-violet-wash));
+  box-shadow: var(--pp-shadow-sm);
+}
+
+body.proma-v2 .proma-page-content .proma-page-intro h1,
+body.proma-v2 .proma-page-content .proma-page-intro h2 { margin: 2px 0 5px; color: var(--pp-navy); }
+body.proma-v2 .proma-page-content .proma-page-intro p { margin: 0; color: var(--pp-muted); line-height: 1.8; }
+body.proma-v2 .proma-eyebrow { color: var(--pp-primary-700); font-size: 12px; font-weight: 850; }
+
+body.proma-v2 .proma-page-content :is(.proma-filter-card, .proma-risk-filter-card) {
+  border-color: var(--pp-line);
+  background: linear-gradient(180deg, #fff, #fcfcff);
+}
+
+body.proma-v2 .proma-page-content :is(.proma-filter-toolbar, .proma-operational-filter, .proma-risk-filter, .filter-bar) {
+  align-items: end;
+}
+
+body.proma-v2 .proma-page-content :is(.proma-status-tabs, .proma-contract-tabs, .proma-settings-tabs) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--pp-primary-200) transparent;
+}
+
+body.proma-v2 .proma-page-content .proma-contract-tabs :is(a, button),
+body.proma-v2 .proma-page-content .proma-settings-tabs .tab-link {
+  transition: background-color var(--pp-motion-fast), color var(--pp-motion-fast), box-shadow var(--pp-motion-fast);
+}
+
+body.proma-v2 .proma-page-content :is(.card, .table-wrap, .table-responsive) { min-width: 0; }
+body.proma-v2 .proma-page-content :is(.table-wrap, .table-responsive) { overscroll-behavior-inline: contain; }
+body.proma-v2 .proma-page-content table thead th { position: sticky; inset-block-start: 0; z-index: 1; }
+body.proma-v2 .proma-page-content table tbody tr:focus-within { background: var(--pp-primary-50); }
+
+/* Risk workspace based on the customer-score reference screens. */
+body.proma-v2 .proma-risk-workspace { display: grid; gap: 16px; min-width: 0; }
+body.proma-v2 .proma-page-content .proma-risk-intro { margin: 0; }
+body.proma-v2 .proma-risk-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+body.proma-v2 .proma-risk-metric {
+  display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 112px; padding: 16px;
+  border: 1px solid var(--pp-line); border-radius: var(--pp-radius); background: #fff; box-shadow: var(--pp-shadow-sm);
+}
+body.proma-v2 .proma-risk-metric__icon { display: grid; flex: 0 0 42px; width: 42px; height: 42px; place-items: center; border-radius: 13px; background: var(--pp-v7-violet-wash); color: var(--pp-primary-600); }
+body.proma-v2 .proma-risk-metric__icon svg { width: 22px; height: 22px; }
+body.proma-v2 .proma-risk-metric > div { display: grid; gap: 3px; min-width: 0; }
+body.proma-v2 .proma-risk-metric small, body.proma-v2 .proma-risk-metric span:not(.proma-risk-metric__icon) { color: var(--pp-muted); font-size: 11px; line-height: 1.6; }
+body.proma-v2 .proma-risk-metric strong { color: var(--pp-navy); font-size: 23px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+body.proma-v2 .proma-risk-metric.is-low .proma-risk-metric__icon { background: var(--pp-v7-green-wash); color: var(--pp-success); }
+body.proma-v2 .proma-risk-metric.is-medium .proma-risk-metric__icon { background: var(--pp-v7-amber-wash); color: var(--pp-warning-ink); }
+body.proma-v2 .proma-risk-metric.is-high .proma-risk-metric__icon { background: var(--pp-v7-red-wash); color: var(--pp-danger); }
+body.proma-v2 .proma-risk-metric.is-pending .proma-risk-metric__icon { background: var(--pp-v7-blue-wash); color: var(--pp-info); }
+body.proma-v2 .proma-risk-filter-card .card-header p,
+body.proma-v2 .proma-risk-list-card .card-header p { margin: 3px 0 0; color: var(--pp-muted); font-size: 12px; }
+body.proma-v2 .proma-risk-average { display: grid; justify-items: end; gap: 3px; padding: 9px 13px; border: 1px solid var(--pp-primary-100); border-radius: 12px; background: var(--pp-primary-50); }
+body.proma-v2 .proma-risk-average small { color: var(--pp-muted); font-size: 11px; }
+body.proma-v2 .proma-risk-average strong { color: var(--pp-primary-700); font-size: 19px; }
+body.proma-v2 .proma-risk-average strong span { color: var(--pp-muted); font-size: 11px; }
+body.proma-v2 .proma-risk-filter { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(150px, 220px) auto; gap: 12px; }
+body.proma-v2 .proma-risk-filter label { display: grid; gap: 6px; color: var(--pp-muted); font-size: 12px; font-weight: 750; }
+body.proma-v2 .proma-risk-filter__actions { display: flex; gap: 8px; }
+body.proma-v2 .proma-risk-filter__actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+body.proma-v2 .proma-risk-filter__actions svg { width: 16px; height: 16px; }
+body.proma-v2 .proma-risk-table-wrap { overflow: auto; }
+body.proma-v2 .proma-risk-table { width: 100%; min-width: 780px; }
+body.proma-v2 .proma-risk-table th, body.proma-v2 .proma-risk-table td { vertical-align: middle; }
+body.proma-v2 .proma-risk-customer { display: flex; align-items: center; gap: 10px; min-width: 175px; }
+body.proma-v2 .proma-risk-avatar { display: grid; flex: 0 0 38px; width: 38px; height: 38px; place-items: center; border: 1px solid var(--pp-primary-100); border-radius: 50%; background: linear-gradient(145deg, #fff, #ece7ff); color: var(--pp-primary-700); font-weight: 900; }
+body.proma-v2 .proma-risk-customer > span:last-child { display: grid; gap: 2px; }
+body.proma-v2 .proma-risk-customer strong { color: var(--pp-navy); }
+body.proma-v2 .proma-risk-customer small, body.proma-v2 .proma-risk-not-rated { color: var(--pp-muted); font-size: 11px; }
+body.proma-v2 .proma-risk-phone { direction: ltr; unicode-bidi: isolate; color: var(--pp-muted); font-variant-numeric: tabular-nums; }
+body.proma-v2 .proma-risk-account-state { display: inline-flex; align-items: center; gap: 6px; color: var(--pp-success-ink); font-size: 12px; font-weight: 750; }
+body.proma-v2 .proma-risk-account-state i { width: 7px; height: 7px; border-radius: 50%; background: var(--pp-success); }
+body.proma-v2 .proma-risk-badge { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 850; white-space: nowrap; }
+body.proma-v2 .proma-risk-badge.low { color: var(--pp-success-ink); background: var(--pp-success-soft); }
+body.proma-v2 .proma-risk-badge.medium { color: var(--pp-warning-ink); background: var(--pp-warning-soft); }
+body.proma-v2 .proma-risk-badge.high { color: var(--pp-danger-ink); background: var(--pp-danger-soft); }
+body.proma-v2 .proma-risk-badge.pending { color: var(--pp-info-ink); background: var(--pp-info-soft); }
+body.proma-v2 .proma-risk-score { display: grid; grid-template-columns: auto auto; align-items: baseline; justify-content: start; gap: 0 5px; min-width: 100px; }
+body.proma-v2 .proma-risk-score > strong { color: var(--pp-navy); font-size: 15px; }
+body.proma-v2 .proma-risk-score > span:nth-child(2) { color: var(--pp-muted); font-size: 10px; }
+body.proma-v2 .proma-risk-score__track { grid-column: 1 / -1; display: block; height: 5px; margin-top: 5px; overflow: hidden; border-radius: 99px; background: #edf0f6; }
+body.proma-v2 .proma-risk-score__track i { display: block; height: 100%; border-radius: inherit; background: var(--pp-primary-600); }
+body.proma-v2 .proma-risk-score__track i.low { background: var(--pp-success); }
+body.proma-v2 .proma-risk-score__track i.medium { background: var(--pp-warning); }
+body.proma-v2 .proma-risk-score__track i.high { background: var(--pp-danger); }
+body.proma-v2 .proma-risk-not-rated { display: inline-flex; padding: 6px 9px; border-radius: 9px; background: var(--pp-v7-blue-wash); }
+body.proma-v2 .proma-risk-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; color: var(--pp-muted); font-size: 12px; }
+body.proma-v2 .proma-risk-pagination > div { display: flex; gap: 8px; }
+body.proma-v2 .proma-risk-disclaimer { margin: 0; padding: 12px 15px; border: 1px solid var(--pp-line); border-radius: 12px; background: var(--pp-surface-subtle); color: var(--pp-muted); font-size: 12px; line-height: 1.8; }
+
+/* Legal queues and review tabs. */
+body.proma-v2 .proma-legal-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+body.proma-v2 .proma-legal-summary article { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 12px 14px; border: 1px solid var(--pp-line); border-radius: 12px; background: var(--pp-surface-subtle); }
+body.proma-v2 .proma-legal-summary article span { color: var(--pp-muted); font-size: 12px; font-weight: 750; }
+body.proma-v2 .proma-legal-summary article strong { color: var(--pp-navy); font-size: 20px; font-variant-numeric: tabular-nums; }
+body.proma-v2 .proma-legal-summary .is-open { background: var(--pp-v7-blue-wash); }
+body.proma-v2 .proma-legal-summary .is-referred { background: var(--pp-v7-amber-wash); }
+body.proma-v2 .proma-legal-summary .is-closed { background: var(--pp-v7-green-wash); }
+body.proma-v2 .proma-legal-summary .is-total { background: var(--pp-v7-violet-wash); }
+body.proma-v2 .proma-review-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-block: 14px; }
+body.proma-v2 .proma-review-summary > article { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 14px 16px; border: 1px solid var(--pp-line); border-radius: 14px; background: #fff; box-shadow: var(--pp-shadow-sm); }
+body.proma-v2 .proma-review-summary > article > span:last-child { display: grid; gap: 2px; }
+body.proma-v2 .proma-review-summary small { color: var(--pp-muted); font-size: 11px; }
+body.proma-v2 .proma-review-summary strong { color: var(--pp-navy); font-size: 20px; }
+body.proma-v2 .proma-review-summary__icon { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 12px; color: var(--pp-primary-600); background: var(--pp-v7-violet-wash); }
+body.proma-v2 .proma-review-summary__icon svg { width: 20px; height: 20px; }
+body.proma-v2 .proma-review-summary__icon.is-receipt { color: var(--pp-info); background: var(--pp-v7-blue-wash); }
+
+/* Shared communication and review surfaces. */
+body.proma-v2 .proma-page-content .proma-notification-list { display: grid; gap: 10px; }
+body.proma-v2 .proma-page-content .proma-notification-item { border-color: var(--pp-line); border-radius: 14px; background: #fff; box-shadow: var(--pp-shadow-sm); }
+body.proma-v2 .proma-page-content .proma-notification-item.unread { border-inline-start: 3px solid var(--pp-primary-500); background: linear-gradient(100deg, #fff, var(--pp-v7-violet-wash)); }
+body.proma-v2 .proma-page-content .messenger-layout { grid-template-columns: minmax(230px, .86fr) minmax(320px, 1.55fr) minmax(220px, .78fr); align-items: stretch; gap: 14px; height: min(780px, calc(100dvh - 205px)); }
+body.proma-v2 .proma-page-content .messenger-layout:not(.has-contact-profile) { grid-template-columns: minmax(230px, .86fr) minmax(0, 1.55fr); }
+body.proma-v2 .proma-page-content :is(.messenger-contacts, .chat-box, .chat-contact-profile) { overflow: hidden; border-color: var(--pp-line); box-shadow: var(--pp-shadow-sm); }
+body.proma-v2 .proma-page-content .chat-contact-profile { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 18px; }
+body.proma-v2 .chat-contact-profile__identity { display: flex; align-items: center; gap: 11px; padding-bottom: 13px; border-bottom: 1px solid var(--pp-line); }
+body.proma-v2 .chat-contact-profile__identity > div { display: grid; gap: 3px; min-width: 0; }
+body.proma-v2 .chat-contact-profile__identity small, body.proma-v2 .chat-contact-profile__detail small { color: var(--pp-muted); font-size: 11px; }
+body.proma-v2 .chat-contact-profile__identity strong { color: var(--pp-navy); overflow-wrap: anywhere; }
+body.proma-v2 .chat-contact-profile__identity > div > span { color: var(--pp-muted); font-size: 11px; }
+body.proma-v2 .chat-contact-profile__detail { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 10px; border: 1px solid var(--pp-line); border-radius: 11px; background: var(--pp-surface-subtle); color: var(--pp-ink); text-decoration: none; }
+body.proma-v2 .chat-contact-profile__detail > svg { flex: 0 0 17px; width: 17px; height: 17px; color: var(--pp-primary-600); }
+body.proma-v2 .chat-contact-profile__detail > span { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+body.proma-v2 .chat-contact-profile__link { width: 100%; justify-content: center; margin-top: auto; }
+body.proma-v2 .proma-page-content .chat-contact { border-radius: 12px; transition: background-color var(--pp-motion-fast), border-color var(--pp-motion-fast); }
+body.proma-v2 .proma-page-content .chat-contact.active { border-color: var(--pp-primary-200); background: var(--pp-violet-wash, var(--pp-primary-50)); }
+body.proma-v2 .proma-page-content .chat-history { scroll-behavior: smooth; }
+body.proma-v2 .proma-page-content .message { max-width: min(82%, 680px); border: 1px solid var(--pp-line); box-shadow: var(--pp-shadow-sm); }
+body.proma-v2 .proma-page-content .message.mine { border-color: var(--pp-primary-100); background: var(--pp-v7-violet-wash); }
+body.proma-v2 .proma-page-content .proma-settings-tabs { align-items: stretch; }
+body.proma-v2 .proma-page-content .proma-settings-tabs .tab-link { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+
+body.proma-v2 .proma-page-content :is(.proma-pagination, .pagination, .proma-risk-pagination) a:focus-visible,
+body.proma-v2 .proma-page-content :is(.proma-contract-tabs, .proma-settings-tabs) :is(a, button):focus-visible {
+  outline: 3px solid rgba(91, 47, 232, .24); outline-offset: 2px;
+}
+
+@media (max-width: 1199.98px) {
+  body.proma-v2 .proma-risk-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  body.proma-v2 .proma-page-content .messenger-layout { grid-template-columns: minmax(210px, .8fr) minmax(0, 1.45fr); height: auto; min-height: 600px; }
+  body.proma-v2 .proma-page-content .chat-contact-profile { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; }
+  body.proma-v2 .chat-contact-profile__identity { border: 0; padding: 0; }
+}
+
+@media (max-width: 767.98px) {
+  body.proma-v2 .proma-page-content .proma-page-intro { align-items: flex-start; flex-direction: column; padding: 16px; }
+  body.proma-v2 .proma-risk-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  body.proma-v2 .proma-risk-metric { align-items: flex-start; flex-direction: column; gap: 8px; min-height: 126px; padding: 12px; }
+  body.proma-v2 .proma-risk-metric__icon { flex-basis: 36px; width: 36px; height: 36px; }
+  body.proma-v2 .proma-risk-metric strong { font-size: 20px; }
+  body.proma-v2 .proma-risk-average { justify-items: start; width: 100%; }
+  body.proma-v2 .proma-risk-filter { grid-template-columns: minmax(0, 1fr); }
+  body.proma-v2 .proma-risk-filter__actions > * { flex: 1; }
+  body.proma-v2 .proma-risk-table { min-width: 0; }
+  body.proma-v2 .proma-risk-table thead { display: none; }
+  body.proma-v2 .proma-risk-table tbody { display: grid; gap: 10px; padding: 10px; }
+  body.proma-v2 .proma-risk-table tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 13px; border: 1px solid var(--pp-line); border-radius: 14px; background: #fff; box-shadow: var(--pp-shadow-sm); }
+  body.proma-v2 .proma-risk-table tbody td { display: grid; align-content: center; gap: 5px; min-width: 0; padding: 0; border: 0; text-align: start; }
+  body.proma-v2 .proma-risk-table tbody td::before { content: attr(data-label); color: var(--pp-muted); font-size: 10px; font-weight: 750; }
+  body.proma-v2 .proma-risk-table tbody td:first-child { grid-column: 1 / -1; padding-bottom: 9px; border-bottom: 1px solid var(--pp-line); }
+  body.proma-v2 .proma-risk-table tbody td:last-child { grid-column: 1 / -1; }
+  body.proma-v2 .proma-risk-table tbody td:last-child .btn { justify-content: center; }
+  body.proma-v2 .proma-risk-pagination { align-items: flex-start; flex-direction: column; padding: 12px; }
+  body.proma-v2 .proma-risk-pagination > div { width: 100%; }
+  body.proma-v2 .proma-risk-pagination .btn { flex: 1; justify-content: center; }
+  body.proma-v2 .proma-legal-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.proma-v2 .proma-review-summary { grid-template-columns: minmax(0, 1fr); }
+  body.proma-v2 .proma-page-content .messenger-layout { grid-template-columns: minmax(0, 1fr); height: auto; min-height: 0; }
+  body.proma-v2 .proma-page-content .messenger-contacts { max-height: 38dvh; overflow: auto; }
+  body.proma-v2 .proma-page-content .chat-contact-profile { display: flex; }
+  body.proma-v2 .chat-contact-profile__identity { padding-bottom: 13px; border-bottom: 1px solid var(--pp-line); }
+  body.proma-v2 .proma-page-content .message { max-width: 92%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.proma-v2 .proma-page-content *, body.proma-v2 .proma-page-content *::before, body.proma-v2 .proma-page-content *::after {
+    scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important;
+  }
+}
+
+body.dark-only.proma-v2 .proma-page-content :is(.proma-page-intro, .proma-risk-metric, .proma-risk-table tbody tr, .proma-risk-disclaimer) {
+  border-color: var(--pp-line); background: var(--pp-surface);
+}
+body.dark-only.proma-v2 .proma-page-content :is(.proma-risk-metric strong, .proma-risk-customer strong, .proma-risk-score > strong) { color: var(--pp-ink); }
+
+/* Contracts, installments, overdue work, and collection operations. */
+body.proma-v2 .proma-contracts-page,
+body.proma-v2 .proma-collections-workspace { display: grid; gap: 14px; min-width: 0; }
+body.proma-v2 .proma-contracts-intro__actions { display: flex; align-items: center; gap: 8px; }
+body.proma-v2 .proma-contracts-intro__actions form { margin: 0; }
+body.proma-v2 .proma-contracts-intro__actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+body.proma-v2 .proma-contracts-intro__actions svg { width: 17px; height: 17px; }
+body.proma-v2 .proma-contracts-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px; }
+body.proma-v2 .proma-contracts-summary > article { display: flex; align-items: center; gap: 11px; min-width: 0; padding: 14px; border: 1px solid var(--pp-line); border-radius: 14px; background: var(--pp-surface); box-shadow: var(--pp-shadow-sm); }
+body.proma-v2 .proma-contracts-summary__icon { display: grid; flex: 0 0 40px; width: 40px; height: 40px; place-items: center; border-radius: 12px; background: var(--pp-v7-violet-wash); color: var(--pp-primary-600); }
+body.proma-v2 .proma-contracts-summary__icon svg { width: 20px; height: 20px; }
+body.proma-v2 .proma-contracts-summary article > div { display: grid; gap: 4px; min-width: 0; }
+body.proma-v2 .proma-contracts-summary small { color: var(--pp-muted); font-size: 11px; }
+body.proma-v2 .proma-contracts-summary strong { color: var(--pp-navy); font-size: 18px; line-height: 1.5; overflow-wrap: anywhere; }
+body.proma-v2 .proma-contracts-summary .is-success .proma-contracts-summary__icon { color: var(--pp-success); background: var(--pp-v7-green-wash); }
+body.proma-v2 .proma-contracts-summary .is-danger .proma-contracts-summary__icon { color: var(--pp-danger); background: var(--pp-v7-red-wash); }
+body.proma-v2 .proma-contracts-summary .is-primary .proma-contracts-summary__icon { color: var(--pp-info); background: var(--pp-v7-blue-wash); }
+body.proma-v2 .proma-contract-detail { display: grid; gap: 14px; min-width: 0; }
+body.proma-v2 .proma-contract-detail .proma-contract-header { overflow: visible; }
+body.proma-v2 .proma-contract-detail .proma-contract-header > .card-body[data-contract-tab-panel="summary"] { padding-block: 18px; }
+body.proma-v2 .proma-contract-detail .proma-preview-grid > span { min-height: 78px; border: 1px solid var(--pp-line); border-radius: 12px; background: linear-gradient(145deg, var(--pp-surface), var(--pp-v7-blue-wash)); }
+body.proma-v2 .proma-contract-detail .proma-contract-tabs { display: flex; align-items: center; gap: 7px; overflow-x: auto; padding: 8px; border: 1px solid var(--pp-line); border-radius: 15px; background: var(--pp-surface); box-shadow: var(--pp-shadow-sm); }
+body.proma-v2 .proma-contract-detail .proma-contract-tabs button { flex: 0 0 auto; min-height: 42px; padding-inline: 15px; border-radius: 11px; color: var(--pp-muted); font-weight: 750; }
+body.proma-v2 .proma-contract-detail .proma-contract-tabs button.active { color: #fff; background: var(--pp-primary-600); box-shadow: 0 5px 14px rgba(91,47,232,.2); }
+body.proma-v2 .proma-contract-detail [data-contract-tab-panel]:not([hidden]) { animation: proma-v7-panel-in .16s ease-out; }
+body.proma-v2 .proma-installments-page, body.proma-v2 .proma-overdue-page { display: grid; gap: 14px; min-width: 0; }
+body.proma-v2 .proma-installments-page .proma-page-intro,
+body.proma-v2 .proma-overdue-page .proma-page-intro { margin: 0; }
+body.proma-v2 .proma-installments-page .proma-filter-card,
+body.proma-v2 .proma-overdue-page .proma-filter-card,
+body.proma-v2 .proma-installments-page .proma-overdue-results,
+body.proma-v2 .proma-overdue-page .proma-overdue-results { overflow: hidden; }
+body.proma-v2 .proma-installments-page .proma-status-tabs,
+body.proma-v2 .proma-overdue-page .proma-status-tabs { display: flex; gap: 7px; overflow-x: auto; padding: 4px 1px 2px; }
+body.proma-v2 .proma-installments-page .proma-status-tabs a,
+body.proma-v2 .proma-overdue-page .proma-status-tabs a { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 7px; min-height: 38px; padding: 0 12px; border: 1px solid var(--pp-line); border-radius: 999px; background: var(--pp-surface); color: var(--pp-muted); font-size: 12px; font-weight: 750; text-decoration: none; }
+body.proma-v2 .proma-installments-page .proma-status-tabs a.active,
+body.proma-v2 .proma-overdue-page .proma-status-tabs a.active { border-color: var(--pp-primary-500); background: var(--pp-v7-violet-wash); color: var(--pp-primary-700); }
+body.proma-v2 .proma-collection-center { overflow: hidden; }
+body.proma-v2 .proma-collection-center > .card-body { display: grid; gap: 16px; }
+body.proma-v2 .proma-collection-center .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 11px; }
+body.proma-v2 .proma-collection-center .kpi-card { min-height: 100px; border: 1px solid var(--pp-line); border-radius: 14px; box-shadow: var(--pp-shadow-sm); }
+body.proma-v2 .proma-collection-center .collection-queues { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+body.proma-v2 .proma-collection-center .collection-queue { min-width: 0; margin: 0; border-color: var(--pp-line); border-radius: 15px; background: var(--pp-surface); }
+body.proma-v2 .proma-collection-center .collection-queue .card-header { border-bottom: 1px solid var(--pp-line); }
+body.proma-v2 .proma-collection-center .collection-row { padding: 12px 0; border-bottom: 1px solid var(--pp-line); }
+body.proma-v2 .proma-collection-center .collection-row:last-child { border-bottom: 0; }
+body.proma-v2 .proma-collection-center > .card-body > .muted { margin: 0; padding: 11px 13px; border-radius: 11px; background: var(--pp-surface-subtle); line-height: 1.8; }
+
+/* Announcements and conversations across desktop, tablet, and phone. */
+body.proma-v2 .proma-notifications-workspace { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); align-items: start; gap: 14px; }
+body.proma-v2 .proma-notifications-workspace > .proma-notifications-inbox { min-width: 0; }
+body.proma-v2 .proma-notifications-utility { display: grid; gap: 14px; min-width: 0; }
+body.proma-v2 .proma-notification-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 12px; padding: 14px; }
+body.proma-v2 .proma-notification-item > div:first-of-type { min-width: 0; }
+body.proma-v2 .proma-notification-item p { line-height: 1.8; overflow-wrap: anywhere; }
+body.proma-v2 .proma-web-push-card .card-header p { margin: 4px 0 0; color: var(--pp-muted); font-size: 12px; line-height: 1.7; }
+body.proma-v2 .proma-announcement-composer form { gap: 12px; }
+body.proma-v2 .proma-announcement-composer fieldset { min-width: 0; padding: 12px; border: 1px solid var(--pp-line); border-radius: 12px; }
+body.proma-v2 .proma-announcement-composer legend { padding-inline: 6px; color: var(--pp-muted); font-size: 12px; font-weight: 800; }
+body.proma-v2 .proma-announcement-composer .table-responsive { max-height: 330px; overflow: auto; }
+body.proma-v2 .proma-announcement-composer table { min-width: 480px; }
+body.proma-v2 .proma-role-dashboard { row-gap: 14px; }
+body.proma-v2 .proma-role-dashboard .proma-role-hero,
+body.proma-v2 .proma-role-dashboard .proma-role-panel,
+body.proma-v2 .proma-admin-dashboard .proma-admin-panel { border-color: var(--pp-line); border-radius: 16px; box-shadow: var(--pp-shadow-sm); }
+body.proma-v2 .proma-role-dashboard :is(.table-responsive, .table-wrap) { overflow: auto; }
+body.proma-v2 .proma-role-dashboard .proma-role-list { display: grid; gap: 8px; }
+body.proma-v2 .proma-role-dashboard .proma-role-list-item { min-width: 0; border: 1px solid var(--pp-line); border-radius: 12px; background: var(--pp-surface-subtle); }
+body.proma-v2 .proma-role-dashboard--customer .proma-customer-balance { background: linear-gradient(120deg, var(--pp-surface), var(--pp-v7-violet-wash)); }
+body.proma-v2 .proma-role-dashboard--operator .proma-role-hero { background: linear-gradient(120deg, var(--pp-surface), var(--pp-v7-blue-wash)); }
+body.proma-v2 .proma-role-dashboard--lawyer .proma-role-hero { background: linear-gradient(120deg, var(--pp-surface), var(--pp-v7-amber-wash)); }
+body.proma-v2 .proma-chat-review-queue { margin-top: 14px; }
+body.proma-v2 .proma-chat-review-queue .table-wrap { overflow: auto; }
+@keyframes proma-v7-panel-in { from { opacity: .55; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 991.98px) {
+  body.proma-v2 .proma-contracts-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.proma-v2 .proma-collection-center .collection-queues { grid-template-columns: minmax(0, 1fr); }
+  body.proma-v2 .proma-notifications-workspace { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 767.98px) {
+  body.proma-v2 .proma-contracts-intro__actions { width: 100%; }
+  body.proma-v2 .proma-contracts-intro__actions .btn { flex: 1; }
+  body.proma-v2 .proma-contracts-summary { gap: 8px; }
+  body.proma-v2 .proma-contracts-summary > article { align-items: flex-start; flex-direction: column; gap: 8px; padding: 11px; }
+  body.proma-v2 .proma-contracts-summary__icon { flex-basis: 34px; width: 34px; height: 34px; }
+  body.proma-v2 .proma-contracts-summary strong { font-size: 16px; }
+  body.proma-v2 .proma-contract-detail .proma-contract-tabs { position: sticky; inset-block-start: calc(var(--pp-header) + 4px); z-index: 5; margin-inline: -2px; }
+  body.proma-v2 .proma-contract-detail .proma-contract-tabs button { min-height: 38px; padding-inline: 12px; font-size: 11px; }
+  body.proma-v2 .proma-notification-item { grid-template-columns: auto minmax(0, 1fr); }
+  body.proma-v2 .proma-notification-item .actions { grid-column: 2; justify-content: flex-start; }
+  body.proma-v2 .proma-collections-workspace .proma-page-intro { padding: 14px; }
+  body.proma-v2 .proma-collections-workspace .proma-contracts-intro__actions { flex-direction: column; align-items: stretch; }
+}
+
+body.dark-only.proma-v2 .proma-page-content :is(.proma-contracts-summary > article, .proma-collection-center .collection-queue, .proma-notification-item, .proma-announcement-composer fieldset) { border-color: var(--pp-line); background: var(--pp-surface); }
+
+/* Role dashboards use the same Proma surfaces but organize work around each role. */
+body.proma-v2 .v7-role-dashboard { display: grid; gap: 14px; color: var(--pp-text); }
+body.proma-v2 .v7-role-dashboard > * { min-width: 0; }
+body.proma-v2 .v7-role-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(180px, 230px); align-items: center; gap: 18px; overflow: hidden; min-height: 176px; padding: clamp(18px, 2.5vw, 28px); border: 1px solid var(--pp-line); border-radius: 18px; background: linear-gradient(115deg, #fff 40%, #f2efff); box-shadow: var(--pp-shadow-sm); }
+body.proma-v2 .v7-role-hero::after { position: absolute; inset-block: -40px; inset-inline-start: -38px; width: 150px; border-radius: 50%; background: rgba(105, 58, 238, .055); content: ""; pointer-events: none; }
+body.proma-v2 .v7-role-hero__copy, body.proma-v2 .v7-role-hero__actions, body.proma-v2 .v7-role-hero__focus { position: relative; z-index: 1; }
+body.proma-v2 .v7-role-eyebrow { display: inline-flex; margin-bottom: 7px; color: var(--pp-primary-700); font-size: 12px; font-weight: 900; }
+body.proma-v2 .v7-role-hero h1 { margin: 0 0 7px; color: #151c3d; font-size: clamp(22px, 2.2vw, 30px); font-weight: 900; }
+body.proma-v2 .v7-role-hero p { max-width: 650px; margin: 0; color: var(--pp-muted); line-height: 1.9; }
+body.proma-v2 .v7-role-hero__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+body.proma-v2 .v7-role-hero__actions .btn { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; border-radius: 11px; font-weight: 800; }
+body.proma-v2 .v7-role-hero__actions svg { width: 17px; height: 17px; }
+body.proma-v2 .v7-role-hero__focus { display: grid; gap: 5px; min-height: 104px; align-content: center; padding: 14px 16px; border: 1px solid rgba(105, 58, 238, .14); border-radius: 14px; background: rgba(255,255,255,.8); }
+body.proma-v2 .v7-role-hero__focus span, body.proma-v2 .v7-role-hero__focus small { color: var(--pp-muted); font-size: 12px; }
+body.proma-v2 .v7-role-hero__focus strong { color: #151c3d; font-size: clamp(19px, 2vw, 25px); font-weight: 900; }
+body.proma-v2 .v7-role-hero--operator { background: linear-gradient(115deg, #fff 34%, #eef5ff); }
+body.proma-v2 .v7-role-hero--lawyer { background: linear-gradient(115deg, #fff 34%, #fff5e9); }
+body.proma-v2 .v7-role-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px; }
+body.proma-v2 .v7-role-metric { --role-accent: #6738ed; --role-wash: #f1edff; display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 98px; padding: 14px; border: 1px solid var(--pp-line); border-radius: 14px; background: var(--pp-surface); box-shadow: var(--pp-shadow-sm); }
+body.proma-v2 .v7-role-metric--blue { --role-accent: #1477ed; --role-wash: #edf5ff; }
+body.proma-v2 .v7-role-metric--rose { --role-accent: #e44356; --role-wash: #fff0f1; }
+body.proma-v2 .v7-role-metric--amber { --role-accent: #e78408; --role-wash: #fff6e9; }
+body.proma-v2 .v7-role-metric__icon { display: grid; flex: 0 0 42px; width: 42px; height: 42px; place-items: center; border-radius: 12px; background: var(--role-wash); color: var(--role-accent); }
+body.proma-v2 .v7-role-metric__icon svg { width: 20px; height: 20px; }
+body.proma-v2 .v7-role-metric > div { display: grid; min-width: 0; gap: 2px; }
+body.proma-v2 .v7-role-metric small, body.proma-v2 .v7-role-metric em { color: var(--pp-muted); font-size: 11px; font-style: normal; }
+body.proma-v2 .v7-role-metric strong { overflow: hidden; color: #151c3d; font-size: clamp(18px, 2vw, 25px); font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+body.proma-v2 .v7-role-shortcuts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+body.proma-v2 .v7-role-shortcuts > a { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 11px; min-width: 0; padding: 13px; border: 1px solid var(--pp-line); border-radius: 13px; background: var(--pp-surface); color: var(--pp-primary-700); text-decoration: none; transition: transform .16s ease, box-shadow .16s ease; }
+body.proma-v2 .v7-role-shortcuts > a:hover { transform: translateY(-2px); box-shadow: var(--pp-shadow-sm); }
+body.proma-v2 .v7-role-shortcuts > a > svg:first-child { width: 19px; height: 19px; }
+body.proma-v2 .v7-role-shortcuts > a > svg:last-child { width: 16px; height: 16px; color: var(--pp-muted); }
+body.proma-v2 .v7-role-shortcuts span { display: grid; min-width: 0; gap: 2px; }
+body.proma-v2 .v7-role-shortcuts b { overflow: hidden; color: #1a2346; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+body.proma-v2 .v7-role-shortcuts small { overflow: hidden; color: var(--pp-muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+body.proma-v2 .v7-role-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+body.proma-v2 .v7-role-panel { min-width: 0; overflow: hidden; padding: 16px; border: 1px solid var(--pp-line); border-radius: 16px; background: var(--pp-surface); box-shadow: var(--pp-shadow-sm); }
+body.proma-v2 .v7-role-panel__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+body.proma-v2 .v7-role-panel__head > div { display: flex; align-items: center; gap: 10px; min-width: 0; }
+body.proma-v2 .v7-role-panel__head h2 { margin: 0; color: #182144; font-size: 16px; font-weight: 900; }
+body.proma-v2 .v7-role-panel__head p { margin: 3px 0 0; color: var(--pp-muted); font-size: 11px; }
+body.proma-v2 .v7-role-panel__head > a, body.proma-v2 .v7-text-action { display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto; color: var(--pp-primary-700); font-size: 11px; font-weight: 800; text-decoration: none; }
+body.proma-v2 .v7-role-panel__head > a svg, body.proma-v2 .v7-text-action svg { width: 15px; height: 15px; }
+body.proma-v2 .v7-role-section-mark { display: grid; flex: 0 0 38px; width: 38px; height: 38px; place-items: center; border-radius: 11px; background: #f1edff; color: #6738ed; }
+body.proma-v2 .v7-role-section-mark svg { width: 18px; height: 18px; }
+body.proma-v2 .v7-role-section-mark.is-rose { background: #fff0f1; color: #e44356; }
+body.proma-v2 .v7-role-section-mark.is-blue { background: #edf5ff; color: #1477ed; }
+body.proma-v2 .v7-role-section-mark.is-amber { background: #fff6e9; color: #e78408; }
+body.proma-v2 .v7-role-records { display: grid; }
+body.proma-v2 .v7-role-record { display: grid; grid-template-columns: 75px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; min-width: 0; padding: 11px 2px; border-top: 1px solid var(--pp-line); }
+body.proma-v2 .v7-role-record__date { display: grid; gap: 2px; color: #27315a; font-size: 11px; font-weight: 800; }
+body.proma-v2 .v7-role-record__date small, body.proma-v2 .v7-role-record__main small { color: var(--pp-muted); font-size: 10px; font-weight: 500; }
+body.proma-v2 .v7-role-record__main { display: grid; min-width: 0; gap: 2px; }
+body.proma-v2 .v7-role-record__main strong { overflow: hidden; color: #192246; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+body.proma-v2 .v7-role-record__amount { color: #192246; font-size: 12px; white-space: nowrap; }
+body.proma-v2 .v7-role-record__note { max-width: 150px; overflow: hidden; color: var(--pp-muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+body.proma-v2 .v7-role-record > svg { width: 16px; height: 16px; color: #7581a0; }
+body.proma-v2 .v7-role-record--linked { color: inherit; text-decoration: none; }
+body.proma-v2 .v7-role-record--linked:hover { background: #fbfaff; }
+body.proma-v2 .v7-icon-action { display: grid; width: 32px; height: 32px; place-items: center; border: 1px solid var(--pp-line); border-radius: 9px; color: var(--pp-primary-700); }
+body.proma-v2 .v7-role-empty { display: grid; justify-items: center; gap: 6px; padding: 24px 12px; color: var(--pp-muted); text-align: center; }
+body.proma-v2 .v7-role-empty svg { width: 24px; height: 24px; color: #7a5af8; }
+body.proma-v2 .v7-role-empty strong { color: #253056; font-size: 13px; }
+body.proma-v2 .v7-role-empty span { font-size: 11px; }
+body.proma-v2 .v7-role-table-wrap { overflow: auto; border: 1px solid var(--pp-line); border-radius: 12px; }
+body.proma-v2 .v7-role-table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+body.proma-v2 .v7-role-table th, body.proma-v2 .v7-role-table td { padding: 11px 12px; border-bottom: 1px solid var(--pp-line); color: #394568; font-size: 11px; text-align: right; }
+body.proma-v2 .v7-role-table th { background: #f8f9fd; color: #687493; font-size: 10px; }
+body.proma-v2 .v7-role-table td b { color: #182144; }
+body.proma-v2 .v7-role-table td small { display: block; margin-top: 2px; color: var(--pp-muted); }
+body.proma-v2 .v7-role-table tr:last-child td { border-bottom: 0; }
+body.proma-v2 .v7-customer-dashboard { row-gap: 14px; }
+body.proma-v2 .v7-customer-hero .card-body { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(220px, 290px); align-items: center; gap: 16px; min-height: 184px; padding: clamp(18px, 2.5vw, 28px); }
+body.proma-v2 .v7-customer-hero__copy { display: grid; justify-items: start; gap: 4px; }
+body.proma-v2 .v7-customer-hero__copy h4 { margin: 0; color: #151c3d; font-size: clamp(21px, 2.2vw, 29px); font-weight: 900; }
+body.proma-v2 .v7-customer-hero__copy p { margin: 0; color: var(--pp-muted); }
+body.proma-v2 .v7-customer-hero__copy > small { color: var(--pp-muted); font-size: 11px; }
+body.proma-v2 .v7-customer-hero .proma-balance-amount { color: #5127d9; font-size: clamp(24px, 3vw, 36px); font-weight: 900; }
+body.proma-v2 .v7-customer-next-due { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: 10px; padding: 13px; border: 1px solid rgba(20,119,237,.14); border-radius: 13px; background: #fff; }
+body.proma-v2 .v7-customer-next-due > div { display: grid; gap: 2px; }
+body.proma-v2 .v7-customer-next-due small, body.proma-v2 .v7-customer-next-due span { color: var(--pp-muted); font-size: 10px; }
+body.proma-v2 .v7-customer-next-due strong { color: #192246; font-size: 14px; }
+body.proma-v2 .v7-customer-next-due > b { grid-column: 2; color: #192246; font-size: 13px; }
+body.proma-v2 .v7-customer-priority-panel { height: 100%; }
+body.proma-v2 .v7-customer-priority-panel .header-top h5 { display: flex; align-items: center; gap: 7px; }
+body.proma-v2 .v7-customer-priority-panel .header-top h5 svg { width: 18px; height: 18px; color: var(--pp-primary-700); }
+body.proma-v2 .v7-customer-due-card { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 10px; padding: 15px; border: 1px solid #e7e8f5; border-radius: 13px; background: linear-gradient(115deg,#fff,#f7f4ff); }
+body.proma-v2 .v7-customer-due-card > div { display: grid; gap: 3px; }
+body.proma-v2 .v7-customer-due-card small, body.proma-v2 .v7-customer-due-card span { color: var(--pp-muted); font-size: 10px; }
+body.proma-v2 .v7-customer-due-card strong { color: #192246; font-size: 15px; }
+body.proma-v2 .v7-customer-due-card > b { color: #192246; font-size: 15px; }
+body.proma-v2 .v7-customer-due-card .btn { grid-column: 1 / -1; justify-self: stretch; }
+
+@media (max-width: 1100px) {
+  body.proma-v2 .v7-role-hero { grid-template-columns: minmax(0,1fr) minmax(180px,230px); }
+  body.proma-v2 .v7-role-hero__actions { grid-column: 1; }
+  body.proma-v2 .v7-role-hero__focus { grid-column: 2; grid-row: 1 / span 2; }
+  body.proma-v2 .v7-role-shortcuts { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  body.proma-v2 .v7-customer-hero .card-body { grid-template-columns: minmax(0,1fr) minmax(220px,280px); }
+  body.proma-v2 .v7-customer-hero .proma-role-hero-actions { grid-column: 1; }
+  body.proma-v2 .v7-customer-next-due { grid-column: 2; grid-row: 1 / span 2; }
+}
+@media (max-width: 767.98px) {
+  body.proma-v2 .v7-role-dashboard { gap: 10px; }
+  body.proma-v2 .v7-role-hero { grid-template-columns: minmax(0,1fr); min-height: 0; gap: 12px; padding: 16px; }
+  body.proma-v2 .v7-role-hero__actions, body.proma-v2 .v7-role-hero__focus { grid-column: auto; grid-row: auto; }
+  body.proma-v2 .v7-role-hero__actions .btn { flex: 1 1 auto; justify-content: center; }
+  body.proma-v2 .v7-role-hero__focus { min-height: 0; }
+  body.proma-v2 .v7-role-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  body.proma-v2 .v7-role-metric { min-height: 83px; gap: 8px; padding: 10px; }
+  body.proma-v2 .v7-role-metric__icon { flex-basis: 34px; width: 34px; height: 34px; }
+  body.proma-v2 .v7-role-metric strong { font-size: 18px; }
+  body.proma-v2 .v7-role-shortcuts { gap: 7px; }
+  body.proma-v2 .v7-role-shortcuts > a { grid-template-columns: auto minmax(0,1fr); gap: 8px; padding: 10px; }
+  body.proma-v2 .v7-role-shortcuts > a > svg:last-child { display: none; }
+  body.proma-v2 .v7-role-columns { grid-template-columns: minmax(0,1fr); gap: 10px; }
+  body.proma-v2 .v7-role-panel { padding: 12px; }
+  body.proma-v2 .v7-role-panel__head { align-items: flex-start; }
+  body.proma-v2 .v7-role-panel__head h2 { font-size: 14px; }
+  body.proma-v2 .v7-role-record { grid-template-columns: 62px minmax(0,1fr) auto; gap: 7px; }
+  body.proma-v2 .v7-role-record__note { display: none; }
+  body.proma-v2 .v7-role-record__amount { font-size: 11px; }
+  body.proma-v2 .v7-role-table { min-width: 650px; }
+  body.proma-v2 .v7-customer-hero .card-body { grid-template-columns: minmax(0,1fr); gap: 12px; min-height: 0; padding: 16px; }
+  body.proma-v2 .v7-customer-hero .proma-role-hero-actions, body.proma-v2 .v7-customer-next-due { grid-column: auto; grid-row: auto; }
+  body.proma-v2 .v7-customer-hero .proma-role-hero-actions .btn { flex: 1 1 120px; justify-content: center; }
+  body.proma-v2 .v7-customer-due-card { grid-template-columns: minmax(0,1fr); }
+  body.proma-v2 .v7-customer-due-card .btn { grid-column: auto; }
+}
+
+body.dark-only.proma-v2 .v7-role-dashboard :is(.v7-role-hero, .v7-role-metric, .v7-role-shortcuts > a, .v7-role-panel, .v7-role-hero__focus, .v7-customer-next-due, .v7-customer-due-card) { border-color: var(--pp-line); background-color: var(--pp-surface); }

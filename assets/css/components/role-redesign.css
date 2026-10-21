@@ -1,0 +1,1065 @@
+/*
+ * Proma Pay role experience redesign
+ * A shared, RTL-first polish layer for admin, operator, lawyer and customer
+ * workspaces. It intentionally builds on existing components instead of
+ * replacing the lightweight MVC/template structure.
+ */
+
+:root {
+  --proma-shell-max: 1580px;
+  --proma-page-bg:
+    radial-gradient(circle at 84% 0%, rgba(124, 58, 237, .08), transparent 31rem),
+    linear-gradient(180deg, #fbfbff 0%, #f5f7fb 46%, #f3f5f8 100%);
+  --proma-card-bg: rgba(255, 255, 255, .94);
+  --proma-card-border: rgba(15, 23, 42, .08);
+  --proma-soft-border: rgba(106, 27, 154, .12);
+  --proma-card-shadow: 0 18px 46px rgba(15, 23, 42, .055);
+  --proma-card-shadow-hover: 0 22px 54px rgba(15, 23, 42, .09);
+  --proma-radius-sm: 10px;
+  --proma-radius-md: 14px;
+  --proma-radius-lg: 18px;
+  --proma-radius-xl: 24px;
+  --proma-control-height: 48px;
+}
+
+body:not(.dark-only) .page-wrapper.compact-wrapper,
+body:not(.dark-only) .page-wrapper.compact-wrapper .page-body-wrapper,
+body:not(.dark-only) .page-wrapper.compact-wrapper .page-body-wrapper .page-body {
+  background: var(--proma-page-bg);
+}
+
+.page-wrapper.compact-wrapper .page-body-wrapper .page-body {
+  padding-inline: clamp(14px, 1.55vw, 28px);
+}
+
+.proma-page-content {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  gap: clamp(18px, 1.8vw, 30px);
+}
+
+.page-body .container-fluid {
+  width: 100%;
+  max-width: none;
+}
+
+.page-title,
+.proma-page-title,
+.proma-page-content :where(h1, h2):first-child {
+  letter-spacing: -.035em;
+}
+
+.proma-page-content > :where(.card, .notice, .alert, .table-wrap),
+.proma-page-content .card,
+.proma-role-dashboard .card,
+.proma-admin-dashboard .card,
+.modal-content {
+  border: 1px solid var(--proma-card-border);
+  border-radius: var(--proma-radius-lg);
+  background: var(--proma-card-bg);
+  box-shadow: var(--proma-card-shadow);
+}
+
+.proma-page-content > .card,
+.proma-role-dashboard .card,
+.proma-admin-dashboard .card,
+.proma-customer-card,
+.proma-contract-card,
+.proma-purchase-contract-card,
+.proma-overdue-mobile-card {
+  overflow: hidden;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+@media (hover: hover) {
+  .proma-customer-card:hover,
+  .proma-contract-card:hover,
+  .proma-purchase-contract-card:hover,
+  .proma-overdue-mobile-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--proma-soft-border);
+    box-shadow: var(--proma-card-shadow-hover);
+  }
+}
+
+.proma-page-content .card > .card-header,
+.proma-page-content .card > .card-body,
+.proma-page-content .card > .card-footer {
+  padding-inline: clamp(16px, 1.4vw, 24px);
+}
+
+.proma-role-hero,
+.proma-admin-hero,
+.proma-page-content > .card:first-child {
+  position: relative;
+}
+
+.proma-role-hero::before,
+.proma-admin-hero::before,
+.proma-page-content > .card:first-child::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #7c3aed, #22d3ee, #16a34a);
+  opacity: .85;
+}
+
+.proma-role-hero .card-body,
+.proma-admin-hero .card-body {
+  display: grid;
+  gap: var(--space-4);
+  min-height: 148px;
+}
+
+.proma-role-kpi .card-body,
+.proma-admin-kpi .card-body,
+.proma-stat-card,
+.proma-history-kpis > *,
+.proma-summary-card {
+  display: grid;
+  align-content: center;
+  gap: var(--space-2);
+  min-height: 112px;
+  border-radius: var(--proma-radius-md);
+}
+
+.proma-role-kpi :where(strong, b),
+.proma-admin-kpi :where(strong, b),
+.proma-stat-card :where(strong, b),
+.proma-summary-card :where(strong, b) {
+  color: #101828;
+  font-size: clamp(22px, 2vw, 32px);
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.proma-filter-toolbar,
+.proma-operational-filter,
+.proma-filter-bar__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: end;
+  gap: var(--space-4);
+}
+
+.proma-filter-toolbar .actions,
+.proma-operational-filter .proma-filter-submit,
+.proma-filter-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.proma-page-content :where(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.proma-page-content .input-group,
+.proma-page-content .proma-input-group {
+  min-height: var(--proma-control-height);
+  border-radius: var(--proma-radius-md);
+}
+
+.proma-page-content :where(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) {
+  background: #f8f8fb;
+  border: 1px solid #edf0f5;
+  box-shadow: none;
+}
+
+.proma-page-content :where(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):focus {
+  background: #fff;
+  border-color: rgba(124, 58, 237, .38);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, .12);
+}
+
+.proma-page-content :where(.btn, button.btn, .proma-button, .icon-btn, .proma-icon-button) {
+  min-height: 42px;
+  border-radius: var(--proma-radius-md);
+  font-weight: 800;
+}
+
+.proma-page-content :where(.btn:not(.btn-xs):not(.btn-sm), button.btn:not(.btn-xs):not(.btn-sm), .proma-button) {
+  min-height: var(--proma-control-height);
+  padding-inline: 18px;
+}
+
+.proma-table-actions,
+.proma-card-actions,
+.proma-role-actions,
+.proma-role-hero-actions,
+.actions {
+  gap: var(--space-2);
+}
+
+.proma-page-content .table-responsive,
+.proma-page-content .table-wrap {
+  border-radius: var(--proma-radius-lg);
+  border: 1px solid #edf0f5;
+  background: #fff;
+}
+
+.proma-page-content table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.proma-page-content table thead th {
+  background: #fafbff;
+  color: #667085;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.proma-page-content table tbody td {
+  border-block-start: 1px solid #eef2f7;
+}
+
+.proma-page-content table tbody tr {
+  transition: background-color .16s ease;
+}
+
+.proma-page-content table tbody tr:hover {
+  background: #fbfaff;
+}
+
+.proma-customer-card,
+.proma-contract-card,
+.proma-overdue-mobile-card,
+.proma-purchase-contract-card {
+  border-radius: var(--proma-radius-lg);
+}
+
+.proma-customer-card .actions,
+.proma-contract-card .actions,
+.proma-purchase-contract-card .actions {
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid #f0f2f6;
+}
+
+.proma-contract-card .proma-card-metrics,
+.proma-customer-card .proma-card-metrics,
+.proma-purchase-contract-card .proma-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+  gap: var(--space-2);
+}
+
+.badge,
+.proma-badge,
+.status-pill {
+  border-radius: 999px;
+  font-weight: 800;
+  padding: 5px 10px;
+}
+
+.modal.open,
+.modal.show {
+  backdrop-filter: blur(4px);
+}
+
+.modal.open .modal-content,
+.modal.show .modal-content {
+  width: min(94vw, 820px);
+  max-height: min(88dvh, 920px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal.open .modal-body,
+.modal.show .modal-body {
+  overflow: auto;
+  padding: clamp(16px, 1.5vw, 24px);
+}
+
+.modal.open .modal-footer,
+.modal.show .modal-footer {
+  position: sticky;
+  inset-block-end: 0;
+  background: rgba(255, 255, 255, .96);
+  border-block-start: 1px solid #eef2f7;
+  padding: var(--space-4);
+}
+
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper {
+  box-shadow: -12px 0 34px rgba(15, 23, 42, .04);
+}
+
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-link {
+  border-radius: 14px;
+  margin-inline: 12px;
+  min-height: 44px;
+  color: #5f6678;
+}
+
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-link:hover,
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-link.active {
+  background: linear-gradient(90deg, rgba(124, 58, 237, .12), rgba(124, 58, 237, .04));
+  color: #5b21b6;
+}
+
+.page-wrapper.compact-wrapper .page-body-wrapper div.sidebar-wrapper .sidebar-main .sidebar-links .sidebar-list + .sidebar-list {
+  margin-block-start: 2px;
+}
+
+.proma-template-workspace,
+.proma-contract-workspace,
+.proma-payment-workspace {
+  gap: clamp(16px, 1.6vw, 24px);
+}
+
+.proma-rich-editor,
+.proma-template-server-preview {
+  border-radius: var(--proma-radius-lg);
+}
+
+.proma-settings-shell,
+.proma-template-workspace,
+.proma-template-editor-card,
+.proma-contract-workspace,
+.proma-contract-header,
+.proma-filter-card,
+[data-contract-tab-panel] {
+  width: 100%;
+  max-width: none;
+}
+
+.proma-template-workspace,
+.proma-contract-workspace,
+.proma-payment-workspace,
+.proma-template-editor-layout {
+  align-items: start;
+}
+
+.proma-template-editor-card {
+  overflow: visible;
+}
+
+.proma-template-editor-layout {
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+}
+
+.proma-template-editor-layout .proma-rich-editor,
+.proma-template-editor-layout textarea {
+  min-height: 520px;
+}
+
+.proma-history-kpi__icon,
+.proma-gateway-card-icon,
+.proma-purchase-summary-icon,
+.proma-card-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: visible;
+  writing-mode: horizontal-tb;
+}
+
+.proma-history-kpi__icon svg,
+.proma-gateway-card-icon svg,
+.proma-purchase-summary-icon svg,
+.proma-card-icon svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+}
+
+.proma-medal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-4);
+  align-items: stretch;
+}
+
+.proma-medal-card {
+  min-height: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.proma-medal-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.proma-medal-card footer,
+.proma-medal-card .actions,
+.proma-medal-card .proma-table-actions {
+  margin-block-start: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.proma-medal-card .badge,
+.proma-medal-card footer > * {
+  writing-mode: horizontal-tb;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.8;
+}
+
+.proma-overdue-page .proma-row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.proma-followup-active {
+  border-color: rgba(245, 158, 11, .4) !important;
+  background: #fff7ed !important;
+  color: #b45309 !important;
+}
+
+.proma-followup-recorded {
+  border-color: #86efac !important;
+  background: #ecfdf3 !important;
+  color: #15803d !important;
+}
+
+.proma-followup-history {
+  display: grid;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-block-start: 12px;
+  border-block-start: 1px solid var(--proma-panel-border);
+}
+
+.proma-followup-history__heading,
+.proma-followup-history__item header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.proma-followup-history__heading small,
+.proma-followup-history__item time,
+.proma-followup-history__item > small,
+.proma-followup-history__empty {
+  color: var(--proma-panel-muted);
+  font-size: 12px;
+}
+
+.proma-followup-history__item {
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid var(--proma-panel-border);
+  border-radius: 9px;
+  background: #fff;
+}
+
+.proma-followup-history__item p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.proma-followup-history__empty {
+  margin: 0;
+  padding: 12px;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.proma-contract-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-3);
+  margin-block-start: var(--space-4);
+}
+
+.proma-contract-summary-strip article {
+  padding: var(--space-4);
+  border: 1px solid #edf0f5;
+  border-radius: var(--proma-radius-md);
+  background: #fbfcff;
+}
+
+.proma-contract-summary-strip strong {
+  display: block;
+  margin-block-end: var(--space-2);
+}
+
+.proma-contract-summary-strip p {
+  margin: 0;
+  color: #667085;
+  line-height: 2;
+}
+
+.proma-notification-item {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.proma-notification-select {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+}
+
+.proma-legal-cost-approval .proma-filter-bar {
+  margin-block-end: var(--space-4);
+}
+
+.proma-quick-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+}
+
+.proma-quick-action-card {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  min-height: 120px;
+  border: 1px solid #e7eaf3;
+  border-radius: var(--proma-radius-md);
+  background: linear-gradient(180deg, #fff 0%, #fbfcff 100%);
+  box-shadow: 0 10px 26px rgba(16, 24, 40, .045);
+  color: #101828;
+  font: inherit;
+  text-align: right;
+  line-height: 1.8;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.proma-quick-action-card:hover,
+.proma-quick-action-card:focus {
+  border-color: rgba(124, 58, 237, .38);
+  box-shadow: 0 12px 28px rgba(124, 58, 237, .08);
+}
+
+.proma-quick-action-card strong {
+  font-size: 15px;
+}
+
+.proma-quick-action-card span {
+  color: #667085;
+  line-height: 1.9;
+}
+
+.proma-quick-action-grid--legal-list {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  align-items: stretch;
+}
+
+.proma-quick-action-card--form {
+  cursor: default;
+  align-content: start;
+}
+
+.proma-quick-action-card--form > label,
+.proma-quick-action-card--form > .full {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+.proma-quick-action-card--form .btn {
+  justify-self: start;
+  min-width: 132px;
+}
+
+.proma-page-content,
+[data-contract-tab-panel],
+.proma-contract-workspace,
+.proma-contract-workspace > *,
+.proma-contract-installments-card,
+.proma-payment-workspace {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.proma-contract-workspace[data-contract-tab-panel="installments"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.proma-contract-installments-card .table-wrap,
+.proma-payment-log-table {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-gutter: stable;
+}
+
+.proma-contract-installments-card table {
+  width: 100%;
+  min-width: 720px;
+}
+
+.proma-installment-financials {
+  min-width: 0;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+}
+
+.proma-payment-workspace .form-grid.three {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.proma-payment-workspace .actions {
+  flex-wrap: wrap;
+}
+
+.proma-payment-workspace .actions .btn {
+  flex: 1 1 220px;
+}
+
+.proma-payment-log-table {
+  margin-block-start: var(--space-4);
+}
+
+.page-wrapper.compact-wrapper .page-body-wrapper .page-body {
+  min-height: calc(100vh - 72px);
+  display: flex;
+  flex-direction: column;
+}
+
+.proma-page-content {
+  flex: 1 0 auto;
+  padding-block-end: var(--space-4);
+}
+
+.page-body > .footer {
+  flex: 0 0 auto;
+  min-height: auto;
+  margin: 0;
+  padding-block: var(--space-3);
+  background: transparent;
+}
+
+.page-body > .footer .container-fluid {
+  max-width: none;
+  padding-inline: var(--page-padding-x);
+}
+
+.page-body > .footer p {
+  margin: 0;
+  color: #98a2b3;
+}
+
+/* V5.0.2 role dashboards: shared hierarchy with role-specific data. */
+.proma-role-dashboard,
+.proma-admin-dashboard {
+  --dashboard-ink: #17233d;
+  --dashboard-muted: #75809a;
+  align-items: stretch;
+}
+
+.proma-role-dashboard .proma-role-hero,
+.proma-admin-dashboard .proma-workspace-intro {
+  isolation: isolate;
+  position: relative;
+  overflow: hidden;
+  min-height: 182px;
+  border: 0;
+  border-radius: 24px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 8% 120%, rgba(56, 189, 248, .26), transparent 22rem),
+    linear-gradient(115deg, #17223d 0%, #263d74 54%, #5143bd 100%);
+  box-shadow: 0 20px 42px rgba(28, 39, 83, .2);
+}
+
+.proma-role-dashboard .proma-role-hero::after,
+.proma-admin-dashboard .proma-workspace-intro::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-inline-end: -54px;
+  inset-block-end: -132px;
+  width: 330px;
+  height: 260px;
+  border: 1px solid rgba(255, 255, 255, .13);
+  border-radius: 50%;
+  box-shadow: 0 0 0 28px rgba(255, 255, 255, .035), 0 0 0 62px rgba(255, 255, 255, .025);
+  pointer-events: none;
+}
+
+.proma-role-dashboard .proma-role-hero .card-body {
+  position: relative;
+  z-index: 1;
+  grid-template-columns: minmax(0, 1fr) minmax(245px, auto);
+  align-items: center;
+  gap: 24px;
+  min-height: 182px;
+  padding: clamp(22px, 3vw, 38px);
+  background: transparent;
+}
+
+.proma-role-dashboard .proma-role-hero h4,
+.proma-admin-dashboard .proma-workspace-intro h2 {
+  margin: 8px 0;
+  color: #fff;
+  font-size: clamp(22px, 2.1vw, 30px);
+  font-weight: 850;
+  letter-spacing: -.035em;
+}
+
+.proma-role-dashboard .proma-role-hero p,
+.proma-admin-dashboard .proma-workspace-intro p {
+  max-width: 68ch;
+  margin: 0;
+  color: rgba(255, 255, 255, .76);
+  line-height: 1.9;
+}
+
+.proma-role-dashboard .proma-role-hero .badge,
+.proma-admin-dashboard .proma-workspace-intro .proma-eyebrow {
+  color: #e9e8ff;
+  background: rgba(255, 255, 255, .12);
+}
+
+.proma-role-dashboard .proma-role-hero-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
+  max-width: 430px;
+}
+
+.proma-role-dashboard .proma-role-hero-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  gap: 8px;
+  padding-inline: 14px;
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 12px;
+  color: #fff;
+  background: rgba(255, 255, 255, .12);
+  box-shadow: none;
+  backdrop-filter: blur(8px);
+}
+
+.proma-role-dashboard .proma-role-hero-actions .btn:hover {
+  border-color: rgba(255, 255, 255, .48);
+  background: rgba(255, 255, 255, .2);
+  color: #fff;
+}
+
+.proma-role-dashboard .proma-customer-balance .proma-balance-amount {
+  display: block;
+  margin-top: 8px;
+  color: #fff;
+  font-size: clamp(22px, 2.2vw, 31px);
+  font-weight: 900;
+  letter-spacing: -.025em;
+}
+
+.proma-admin-dashboard .proma-workspace-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: clamp(22px, 3vw, 38px);
+}
+
+.proma-admin-dashboard .proma-workspace-intro > * {
+  position: relative;
+  z-index: 1;
+}
+
+.proma-admin-dashboard .proma-workspace-intro .btn {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 11px 18px;
+  border: 0;
+  border-radius: 12px;
+  color: #30277f;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(8, 17, 44, .2);
+}
+
+.proma-admin-dashboard .proma-workspace-intro .btn:hover {
+  color: #241b69;
+  background: #f2f1ff;
+}
+
+.proma-role-dashboard .proma-dashboard-metric,
+.proma-admin-dashboard .proma-dashboard-metric {
+  display: flex;
+}
+
+.proma-role-dashboard .proma-role-kpi,
+.proma-admin-dashboard .proma-admin-kpi {
+  position: relative;
+  width: 100%;
+  min-height: 142px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--proma-card-bg);
+  box-shadow: 0 12px 30px rgba(20, 31, 61, .055);
+}
+
+.proma-role-dashboard .proma-role-kpi::before,
+.proma-admin-dashboard .proma-admin-kpi::before {
+  content: "";
+  position: absolute;
+  inset-block: 18px;
+  inset-inline-start: 0;
+  width: 3px;
+  border-radius: 0 99px 99px 0;
+  background: var(--dashboard-accent, #6b55df);
+}
+
+.proma-role-dashboard .proma-role-kpi .card-body,
+.proma-admin-dashboard .proma-admin-kpi .card-body {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-height: 140px;
+  padding: 20px;
+}
+
+.proma-role-kpi-icon,
+.proma-admin-kpi-icon {
+  display: grid;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--dashboard-accent, #6b55df) 20%, transparent);
+  border-radius: 15px;
+  color: var(--dashboard-accent, #6b55df);
+  background: color-mix(in srgb, var(--dashboard-accent, #6b55df) 9%, transparent);
+}
+
+.proma-role-kpi-icon svg,
+.proma-admin-kpi-icon svg {
+  width: 21px;
+  height: 21px;
+  stroke: currentColor;
+}
+
+.proma-role-kpi--violet { --dashboard-accent: #7258e9; }
+.proma-role-kpi--blue { --dashboard-accent: #1687c9; }
+.proma-role-kpi--rose { --dashboard-accent: #e45273; }
+.proma-role-kpi--amber { --dashboard-accent: #d59316; }
+.proma-role-kpi--teal { --dashboard-accent: #159b8d; }
+.proma-admin-kpi--primary { --dashboard-accent: #7258e9; }
+.proma-admin-kpi--info { --dashboard-accent: #1687c9; }
+.proma-admin-kpi--success { --dashboard-accent: #159b70; }
+.proma-admin-kpi--warning { --dashboard-accent: #d59316; }
+.proma-admin-kpi--danger { --dashboard-accent: #e45273; }
+.proma-admin-kpi--muted { --dashboard-accent: #77839a; }
+
+.proma-role-dashboard .proma-role-kpi small,
+.proma-admin-dashboard .proma-admin-kpi small {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--dashboard-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.proma-role-dashboard .proma-role-kpi strong,
+.proma-admin-dashboard .proma-admin-kpi strong {
+  display: block;
+  color: var(--dashboard-ink);
+  font-size: clamp(19px, 1.65vw, 24px);
+  font-weight: 900;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.proma-role-dashboard .proma-role-kpi em,
+.proma-admin-dashboard .proma-admin-kpi em {
+  display: block;
+  margin-top: 4px;
+  color: var(--dashboard-muted);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.6;
+}
+
+.proma-role-dashboard .proma-role-panel,
+.proma-admin-dashboard .proma-admin-panel {
+  height: 100%;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.proma-role-dashboard .proma-role-panel > .card-header,
+.proma-admin-dashboard .proma-admin-panel > .card-header {
+  padding-top: 20px;
+  padding-bottom: 14px;
+}
+
+.proma-role-dashboard .proma-role-panel .header-top h5,
+.proma-admin-dashboard .proma-admin-panel .header-top h5 {
+  margin: 0;
+  color: var(--dashboard-ink);
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.proma-role-dashboard .proma-role-panel .table-responsive,
+.proma-admin-dashboard .proma-admin-panel .table-responsive,
+.proma-admin-dashboard .proma-admin-panel .table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+}
+
+body.dark-only .proma-role-dashboard .proma-role-kpi strong,
+body.dark-only .proma-admin-dashboard .proma-admin-kpi strong,
+body.dark-only .proma-role-dashboard .proma-role-panel .header-top h5,
+body.dark-only .proma-admin-dashboard .proma-admin-panel .header-top h5 {
+  color: #f3f4fa;
+}
+
+body.dark-only .proma-role-dashboard .proma-role-kpi small,
+body.dark-only .proma-role-dashboard .proma-role-kpi em,
+body.dark-only .proma-admin-dashboard .proma-admin-kpi small,
+body.dark-only .proma-admin-dashboard .proma-admin-kpi em {
+  color: #aab3c4;
+}
+
+@media (max-width: 767.98px) {
+  .proma-role-dashboard .proma-role-hero .card-body {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    gap: 18px;
+    padding: 22px;
+  }
+
+  .proma-role-dashboard .proma-role-hero-actions {
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .proma-admin-dashboard .proma-workspace-intro {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 22px;
+  }
+
+  .proma-admin-dashboard .proma-workspace-intro .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .proma-role-dashboard .proma-dashboard-metric,
+  .proma-admin-dashboard .proma-dashboard-metric {
+    flex: 0 0 50%;
+    max-width: 50%;
+    padding-inline: 6px;
+  }
+
+  .proma-role-dashboard .proma-role-kpi,
+  .proma-admin-dashboard .proma-admin-kpi {
+    min-height: 136px;
+    border-radius: 15px;
+  }
+
+  .proma-role-dashboard .proma-role-kpi .card-body,
+  .proma-admin-dashboard .proma-admin-kpi .card-body {
+    min-height: 134px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+    padding: 13px;
+  }
+
+  .proma-role-kpi-icon,
+  .proma-admin-kpi-icon {
+    flex-basis: 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+  }
+
+  .proma-role-kpi-icon svg,
+  .proma-admin-kpi-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .proma-role-dashboard .proma-role-kpi strong,
+  .proma-admin-dashboard .proma-admin-kpi strong {
+    font-size: 15px;
+  }
+
+  .proma-role-dashboard .proma-role-kpi small,
+  .proma-admin-dashboard .proma-admin-kpi small {
+    font-size: 10px;
+  }
+}
+
+body.dark-only {
+  --proma-page-bg: #111827;
+  --proma-card-bg: rgba(31, 41, 55, .94);
+  --proma-card-border: rgba(255, 255, 255, .09);
+  --proma-card-shadow: none;
+  --proma-card-shadow-hover: none;
+}
+
+body.dark-only .proma-page-content :where(.card, .table-wrap, .modal-content),
+body.dark-only .proma-role-dashboard .card,
+body.dark-only .proma-admin-dashboard .card {
+  background: var(--proma-card-bg);
+  border-color: var(--proma-card-border);
+}
+
+body.dark-only .proma-page-content :where(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+body.dark-only .proma-page-content table thead th {
+  background: rgba(255, 255, 255, .045);
+}
+
+body.dark-only .modal.open .modal-footer,
+body.dark-only .modal.show .modal-footer {
+  background: rgba(31, 41, 55, .96);
+}
+
+@media (max-width: 1199.98px) {
+  .proma-template-editor-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .page-wrapper.compact-wrapper .page-body-wrapper .page-body {
+    padding-inline: 10px;
+  }
+
+  .proma-page-content > :where(.card, .notice, .alert, .table-wrap),
+  .proma-page-content .card,
+  .proma-role-dashboard .card,
+  .proma-admin-dashboard .card {
+    border-radius: 16px;
+  }
+
+  .proma-filter-toolbar,
+  .proma-operational-filter,
+  .proma-filter-bar__fields {
+    grid-template-columns: 1fr;
+  }
+
+  .proma-filter-submit :where(.btn, button.btn, .proma-button),
+  .modal-footer :where(.btn:not(.btn-xs):not(.btn-sm), button.btn:not(.btn-xs):not(.btn-sm), .proma-button),
+  .proma-page-hero__actions :where(.btn, button.btn, .proma-button) {
+    width: 100%;
+  }
+
+  .proma-page-content .actions :where(.btn, button.btn, .proma-button),
+  .proma-row-actions :where(.btn, button.btn, .proma-button) {
+    flex: 1 1 150px;
+  }
+}
