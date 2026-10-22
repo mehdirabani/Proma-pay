@@ -8,6 +8,7 @@ if (!class_exists('ZipArchive')) {
 }
 
 $root = dirname(__DIR__);
+require_once $root . '/scripts/release_artifact_paths.php';
 $versionInfo = require $root . '/config/version.php';
 $version = (string) ($versionInfo['application'] ?? '');
 $minimum = $argv[1] ?? '1.5.7';
@@ -17,7 +18,7 @@ if (!preg_match('/^\d+\.\d+\.\d+$/', $version) || !preg_match('/^\d+\.\d+\.\d+$/
     exit(1);
 }
 
-$corePath = $root . '/dist/core/PromaPay-v' . $version . '.zip';
+$corePath = ReleaseArtifactPaths::core($root, $version);
 if (!is_file($corePath)) {
     fwrite(STDERR, "Core archive does not exist: {$corePath}\n");
     exit(1);

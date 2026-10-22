@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/helpers/RetiredCoreFiles.php';
 
 $root = dirname(__DIR__);
+require_once $root . '/scripts/release_artifact_paths.php';
 $versionInfo = require $root . '/config/version.php';
 $version = (string) ($versionInfo['application'] ?? '0.0.0');
 $candidateBuildId = trim((string) getenv('PROMA_CANDIDATE_BUILD_ID'));
@@ -126,7 +127,7 @@ $assert($update->locateName('UPDATE_README.md') !== false, 'Update instructions 
 $baselineVersion = (string) ($updateManifest['baseline']['version'] ?? '');
 $assert(($updateManifest['minimum_version'] ?? '') === $baselineVersion, 'Update minimum version differs from its baseline.');
 $baselineCandidates = [
-    $root . '/dist/core/PromaPay-v' . $baselineVersion . '.zip',
+    ReleaseArtifactPaths::core($root, $baselineVersion),
     $root . '/dist/candidates/v' . $baselineVersion . '/core/PromaPay-v' . $baselineVersion . '.zip',
     $root . '/dist/candidates/archive/v' . explode('.', $baselineVersion, 2)[0] . '/v' . $baselineVersion . '/core/PromaPay-v' . $baselineVersion . '.zip',
 ];

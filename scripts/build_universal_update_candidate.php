@@ -7,6 +7,7 @@ declare(strict_types=1);
  * User data, DB credentials, and separately versioned plugins are preserved.
  */
 $root = dirname(__DIR__);
+require_once $root . '/scripts/release_artifact_paths.php';
 $versionInfo = require $root . '/config/version.php';
 $version = (string) ($versionInfo['application'] ?? '');
 $candidateBuildId = trim((string) getenv('PROMA_CANDIDATE_BUILD_ID'));
@@ -18,7 +19,7 @@ $baselineVersion = $minimumVersion;
 $candidateRoot = $root . '/dist/candidates/v' . $version . ($candidateBuildId !== '' ? '-' . strtolower($candidateBuildId) : '');
 $corePath = $candidateRoot . '/core/PromaPay-v' . $version . '.zip';
 $baselineCandidates = [
-    $root . '/dist/core/PromaPay-v' . $baselineVersion . '.zip',
+    ReleaseArtifactPaths::core($root, $baselineVersion),
     $root . '/dist/candidates/v' . $baselineVersion . '/core/PromaPay-v' . $baselineVersion . '.zip',
     $root . '/dist/candidates/archive/v' . explode('.', $baselineVersion, 2)[0] . '/v' . $baselineVersion . '/core/PromaPay-v' . $baselineVersion . '.zip',
 ];

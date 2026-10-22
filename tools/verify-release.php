@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
+require_once $root . '/scripts/release_artifact_paths.php';
 $versionInfo = require $root . '/config/version.php';
 $version = (string) ($versionInfo['application'] ?? '0.0.0');
 if (!class_exists('ZipArchive')) {
@@ -31,15 +32,15 @@ $assertSafeNames = static function (ZipArchive $zip, string $label) use ($assert
     }
 };
 
-$corePath = $root . '/dist/core/PromaPay-v' . $version . '.zip';
-$updatePath = $root . '/dist/updates/PromaPay-Update-v' . $version . '.zip';
-$updateManifestPath = $root . '/dist/updates/PromaPay-Update-v' . $version . '-manifest.json';
+$corePath = ReleaseArtifactPaths::core($root, $version);
+$updatePath = ReleaseArtifactPaths::update($root, $version, 'PromaPay-Update-v' . $version . '.zip');
+$updateManifestPath = ReleaseArtifactPaths::update($root, $version, 'PromaPay-Update-v' . $version . '-manifest.json');
 $pluginPath = '';
-$checksumPath = $root . '/dist/core/SHA256SUMS.txt';
-$releaseNotesPath = $root . '/dist/core/RELEASE_NOTES-v' . $version . '.md';
-$testReportPath = $root . '/dist/core/FULL_TEST_REPORT-v' . $version . '.md';
-$uiUxReportPath = $root . '/dist/core/UI_UX_REDESIGN_REPORT-v' . $version . '.md';
-$guarantorReportPath = $root . '/dist/core/GUARANTOR_FIX_REPORT-v' . $version . '.md';
+$checksumPath = ReleaseArtifactPaths::coreFile($root, $version, 'SHA256SUMS.txt');
+$releaseNotesPath = ReleaseArtifactPaths::coreFile($root, $version, 'RELEASE_NOTES-v' . $version . '.md');
+$testReportPath = ReleaseArtifactPaths::coreFile($root, $version, 'FULL_TEST_REPORT-v' . $version . '.md');
+$uiUxReportPath = ReleaseArtifactPaths::coreFile($root, $version, 'UI_UX_REDESIGN_REPORT-v' . $version . '.md');
+$guarantorReportPath = ReleaseArtifactPaths::coreFile($root, $version, 'GUARANTOR_FIX_REPORT-v' . $version . '.md');
 
 $core = $open($corePath);
 $assertSafeNames($core, 'Core archive');
@@ -95,7 +96,7 @@ $assert(preg_match('/^\d+\.\d+\.\d+$/', $baselineVersion) === 1, 'Update baselin
 $assert(($updateManifest['minimum_version'] ?? '') === $baselineVersion, 'Update minimum version must equal its verified baseline.');
 $baselinePath = trim((string) getenv('PROMA_UPDATE_BASELINE_ARCHIVE'));
 if ($baselinePath === '') {
-    $baselinePath = $root . '/dist/core/PromaPay-v' . $baselineVersion . '.zip';
+    $baselinePath = ReleaseArtifactPaths::core($root, $baselineVersion);
 }
 $baselineZip = $open($baselinePath);
 $baselineRaw = $baselineZip->getFromName('release-manifest.json');

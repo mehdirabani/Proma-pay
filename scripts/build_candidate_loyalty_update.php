@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
+require_once $root . '/scripts/release_artifact_paths.php';
 $versionInfo = require $root . '/config/version.php';
 $version = (string) ($versionInfo['application'] ?? '');
 $baselineVersion = '4.0.1';
@@ -13,7 +14,7 @@ if (!class_exists('ZipArchive')) {
     throw new RuntimeException('PHP ZipArchive extension is required.');
 }
 
-$baselinePath = $root . '/dist/core/PromaPay-v' . $baselineVersion . '.zip';
+$baselinePath = ReleaseArtifactPaths::core($root, $baselineVersion);
 if (!is_file($baselinePath)) {
     throw new RuntimeException('The exact V' . $baselineVersion . ' Core baseline archive is missing.');
 }
