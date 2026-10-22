@@ -20,7 +20,7 @@ $lastResult = min($pagination['total'], $pagination['page'] * $pagination['per_p
     </div>
     <div class="customer-history-hero__actions">
       <a class="ch-button ch-button--light" href="<?= e(url('installments/panel')) ?>"><i data-feather="calendar"></i> اقساط من</a>
-      <?php if (ecommerce_is_enabled()): ?><a class="ch-button ch-button--white" href="<?= e(url('ecommerce/shop')) ?>"><i data-feather="shopping-cart"></i> رفتن به فروشگاه</a><?php else: ?><a class="ch-button ch-button--white" href="<?= e(url('portal/contracts')) ?>"><i data-feather="file-text"></i> قراردادهای من</a><?php endif; ?>
+      <a class="ch-button ch-button--white" href="<?= e(url('portal/contracts')) ?>"><i data-feather="file-text"></i> قراردادهای من</a>
     </div>
     <div class="customer-history-hero__mark" aria-hidden="true"><i data-feather="shopping-bag"></i></div>
   </header>
@@ -85,7 +85,6 @@ $lastResult = min($pagination['total'], $pagination['page'] * $pagination['per_p
           <h3>هنوز خریدی در سوابق شما ثبت نشده</h3>
           <p>بعد از ثبت قرارداد خرید، کالاها، مبلغ پرداخت‌شده و برنامه اقساط اینجا نمایش داده می‌شود.</p>
           <div class="customer-history-empty__actions">
-            <?php if (ecommerce_is_enabled()): ?><a class="ch-button ch-button--primary" href="<?= e(url('ecommerce/shop')) ?>"><i data-feather="shopping-cart"></i> مشاهده فروشگاه</a><?php endif; ?>
             <a class="ch-button ch-button--quiet" href="<?= e(url('portal/contracts')) ?>"><i data-feather="file-text"></i> قراردادهای من</a>
           </div>
         <?php endif; ?>

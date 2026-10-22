@@ -32,7 +32,6 @@ $tabGroups = [
         'template' => 'قالب قرارداد',
     ],
     'ارتباطات' => [
-        'ecommerce' => 'لندینگ فروشگاه',
         'social' => 'شبکه‌های اجتماعی',
         'notifications' => 'اعلان‌ها و چت',
         'email' => 'ایمیل',
@@ -111,37 +110,6 @@ if (!isset($tabs[$activeTab])) {
     </div>
   </section>
 
-  <section class="card proma-settings-panel <?= $activeTab === 'ecommerce' ? 'active' : '' ?>" data-settings-panel="ecommerce">
-    <div class="card-header"><h2>لندینگ فروشگاه</h2></div>
-    <div class="card-body form-grid">
-      <div class="full proma-feature-toggle">
-        <div>
-          <strong>تجارت الکترونیک</strong>
-          <small>فروشگاه، سبد خرید، سفارش‌ها، درخواست خرید اقساطی و منوی مرتبط را فعال یا غیرفعال می‌کند.</small>
-        </div>
-        <label><input type="checkbox" name="ecommerce_enabled" value="1"<?= checked($settings['ecommerce_enabled'] ?? '1', '1') ?>><span>فعال</span></label>
-      </div>
-      <div class="full proma-feature-toggle">
-        <div>
-          <strong>صفحه لندینگ فروشگاه</strong>
-          <small>در صورت خاموش بودن، مسیر اصلی مهمان به فهرست محصولات هدایت می‌شود و لینک لندینگ حذف خواهد شد.</small>
-        </div>
-        <label><input type="checkbox" name="landing_enabled" value="1"<?= checked($settings['landing_enabled'] ?? '1', '1') ?>><span>فعال</span></label>
-      </div>
-      <div class="full notice info">متن‌های صفحه نخست فروشگاه از این بخش خوانده می‌شوند. برای نمایش نام سامانه از <span dir="ltr">{{system_name}}</span> استفاده کنید.</div>
-      <label>نشان بالای هدر<input name="landing_kicker" value="<?= e($settings['landing_kicker'] ?? '') ?>"></label>
-      <label>عنوان اصلی<input name="landing_title" value="<?= e($settings['landing_title'] ?? '') ?>"></label>
-      <label class="full">متن معرفی<textarea name="landing_subtitle" rows="3"><?= e($settings['landing_subtitle'] ?? '') ?></textarea></label>
-      <label>متن دکمه اصلی<input name="landing_primary_cta" value="<?= e($settings['landing_primary_cta'] ?? '') ?>"></label>
-      <label>متن دکمه اقساطی<input name="landing_secondary_cta" value="<?= e($settings['landing_secondary_cta'] ?? '') ?>"></label>
-      <label>برچسب بخش محصولات<input name="landing_featured_eyebrow" value="<?= e($settings['landing_featured_eyebrow'] ?? '') ?>"></label>
-      <label>عنوان بخش محصولات<input name="landing_featured_title" value="<?= e($settings['landing_featured_title'] ?? '') ?>"></label>
-      <label>برچسب مسیر خرید<input name="landing_steps_eyebrow" value="<?= e($settings['landing_steps_eyebrow'] ?? '') ?>"></label>
-      <label>عنوان مسیر خرید<input name="landing_steps_title" value="<?= e($settings['landing_steps_title'] ?? '') ?>"></label>
-      <div class="full actions"><button class="btn" type="submit">ذخیره لندینگ فروشگاه</button></div>
-    </div>
-  </section>
-
   <section class="card proma-settings-panel <?= $activeTab === 'social' ? 'active' : '' ?>" data-settings-panel="social">
     <div class="card-header"><h2>شبکه‌های اجتماعی مشتریان</h2></div>
     <div class="card-body form-grid">
@@ -161,7 +129,7 @@ if (!isset($tabs[$activeTab])) {
   <section class="card proma-settings-panel <?= $activeTab === 'email' ? 'active' : '' ?>" data-settings-panel="email">
     <div class="card-header"><h2>تنظیمات ایمیل</h2></div>
     <div class="card-body form-grid">
-      <div class="full notice info">ایمیل سفارش‌ها با قالب اختصاصی سامانه ارسال می‌شود. برای تست سریع می‌توانید بعد از تکمیل فیلدها، دکمه ارسال تست را بزنید.</div>
+      <div class="full notice info">این بخش برای ایمیل تست و پیام‌های عمومی سامانه است.</div>
       <div>
         <span class="field-title">ارسال ایمیل</span>
         <div class="switch-options">
@@ -179,7 +147,6 @@ if (!isset($tabs[$activeTab])) {
       <label>Reply-To<input name="email_reply_to" value="<?= e($settings['email_reply_to'] ?? '') ?>" dir="ltr" placeholder="support@example.com"></label>
       <label>متن بالای قالب<input name="email_header_note" value="<?= e($settings['email_header_note'] ?? '') ?>"></label>
       <label class="full">آدرس/متن فوتر ایمیل<input name="email_footer_address" value="<?= e($settings['email_footer_address'] ?? '') ?>"></label>
-      <label class="full">موضوع ایمیل سفارش<input name="email_order_subject" value="<?= e($settings['email_order_subject'] ?? '') ?>" placeholder="سفارش {{order_number}} با موفقیت ثبت شد"></label>
       <label>SMTP Host<input name="smtp_host" value="<?= e($settings['smtp_host'] ?? '') ?>" dir="ltr" placeholder="mail.example.com"></label>
       <label>SMTP Port<input name="smtp_port" value="<?= e(to_persian_digits($settings['smtp_port'] ?? '587')) ?>" inputmode="numeric" dir="ltr"></label>
       <label>SMTP Username<input name="smtp_username" value="<?= e($settings['smtp_username'] ?? '') ?>" dir="ltr"></label>

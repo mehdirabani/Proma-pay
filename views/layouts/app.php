@@ -1,7 +1,6 @@
 <?php
 $user = Auth::user();
 $settings = Settings::allKeyed();
-$ecommerceEnabled = ecommerce_is_enabled();
 $route = trim(urldecode((string) ($_GET['route'] ?? 'dashboard')), '/');
 $unreadNotifications = Notification::unreadCount(Auth::id());
 $unreadMessages = Chat::unreadCount(Auth::id());
@@ -18,14 +17,6 @@ $notifications = Notification::latest(Auth::id(), 6);
 $latestNotificationId = Notification::latestId(Auth::id());
 $notificationSoundEnabled = (int) ($settings['notifications_sound_enabled'] ?? 1);
 $notificationSoundVolume = max(0, min(1, (float) ($settings['notifications_sound_volume'] ?? '0.45')));
-$headerCartSummary = ['items' => [], 'subtotal' => 0, 'total' => 0, 'quantity' => 0];
-if ($ecommerceEnabled && ($user['role'] ?? '') === 'customer') {
-    try {
-        $headerCartSummary = Ecommerce::cartSummary();
-    } catch (Throwable $e) {
-        $headerCartSummary = ['items' => [], 'subtotal' => 0, 'total' => 0, 'quantity' => 0];
-    }
-}
 $notificationTone = static function ($type) {
     $map = [
         'payment' => 'success',
@@ -103,12 +94,6 @@ if (Auth::role() === 'admin') {
         ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
         ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
-        ['ecommerce', 'تجارت الکترونیک', 'stroke-ecommerce', 'fill-ecommerce', [
-            ['ecommerce/landing', 'صفحه لندینگ'],
-            ['ecommerce/addProduct', 'افزودن محصول'],
-            ['ecommerce/products', 'فهرست محصولات'],
-            ['ecommerce/orders', 'فهرست سفارشات'],
-        ]],
         ['users', 'کاربران', 'stroke-user', 'fill-user'],
         ['loyalty', 'باشگاه امتیاز مشتریان', 'stroke-award', 'fill-award'],
         ['ai', 'تحلیل هوشمند', 'stroke-learning', 'fill-learning'],
@@ -135,7 +120,6 @@ if (Auth::role() === 'admin') {
         ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
         ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
-        ['ecommerce/landing', 'فروشگاه', 'stroke-ecommerce', 'fill-ecommerce'],
     ];
 } elseif (Auth::role() === 'lawyer') {
     $nav = [
@@ -149,7 +133,6 @@ if (Auth::role() === 'admin') {
         ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
         ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
-        ['ecommerce/landing', 'فروشگاه', 'stroke-ecommerce', 'fill-ecommerce'],
     ];
     if ($canViewUsers) {
         array_splice($nav, 2, 0, [['users', 'کاربران', 'stroke-user', 'fill-user']]);
@@ -161,18 +144,10 @@ if (Auth::role() === 'admin') {
         ['installments/panel', 'اقساط', 'stroke-file', 'fill-file'],
         ['portal/history', 'سوابق خرید', 'stroke-ecommerce', 'fill-ecommerce'],
         ['portal/guaranteed', 'ضمانت‌ها', 'stroke-board', 'fill-board'],
-        ['ecommerce/landing', 'فروشگاه', 'stroke-ecommerce', 'fill-ecommerce'],
-        ['ecommerce/cart', 'سبد خرید', 'stroke-board', 'fill-board'],
-        ['ecommerce/myOrders', 'سفارش‌های من', 'stroke-ecommerce', 'fill-ecommerce'],
         ['notifications', 'اعلان‌ها', 'stroke-task', 'fill-task'],
         ['calendar', 'تقویم', 'stroke-task', 'fill-task'],
         ['chat', 'گفت‌وگو', 'stroke-chat', 'fill-chat'],
     ];
-}
-if (!$ecommerceEnabled) {
-    $nav = array_values(array_filter($nav, static function ($item) {
-        return strpos((string) ($item[0] ?? ''), 'ecommerce') !== 0;
-    }));
 }
 $mobileNav = [
     'admin' => [
@@ -254,7 +229,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
         'notifications' => 'bell', 'chat' => 'message-circle', 'calendar' => 'calendar',
         'users' => 'users', 'medals' => 'award', 'loyalty' => 'award', 'settings' => 'settings', 'ai' => 'activity',
         'file-manager' => 'folder', 'system-health' => 'activity', 'plugins' => 'package',
-        'ecommerce' => 'shopping-bag', 'portal' => 'user', 'profile-reviews' => 'user-check'];
+        'portal' => 'user', 'profile-reviews' => 'user-check'];
     $routeKey = explode('/', (string) ($item[0] ?? ''))[0];
     return '<i data-feather="' . e($icons[$routeKey] ?? 'layers') . '" aria-hidden="true"></i>';
 };
@@ -352,65 +327,6 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
                   <i data-feather="credit-card"></i>
                   <span>پرداخت قسط</span>
                 </button>
-              </li>
-            <?php endif; ?>
-            <?php if ($ecommerceEnabled && ($user['role'] ?? '') === 'customer'): ?>
-              <li class="onhover-dropdown proma-floating-cart" data-floating-cart>
-                <a class="notification-box proma-header-link proma-cart-trigger" href="<?= e(url('ecommerce/cart')) ?>" aria-label="سبد خرید">
-                  <svg><use href="<?= e($sprite) ?>#stroke-ecommerce"></use></svg>
-                  <span class="badge rounded-pill badge-primary"<?= (int) ($headerCartSummary['quantity'] ?? 0) > 0 ? '' : ' hidden' ?>><?= to_persian_digits($headerCartSummary['quantity'] ?? 0) ?></span>
-                </a>
-                <div class="onhover-show-div proma-floating-cart-panel">
-                  <h6>سبد خرید</h6>
-                  <?php if (!empty($headerCartSummary['items'])): ?>
-                    <div class="proma-floating-cart-list">
-                      <?php foreach (array_slice($headerCartSummary['items'], 0, 4) as $cartItem): ?>
-                        <div class="proma-floating-cart-item">
-                          <form method="post" action="<?= e(url('ecommerce/removeFromCart/' . (int) $cartItem['id'])) ?>" class="proma-cart-remove-form">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="return_to" value="<?= e($route ?: 'dashboard') ?>">
-                            <button type="submit" aria-label="حذف"><i data-feather="x"></i></button>
-                          </form>
-                          <div class="proma-floating-cart-info">
-                            <strong><?= e($cartItem['title']) ?></strong>
-                            <div class="proma-floating-cart-qty">
-                              <form method="post" action="<?= e(url('ecommerce/adjustCart/' . (int) $cartItem['id'])) ?>">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="return_to" value="<?= e($route ?: 'dashboard') ?>">
-                                <input type="hidden" name="delta" value="1">
-                                <button type="submit" aria-label="افزایش">+</button>
-                              </form>
-                              <span><?= to_persian_digits($cartItem['quantity']) ?></span>
-                              <form method="post" action="<?= e(url('ecommerce/adjustCart/' . (int) $cartItem['id'])) ?>">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="return_to" value="<?= e($route ?: 'dashboard') ?>">
-                                <input type="hidden" name="delta" value="-1">
-                                <button type="submit" aria-label="کاهش">-</button>
-                              </form>
-                            </div>
-                            <em><?= money_toman($cartItem['line_total']) ?></em>
-                          </div>
-                          <a class="proma-floating-cart-thumb" href="<?= e(url('ecommerce/product/' . ($cartItem['slug'] ?? (int) $cartItem['id']))) ?>">
-                            <?php if (!empty($cartItem['image_path'])): ?>
-                              <img src="<?= e(asset_url($cartItem['image_path'])) ?>" alt="<?= e($cartItem['title']) ?>">
-                            <?php else: ?>
-                              <span><i data-feather="image"></i></span>
-                            <?php endif; ?>
-                          </a>
-                        </div>
-                      <?php endforeach; ?>
-                    </div>
-                    <div class="proma-floating-cart-total">
-                      <span>مجموع سفارش:</span>
-                      <strong><?= money_toman($headerCartSummary['total'] ?? 0) ?></strong>
-                    </div>
-                    <a class="proma-floating-cart-link" href="<?= e(url('ecommerce/cart')) ?>">به سبد خرید خود بروید</a>
-                    <a class="btn btn-primary w-100" href="<?= e(url('ecommerce/checkout')) ?>">تسویه حساب</a>
-                  <?php else: ?>
-                    <div class="proma-floating-cart-empty">سبد خرید شما خالی است.</div>
-                    <a class="btn btn-primary w-100" href="<?= e(url('ecommerce/shop')) ?>">مشاهده فروشگاه</a>
-                  <?php endif; ?>
-                </div>
               </li>
             <?php endif; ?>
             <li class="onhover-dropdown" data-notification-center data-feed-url="<?= e(url('notifications/feed')) ?>" data-read-url="<?= e(url('notifications/read')) ?>" data-open-url="<?= e(url('notifications/open/__ID__')) ?>" data-latest-id="<?= (int) $latestNotificationId ?>">
