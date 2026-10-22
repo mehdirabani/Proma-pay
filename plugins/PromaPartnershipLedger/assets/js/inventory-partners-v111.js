@@ -4,6 +4,24 @@
   const root = document.querySelector('[data-pip-root]');
   if (!root) return;
 
+  const localizeValidation = (event) => {
+    const control = event.target;
+    if (!control || !control.willValidate || !control.validity) return;
+    const validity = control.validity;
+    let message = '';
+    if (validity.valueMissing) message = 'لطفاً این فیلد را تکمیل کنید.';
+    else if (validity.typeMismatch || validity.badInput || validity.patternMismatch) message = 'مقدار واردشده معتبر نیست.';
+    else if (validity.rangeUnderflow || validity.rangeOverflow || validity.stepMismatch) message = 'مقدار واردشده در محدودهٔ مجاز نیست.';
+    if (message) control.setCustomValidity(message);
+  };
+  const clearLocalizedValidation = (event) => {
+    const control = event.target;
+    if (control && typeof control.setCustomValidity === 'function') control.setCustomValidity('');
+  };
+  root.addEventListener('invalid', localizeValidation, true);
+  root.addEventListener('input', clearLocalizedValidation, true);
+  root.addEventListener('change', clearLocalizedValidation, true);
+
   const parseNumber = (value) => Number(String(value || '').replace(/[۰-۹٠-٩]/g, (digit) => {
     const code = digit.charCodeAt(0);
     return code >= 1776 && code <= 1785 ? String(code - 1776) : String(code - 1632);

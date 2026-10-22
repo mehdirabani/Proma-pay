@@ -2,7 +2,8 @@
 $activePluginCount = count(array_filter($plugins ?? [], static function ($plugin) {
     return ($plugin['status'] ?? '') === 'active';
 }));
-$hasQueueProblem = !empty($queue['dead']) || !$queue['available'];
+$hasQueueProblem = !empty($queue['dead']) || !$queue['available']
+  || ((int) ($queue['oldest_pending_age_seconds'] ?? 0) >= 300);
 $hasRequestProblem = !empty($telemetry['errors']) || !empty($telemetry['external_failures']);
 $systemHealthy = !empty($database['ok']) && !empty($storage['ok']) && !$hasQueueProblem;
 ?>
@@ -25,7 +26,7 @@ $systemHealthy = !empty($database['ok']) && !empty($storage['ok']) && !$hasQueue
   <article class="proma-health-service"><span><?= proma_icon('file') ?></span><div><small>هسته سامانه</small><strong><?= e($runtime['core_version']) ?></strong><p><?= e($runtime['server']) ?> · PHP <?= e($runtime['php_version']) ?></p></div><i class="proma-health-dot ok" title="آماده"></i></article>
   <article class="proma-health-service"><span><?= proma_icon('chart') ?></span><div><small>دیتابیس</small><strong><?= $database['ok'] ? to_persian_digits($database['response_ms']) . ' میلی‌ثانیه' : 'عدم پاسخ' ?></strong><p dir="ltr"><?= e($database['version']) ?></p></div><i class="proma-health-dot <?= $database['ok'] ? 'ok' : 'error' ?>" title="<?= $database['ok'] ? 'آماده' : 'ناموفق' ?>"></i></article>
   <article class="proma-health-service"><span><?= proma_icon('archive') ?></span><div><small>فضای خصوصی</small><strong><?= $storage['ok'] ? 'خواندن و نوشتن مجاز' : 'نیازمند اصلاح دسترسی' ?></strong><p>خواندن <?= $storage['readable'] ? 'مجاز' : 'ناموفق' ?> · نوشتن <?= $storage['writable'] ? 'مجاز' : 'ناموفق' ?></p></div><i class="proma-health-dot <?= $storage['ok'] ? 'ok' : 'error' ?>"></i></article>
-  <article class="proma-health-service"><span><?= proma_icon('history') ?></span><div><small>صف پردازش داخلی</small><strong><?= $queue['available'] ? to_persian_digits($queue['pending']) . ' در انتظار' : 'در دسترس نیست' ?></strong><p><?= to_persian_digits($queue['dead']) ?> مورد متوقف</p></div><i class="proma-health-dot <?= $hasQueueProblem ? 'error' : 'ok' ?>"></i></article>
+  <article class="proma-health-service"><span><?= proma_icon('history') ?></span><div><small>صف پردازش داخلی</small><strong><?= $queue['available'] ? to_persian_digits($queue['pending']) . ' در انتظار' : 'در دسترس نیست' ?></strong><p><?= to_persian_digits($queue['dead']) ?> مورد متوقف<?= !empty($queue['oldest_pending_at']) ? ' · قدیمی‌ترین: ' . e(jdatetime($queue['oldest_pending_at'])) : '' ?></p><p><?= !empty($queue['last_processed_at']) ? 'آخرین پردازش: ' . e(jdatetime($queue['last_processed_at'])) : 'هنوز پردازشی ثبت نشده است' ?></p></div><i class="proma-health-dot <?= $hasQueueProblem ? 'error' : 'ok' ?>"></i></article>
 </section>
 
 <div class="content-grid two proma-health-grid">

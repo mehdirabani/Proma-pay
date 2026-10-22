@@ -103,7 +103,8 @@ class SystemHealthController extends Controller
                 "SELECT
                     COALESCE(SUM(CASE WHEN status IN ('pending','failed') THEN 1 ELSE 0 END), 0) AS pending,
                     COALESCE(SUM(CASE WHEN status = 'dead' THEN 1 ELSE 0 END), 0) AS dead,
-                    MAX(CASE WHEN status = 'processed' THEN processed_at ELSE NULL END) AS last_processed_at
+                    MAX(CASE WHEN status = 'processed' THEN processed_at ELSE NULL END) AS last_processed_at,
+                    MIN(CASE WHEN status IN ('pending','failed') THEN created_at ELSE NULL END) AS oldest_pending_at
                  FROM system_outbox"
             ) ?: [];
             return [
@@ -111,9 +112,13 @@ class SystemHealthController extends Controller
                 'pending' => (int) ($row['pending'] ?? 0),
                 'dead' => (int) ($row['dead'] ?? 0),
                 'last_processed_at' => $row['last_processed_at'] ?? null,
+                'oldest_pending_at' => $row['oldest_pending_at'] ?? null,
+                'oldest_pending_age_seconds' => !empty($row['oldest_pending_at'])
+                    ? max(0, time() - (strtotime((string) $row['oldest_pending_at']) ?: time()))
+                    : 0,
             ];
         } catch (Throwable $e) {
-            return ['available' => false, 'pending' => 0, 'dead' => 0, 'last_processed_at' => null];
+            return ['available' => false, 'pending' => 0, 'dead' => 0, 'last_processed_at' => null, 'oldest_pending_at' => null, 'oldest_pending_age_seconds' => 0];
         }
     }
 

@@ -24,7 +24,14 @@ $dateInput = static function ($value) {
         return '';
     }
     $timestamp = strtotime((string) $value);
-    return $timestamp ? date('Y-m-d\TH:i', $timestamp) : '';
+    return $timestamp ? jdate(date('Y-m-d', $timestamp)) : '';
+};
+$timeInput = static function ($value) {
+    if (!$value) {
+        return '';
+    }
+    $timestamp = strtotime((string) $value);
+    return $timestamp ? date('H:i', $timestamp) : '';
 };
 $bannerLink = static function (array $banner) {
     if (($banner['link_type'] ?? '') === 'external') {
@@ -76,8 +83,10 @@ $bannerLink = static function (array $banner) {
         <label class="full">مقصد پیوند<input name="link_target" dir="ltr" value="<?= e($form['link_target']) ?>" placeholder="installments/panel یا https://example.com"></label>
         <label>رنگ و حال‌وهوا<select name="tone"><option value="primary"<?= selected($form['tone'], 'primary') ?>>بنفش اصلی</option><option value="success"<?= selected($form['tone'], 'success') ?>>سبز موفقیت</option><option value="warning"<?= selected($form['tone'], 'warning') ?>>نارنجی توجه</option><option value="info"<?= selected($form['tone'], 'info') ?>>آبی اطلاع‌رسانی</option><option value="neutral"<?= selected($form['tone'], 'neutral') ?>>خنثی</option></select></label>
         <label>اولویت نمایش<input name="sort_order" inputmode="numeric" value="<?= e(to_persian_digits($form['sort_order'])) ?>"></label>
-        <label>شروع نمایش<input type="datetime-local" name="starts_at" value="<?= e($dateInput($form['starts_at'])) ?>"></label>
-        <label>پایان نمایش<input type="datetime-local" name="ends_at" value="<?= e($dateInput($form['ends_at'])) ?>"></label>
+        <label>تاریخ شروع نمایش<input name="starts_at_date" data-jalali-input inputmode="numeric" placeholder="انتخاب تاریخ" value="<?= e($dateInput($form['starts_at'])) ?>"></label>
+        <label>ساعت شروع نمایش<input type="time" name="starts_at_time" value="<?= e($timeInput($form['starts_at'])) ?>"></label>
+        <label>تاریخ پایان نمایش<input name="ends_at_date" data-jalali-input inputmode="numeric" placeholder="انتخاب تاریخ" value="<?= e($dateInput($form['ends_at'])) ?>"></label>
+        <label>ساعت پایان نمایش<input type="time" name="ends_at_time" value="<?= e($timeInput($form['ends_at'])) ?>"></label>
         <div class="full switch-options proma-banner-switches">
           <label><input type="checkbox" name="is_active" value="1"<?= !empty($form['is_active']) ? ' checked' : '' ?>><span>بنر فعال باشد</span></label>
           <label><input type="checkbox" name="open_in_new_tab" value="1"<?= !empty($form['open_in_new_tab']) ? ' checked' : '' ?>><span>پیوند خارجی در زبانه جدید</span></label>

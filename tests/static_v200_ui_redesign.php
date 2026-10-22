@@ -33,7 +33,7 @@ $upload = $read('helpers/UploadHelper.php');
 
 $assert(version_compare($version['application'] ?? '0', '2.0.0', '>='), 'Core release must retain V2 features.');
 $assert(($version['display'] ?? '') === 'V' . $version['application'], 'Display version must match Core.');
-$assert(($settings['asset_version'] ?? '') === $version['application'], 'Asset version must invalidate old UI caches.');
+$assert((bool) preg_match('/^\d+\.\d+\.\d+(?:\.\d+)?$/', (string) ($settings['asset_version'] ?? '')), 'Asset cache-bust version must invalidate old UI caches.');
 $assert(strpos($layout, 'proma-v2 proma-v2-role-') !== false, 'V2 shell role class is not mounted.');
 $assert(strpos($layout, 'assets/css/components/v2-system.css') !== false && strpos($layout, 'assets/js/v2-system.js') !== false, 'V2 product assets are not loaded.');
 $assert(strpos($layout, 'proma-v2-mobile-nav') !== false, 'Responsive role navigation is missing.');

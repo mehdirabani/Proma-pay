@@ -7,7 +7,9 @@ $_SERVER['SCRIPT_NAME'] = '/index.php';
 $_SERVER['REQUEST_METHOD'] = 'CLI';
 $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 
-require dirname(__DIR__) . '/bootstrap.php';
+// This seed is destructive by design and must use the isolated QA DSN. The
+// prerequisite seed also installs and configures accounting on that schema.
+require __DIR__ . '/qa_seed_roles_v150.php';
 
 $customer = Model::fetch('SELECT id FROM users WHERE username = ? LIMIT 1', ['8000001504']);
 $admin = Model::fetch('SELECT id FROM users WHERE username = ? LIMIT 1', ['qa150admin']);

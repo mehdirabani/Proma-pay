@@ -169,7 +169,7 @@ $statusClass = [
             <input type="hidden" name="idempotency_key" value="<?= e(bin2hex(random_bytes(24))) ?>">
             <label>مبلغ پرداخت‌شده<input name="amount_toman" data-money inputmode="numeric" required max="<?= max(0, normalize_money($cost['amount_toman'] ?? 0) - normalize_money($cost['company_paid_amount_toman'] ?? 0)) ?>"></label>
             <label>مرجع یا دریافت‌کننده<input name="recipient" maxlength="190" required></label>
-            <label>تاریخ پرداخت<input name="paid_at" type="date" value="<?= e(date('Y-m-d')) ?>" required></label>
+            <label>تاریخ پرداخت<input name="paid_at" data-jalali-input inputmode="numeric" value="<?= e(jdate(date('Y-m-d'))) ?>" required></label>
             <label>شناسه پیگیری<input name="payment_reference" maxlength="190"></label>
             <label class="full">شرح<textarea name="note" rows="3" maxlength="2000"></textarea></label>
           </div>

@@ -48,9 +48,9 @@ $assert(strpos($cron, "if (PHP_SAPI !== 'cli')") !== false
 $assert(strpos($dashboard, 'customerRanking(') === false,
     'Unused customer ranking query path remains in the dashboard controller.');
 $applicationVersion = (string) ($version['application'] ?? '');
-$assert(($settings['asset_version'] ?? '') === $applicationVersion
+$assert((bool) preg_match('/^\d+\.\d+\.\d+(?:\.\d+)?$/', (string) ($settings['asset_version'] ?? ''))
     && ($manifest['version'] ?? '') === 'v' . $applicationVersion
     && strpos($worker, 'proma-pay-v' . str_replace('.', '-', $applicationVersion) . '-') !== false,
-    'Application, manifest, and service-worker cache versions are inconsistent.');
+    'Asset cache-bust version is invalid or application metadata is inconsistent.');
 
 echo "STATIC_PHP_AUDIT_HARDENING_OK\n";

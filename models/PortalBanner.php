@@ -152,8 +152,8 @@ class PortalBanner extends Model
         if ($title === '') {
             throw new InvalidArgumentException('عنوان بنر الزامی است.');
         }
-        $startsAt = self::normalizeDateTime($data['starts_at'] ?? null);
-        $endsAt = self::normalizeDateTime($data['ends_at'] ?? null);
+        $startsAt = self::normalizeDateTimeInput($data, 'starts_at', $before['starts_at'] ?? null, false);
+        $endsAt = self::normalizeDateTimeInput($data, 'ends_at', $before['ends_at'] ?? null, true);
         if ($startsAt && $endsAt && strtotime($endsAt) <= strtotime($startsAt)) {
             throw new InvalidArgumentException('زمان پایان بنر باید بعد از زمان شروع باشد.');
         }
@@ -205,5 +205,30 @@ class PortalBanner extends Model
             throw new InvalidArgumentException('زمان‌بندی بنر معتبر نیست.');
         }
         return date('Y-m-d H:i:s', $timestamp);
+    }
+
+    protected static function normalizeDateTimeInput(array $data, $prefix, $legacyValue, $endOfDay)
+    {
+        $dateKey = $prefix . '_date';
+        $timeKey = $prefix . '_time';
+        if (!array_key_exists($dateKey, $data)) {
+            return self::normalizeDateTime($data[$prefix] ?? $legacyValue);
+        }
+
+        $rawDate = trim((string) ($data[$dateKey] ?? ''));
+        $rawTime = trim(to_english_digits((string) ($data[$timeKey] ?? '')));
+        if ($rawDate === '') {
+            if ($rawTime !== '') {
+                throw new InvalidArgumentException('برای ساعت بنر، تاریخ شمسی را هم انتخاب کنید.');
+            }
+            return null;
+        }
+
+        $date = parse_jalali_date($rawDate);
+        $time = $rawTime !== '' ? $rawTime : ($endOfDay ? '23:59' : '00:00');
+        if (!$date || !preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/D', $time)) {
+            throw new InvalidArgumentException('تاریخ یا ساعت بنر معتبر نیست.');
+        }
+        return $date . ' ' . $time . ':00';
     }
 }

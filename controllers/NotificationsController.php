@@ -65,6 +65,19 @@ class NotificationsController extends Controller
             $roles = $audience === 'roles' && is_array($_POST['roles'] ?? null) ? $_POST['roles'] : [];
             if (!in_array($audience, ['all', 'roles'], true) || ($audience === 'roles' && !$roles)) throw new InvalidArgumentException('برای ارسال نقش‌محور دست‌کم یک نقش را انتخاب کنید.');
             $expires = trim((string) ($_POST['expires_at'] ?? ''));
+            if (array_key_exists('expires_at_date', $_POST)) {
+                $rawDate = trim((string) ($_POST['expires_at_date'] ?? ''));
+                $rawTime = trim(to_english_digits((string) ($_POST['expires_at_time'] ?? '23:59')));
+                if ($rawDate === '') {
+                    $expires = '';
+                } else {
+                    $date = parse_jalali_date($rawDate);
+                    if (!$date || !preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/D', $rawTime)) {
+                        throw new InvalidArgumentException('تاریخ و ساعت انقضای اعلان معتبر نیست.');
+                    }
+                    $expires = $date . ' ' . $rawTime;
+                }
+            }
             $expiresAt = null;
             if ($expires !== '') {
                 $time = strtotime($expires);

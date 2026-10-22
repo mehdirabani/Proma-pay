@@ -84,7 +84,8 @@
       <label>پیوند داخلی (اختیاری)<input name="local_url" maxlength="255" placeholder="legal یا notifications" dir="ltr"></label>
       <label class="full">متن اعلان<textarea name="body" rows="4" maxlength="10000" required></textarea></label>
       <label>مخاطب<select name="audience"><option value="all">همهٔ کاربران فعال</option><option value="roles">نقش‌های انتخاب‌شده</option></select></label>
-      <label>انقضا (اختیاری)<input name="expires_at" type="datetime-local"></label>
+      <label>تاریخ انقضا (اختیاری)<input name="expires_at_date" data-jalali-input inputmode="numeric" placeholder="انتخاب تاریخ"></label>
+      <label>ساعت انقضا<input name="expires_at_time" type="time" value="23:59"></label>
       <fieldset class="full form-grid"><legend>نقش‌های دریافت‌کننده</legend>
         <?php foreach (($broadcastRoles ?? []) as $roleRow): $role = (string) ($roleRow['role'] ?? ''); ?>
           <?php if ($role !== ''): ?><label><input type="checkbox" name="roles[]" value="<?= e($role) ?>"><span><?= e($roleLabels[$role] ?? $role) ?></span></label><?php endif; ?>
