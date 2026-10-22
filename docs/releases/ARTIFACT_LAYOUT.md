@@ -7,8 +7,10 @@ dist/
 ├── candidates/
 │   ├── v<active-version>[-<build-id>/]  Active candidate inputs and QA builds
 │   └── archive/v<major>/v<version>[-<snapshot-id>]/  Historical candidate builds grouped by major version
-├── checksums/                           Shared and versioned checksum catalogs
-│   └── archive/v<major>/v<version>/     Historical checksum catalogs
+├── checksums/
+│   └── archive/
+│       ├── v<major>/v<version>/         Historical checksum catalogs
+│       └── multi-version/                Legacy catalogs spanning releases
 ├── core/                                Active stable core installers and reports
 │   └── archive/v<major>/v<version>/     Historical Core installers and reports
 ├── installation-backups/                Preserved installation snapshots
