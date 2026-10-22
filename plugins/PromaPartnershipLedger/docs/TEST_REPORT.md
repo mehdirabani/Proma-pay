@@ -9,7 +9,7 @@
 - افزونه با شناسهٔ `proma-partnership-ledger` در مسیر `C:\laragon\www\proma\plugins\PromaPartnershipLedger` نصب و در `system_plugins` فعال است.
 - هر سه migration افزونه در رجیستری با وضعیت `success` ثبت شده‌اند.
 - manifest، README، changelog، view، assetها و migrationهای runtime با نسخهٔ workspace از نظر SHA-256 برابرند.
-- بستهٔ نصب `dist/PromaPartnershipLedger-2.0.0-alpha.3.zip` دارای `plugin.json` در ریشه و ۵۱ فایل است و گزارش آزمون همین اجرا را هم در خود دارد.
+- بستهٔ نصب `dist/plugins/pre-release/PromaPartnershipLedger/PromaPartnershipLedger-2.0.0-alpha.3.zip` دارای `plugin.json` در ریشه و ۵۱ فایل است و گزارش آزمون همین اجرا را هم در خود دارد.
 
 ## آزمون‌های موفق
 
