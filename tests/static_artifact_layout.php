@@ -29,6 +29,10 @@ $assert(
     'Candidate generation must continue finding historical baselines in the versioned archive.'
 );
 $assert(
+    strpos($candidateBuilder, '$isExactVersionFolder ? 2 : 1') !== false,
+    'Exact archived version folders must take precedence over named snapshot variants.'
+);
+$assert(
     strpos($candidateVerifier, "'/dist/candidates/archive/v'") !== false,
     'Candidate verification must resolve versioned archived candidate directories.'
 );

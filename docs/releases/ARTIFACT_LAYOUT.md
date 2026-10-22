@@ -6,7 +6,7 @@ Release and update files are grouped by purpose while keeping the paths used by 
 dist/
 ├── candidates/
 │   ├── v<active-version>/                Active candidate inputs and QA builds
-│   └── archive/v<major>/v<version>/      Historical candidate builds grouped by major version
+│   └── archive/v<major>/v<version>[-<snapshot-id>]/  Historical candidate builds grouped by major version
 ├── checksums/                           Shared checksum catalog
 ├── core/                                Stable core installer archives
 ├── installation-backups/                Preserved installation snapshots
