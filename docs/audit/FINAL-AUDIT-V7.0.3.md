@@ -1,5 +1,7 @@
 # Proma Pay 7.0.3 Pre-release Audit
 
+> Historical audit of the V7.0.3 release tree. Its Laravel and store inventory describes that earlier snapshot, not the V7.0.4 source; see [the removal baseline and execution report](ECOMMERCE_LARAVEL_REMOVAL_BASELINE.md).
+
 Date: 2026-10-21 (Asia/Tehran)
 
 ## Release identity and scope

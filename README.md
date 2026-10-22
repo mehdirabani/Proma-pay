@@ -62,7 +62,7 @@ https://example.com/index.php?route=cron/calendar-reminders&token=SECRET_TOKEN
 
 ## نسخه و وضعیت انتشار
 
-سورس هسته در این شاخه نسخهٔ `7.0.3` است. مقدار نسخه در `config/version.php`، `manifest.json` و `package.json` نگه‌داری می‌شود. کانال فعلی در `config/version.php` برابر `candidate` است؛ بنابراین انتشار GitHub نیز باید به‌صورت Pre-release شناخته شود. گیت ایستا و واحد قابل اجراست، اما تا وقتی گیت کامل دیتابیس و HTTP روی پایگاه QA دورریختنی اجرا نشود، این نسخه Production Ready اعلام نمی‌شود.
+سورس هسته در این شاخه نسخهٔ `7.0.4` است. مقدار نسخه در `config/version.php`، `manifest.json` و `package.json` نگه‌داری می‌شود. کانال فعلی در `config/version.php` برابر `candidate` است؛ بنابراین انتشار GitHub نیز باید به‌صورت Pre-release شناخته شود. گیت کامل دیتابیس و HTTP روی پایگاه QA دورریختنی برای تأیید انتشار لازم است.
 
 برنامهٔ Proma Pay یک MVC سفارشی PHP است که از Router، مدل‌ها، سرویس‌ها و چرخهٔ افزونهٔ همین مخزن استفاده می‌کند.
 
@@ -90,5 +90,15 @@ php tools/release-gate.php --static-only
 ```
 
 گیت کامل نیازمند `PROMA_TEST_DB_DSN` با نام دقیق دیتابیس دورریختنی `proma_qa_v204`، مقدار `PROMA_TEST_ALLOW_DESTRUCTIVE=1` و `PROMA_QA_BASE_URL` روی loopback است. آن را فقط روی پایگاه آزمایش تازه و قابل حذف اجرا کنید. تست‌های وابسته به دیتابیس یا HTTP بدون این محیط نتیجهٔ موفق محسوب نمی‌شوند.
+
+### ارتقا از نسخهٔ 7.0.3
+
+Updater نسخهٔ 7.0.3 فیلد حذف فایل‌های بازنشسته را نمی‌شناسد. پس از نصب موفق بستهٔ Update نسخهٔ 7.0.4 از داخل پنل، فایل ZIP را در `storage/updates/` نگه دارید و از ریشهٔ نصب، با PHP CLI، فرمان زیر را اجرا کنید:
+
+```bash
+php retire-core-files.php --package=proma-update-YYYY-MM-DD-HH-MM-SS-name.zip --confirm=RETIRE-CORE-FILES
+```
+
+نام ZIP را با نام دقیق بستهٔ بارگذاری‌شده جایگزین کنید. این مرحله نسخهٔ نصب‌شده و checksum تمام فایل‌های بسته را بررسی می‌کند، یک بکاپ پایگاه‌داده می‌سازد و فقط فایل‌های allowlist‌شده با checksum منطبق را حذف می‌کند. فایل تغییریافته، symlink یا مسیر خارج از allowlist باعث توقف عملیات می‌شود. نصب تازهٔ 7.0.4 این مرحله را لازم ندارد. جداول و ردیف‌های قدیمی Ecommerce در دیتابیس دست‌نخورده می‌مانند.
 
 فایل `database/proma-pay-install.sql` اسکیمای نصب و داده‌های پایهٔ سامانه است؛ dump دادهٔ مشتریان نیست. بکاپ‌ها، فایل‌های `.env` واقعی، تنظیمات پایگاه، logها، cache، `storage/` و `backups/` محلی نباید به مخزن افزوده شوند.

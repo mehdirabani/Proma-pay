@@ -303,6 +303,7 @@ $coreManifest = [
     'files' => $manifestFiles,
     'preserved_baseline_files' => array_keys($preservedBaselineContents),
     'retired_baseline_files' => $retiredBaselineFiles,
+    'retired_files' => $retiredBaselineFiles,
     'omitted_non_runtime_asset_roots' => $omittedNonRuntimeAssetRoots,
     'excludes_operational_data' => true,
     'optional_plugins_included' => false,
@@ -369,7 +370,10 @@ $statusDescription = $releaseGateStatus === 'LOCAL_STATIC_UNIT_PASSED_INTEGRATIO
     : ($releaseGateStatus === 'LOCAL_TARGETED_INTEGRATION_PASSED_FULL_GATE_PENDING'
         ? 'گیت ایستا/واحد و آزمون‌های یکپارچهٔ منتخب روی MySQL 8.4 ایزوله گذشتند؛ گیت کامل پایگاه‌داده و HTTP هنوز اجرا نشده است.'
         : ($releaseGateStatus === 'RELEASE_GATE_PASSED' ? 'گیت QA کامل گذشت؛ گواهی دسترس‌پذیری تولید جداگانه بررسی می‌شود.' : 'گیت QA هنوز اجرا نشده است.'));
-$updateZip->addFromString('UPDATE_README.md', "# بستهٔ کاندید بروزرسانی Proma Pay V{$version}\n\n{$statusDescription} این بسته هنوز برای نصب عملیاتی تأیید نشده است. مبنای تفاضلی: V{$baselineVersion}.\n\n- فایل‌های تغییرکرده: " . count($updateFiles) . "\n- migrationهای جدید: " . count($migrations) . "\n- config/database.php، افزونه‌ها و داده‌های storage در این بسته نیستند.\n");
+$legacyRetirementNote = $baselineVersion === '7.0.3'
+    ? "\nبرای نصب‌هایی که از V7.0.3 ارتقا می‌یابند، updater قبلی فیلد فایل‌های بازنشسته را نمی‌شناسد. پس از نصب موفق این بسته، فرمان `php retire-core-files.php --package=proma-update-YYYY-MM-DD-HH-MM-SS-name.zip --confirm=RETIRE-CORE-FILES` را از ریشهٔ سامانه اجرا کنید؛ نام کامل ZIP بارگذاری‌شده در پنل را جایگزین کنید. این دستور فقط پس از تطبیق نسخه و checksum فایل‌های نصب‌شده، بکاپ پایگاه‌داده می‌سازد و فهرست محدود فایل‌های بازنشسته را پاک می‌کند.\n"
+    : '';
+$updateZip->addFromString('UPDATE_README.md', "# بستهٔ کاندید بروزرسانی Proma Pay V{$version}\n\n{$statusDescription} این بسته هنوز برای نصب عملیاتی تأیید نشده است. مبنای تفاضلی: V{$baselineVersion}.\n{$legacyRetirementNote}\n- فایل‌های تغییرکرده: " . count($updateFiles) . "\n- migrationهای جدید: " . count($migrations) . "\n- config/database.php، افزونه‌ها و داده‌های storage در این بسته نیستند.\n");
 if (!$updateZip->close()) {
     throw new RuntimeException('Cannot finalize candidate Update archive.');
 }

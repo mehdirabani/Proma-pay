@@ -276,6 +276,7 @@ $coreZip->addFromString('release-manifest.json', json_encode([
     'built_at' => gmdate('c'),
     'source_base' => 'Proma Pay V' . $baselineVersion,
     'files' => $hashList($coreFiles),
+    'retired_files' => $retiredFiles,
     'excludes_operational_data' => true,
         'optional_plugins_included' => false,
         'production_availability_certified' => !$localQaBuild,
@@ -326,7 +327,10 @@ foreach ($updateFiles as $archivePath => $sourcePath) {
     $updateZip->addFile($sourcePath, $archivePath);
 }
 $updateZip->addFromString('proma-update.json', $updateJson);
-$updateZip->addFromString('UPDATE_README.md', "# بروزرسانی Proma Pay V{$version}\n\nاین بسته تفاضلی فقط برای ارتقا از نسخه V{$baselineVersion} ساخته شده است. ابتدا نسخهٔ پشتیبان خودکار سامانه را بررسی کنید؛ سپس بسته را از مدیریت بروزرسانی بارگذاری و نصب کنید. فایل‌های بازنشسته پس از Snapshot حذف می‌شوند و در صورت شکست به‌روزرسانی بازمی‌گردند.\n\n- فایل‌های تغییرکرده: " . count($updateFiles) . "\n- فایل‌های بازنشسته: " . count($retiredFiles) . "\n- migrationهای جدید: " . count($migrations) . "\n- داده‌های کاربران، storage، افزونه‌ها و config/database.php در این بسته قرار ندارند.\n");
+$legacyRetirementNote = $baselineVersion === '7.0.3'
+    ? "\nبرای نصب‌هایی که از V7.0.3 ارتقا می‌یابند، updater قبلی فیلد فایل‌های بازنشسته را نمی‌شناسد. پس از نصب موفق این بسته، فرمان `php retire-core-files.php --package=proma-update-YYYY-MM-DD-HH-MM-SS-name.zip --confirm=RETIRE-CORE-FILES` را از ریشهٔ سامانه اجرا کنید؛ نام کامل ZIP بارگذاری‌شده در پنل را جایگزین کنید. این دستور فقط پس از تطبیق نسخه و checksum فایل‌های نصب‌شده، بکاپ پایگاه‌داده می‌سازد و فهرست محدود فایل‌های بازنشسته را پاک می‌کند.\n"
+    : '';
+$updateZip->addFromString('UPDATE_README.md', "# بروزرسانی Proma Pay V{$version}\n\nاین بسته تفاضلی فقط برای ارتقا از نسخه V{$baselineVersion} ساخته شده است. ابتدا نسخهٔ پشتیبان خودکار سامانه را بررسی کنید؛ سپس بسته را از مدیریت بروزرسانی بارگذاری و نصب کنید. فایل‌های بازنشسته پس از Snapshot حذف می‌شوند و در صورت شکست به‌روزرسانی بازمی‌گردند.\n{$legacyRetirementNote}\n- فایل‌های تغییرکرده: " . count($updateFiles) . "\n- فایل‌های بازنشسته: " . count($retiredFiles) . "\n- migrationهای جدید: " . count($migrations) . "\n- داده‌های کاربران، storage، افزونه‌ها و config/database.php در این بسته قرار ندارند.\n");
 $updateZip->close();
 $updateManifestPath = $distUpdates . '/PromaPay-Update-v' . $version . '-manifest.json';
 file_put_contents($updateManifestPath, $updateJson . PHP_EOL);

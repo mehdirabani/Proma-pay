@@ -1,4 +1,6 @@
-# Architecture Audit
+# Historical Architecture Audit
+
+> Historical audit snapshot. Its Ecommerce `ensureSchema()` reference predates the removal in V7.0.4 and does not describe the current runtime.
 
 ## PASSED in source scope
 

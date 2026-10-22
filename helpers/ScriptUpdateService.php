@@ -215,6 +215,150 @@ class ScriptUpdateService
         }
     }
 
+    /**
+     * Complete the file-retirement step for a package installed by an older
+     * updater that copied files but did not understand the retired_files field.
+     * The package files and target version must already be installed exactly.
+     */
+    public static function finalizeRetiredFilesFromInstalledPackage($fileName)
+    {
+        self::relaxRuntimeLimits();
+        $lock = fopen(self::baseDir() . DIRECTORY_SEPARATOR . '.install.lock', 'c');
+        if ($lock === false) {
+            throw new RuntimeException('قفل نصب بروزرسانی قابل ایجاد نیست.');
+        }
+        if (!flock($lock, LOCK_EX | LOCK_NB)) {
+            fclose($lock);
+            throw new RuntimeException('نصب بروزرسانی دیگری در حال اجرا است.');
+        }
+
+        $maintenance = false;
+        try {
+            if (class_exists('RequestMaintenanceLock')) {
+                RequestMaintenanceLock::exclusive();
+                $maintenance = true;
+            }
+            return self::finalizeRetiredFilesLocked($fileName);
+        } finally {
+            if ($maintenance) {
+                RequestMaintenanceLock::shared();
+            }
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+
+    protected static function finalizeRetiredFilesLocked($fileName)
+    {
+        $path = self::findPackage($fileName);
+        if (!$path) {
+            throw new RuntimeException('بسته بروزرسانی پیدا نشد. ابتدا بسته را در بخش بروزرسانی بارگذاری کنید.');
+        }
+        $manifest = self::readManifest($path, true);
+        if (strtolower(trim((string) ($manifest['app'] ?? ''))) !== 'proma-pay') {
+            throw new RuntimeException('این بسته برای Proma Pay معتبر نیست.');
+        }
+        $targetVersion = self::normalizeVersion($manifest['version'] ?? '');
+        $currentVersion = self::normalizeVersion(app_version());
+        if ($targetVersion === '' || $targetVersion !== $currentVersion) {
+            throw new RuntimeException('نسخه نصب‌شده باید با نسخه بسته یکسان باشد؛ ابتدا خود بسته را از مدیریت بروزرسانی نصب کنید.');
+        }
+
+        $files = self::manifestFiles($manifest);
+        $retiredFiles = self::manifestRetiredFiles($manifest);
+        if (!$retiredFiles) {
+            throw new RuntimeException('این بسته فهرست فایل بازنشسته‌ای برای پاک‌سازی ندارد.');
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($path) !== true) {
+            throw new RuntimeException('بسته بروزرسانی قابل خواندن نیست.');
+        }
+        $fileTargets = [];
+        try {
+            self::validateZipEntries($zip);
+            foreach ($files as $fileSpec) {
+                $source = self::safePackagePath($fileSpec['source']);
+                $target = self::safeTargetPath($fileSpec['target']);
+                $fileTargets[strtolower($target)] = true;
+                $expectedHash = strtolower(trim((string) ($fileSpec['sha256'] ?? '')));
+                if (!preg_match('/\A[a-f0-9]{64}\z/', $expectedHash)) {
+                    throw new RuntimeException('امضای فایل بروزرسانی معتبر نیست: ' . $source);
+                }
+                $targetPath = self::checkedUpdateTargetPath($target);
+                $entry = self::zipEntryInfo($zip, $source);
+                if (!is_file($targetPath) || is_link($targetPath)
+                    || !hash_equals($expectedHash, strtolower(hash_file('sha256', $targetPath)))
+                    || $entry === false || !hash_equals($expectedHash, $entry['sha256'])) {
+                    throw new RuntimeException('فایل‌های بسته هنوز به‌طور کامل نصب نشده‌اند یا تغییر کرده‌اند: ' . $target);
+                }
+            }
+        } finally {
+            $zip->close();
+        }
+
+        foreach ($retiredFiles as $retiredFile) {
+            $target = self::safeRetiredTargetPath($retiredFile['path']);
+            if (isset($fileTargets[strtolower($target)])) {
+                throw new RuntimeException('یک مسیر هم‌زمان برای نصب و حذف در بسته معرفی شده است: ' . $target);
+            }
+            $targetPath = self::checkedUpdateTargetPath($target);
+            if (file_exists($targetPath) && (!is_file($targetPath) || is_link($targetPath))) {
+                throw new RuntimeException('مسیر فایل بازنشسته عادی نیست: ' . $target);
+            }
+            if (is_file($targetPath)
+                && !hash_equals($retiredFile['expected_previous_sha256'], strtolower(hash_file('sha256', $targetPath)))) {
+                throw new RuntimeException('نسخه فایل بازنشسته با مبنای بسته یکسان نیست: ' . $target . '. فایل تغییرکرده را دستی بررسی کنید.');
+            }
+        }
+
+        $safety = BackupService::create('before-retired-files');
+        $originals = [];
+        $removed = [];
+        $keepSnapshots = false;
+        try {
+            foreach ($retiredFiles as $retiredFile) {
+                $target = self::safeRetiredTargetPath($retiredFile['path']);
+                $targetPath = self::checkedUpdateTargetPath($target);
+                $originals[] = self::snapshotUpdateTarget($targetPath, $target);
+                if (file_exists($targetPath)) {
+                    if (!@unlink($targetPath)) {
+                        throw new RuntimeException('حذف فایل بازنشسته انجام نشد: ' . $target);
+                    }
+                    self::pruneRetiredDirectories($target);
+                }
+                $removed[] = $target;
+            }
+        } catch (Throwable $error) {
+            $rollbackErrors = self::restoreUpdateTargets($originals);
+            if ($rollbackErrors) {
+                $keepSnapshots = true;
+                throw new RuntimeException(
+                    'پاک‌سازی فایل‌های بازنشسته شکست خورد و بازگردانی کامل نشد. بکاپ پایگاه‌داده: '
+                    . $safety['name'] . '. مسیرهای ناموفق: ' . implode(', ', $rollbackErrors) . '.',
+                    0,
+                    $error
+                );
+            }
+            throw $error;
+        } finally {
+            if (!$keepSnapshots) {
+                self::discardUpdateSnapshots($originals);
+            }
+        }
+
+        BackupService::log(
+            'update_retire_files',
+            basename($path),
+            'success',
+            'retired files: ' . count($removed) . '; safety backup: ' . $safety['name']
+        );
+        return [
+            'backup' => $safety['name'],
+            'retired_files' => $removed,
+        ];
+    }
+
     protected static function installLocked($fileName)
     {
         self::relaxRuntimeLimits();
