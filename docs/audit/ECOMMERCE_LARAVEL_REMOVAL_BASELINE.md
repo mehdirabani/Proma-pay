@@ -19,7 +19,7 @@
 | بخش | موجودی و وابستگی مشاهده‌شده | خطر | تصمیم اجرایی |
 |---|---|---|---|
 | Laravel | ۲۱۴ فایل در `laravel/` شامل `artisan`، `composer.json/lock`، اپ مستقل، migrationها، منابع UI و تست‌ها؛ به Core ریشه متصل نیست. README، راهنمای معماری و دو اسکریپت ساخت Candidate هنوز آن را معرفی یا فیلتر می‌کنند. | حذف Git به‌تنهایی فایل‌های نسخه نصب‌شده را حذف نمی‌کند؛ فایل‌های محلی و داده‌های خارج از Git نباید پاک شوند. | حذف پیاده‌سازی ردیابی‌شده از شاخه؛ حذف ارجاع‌های فعال در Build/Docs؛ افزودن حذف محدود و قابل rollback فایل‌های قدیمی به بسته Update. فایل‌های محلی خارج از فهرست ردیابی‌شده دست‌نخورده می‌مانند. |
-| Core فروشگاه داخلی | `controllers/EcommerceController.php`، `models/Ecommerce.php` و ۱۳ View زیر `views/ecommerce/`. Controller و Model تمام عملیات محصول، سبد، سفارش نقدی و درخواست اقساطی وابسته به چهار جدول `ecommerce_*` هستند. | باقی‌ماندن یک Call Site می‌تواند کلاس حذف‌شده را صدا بزند یا سفارش جدید بسازد. | حذف Controller، Model و Viewها؛ جست‌وجو و پاک‌سازی Call Siteها؛ پاسخ 410 برای مسیر قدیمی `ecommerce/*` پیش از Plugin Router. |
+| Core فروشگاه داخلی | `controllers/EcommerceController.php`، `models/Ecommerce.php` و ۱۱ View زیر `views/ecommerce/`. Controller و Model تمام عملیات محصول، سبد، سفارش نقدی و درخواست اقساطی وابسته به چهار جدول `ecommerce_*` هستند. | باقی‌ماندن یک Call Site می‌تواند کلاس حذف‌شده را صدا بزند یا سفارش جدید بسازد. | حذف Controller، Model و Viewها؛ جست‌وجو و پاک‌سازی Call Siteها؛ پاسخ 410 برای مسیر قدیمی `ecommerce/*` پیش از Plugin Router. |
 | Router و ناوبری | `core/Router.php` در حال حاضر مسیر فروشگاه را به Dashboard یا صفحه ورود Redirect می‌کند. منو، سبد Header و پیوندهای فروشگاه در `views/layouts/app.php` هستند. | Redirect مسیر قدیمی، رفتار مبهم ایجاد می‌کند و ممکن است تست‌های قدیمی را به‌اشتباه موفق بدانند. | پاسخ امن 410 بدون Redirect؛ حذف منو، سبد و Routeهای عملیاتی؛ حفظ احراز هویت و Plugin Router برای بقیه مسیرها. |
 | داشبورد و تاریخچه | `DashboardController` سفارش‌های داخلی را به Dashboard مشتری می‌دهد؛ `views/dashboard/customer.php` سفارش‌های فروشگاه را نمایش می‌دهد. `views/portal/history.php` هم CTA فروشگاه دارد؛ سوابق قراردادها در همان View مستقل‌اند. | حذف کلی بخش تاریخچه می‌تواند سابقه قرارداد و اقساط را مخفی کند. | حذف فقط بلوک سفارش داخلی و CTA فروشگاه؛ حفظ قراردادها، ضمانت‌ها، پرداخت‌ها و سوابق مبتنی بر قرارداد. |
 | تنظیمات و Email | `models/Settings.php`, `controllers/SettingsController.php`, `views/settings/index.php`, `helpers/functions.php` و `helpers/EmailService.php` شامل فلگ‌ها، متن Landing و قالب سفارش هستند. فلگ‌های runtime فعلی `false` برمی‌گردانند. تنظیمات عمومی SMTP و ایمیل در همان View/Service هستند. | حذف تنظیمات عمومی یا دست‌کاری رکوردهای نصب قبلی می‌تواند ایمیل‌های بازیابی رمز و اعلان‌های مالی را مختل کند. | حذف فرم‌ها، Defaultها، Checkboxها و ایمیل سفارش؛ نگه‌داشتن رکوردهای قدیمی دیتابیس بدون تغییر و حفظ SMTP/ایمیل عمومی. |
@@ -42,7 +42,7 @@
 
 - شاخهٔ مبنا: `173d013b81f736f90692f604bfaf841bdbba8c61` (`origin/main` در آغاز کار).
 - شاخهٔ کار: `cleanup/remove-internal-ecommerce-and-laravel-20261023`؛ نسخهٔ برنامه به V7.0.4 Candidate تغییر کرد.
-- تعداد ۲۱۴ فایل Laravel از Git حذف شدند. Controller، Model و ۱۳ View فروشگاه داخلی نیز حذف شدند.
+- تعداد ۲۱۴ فایل Laravel از Git حذف شدند. Controller، Model و ۱۱ View فروشگاه داخلی نیز حذف شدند.
 - DDL چهار جدول و دو تنظیم Seed فروشگاه از نصب تازه حذف و سه migration بازنشسته حذف شدند. هیچ فرمان `DROP`, `TRUNCATE` یا `DELETE` برای دادهٔ مشتری اجرا نشد.
 - مسیرهای قدیمی `ecommerce/*` با HTTP 410 رد می‌شوند. قراردادها، اقساط، پرداخت‌ها و تاریخچهٔ قرارداد حفظ شده‌اند. SMTP، ایمیل عمومی و بازیابی رمز حفظ شده‌اند.
 - شش افزونهٔ رسمی حفظ شدند. ممیزی Core و افزونه‌ها Connector اجرایی WooCommerce پیدا نکرد؛ قابلیت اتصال آینده باید از افزونه یا API مستقل عرضه شود.
@@ -67,4 +67,17 @@
 | Upgrade از V7.0.3 و صحت داده‌های مالی | NOT RUN | پایگاه QA دورریختنی و بستهٔ baseline در دسترس نیست |
 | HTTP، UI، ایمیل واقعی، Backup/Restore و تست‌های مالی | NOT RUN | محیط HTTP/DB/SMTP و مرورگر آزمون در این اجرا فراهم نبود |
 
-تا اجرای gate و آزمون‌های Full Install/Upgrade روی محیط QA ایزوله، این شاخه برای Merge تأیید QA کامل ندارد. PR برای بازبینی آماده می‌شود؛ Merge فقط پس از گذر واقعی شروط پذیرش مجاز است.
+### Commitها و انتشار GitHub
+
+| مرحله | SHA | Commit |
+|---|---|---|
+| ممیزی مبنا | `83faa31aae52de8ce87e2aea6adf5d66fd98173b` | `docs: audit retired ecommerce and laravel dependencies` |
+| حذف Laravel | `2ce80793f06516dafd468010aa2949d2b26ef768` | `refactor: remove abandoned laravel implementation` |
+| حذف Core فروشگاه | `d328e1e32518a1bd90afba02b353883be63ecca8` | `refactor: remove legacy internal ecommerce core` |
+| پاک‌سازی رابط و تنظیمات | `2e6946a081d902346ef412c62b3d6563c74bfa1b` | `refactor: remove ecommerce settings and interface` |
+| دیتابیس و ارتقا | `c2943729c51059bc82f9960ffbabedd895764bc7` | `refactor: retire ecommerce schema and upgrade artifacts safely` |
+| تست و مستندات | `7667c80bdcca2d7b8126dd2591436f1db512395a` | `test: enforce retired module removal invariants` |
+
+مقایسهٔ `origin/main...cleanup/remove-internal-ecommerce-and-laravel-20261023` شامل ۲۳۰ فایل حذف‌شده، ۳۷ فایل اصلاح‌شده و ۶ فایل افزوده‌شده است.
+
+Pull Request [#15](https://github.com/mehdirabani/Proma-pay/pull/15) به `main` باز است و با شاخهٔ هدف conflict ندارد. برای SHA بررسی‌شده CI status checkی ثبت نشده است. تا اجرای gate و آزمون‌های Full Install/Upgrade روی محیط QA ایزوله، این شاخه برای Merge تأیید QA کامل ندارد و Merge نشده است.
