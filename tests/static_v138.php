@@ -38,9 +38,6 @@ $uploadHelper = (string) file_get_contents($root . '/helpers/UploadHelper.php');
 $assert(strpos($uploadHelper, 'registerManagedFile') !== false, 'UploadHelper does not register uploaded files.');
 $assert(strpos($uploadHelper, 'FileRecord::archiveByPath') !== false, 'UploadHelper does not preserve managed files during lifecycle archival.');
 
-$ecommerce = (string) file_get_contents($root . '/models/Ecommerce.php');
-$assert(strpos($ecommerce, 'relateProductImage') !== false && strpos($ecommerce, "'product_image'") !== false, 'Product image records are not linked to their product.');
-
 $fileController = (string) file_get_contents($root . '/controllers/FileManagerController.php');
 foreach (['storeManagedUpload', 'updateMetadata', 'replace(', 'softDelete', 'backfillStorage'] as $needle) {
     $assert(strpos($fileController, $needle) !== false, 'File manager controller is missing ' . $needle . '.');

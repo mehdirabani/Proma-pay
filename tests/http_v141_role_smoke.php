@@ -35,7 +35,8 @@ $roles = [
     'customer' => [
         'identifier' => getenv('PROMA_QA_CUSTOMER_USER') ?: '',
         'password' => getenv('PROMA_QA_CUSTOMER_PASSWORD') ?: '',
-        'routes' => ['dashboard', 'notifications', 'portal/contracts', 'installments/panel', 'ecommerce/landing', 'ecommerce/cart', 'ecommerce/myOrders', 'portal/guaranteed', 'portal/history', 'calendar', 'chat', 'profile'],
+        'routes' => ['dashboard', 'notifications', 'portal/contracts', 'installments/panel', 'portal/guaranteed', 'portal/history', 'calendar', 'chat', 'profile'],
+        'retired_routes' => ['ecommerce/landing', 'ecommerce/cart', 'ecommerce/myOrders', 'ecommerce/placeOrder'],
         'forbidden' => 'users',
     ],
 ];
@@ -110,6 +111,12 @@ foreach ($roles as $role => $spec) {
             $response = $request($routeUrl($route), $cookieFile);
             $assertHealthy($response, $role . ' route ' . $route);
             $assert(strpos($response['url'], 'route=auth') === false, $role . ' lost its session on ' . $route . '.');
+        }
+
+        foreach (($spec['retired_routes'] ?? []) as $route) {
+            $post = $route === 'ecommerce/placeOrder' ? ['_csrf' => 'retired-route-probe'] : null;
+            $response = $request($routeUrl($route), $cookieFile, $post, false);
+            $assert($response['status'] === 410, $role . ' retired route ' . $route . ' did not return HTTP 410.');
         }
 
         if (is_string($spec['forbidden'])) {

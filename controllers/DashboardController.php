@@ -307,7 +307,6 @@ class DashboardController extends Controller
             'loyaltyProfile' => $loyaltyProfile,
             'socialLinks' => configured_social_links(Settings::allKeyed()),
             'customerWidgets' => $customerWidgets,
-            'ecommerceOrders' => ecommerce_is_enabled() ? Ecommerce::ordersForCustomer($customerId, 6) : [],
             'metrics' => [
                 'contracts' => count($contracts),
                 'installments' => count($installments),
