@@ -62,6 +62,7 @@ $staticTests = [
     'tests/legal_penalty_projection_v156.php',
     'tests/static_v156.php',
     'tests/static_v157.php',
+    'tests/static_artifact_layout.php',
     'tests/static_v158.php',
     'tests/static_v159_guarantor_document.php',
     'tests/static_v1510_template_editor.php',

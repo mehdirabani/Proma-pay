@@ -9,7 +9,7 @@ if ($candidateBuildId !== '' && !preg_match('/^[a-z0-9][a-z0-9-]{0,22}$/i', $can
     throw new RuntimeException('Candidate build ID must be a short alphanumeric suffix.');
 }
 $candidateRoot = $root . '/dist/candidates/v' . $version . ($candidateBuildId !== '' ? '-' . strtolower($candidateBuildId) : '');
-$deliveryRoot = $root . '/dist/releases';
+$deliveryRoot = $root . '/dist/releases/v' . $version;
 $bundlePath = $deliveryRoot . '/PromaPay-v' . $version . '-Candidate-Delivery' . ($candidateBuildId !== '' ? '-' . strtolower($candidateBuildId) : '') . '.zip';
 $checksumPath = $bundlePath . '.sha256';
 
