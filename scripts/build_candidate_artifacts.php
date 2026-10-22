@@ -111,8 +111,7 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
     if (preg_match('#^(?:booklet|contact-modal)-v[\w.-]*\.(?:png|pdf)$#i', $path)) {
         return true;
     }
-    if (in_array($path, ['.env', 'config/database.php', 'installed.lock', '1.xlsx', 'design-qa.md'], true)
-        || preg_match('#^v\d+\.\d+\.\d+-implementation-state\.md$#i', $path)
+    if (in_array($path, ['.env', 'config/database.php', 'installed.lock', '1.xlsx'], true)
         || preg_match('#(?:^|/)\.env(?:\.[^/]*)?$#i', $path)) {
         return true;
     }

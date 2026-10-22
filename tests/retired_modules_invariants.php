@@ -70,7 +70,10 @@ foreach ($runtimeFiles as $path) {
 }
 
 $router = $read('core/Router.php');
-$expect(str_contains($router, "preg_match('/\\\\Aecommerce(?:\\\\/|\\\\z)/i', $route)"), 'Legacy Ecommerce routes are not guarded at the router boundary.');
+$expectedRetiredRouteGuard = <<<'ROUTEGUARD'
+preg_match('/\\Aecommerce(?:\\/|\\z)/i', $route)
+ROUTEGUARD;
+$expect(str_contains($router, $expectedRetiredRouteGuard), 'Legacy Ecommerce routes are not guarded at the router boundary.');
 $expect(str_contains($router, "ErrorHandler::respond(410"), 'Legacy Ecommerce routes do not return HTTP 410.');
 $layout = $read('views/layouts/app.php');
 $expect(!str_contains($layout, 'تجارت الکترونیک') && !str_contains($layout, 'ecommerce/cart'), 'The internal store menu or cart link remains in the shared layout.');

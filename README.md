@@ -77,7 +77,7 @@ https://example.com/index.php?route=cron/calendar-reminders&token=SECRET_TOKEN
 | `tests/` | آزمون‌های ایستا، واحد، امنیتی و یکپارچه‌سازی |
 | `docs/` | راهنماهای نصب، معماری، گردش‌کار و دامنه‌های محصول |
 
-راهنمای هر افزونه در [docs/PLUGINS.md](docs/PLUGINS.md)، معماری در [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) و منطق مالی در [docs/FINANCIAL-MODULES.md](docs/FINANCIAL-MODULES.md) است. فایل‌های `plugin.json` منبع نسخه، وابستگی‌ها، مجوزها، routeها و migrationهای هر افزونه هستند.
+راهنمای هر افزونه در [docs/PLUGINS.md](docs/PLUGINS.md)، معماری در [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) و منطق مالی در [docs/FINANCIAL-MODULES.md](docs/FINANCIAL-MODULES.md) است. راهنمای اجرای نسخه دسکتاپ در [docs/desktop/quick-start.md](docs/desktop/quick-start.md) و نقشه مستندات در [docs/README.md](docs/README.md) هستند. فایل‌های `plugin.json` منبع نسخه، وابستگی‌ها، مجوزها، routeها و migrationهای هر افزونه هستند.
 
 ## توسعه و آزمون
 
