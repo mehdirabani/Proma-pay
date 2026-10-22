@@ -546,7 +546,10 @@ if (!isset($tabs[$activeTab])) {
                   <small class="ltr d-block"><?= e($package['name']) ?></small>
                 </td>
                 <td><?= e($package['version'] ?: '-') ?></td>
-                <td><?= to_persian_digits($package['files_count'] ?? 0) ?></td>
+                <td>
+                  <?= to_persian_digits($package['files_count'] ?? 0) ?>
+                  <?php if (!empty($package['retired_files_count'])): ?><small class="d-block"><?= to_persian_digits($package['retired_files_count']) ?> فایل بازنشسته پس از Snapshot حذف می‌شود</small><?php endif; ?>
+                </td>
                 <td><?= to_persian_digits($package['migrations_count'] ?? 0) ?></td>
                 <td>
                   <?php if (empty($package['is_valid'])): ?>
@@ -717,6 +720,7 @@ if (!isset($tabs[$activeTab])) {
           <?= csrf_field() ?>
           <?php $installUpdateCode = ConfirmationCode::hint('update_install_' . sha1($package['name'])); ?>
           <div class="notice info">قبل از نصب، بکاپ ایمنی ساخته می‌شود. فقط فایل‌های معرفی‌شده در manifest نصب می‌شوند. برای تایید عدد <strong class="ltr"><?= e($installUpdateCode) ?></strong> را وارد کنید.</div>
+          <?php if (!empty($package['retired_files_count'])): ?><div class="notice warning"><?= to_persian_digits($package['retired_files_count']) ?> فایل بازنشسته پس از Snapshot حذف می‌شود. این حذف جدول‌ها یا سطرهای پایگاه‌داده را تغییر نمی‌دهد؛ در صورت شکست ارتقا فایل‌ها از Snapshot برمی‌گردند.</div><?php endif; ?>
           <label>عدد تایید<input name="update_confirm_text" required inputmode="numeric" autocomplete="off" placeholder="<?= e($installUpdateCode) ?>"></label>
         </div>
         <div class="modal-footer">

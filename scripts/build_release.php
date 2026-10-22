@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/helpers/RetiredCoreFiles.php';
+
 $root = dirname(__DIR__);
 $versionInfo = require $root . '/config/version.php';
 $version = (string) ($versionInfo['application'] ?? '0.0.0');
@@ -175,7 +177,7 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
         return true;
     }
     foreach ([
-        '.git/', '.github/', '.agents/', '.codex/', '.playwright-cli/', '.project-graph/', 'skill/',
+        '.git/', '.github/', '.agents/', '.codex/', '.playwright-cli/', '.project-graph/', 'skill/', 'laravel/',
         'dist/', 'storage/', 'tmp/', 'output/', 'plugins/', 'plugin-packages/', 'node_modules/',
         'docs/', 'electron/', 'html/', 'scripts/', 'tests/', 'tools/',
     ] as $prefix) {
@@ -246,6 +248,17 @@ foreach (($baselineManifest['files'] ?? []) as $file) {
 if (!$baselineFiles) {
     throw new RuntimeException('The selected update baseline has no file checksum inventory.');
 }
+$retiredFiles = [];
+foreach (array_diff(array_keys($baselineFiles), array_keys($coreFiles)) as $removedPath) {
+    if (!RetiredCoreFiles::allows($removedPath)) {
+        throw new RuntimeException('The update baseline contains an unexpected retired Core path: ' . $removedPath);
+    }
+    $retiredFiles[] = [
+        'path' => $removedPath,
+        'expected_previous_sha256' => $baselineFiles[$removedPath],
+    ];
+}
+usort($retiredFiles, static fn (array $a, array $b): int => strcmp($a['path'], $b['path']));
 $corePath = $distCore . '/PromaPay-v' . $version . '.zip';
 $coreZip = $openZip($corePath);
 foreach ($coreFiles as $archivePath => $sourcePath) {
@@ -301,6 +314,7 @@ $updateManifest = [
     'plugin_api' => (string) ($versionInfo['plugin_api'] ?? '1.0'),
     'release_gate_status' => $localStaticOnlyBuild ? 'LOCAL_STATIC_UNIT_PASSED_INTEGRATION_BLOCKED' : 'RELEASE_GATE_PASSED',
     'files' => $updateManifestFiles,
+    'retired_files' => $retiredFiles,
     'migrations' => $migrations,
     'preserves' => ['config/database.php', 'plugins/', 'storage/', 'uploads/'],
     'production_availability_certified' => !$localQaBuild,
@@ -312,7 +326,7 @@ foreach ($updateFiles as $archivePath => $sourcePath) {
     $updateZip->addFile($sourcePath, $archivePath);
 }
 $updateZip->addFromString('proma-update.json', $updateJson);
-$updateZip->addFromString('UPDATE_README.md', "# بروزرسانی Proma Pay V{$version}\n\nاین بسته تفاضلی فقط برای ارتقا از نسخه V{$baselineVersion} ساخته شده است. ابتدا نسخهٔ پشتیبان خودکار سامانه را بررسی کنید؛ سپس بسته را از مدیریت بروزرسانی بارگذاری و نصب کنید.\n\n- فایل‌های تغییرکرده: " . count($updateFiles) . "\n- migrationهای جدید: " . count($migrations) . "\n- داده‌های کاربران، storage، افزونه‌ها و config/database.php در این بسته قرار ندارند.\n");
+$updateZip->addFromString('UPDATE_README.md', "# بروزرسانی Proma Pay V{$version}\n\nاین بسته تفاضلی فقط برای ارتقا از نسخه V{$baselineVersion} ساخته شده است. ابتدا نسخهٔ پشتیبان خودکار سامانه را بررسی کنید؛ سپس بسته را از مدیریت بروزرسانی بارگذاری و نصب کنید. فایل‌های بازنشسته پس از Snapshot حذف می‌شوند و در صورت شکست به‌روزرسانی بازمی‌گردند.\n\n- فایل‌های تغییرکرده: " . count($updateFiles) . "\n- فایل‌های بازنشسته: " . count($retiredFiles) . "\n- migrationهای جدید: " . count($migrations) . "\n- داده‌های کاربران، storage، افزونه‌ها و config/database.php در این بسته قرار ندارند.\n");
 $updateZip->close();
 $updateManifestPath = $distUpdates . '/PromaPay-Update-v' . $version . '-manifest.json';
 file_put_contents($updateManifestPath, $updateJson . PHP_EOL);

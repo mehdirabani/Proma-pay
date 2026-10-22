@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/helpers/RetiredCoreFiles.php';
+
 $root = dirname(__DIR__);
 $versionInfo = require $root . '/config/version.php';
 $version = (string) ($versionInfo['application'] ?? '0.0.0');
@@ -155,6 +157,18 @@ foreach (($baselineManifest['files'] ?? []) as $file) {
     if (is_array($file) && !empty($file['path']) && !empty($file['sha256'])) {
         $baselineHashes[(string) $file['path']] = strtolower((string) $file['sha256']);
     }
+}
+$seenRetiredFiles = [];
+foreach (($updateManifest['retired_files'] ?? []) as $retiredFile) {
+    $assert(is_array($retiredFile), 'Update retired-file entry is invalid.');
+    $retiredPath = str_replace('\\', '/', (string) ($retiredFile['path'] ?? ''));
+    $expectedPrevious = strtolower((string) ($retiredFile['expected_previous_sha256'] ?? ''));
+    $assert(RetiredCoreFiles::allows($retiredPath), 'Update retires a path outside the explicit allowlist: ' . $retiredPath);
+    $assert(isset($baselineHashes[$retiredPath]), 'Retired path is absent from the verified baseline: ' . $retiredPath);
+    $assert(isset($baselineHashes[$retiredPath]) && hash_equals($baselineHashes[$retiredPath], $expectedPrevious), 'Retired path checksum differs from the verified baseline: ' . $retiredPath);
+    $assert(!isset($coreHashes[$retiredPath]), 'Retired path remains in the Core candidate: ' . $retiredPath);
+    $assert(!isset($seenRetiredFiles[strtolower($retiredPath)]), 'Update contains a duplicate retired path: ' . $retiredPath);
+    $seenRetiredFiles[strtolower($retiredPath)] = true;
 }
 $updatePayloadBytes = 0;
 foreach (($updateManifest['files'] ?? []) as $file) {

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/FilesystemPathGuard.php';
+require_once __DIR__ . '/RetiredCoreFiles.php';
 
 class ScriptUpdateService
 {
@@ -109,6 +110,7 @@ class ScriptUpdateService
                 $info['title'] = (string) ($manifest['name'] ?? $manifest['title'] ?? 'بسته بروزرسانی');
                 $info['version'] = (string) ($manifest['version'] ?? '');
                 $info['files_count'] = count(self::manifestFiles($manifest));
+                $info['retired_files_count'] = count(self::manifestRetiredFiles($manifest));
                 $info['migrations_count'] = count(self::manifestMigrations($manifest));
                 $info['is_installable'] = $compatibility['is_installable'];
                 $info['version_state'] = $compatibility['state'];
@@ -227,11 +229,12 @@ class ScriptUpdateService
         }
         $files = self::manifestFiles($manifest);
         $migrations = self::manifestMigrations($manifest);
-        if (!$files && !$migrations) {
+        $retiredFiles = self::manifestRetiredFiles($manifest);
+        if (!$files && !$migrations && !$retiredFiles) {
             throw new RuntimeException('manifest بسته هیچ فایل یا migration برای نصب معرفی نکرده است.');
         }
 
-        self::preflightPackage($path, $files, $migrations);
+        self::preflightPackage($path, $files, $migrations, $retiredFiles);
         $safety = BackupService::create('before-update');
         $zip = new ZipArchive();
         if ($zip->open($path) !== true) {
@@ -239,6 +242,7 @@ class ScriptUpdateService
         }
 
         $installed = [];
+        $removed = [];
         $originals = [];
         $keepSnapshots = false;
         $migrationStarted = false;
@@ -251,7 +255,7 @@ class ScriptUpdateService
                 if ($expectedPrevious !== '' && (!is_file($targetPath) || !hash_equals($expectedPrevious, hash_file('sha256', $targetPath)))) {
                     throw new RuntimeException('نسخه فایل فعلی با مبنای این بروزرسانی یکسان نیست: ' . $target . '. ابتدا بسته سازگار با نسخه نصب‌شده را انتخاب کنید.');
                 }
-                $originals[] = self::snapshotUpdateTarget($targetPath);
+                $originals[] = self::snapshotUpdateTarget($targetPath, $target);
                 $actualHash = self::writeRootFileFromZip(
                     $zip,
                     $source,
@@ -262,6 +266,23 @@ class ScriptUpdateService
                     throw new RuntimeException('فایل ' . $source . ' داخل بسته پیدا نشد.');
                 }
                 $installed[] = $target;
+            }
+
+            foreach ($retiredFiles as $relativePath) {
+                $target = self::safeRetiredTargetPath($relativePath['path']);
+                $targetPath = self::checkedUpdateTargetPath($target);
+                $expectedPrevious = $relativePath['expected_previous_sha256'];
+                if (is_file($targetPath) && !hash_equals($expectedPrevious, strtolower(hash_file('sha256', $targetPath)))) {
+                    throw new RuntimeException('نسخه فایل بازنشسته با مبنای این بروزرسانی یکسان نیست: ' . $target . '. فایل تغییرکرده را دستی بررسی کنید.');
+                }
+                $originals[] = self::snapshotUpdateTarget($targetPath, $target);
+                if (file_exists($targetPath)) {
+                    if (!@unlink($targetPath)) {
+                        throw new RuntimeException('حذف فایل بازنشسته انجام نشد: ' . $target);
+                    }
+                    self::pruneRetiredDirectories($target);
+                }
+                $removed[] = $target;
             }
 
             foreach ($migrations as $migration) {
@@ -327,17 +348,18 @@ class ScriptUpdateService
             'update_install',
             basename($path),
             'success',
-            'installed files: ' . count($installed) . '; migrations: ' . count($migrations) . '; safety backup: ' . $safety['name']
+            'installed files: ' . count($installed) . '; retired files: ' . count($removed) . '; migrations: ' . count($migrations) . '; safety backup: ' . $safety['name']
         );
         return [
             'backup' => $safety['name'],
             'installed_files' => $installed,
+            'retired_files' => $removed,
             'migrations_count' => count($migrations),
         ];
     }
 
     /** Reject an incomplete or incompatible package before any backup or file replacement. */
-    protected static function preflightPackage($path, array $files, array $migrations)
+    protected static function preflightPackage($path, array $files, array $migrations, array $retiredFiles = [])
     {
         $zip = new ZipArchive();
         if ($zip->open($path) !== true) {
@@ -369,6 +391,21 @@ class ScriptUpdateService
                     }
                 }
             }
+            foreach ($retiredFiles as $relativePath) {
+                $target = self::safeRetiredTargetPath($relativePath['path']);
+                if (isset($seenTargets[strtolower($target)])) {
+                    throw new RuntimeException('مسیر مقصد در بسته بروزرسانی تکراری است: ' . $target);
+                }
+                $seenTargets[strtolower($target)] = true;
+                $targetPath = self::checkedUpdateTargetPath($target);
+                if (file_exists($targetPath) && (!is_file($targetPath) || is_link($targetPath))) {
+                    throw new RuntimeException('مسیر فایل بازنشسته عادی نیست: ' . $target);
+                }
+                $expectedPrevious = $relativePath['expected_previous_sha256'];
+                if (is_file($targetPath) && !hash_equals($expectedPrevious, strtolower(hash_file('sha256', $targetPath)))) {
+                    throw new RuntimeException('نسخه فایل بازنشسته با مبنای این بروزرسانی یکسان نیست: ' . $target . '. فایل تغییرکرده را دستی بررسی کنید.');
+                }
+            }
             foreach ($migrations as $migration) {
                 $migrationPath = self::safePackagePath($migration);
                 $sql = self::zipContent($zip, $migrationPath);
@@ -385,10 +422,10 @@ class ScriptUpdateService
     }
 
     /** Keep byte-for-byte file copies so a failed update can restore code files. */
-    protected static function snapshotUpdateTarget($targetPath)
+    protected static function snapshotUpdateTarget($targetPath, $relativePath)
     {
         if (!file_exists($targetPath)) {
-            return ['path' => $targetPath, 'snapshot' => null];
+            return ['path' => $targetPath, 'relative_path' => $relativePath, 'snapshot' => null];
         }
         if (!is_file($targetPath) || is_link($targetPath)) {
             throw new RuntimeException('مسیر مقصد بروزرسانی فایل عادی نیست.');
@@ -400,7 +437,7 @@ class ScriptUpdateService
             }
             throw new RuntimeException('تهیه نسخه موقت از فایل فعلی انجام نشد.');
         }
-        return ['path' => $targetPath, 'snapshot' => $snapshot];
+        return ['path' => $targetPath, 'relative_path' => $relativePath, 'snapshot' => $snapshot];
     }
 
     /** Reject symlinked parents before reading an old target or creating directories. */
@@ -431,8 +468,25 @@ class ScriptUpdateService
                 if (file_exists($path) && !@unlink($path)) {
                     $errors[] = $path;
                 }
-            } elseif (!@copy($snapshot, $path)) {
-                $errors[] = $path;
+            } else {
+                try {
+                    $relativePath = (string) ($original['relative_path'] ?? '');
+                    $path = self::checkedUpdateTargetPath($relativePath);
+                    $root = realpath(dirname(__DIR__));
+                    $directory = dirname($path);
+                    if ($root === false) {
+                        throw new RuntimeException('Application root is unavailable during update rollback.');
+                    }
+                    if (!is_dir($directory) && !@mkdir($directory, 0755, true) && !is_dir($directory)) {
+                        throw new RuntimeException('Cannot recreate the parent directory during update rollback.');
+                    }
+                    FilesystemPathGuard::requireParent($root, $directory, $relativePath);
+                    if (!@copy($snapshot, $path)) {
+                        throw new RuntimeException('Cannot restore the saved file.');
+                    }
+                } catch (Throwable $error) {
+                    $errors[] = $path . ' (' . $error->getMessage() . ')';
+                }
             }
         }
         return $errors;
@@ -444,6 +498,26 @@ class ScriptUpdateService
             if ($original['snapshot'] !== null) {
                 @unlink($original['snapshot']);
             }
+        }
+    }
+
+    protected static function pruneRetiredDirectories($relativePath)
+    {
+        $boundary = RetiredCoreFiles::pruneBoundary($relativePath);
+        if ($boundary === null) {
+            return;
+        }
+        $directory = dirname(str_replace('\\', '/', (string) $relativePath));
+        while ($directory !== '.' && $directory !== '') {
+            $probe = self::checkedUpdateTargetPath($directory . '/.proma-retired-path-check');
+            $directoryPath = dirname($probe);
+            if (!is_dir($directoryPath) || is_link($directoryPath) || !@rmdir($directoryPath)) {
+                return;
+            }
+            if (strtolower($directory) === strtolower($boundary)) {
+                return;
+            }
+            $directory = dirname($directory);
         }
     }
 
@@ -498,7 +572,7 @@ class ScriptUpdateService
             if (isset($manifest['app']) && stripos((string) $manifest['app'], 'proma') === false) {
                 throw new RuntimeException('این بسته برای Proma Pay معتبر نیست.');
             }
-            if (!self::manifestFiles($manifest) && !self::manifestMigrations($manifest)) {
+            if (!self::manifestFiles($manifest) && !self::manifestMigrations($manifest) && !self::manifestRetiredFiles($manifest)) {
                 if ($manifestName === 'manifest.json') {
                     return self::buildManifestFromFullPackage($zip, $path);
                 }
@@ -510,6 +584,9 @@ class ScriptUpdateService
             }
             foreach (self::manifestMigrations($manifest) as $migration) {
                 self::safePackagePath($migration);
+            }
+            foreach (self::manifestRetiredFiles($manifest) as $retiredFile) {
+                self::safeRetiredTargetPath($retiredFile['path']);
             }
             return $manifest;
         } finally {
@@ -769,6 +846,49 @@ class ScriptUpdateService
             }
         }
         return $migrations;
+    }
+
+    protected static function manifestRetiredFiles(array $manifest)
+    {
+        $entries = $manifest['retired_files'] ?? [];
+        if (!is_array($entries) || !array_is_list($entries) || count($entries) > self::MAX_PACKAGE_ENTRIES) {
+            throw new RuntimeException('فهرست فایل‌های بازنشسته در manifest معتبر نیست.');
+        }
+        $retired = [];
+        $seen = [];
+        foreach ($entries as $entry) {
+            if (!is_array($entry) || !isset($entry['path'], $entry['expected_previous_sha256'])
+                || !is_string($entry['path']) || trim($entry['path']) === '') {
+                throw new RuntimeException('مسیر فایل بازنشسته در manifest معتبر نیست.');
+            }
+            $path = self::safeRetiredTargetPath($entry['path']);
+            $expectedPrevious = strtolower(trim((string) $entry['expected_previous_sha256']));
+            if (!preg_match('/\A[a-f0-9]{64}\z/', $expectedPrevious)) {
+                throw new RuntimeException('امضای نسخه قبلی فایل بازنشسته معتبر نیست: ' . $path);
+            }
+            $key = strtolower($path);
+            if (isset($seen[$key])) {
+                throw new RuntimeException('مسیر فایل بازنشسته در manifest تکراری است: ' . $path);
+            }
+            $seen[$key] = true;
+            $retired[] = [
+                'path' => $path,
+                'expected_previous_sha256' => $expectedPrevious,
+            ];
+        }
+        return $retired;
+    }
+
+    protected static function safeRetiredTargetPath($path)
+    {
+        $path = self::safeTargetPath($path);
+        $basename = basename($path);
+        if (strlen($path) > 1024
+            || (preg_match('/^\.env(?:\..*)?$/i', $basename) && strtolower($basename) !== '.env.example')
+            || !RetiredCoreFiles::allows($path)) {
+            throw new RuntimeException('بروزرسانی اجازه حذف فایل بازنشسته ' . $path . ' را ندارد.');
+        }
+        return $path;
     }
 
     protected static function validateZipEntries(ZipArchive $zip, $validatePaths = true)

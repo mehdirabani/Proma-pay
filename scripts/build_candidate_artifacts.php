@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/helpers/RetiredCoreFiles.php';
+
 /**
  * Builds reviewable Core and differential Update ZIPs without claiming that
  * the full release gate passed. Candidate artifacts are isolated from the
@@ -121,7 +123,7 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
         return false;
     }
     foreach ([
-        '.git/', '.github/', '.agents/', '.appsec-forge/', '.codex/', '.playwright-cli/', '.project-graph/', 'skill/',
+        '.git/', '.github/', '.agents/', '.appsec-forge/', '.codex/', '.playwright-cli/', '.project-graph/', 'skill/', 'laravel/',
         'backups/', 'dist/', 'storage/', 'uploads/', 'tmp/', 'output/', 'plugins/', 'plugin-packages/', 'node_modules/',
         'docs/', 'electron/', 'html/', 'scripts/', 'tests/', 'tools/',
     ] as $prefix) {
@@ -210,10 +212,11 @@ try {
     }
     $baselineFiles = [];
     $preservedBaselineContents = [];
+    $retiredBaselineFiles = [];
 $omittedNonRuntimeAssetRoots = ['ajax', 'audio', 'json', 'pdf', 'pug', 'scss', 'video'];
 $isOmittedPackagingPath = static function (string $path) use ($normalize, $omittedNonRuntimeAssetRoots): bool {
     $path = strtolower($normalize($path));
-    if (strpos($path, 'laravel/') === 0 || strpos($path, 'backups/') === 0 || strpos($path, '.appsec-forge/') === 0) {
+    if (strpos($path, 'backups/') === 0 || strpos($path, '.appsec-forge/') === 0) {
         return true;
     }
     foreach ($omittedNonRuntimeAssetRoots as $assetRoot) {
@@ -233,10 +236,13 @@ $isOmittedPackagingPath = static function (string $path) use ($normalize, $omitt
             throw new RuntimeException('Update baseline content does not match its checksum inventory: ' . $path);
         }
         $baselineFiles[$path] = strtolower((string) $file['sha256']);
-        // The in-app updater cannot delete files. Keep baseline entries that
-        // are absent from the current source in the Core candidate so a fresh
-        // install and an in-place update produce the same file inventory.
-        if (!isset($coreFiles[$path]) && !$isOmittedPackagingPath($path)) {
+        if (!isset($coreFiles[$path]) && RetiredCoreFiles::allows($path)) {
+            $retiredBaselineFiles[] = [
+                'path' => $path,
+                'expected_previous_sha256' => $baselineFiles[$path],
+            ];
+        } elseif (!isset($coreFiles[$path]) && !$isOmittedPackagingPath($path)) {
+            // Preserve unrecognized baseline files outside the retired allowlist.
             $preservedBaselineContents[$path] = $content;
         }
     }
@@ -271,11 +277,12 @@ ksort($coreFiles, SORT_STRING);
 $currentPaths = array_fill_keys(array_keys($coreFiles), true);
 $removedPaths = array_values(array_filter(
     array_diff(array_keys($baselineFiles), array_keys($currentPaths)),
-    static fn (string $path): bool => !$isOmittedPackagingPath($path)
+    static fn (string $path): bool => !$isOmittedPackagingPath($path) && !RetiredCoreFiles::allows($path)
 ));
 if ($removedPaths) {
     throw new RuntimeException('The updater cannot remove files; candidate has runtime deletions: ' . implode(', ', $removedPaths));
 }
+usort($retiredBaselineFiles, static fn (array $a, array $b): int => strcmp($a['path'], $b['path']));
 
 $builtAt = gmdate('c');
 $sourceRevision = trim((string) shell_exec('git -C ' . escapeshellarg($root) . ' rev-parse HEAD 2>NUL'));
@@ -295,6 +302,7 @@ $coreManifest = [
     'production_availability_certified' => false,
     'files' => $manifestFiles,
     'preserved_baseline_files' => array_keys($preservedBaselineContents),
+    'retired_baseline_files' => $retiredBaselineFiles,
     'omitted_non_runtime_asset_roots' => $omittedNonRuntimeAssetRoots,
     'excludes_operational_data' => true,
     'optional_plugins_included' => false,
@@ -346,6 +354,7 @@ $updateManifest = [
     ...$sourceState,
     'production_availability_certified' => false,
     'files' => $updateManifestFiles,
+    'retired_files' => $retiredBaselineFiles,
     'migrations' => $migrations,
     'preserves' => ['config/database.php', 'plugins/', 'storage/', 'uploads/'],
 ];
