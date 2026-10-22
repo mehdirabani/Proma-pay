@@ -20,7 +20,13 @@ $corePath = $candidateRoot . '/core/PromaPay-v' . $version . '.zip';
 $baselineCandidates = [
     $root . '/dist/core/PromaPay-v' . $baselineVersion . '.zip',
     $root . '/dist/candidates/v' . $baselineVersion . '/core/PromaPay-v' . $baselineVersion . '.zip',
+    $root . '/dist/candidates/archive/v' . explode('.', $baselineVersion, 2)[0] . '/v' . $baselineVersion . '/core/PromaPay-v' . $baselineVersion . '.zip',
 ];
+$baselineCandidates = array_merge(
+    $baselineCandidates,
+    glob($root . '/dist/candidates/archive/v' . explode('.', $baselineVersion, 2)[0] . '/v' . $baselineVersion . '-*/core/PromaPay-v' . $baselineVersion . '.zip') ?: [],
+    glob($root . '/dist/candidates/archive/v' . $baselineVersion . '-*/core/PromaPay-v' . $baselineVersion . '.zip') ?: []
+);
 $baselinePath = '';
 foreach ($baselineCandidates as $candidatePath) {
     if (is_file($candidatePath)) {

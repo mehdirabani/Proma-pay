@@ -128,10 +128,13 @@ $assert(($updateManifest['minimum_version'] ?? '') === $baselineVersion, 'Update
 $baselineCandidates = [
     $root . '/dist/core/PromaPay-v' . $baselineVersion . '.zip',
     $root . '/dist/candidates/v' . $baselineVersion . '/core/PromaPay-v' . $baselineVersion . '.zip',
+    $root . '/dist/candidates/archive/v' . explode('.', $baselineVersion, 2)[0] . '/v' . $baselineVersion . '/core/PromaPay-v' . $baselineVersion . '.zip',
 ];
 $baselineCandidates = array_merge(
     $baselineCandidates,
-    glob($root . '/dist/candidates/v' . $baselineVersion . '-*/core/PromaPay-v' . $baselineVersion . '.zip') ?: []
+    glob($root . '/dist/candidates/v' . $baselineVersion . '-*/core/PromaPay-v' . $baselineVersion . '.zip') ?: [],
+    glob($root . '/dist/candidates/archive/v' . explode('.', $baselineVersion, 2)[0] . '/v' . $baselineVersion . '-*/core/PromaPay-v' . $baselineVersion . '.zip') ?: [],
+    glob($root . '/dist/candidates/archive/v' . $baselineVersion . '-*/core/PromaPay-v' . $baselineVersion . '.zip') ?: []
 );
 $expectedBaselineManifestHash = strtolower((string) ($updateManifest['baseline']['release_manifest_sha256'] ?? ''));
 $baselinePath = '';

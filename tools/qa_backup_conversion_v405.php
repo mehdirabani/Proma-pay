@@ -19,7 +19,7 @@ if ($mode === 'init') {
         if ($s->fetchColumn()) throw new RuntimeException('Owned database already exists: '.$name);
     }
     if (is_dir($app)) throw new RuntimeException('QA app already exists');
-    $z=new ZipArchive(); if ($z->open($root.'/dist/candidates/v4.0.4/core/PromaPay-Full-v4.0.4.zip')!==true) throw new RuntimeException('Missing verified archive');
+    $z=new ZipArchive(); if ($z->open($root.'/dist/candidates/archive/v4/v4.0.4/core/PromaPay-Full-v4.0.4.zip')!==true) throw new RuntimeException('Missing verified archive');
     $z->extractTo($app); $z->close();
     foreach ($second ? [$targetName] : [$rawName,$targetName] as $name) $server->exec("CREATE DATABASE `$name` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
     foreach (['helpers/BackupService.php','helpers/RestoreIntegrityService.php','core/PluginManager.php','controllers/BackupController.php','views/backup/data.php','views/settings/index.php','config/version.php','config/settings.php','manifest.json','package.json','service-worker.js'] as $file) {

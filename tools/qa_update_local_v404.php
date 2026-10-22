@@ -16,7 +16,7 @@ $fingerprint = static function () {
 };
 $before = $fingerprint();
 $name = 'proma-update-2026-10-08-09-20-00-v404-local.zip';
-copy(dirname(__DIR__) . '/dist/candidates/v4.0.4/updates/PromaPay-Update-v4.0.4-local-v4.0.2.zip', $app . '/storage/updates/' . $name);
+copy(dirname(__DIR__) . '/dist/candidates/archive/v4/v4.0.4/updates/PromaPay-Update-v4.0.4-local-v4.0.2.zip', $app . '/storage/updates/' . $name);
 $result = ScriptUpdateService::install($name);
 if (!hash_equals($before, $fingerprint())) throw new RuntimeException('Local patch changed business/credential fingerprints');
 $version = require $app . '/config/version.php';

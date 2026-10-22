@@ -12,7 +12,7 @@ if ($mode === 'init') {
     if ($pdo->query("SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = '$qaName'")->fetchColumn()) throw new RuntimeException('QA database already exists; refusing overwrite.');
     $pdo->exec("CREATE DATABASE `$qaName` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
     $zip = new ZipArchive();
-    if ($zip->open(dirname(__DIR__) . '/dist/candidates/v4.0.3/core/PromaPay-v4.0.3.zip') !== true) throw new RuntimeException('Missing verified base archive');
+    if ($zip->open(dirname(__DIR__) . '/dist/candidates/archive/v4/v4.0.3/core/PromaPay-v4.0.3.zip') !== true) throw new RuntimeException('Missing verified base archive');
     $zip->extractTo($app);
     $zip->close();
     $config['database'] = $qaName;

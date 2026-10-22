@@ -2,8 +2,8 @@
 declare(strict_types=1);
 $root = dirname(__DIR__);
 $app = 'C:/laragon/backup/proma-pay-v404-preupgrade-20261008/app';
-$source = $root . '/dist/candidates/v4.0.4/updates/PromaPay-Update-v4.0.4-from-v4.0.2.zip';
-$output = $root . '/dist/candidates/v4.0.4/updates/PromaPay-Update-v4.0.4-local-v4.0.2.zip';
+$source = $root . '/dist/candidates/archive/v4/v4.0.4/updates/PromaPay-Update-v4.0.4-from-v4.0.2.zip';
+$output = $root . '/dist/candidates/archive/v4/v4.0.4/updates/PromaPay-Update-v4.0.4-local-v4.0.2.zip';
 if (is_file($output)) throw new RuntimeException('Local candidate is immutable');
 $zip = new ZipArchive(); if ($zip->open($source) !== true) throw new RuntimeException('Missing exact 402 package');
 $manifest = json_decode($zip->getFromName('proma-update.json'), true, 512, JSON_THROW_ON_ERROR);
