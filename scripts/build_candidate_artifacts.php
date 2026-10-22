@@ -182,10 +182,17 @@ if ($explicitBaseline = trim((string) getenv('PROMA_BASELINE_ARCHIVE'))) {
     }
     // Prefer the newest earlier candidate installer too. This keeps the default
     // patch update exact for customers already running the latest candidate line.
-    foreach (glob($root . '/dist/candidates/v*/core/PromaPay-v*.zip') ?: [] as $candidate) {
-        if (preg_match('/PromaPay-v(\d+\.\d+\.\d+)\.zip$/', $candidate, $matches)
-            && version_compare($matches[1], $version, '<')) {
-            $baselineCandidates[$matches[1]] = $candidate;
+    $candidateArchivePatterns = [
+        $root . '/dist/candidates/v*/core/PromaPay-v*.zip',
+        $root . '/dist/candidates/archive/v*/core/PromaPay-v*.zip',
+        $root . '/dist/candidates/archive/v*/v*/core/PromaPay-v*.zip',
+    ];
+    foreach ($candidateArchivePatterns as $pattern) {
+        foreach (glob($pattern) ?: [] as $candidate) {
+            if (preg_match('/PromaPay-v(\d+\.\d+\.\d+)\.zip$/', $candidate, $matches)
+                && version_compare($matches[1], $version, '<')) {
+                $baselineCandidates[$matches[1]] = $candidate;
+            }
         }
     }
 }

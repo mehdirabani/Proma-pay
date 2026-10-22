@@ -10,8 +10,8 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $backupPath = getenv('PROMA_CUSTOM_BACKUP_PATH') ?: 'C:/Users/pgmme/Downloads/proma-pay-backup-2026-10-06-08-05.zip';
-$baseBundlePath = $root . '/dist/candidates/v3.0.1/core/PromaPay-Full-v3.0.1.zip';
-$outputRoot = $root . '/dist/candidates/v3.0.1.custom';
+$baseBundlePath = $root . '/dist/candidates/archive/v3/v3.0.1/core/PromaPay-Full-v3.0.1.zip';
+$outputRoot = $root . '/dist/candidates/archive/v3/v3.0.1.custom';
 $outputPath = $outputRoot . '/PromaPay-Full-v3.0.1.custom.zip';
 $fragmentPath = $root . '/scripts/custom_restore_install_fragment.php';
 $allowedPrefixes = ['uploads/', 'storage/uploads/', 'storage/secure_uploads/', 'storage/private/', 'storage/contract-templates/'];

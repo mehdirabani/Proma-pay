@@ -10,7 +10,7 @@ if($mode==='init') {
     $server=new PDO('mysql:host='.$config['host'].';charset=utf8mb4',$config['username'],$config['password'],[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
     $exists=$server->prepare('SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=?');$exists->execute([$qaDb]);
     if($exists->fetchColumn()) throw new RuntimeException('QA database already exists');
-    $zip=new ZipArchive(); if($zip->open($root.'/dist/candidates/v4.0.4/core/PromaPay-Full-v4.0.4.zip')!==true) throw new RuntimeException('Missing verified baseline');
+    $zip=new ZipArchive(); if($zip->open($root.'/dist/candidates/archive/v4/v4.0.4/core/PromaPay-Full-v4.0.4.zip')!==true) throw new RuntimeException('Missing verified baseline');
     $zip->extractTo($qaApp);$zip->close();
     require 'C:/laragon/www/proma/bootstrap.php';
     if(Model::db()->query('SELECT DATABASE()')->fetchColumn()!=='proma_pay_restore_20261007') throw new RuntimeException('Unexpected source DB');
@@ -35,10 +35,10 @@ require_once $root.'/helpers/RestoreIntegrityService.php';$before=RestoreIntegri
 RequestMaintenanceLock::exclusive();
 $name='proma-update-2026-10-08-10-00-00-v405.zip';
 if(!is_dir($app.'/storage/updates')) mkdir($app.'/storage/updates',0755,true);
-copy($root.'/dist/candidates/v4.0.5/updates/PromaPay-Update-v4.0.5.zip',$app.'/storage/updates/'.$name);
+copy($root.'/dist/candidates/archive/v4/v4.0.5/updates/PromaPay-Update-v4.0.5.zip',$app.'/storage/updates/'.$name);
 $result=ScriptUpdateService::install($name);
 RestoreIntegrityService::assertPreserved($before);
 $version=require $app.'/config/version.php';if($version['application']!=='4.0.5') throw new RuntimeException('New version missing');
-file_put_contents($root.'/storage/qa-v405-'.($mode==='live'?'local-install':'update').'-result.json',json_encode(['version'=>'4.0.5','all_preexisting_values_preserved'=>true,'files'=>count($result['installed_files']??[]),'migrations'=>$result['migrations_count']??null,'safety_backup'=>$result['backup_name']??$result['backup']??null,'update_sha256'=>hash_file('sha256',$root.'/dist/candidates/v4.0.5/updates/PromaPay-Update-v4.0.5.zip')],JSON_PRETTY_PRINT));
+file_put_contents($root.'/storage/qa-v405-'.($mode==='live'?'local-install':'update').'-result.json',json_encode(['version'=>'4.0.5','all_preexisting_values_preserved'=>true,'files'=>count($result['installed_files']??[]),'migrations'=>$result['migrations_count']??null,'safety_backup'=>$result['backup_name']??$result['backup']??null,'update_sha256'=>hash_file('sha256',$root.'/dist/candidates/archive/v4/v4.0.5/updates/PromaPay-Update-v4.0.5.zip')],JSON_PRETTY_PRINT));
 echo strtoupper($mode)."_PACKAGED_404_TO_405_OK_ALL_PREEXISTING_VALUES_PRESERVED\n";
 RequestMaintenanceLock::shared();

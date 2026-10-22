@@ -2,7 +2,7 @@
 
 ## وضعیت فعلی Candidate V2.0.4
 
-دو بستهٔ Core و Update کاندید در `dist/candidates/v2.0.4/` ساخته شدند. بررسی `tools/verify-candidate-artifacts.php` با نتیجهٔ `CANDIDATE_ARTIFACTS_V204_OK_QA_NOT_RUN` بسته‌شدن ZIP، تطبیق SHA256 manifestها، نبود مسیر/فایل عملیاتی ممنوع، وجود runtime assets و PHP lint فایل‌های استخراج‌شده را تأیید کرد. این بررسی QA نرم‌افزار، اجرای migration، نصب تازه یا ارتقای واقعی نیست. هر دو manifest صریحاً `candidate_only=true`، `release_gate_status=NOT_RUN` و `production_availability_certified=false` دارند.
+دو بستهٔ Core و Update کاندید در `dist/candidates/archive/v2/v2.0.4/` ساخته شدند. بررسی `tools/verify-candidate-artifacts.php` با نتیجهٔ `CANDIDATE_ARTIFACTS_V204_OK_QA_NOT_RUN` بسته‌شدن ZIP، تطبیق SHA256 manifestها، نبود مسیر/فایل عملیاتی ممنوع، وجود runtime assets و PHP lint فایل‌های استخراج‌شده را تأیید کرد. این بررسی QA نرم‌افزار، اجرای migration، نصب تازه یا ارتقای واقعی نیست. هر دو manifest صریحاً `candidate_only=true`، `release_gate_status=NOT_RUN` و `production_availability_certified=false` دارند.
 
 این کاندید از baseline آرشیو `PromaPay-v2.0.3.zip` ساخته شده است. Gate کامل روی source فعلی اجرا نشده است؛ بنابراین عنوان PASS ثبت‌شده در گزارش تاریخی زیر به اجرای قبلی تعلق دارد و وضعیت Candidate V2.0.4 را تأیید نمی‌کند.
 

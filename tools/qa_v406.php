@@ -5,7 +5,7 @@ $config=require 'C:/laragon/www/proma/config/database.php';
 if($mode==='init') {
     $server=new PDO('mysql:host='.$config['host'].';charset=utf8mb4',$config['username'],$config['password'],[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
     $exists=$server->prepare('SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=?');$exists->execute([$name]);if($exists->fetchColumn()||is_dir($app)) throw new RuntimeException('QA target already exists');
-    $z=new ZipArchive();if($z->open($root.'/dist/candidates/v4.0.4/core/PromaPay-Full-v4.0.4.zip')!==true) throw new RuntimeException('Baseline absent');$z->extractTo($app);$z->close();
+    $z=new ZipArchive();if($z->open($root.'/dist/candidates/archive/v4/v4.0.4/core/PromaPay-Full-v4.0.4.zip')!==true) throw new RuntimeException('Baseline absent');$z->extractTo($app);$z->close();
     $server->exec("CREATE DATABASE `$name` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");$config['database']=$name;
     file_put_contents($app.'/config/database.php',"<?php\nreturn ".var_export($config,true).";\n");file_put_contents($app.'/installed.lock','qa=1');
 }

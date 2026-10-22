@@ -24,7 +24,7 @@ Baseline captured before this audit made any source changes.
 - MySQL client binary exists at `C:\xampp\mysql\bin\mysql.exe`; no configured release-test DSN identifies an isolated test server/database.
 - Repository SQL migration inventory: 77 `.sql` files found under `database/migrations` and `plugins`.
 - PHP test inventory: 282 files found under `tests` and `plugins`.
-- Existing candidate release: `dist/candidates/v2.2.10`; its README records Release Gate `NOT RUN`, and its embedded packages are candidate-only.
+- Existing candidate release: `dist/candidates/archive/v2/v2.2.10`; its README records Release Gate `NOT RUN`, and its embedded packages are candidate-only.
 - No root-level `release-manifest.json` was found in the working tree; candidate manifests are generated inside package artifacts.
 
 ## Baseline test state
