@@ -170,7 +170,7 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
     if (preg_match('#^(?:booklet|contact-modal)-v[\w.-]*\.(?:png|pdf)$#i', $path)) {
         return true;
     }
-    if (in_array($path, ['.env', 'config/database.php', 'installed.lock', '1.xlsx', 'laravel/public/hot', 'laravel/.phpunit.result.cache'], true)
+    if (in_array($path, ['.env', 'config/database.php', 'installed.lock', '1.xlsx'], true)
         || preg_match('#(?:^|/)\.env(?:\.[^/]*)?$#i', $path)) {
         return true;
     }
@@ -178,8 +178,6 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
         '.git/', '.github/', '.agents/', '.codex/', '.playwright-cli/', '.project-graph/', 'skill/',
         'dist/', 'storage/', 'tmp/', 'output/', 'plugins/', 'plugin-packages/', 'node_modules/',
         'docs/', 'electron/', 'html/', 'scripts/', 'tests/', 'tools/',
-        'laravel/.playwright-cli/', 'laravel/bootstrap/cache/', 'laravel/docs/', 'laravel/node_modules/',
-        'laravel/releases/', 'laravel/storage/', 'laravel/tests/',
     ] as $prefix) {
         if (strpos($path, $prefix) === 0) {
             return true;

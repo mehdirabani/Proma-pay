@@ -16,7 +16,6 @@ backups/
 /output/
 /storage/testing/
 /dist/
-/laravel/releases/*.zip
 /html/RTL/node_modules/
 .env
 .env.*

@@ -109,7 +109,7 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
     if (preg_match('#^(?:booklet|contact-modal)-v[\w.-]*\.(?:png|pdf)$#i', $path)) {
         return true;
     }
-    if (in_array($path, ['.env', 'config/database.php', 'installed.lock', '1.xlsx', 'design-qa.md', 'laravel/public/hot', 'laravel/.phpunit.result.cache'], true)
+    if (in_array($path, ['.env', 'config/database.php', 'installed.lock', '1.xlsx', 'design-qa.md'], true)
         || preg_match('#^v\d+\.\d+\.\d+-implementation-state\.md$#i', $path)
         || preg_match('#(?:^|/)\.env(?:\.[^/]*)?$#i', $path)) {
         return true;
@@ -121,11 +121,9 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
         return false;
     }
     foreach ([
-        '.git/', '.github/', '.agents/', '.appsec-forge/', '.codex/', '.playwright-cli/', '.project-graph/', 'skill/', 'laravel/',
+        '.git/', '.github/', '.agents/', '.appsec-forge/', '.codex/', '.playwright-cli/', '.project-graph/', 'skill/',
         'backups/', 'dist/', 'storage/', 'uploads/', 'tmp/', 'output/', 'plugins/', 'plugin-packages/', 'node_modules/',
         'docs/', 'electron/', 'html/', 'scripts/', 'tests/', 'tools/',
-        'laravel/.playwright-cli/', 'laravel/bootstrap/cache/', 'laravel/docs/', 'laravel/node_modules/',
-        'laravel/releases/', 'laravel/storage/', 'laravel/tests/',
     ] as $prefix) {
         if (strpos($path, $prefix) === 0) {
             return true;
@@ -298,7 +296,6 @@ $coreManifest = [
     'files' => $manifestFiles,
     'preserved_baseline_files' => array_keys($preservedBaselineContents),
     'omitted_non_runtime_asset_roots' => $omittedNonRuntimeAssetRoots,
-    'omitted_separate_laravel_app' => true,
     'excludes_operational_data' => true,
     'optional_plugins_included' => false,
 ];

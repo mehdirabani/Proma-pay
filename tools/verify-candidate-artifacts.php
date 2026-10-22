@@ -75,9 +75,7 @@ foreach (['.env', 'config/database.php', 'installed.lock', '1.xlsx'] as $forbidd
 for ($index = 0; $index < $core->numFiles; $index++) {
     $name = str_replace('\\', '/', (string) $core->getNameIndex($index));
     $assert(!preg_match('#(?:^|/)\.env(?:\.[^/]*)?$#i', $name), 'Core archive includes an environment file: ' . $name);
-    foreach (['laravel/', 'laravel/storage/', 'laravel/tests/', 'laravel/docs/', 'laravel/node_modules/', 'laravel/releases/', 'laravel/bootstrap/cache/', 'laravel/.playwright-cli/'] as $laravelExcludedPrefix) {
-        $assert(strpos($name, $laravelExcludedPrefix) !== 0, 'Core archive includes Laravel operational or development data: ' . $name);
-    }
+    $assert(strpos(strtolower($name), 'laravel/') !== 0, 'Core archive includes a retired Laravel path: ' . $name);
     foreach (['docs/', 'electron/', 'scripts/', 'tests/', 'tools/', 'skill/', '.project-graph/', 'output/'] as $excludedPrefix) {
         // The official V4.0.2 baseline includes this one legacy release note.
         // The differential updater preserves it; all other docs remain excluded.

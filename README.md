@@ -64,7 +64,7 @@ https://example.com/index.php?route=cron/calendar-reminders&token=SECRET_TOKEN
 
 سورس هسته در این شاخه نسخهٔ `7.0.3` است. مقدار نسخه در `config/version.php`، `manifest.json` و `package.json` نگه‌داری می‌شود. کانال فعلی در `config/version.php` برابر `candidate` است؛ بنابراین انتشار GitHub نیز باید به‌صورت Pre-release شناخته شود. گیت ایستا و واحد قابل اجراست، اما تا وقتی گیت کامل دیتابیس و HTTP روی پایگاه QA دورریختنی اجرا نشود، این نسخه Production Ready اعلام نمی‌شود.
 
-برنامهٔ اصلی PHP سفارشی در ریشهٔ مخزن اجرا می‌شود. پوشهٔ `laravel/` یک پیاده‌سازی جداگانه و ناتمام است؛ نقطهٔ ورود، دیتابیس و چرخهٔ افزونه‌های برنامهٔ ریشه را به ارث نمی‌برد و در بستهٔ Core وارد نمی‌شود.
+برنامهٔ Proma Pay یک MVC سفارشی PHP است که از Router، مدل‌ها، سرویس‌ها و چرخهٔ افزونهٔ همین مخزن استفاده می‌کند.
 
 ## نقشهٔ سورس
 
@@ -76,7 +76,6 @@ https://example.com/index.php?route=cron/calendar-reminders&token=SECRET_TOKEN
 | `assets/`, `html/RTL/` | CSS، JavaScript، فونت و assetهای رابط |
 | `tests/` | آزمون‌های ایستا، واحد، امنیتی و یکپارچه‌سازی |
 | `docs/` | راهنماهای نصب، معماری، گردش‌کار و دامنه‌های محصول |
-| `laravel/` | پروژهٔ Laravel مستقل و در حال توسعه |
 
 راهنمای هر افزونه در [docs/PLUGINS.md](docs/PLUGINS.md)، معماری در [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) و منطق مالی در [docs/FINANCIAL-MODULES.md](docs/FINANCIAL-MODULES.md) است. فایل‌های `plugin.json` منبع نسخه، وابستگی‌ها، مجوزها، routeها و migrationهای هر افزونه هستند.
 
@@ -92,4 +91,4 @@ php tools/release-gate.php --static-only
 
 گیت کامل نیازمند `PROMA_TEST_DB_DSN` با نام دقیق دیتابیس دورریختنی `proma_qa_v204`، مقدار `PROMA_TEST_ALLOW_DESTRUCTIVE=1` و `PROMA_QA_BASE_URL` روی loopback است. آن را فقط روی پایگاه آزمایش تازه و قابل حذف اجرا کنید. تست‌های وابسته به دیتابیس یا HTTP بدون این محیط نتیجهٔ موفق محسوب نمی‌شوند.
 
-فایل `database/proma-pay-install.sql` اسکیمای نصب و داده‌های پایهٔ سامانه است؛ dump دادهٔ مشتریان نیست. بکاپ‌ها، فایل‌های `.env` واقعی، تنظیمات پایگاه، logها، cache، `storage/` و `backups/` محلی نباید به مخزن افزوده شوند. برای Laravel فقط از `laravel/.env.example` بدون اطلاعات محرمانه استفاده کنید.
+فایل `database/proma-pay-install.sql` اسکیمای نصب و داده‌های پایهٔ سامانه است؛ dump دادهٔ مشتریان نیست. بکاپ‌ها، فایل‌های `.env` واقعی، تنظیمات پایگاه، logها، cache، `storage/` و `backups/` محلی نباید به مخزن افزوده شوند.
