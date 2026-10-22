@@ -182,6 +182,14 @@ if ($explicitBaseline = trim((string) getenv('PROMA_BASELINE_ARCHIVE'))) {
             $baselinePriorities[$matches[1]] = 0;
         }
     }
+    foreach (glob($root . '/dist/core/archive/v*/v*/PromaPay-v*.zip') ?: [] as $candidate) {
+        if (preg_match('/PromaPay-v(\d+\.\d+\.\d+)\.zip$/', $candidate, $matches)
+            && version_compare($matches[1], $version, '<')
+            && !isset($baselineCandidates[$matches[1]])) {
+            $baselineCandidates[$matches[1]] = $candidate;
+            $baselinePriorities[$matches[1]] = -1;
+        }
+    }
     // Prefer candidate installers over stable Core packages. Within each
     // candidate group, exact version folders outrank build-specific snapshots.
     $candidateArchivePatterns = [

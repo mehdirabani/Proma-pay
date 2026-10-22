@@ -3,9 +3,10 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
+require_once $root . '/scripts/release_artifact_paths.php';
 $version = '4.0.2';
 $baselineVersion = '4.0.1';
-$baselinePath = $root . '/dist/core/PromaPay-v' . $baselineVersion . '.zip';
+$baselinePath = ReleaseArtifactPaths::core($root, $baselineVersion);
 $updatePath = $root . '/dist/candidates/v' . $version . '/updates/PromaPay-Update-v' . $version . '-from-v' . $baselineVersion . '.zip';
 $outputDir = $root . '/dist/candidates/v' . $version . '/core';
 $outputPath = $outputDir . '/PromaPay-v' . $version . '.zip';
