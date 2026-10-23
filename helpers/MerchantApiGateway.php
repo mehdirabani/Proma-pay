@@ -197,6 +197,22 @@ final class MerchantApiGateway
             $context->requireScope('merchant.read');
             return ['connection' => MerchantApiGatewayRepository::connectionSummary($context)];
         }
+        if ($method === 'GET' && $path === '/policies/financial') {
+            $context->requireScope('policy:read');
+            $policy = MerchantApiGatewayRepository::financialPolicy($context);
+            $document = self::publicFinancialPolicy($policy['document']);
+            $canonical = json_encode(
+                $document,
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION | JSON_THROW_ON_ERROR
+            );
+            return ['policy' => [
+                'policy_type' => 'financial',
+                'policy_version_uuid' => $policy['policy_version_uuid'],
+                'policy_sha256' => hash('sha256', $canonical),
+                'source_policy_sha256' => $policy['content_sha256'],
+                'document' => $document,
+            ]];
+        }
         if ($method === 'POST' && $path === '/quotes') {
             $context->requireScope('quote:create');
             self::assertAllowedKeys($input, ['cash_price_toman','down_payment_toman','months','interest_method']);
@@ -263,6 +279,39 @@ final class MerchantApiGateway
             'expires_at' => (new DateTimeImmutable('+15 minutes'))->format(DateTimeInterface::ATOM),
             'calculation' => $snapshot,
         ];
+    }
+
+    /** Expose only the approved display/calculation fields from the stored document. */
+    private static function publicFinancialPolicy(array $document): array
+    {
+        $rate = $document['monthly_rate_bps'] ?? null;
+        $methods = $document['methods'] ?? null;
+        if (!is_int($rate) || $rate < 0 || $rate > 10000 || !is_array($methods)) {
+            throw new DomainException('merchant_api_financial_policy_invalid');
+        }
+        $methods = array_values(array_unique(array_filter(
+            $methods,
+            static fn ($method): bool => is_string($method) && in_array($method, ['flat','compound','reducing_balance'], true)
+        )));
+        sort($methods, SORT_STRING);
+        if (!$methods) {
+            throw new DomainException('merchant_api_financial_policy_invalid');
+        }
+        $limits = [];
+        $sourceLimits = $document['limits'] ?? [];
+        if (!is_array($sourceLimits)) {
+            throw new DomainException('merchant_api_financial_policy_invalid');
+        }
+        foreach (['min_order_toman','max_order_toman','max_months','min_down_payment_bps'] as $key) {
+            if (array_key_exists($key, $sourceLimits)) {
+                if (!is_int($sourceLimits[$key]) || $sourceLimits[$key] < 0) {
+                    throw new DomainException('merchant_api_financial_policy_invalid');
+                }
+                $limits[$key] = $sourceLimits[$key];
+            }
+        }
+        ksort($limits, SORT_STRING);
+        return ['monthly_rate_bps' => $rate, 'methods' => $methods, 'limits' => $limits];
     }
 
     private static function decodeBody(string $method, string $body, array $headers): array
