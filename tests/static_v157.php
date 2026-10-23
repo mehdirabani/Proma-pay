@@ -36,4 +36,5 @@ $assert(strpos($settlementQuote, 'planForScope') !== false && strpos($settlement
 $assert(strpos($tokens, '--pp-space-1: 4px') !== false && strpos($tokens, '--pp-control: 48px') !== false, 'Shared spacing/control tokens are missing from the canonical token sheet.');
 $assert(strpos($js, 'initContractDetailWorkspace') !== false && strpos($js, 'initContractSettlement') !== false, 'Contract page CSP-safe JavaScript is missing.');
 $assert(strpos($releaseBuilder, "'.playwright-cli/'") !== false, 'Release archives can include browser QA artifacts.');
+$assert(strpos($releaseBuilder, "'.appsec-forge/'") !== false, 'Release archives can include local security-audit telemetry.');
 echo "STATIC_V157_OK\n";

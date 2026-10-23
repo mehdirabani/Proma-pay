@@ -1307,7 +1307,6 @@ CREATE TABLE IF NOT EXISTS customer_point_rules (
     UNIQUE KEY uq_customer_point_rules_activity (activity_key),
     KEY idx_customer_point_rules_active (is_active, source_type, sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS customer_point_ledger (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     customer_id BIGINT UNSIGNED NOT NULL,
@@ -1516,7 +1515,6 @@ CREATE TABLE IF NOT EXISTS `customer_credit_profiles` (
   KEY `idx_customer_credit_profiles_calculated` (`calculated_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 -- Additive Phase 2 merchant, site, connection, credential, policy, and audit schema.
 -- Existing contract, installment, payment, and ledger rows are not modified.
 CREATE TABLE IF NOT EXISTS merchant_accounts (
@@ -1693,7 +1691,6 @@ CREATE TABLE IF NOT EXISTS merchant_audit_events (
   CONSTRAINT fk_merchant_audit_connection FOREIGN KEY (connection_id) REFERENCES merchant_connections (id) ON DELETE SET NULL,
   CONSTRAINT fk_merchant_audit_actor FOREIGN KEY (actor_user_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Additive WooCommerce guarantee policy, order-contract binding, and Sayadi audit records.
 -- This schema does not rewrite contract_guarantees used by direct sales.
 SET @add_merchant_connection_full_scope_key := (
@@ -1850,6 +1847,7 @@ CREATE TABLE IF NOT EXISTS merchant_cheque_guarantee_events (
   CONSTRAINT fk_merchant_cheque_guarantee_event_owner FOREIGN KEY (guarantee_id,merchant_id,site_id,connection_id) REFERENCES merchant_cheque_guarantees (id,merchant_id,site_id,connection_id) ON DELETE RESTRICT,
   CONSTRAINT fk_merchant_cheque_guarantee_event_actor FOREIGN KEY (actor_user_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Phase 4 merchant settlement, liquidity, commission, reward, and reconciliation schema.
 -- Additive Phase 4 settlement, liquidity, commission, reward, and reconciliation ledgers.
 -- Every amount is Toman. Customer installment interest is intentionally excluded from merchant receivables.
@@ -2382,6 +2380,9 @@ CREATE TABLE IF NOT EXISTS merchant_api_webhook_outbox (
   CONSTRAINT fk_merchant_api_webhook_connection FOREIGN KEY (connection_id,merchant_id,site_id) REFERENCES merchant_connections (id,merchant_id,site_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+-- Phase 7 WooCommerce quote snapshot.
+-- Additive, tenant-scoped storage for issued quote snapshots consumed by checkout orders.
 CREATE TABLE IF NOT EXISTS merchant_api_quotes (
   quote_uuid CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   merchant_id BIGINT UNSIGNED NOT NULL,

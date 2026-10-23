@@ -33,10 +33,28 @@ foreach ([
 
 $registry = (string) file_get_contents($root . '/models/PluginRegistry.php');
 $manager = (string) file_get_contents($root . '/core/PluginManager.php');
+$executeSqlBranch = <<<'CODE'
+        if (preg_match('/^\s*EXECUTE\b/i', $sql)) {
+            $statement = $connection->query($sql);
+            if ($statement instanceof PDOStatement) {
+                try {
+                    do {
+                        if ($statement->columnCount() > 0) {
+                            $statement->fetchAll(PDO::FETCH_ASSOC);
+                        }
+                    } while ($statement->nextRowset());
+                } finally {
+                    $statement->closeCursor();
+                }
+            }
+            return;
+        }
+CODE;
 $failureRecord = <<<'CODE'
 recordMigration($manifest['id'], $name, hash('sha256', $sql), 'failed'
 CODE;
 $assert(strpos($registry, "'success'])") !== false, 'failed plugin migrations must remain retryable');
 $assert(strpos($manager, $failureRecord) !== false, 'plugin migration failures must be recorded');
+$assert(strpos($manager, $executeSqlBranch) !== false, 'SQL-level EXECUTE result sets must be drained and closed before the next migration statement');
 
 echo "PLUGIN_MIGRATION_RETRY_SAFETY_OK\n";

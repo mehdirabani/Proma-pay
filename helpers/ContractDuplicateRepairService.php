@@ -11,11 +11,19 @@ final class ContractDuplicateRepairService
             $customerFilter = ' AND c.customer_id = ?';
             $params[] = (int) $customerId;
         }
+        $accountingRelationCounts = [];
+        foreach (['plugin_accounting_sales', 'plugin_accounting_commissions', 'accounting_ledger_entries'] as $table) {
+            if (SchemaGuard::tableExists($table)) {
+                $accountingRelationCounts[] = "(SELECT COUNT(*) FROM `{$table}` accounting_relation WHERE accounting_relation.contract_id = c.id)";
+            }
+        }
+        $accountingRelationSql = $accountingRelationCounts ? '(' . implode(' + ', $accountingRelationCounts) . ')' : '0';
         $rows = Model::fetchAll(
             "SELECT c.*, u.full_name AS customer_name,
                     (SELECT COUNT(*) FROM payments p WHERE p.contract_id = c.id AND p.status = 'paid' AND COALESCE(p.is_corrected, 0) = 0) AS effective_payment_count,
                     (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.contract_id = c.id AND p.status = 'paid' AND COALESCE(p.is_corrected, 0) = 0) AS effective_payment_amount,
-                    (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_case_count
+                    (SELECT COUNT(*) FROM legal_cases lc WHERE lc.contract_id = c.id) AS legal_case_count,
+                    {$accountingRelationSql} AS accounting_relation_count
              FROM contracts c
              JOIN users u ON u.id = c.customer_id
              WHERE c.status != 'cancelled'
@@ -139,7 +147,10 @@ final class ContractDuplicateRepairService
     protected static function allRepairable(array $contracts)
     {
         foreach ($contracts as $contract) {
-            if ((int) ($contract['effective_payment_count'] ?? 0) > 0 || (int) ($contract['legal_case_count'] ?? 0) > 0 || in_array(($contract['status'] ?? ''), ['completed', 'closed'], true)) {
+            if ((int) ($contract['effective_payment_count'] ?? 0) > 0
+                || (int) ($contract['legal_case_count'] ?? 0) > 0
+                || (int) ($contract['accounting_relation_count'] ?? 0) > 0
+                || in_array(($contract['status'] ?? ''), ['completed', 'closed'], true)) {
                 return false;
             }
         }

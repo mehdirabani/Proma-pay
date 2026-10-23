@@ -235,7 +235,7 @@ class PluginManager
             PluginRegistry::setStatus($manifest['id'], PluginStatus::INSTALLED);
             $this->audit('plugin', 'installed', $manifest['id'], $userId, ['version' => $manifest['version']]);
         } catch (Throwable $e) {
-            PluginRegistry::setStatus($manifest['id'], PluginStatus::ERROR, $e->getMessage());
+            $this->markPluginFailureStatus($manifest['id'], $e, 'plugin_install_failure_status');
             throw $e;
         }
         } finally {
@@ -1173,8 +1173,22 @@ class PluginManager
                     PluginRegistry::recordMigration($manifest['id'], $name, hash('sha256', $sql), 'failed', (int) round((microtime(true) - $started) * 1000), $e->getMessage());
                 } catch (Throwable $ignored) {
                 }
-                PluginRegistry::setStatus($manifest['id'], PluginStatus::ERROR, $e->getMessage());
+                $this->markPluginFailureStatus($manifest['id'], $e, 'plugin_migration_failure_status');
                 throw new RuntimeException('اجرای migration افزونه ' . $name . ' ناموفق بود: ' . $e->getMessage(), 0, $e);
+            }
+        }
+    }
+
+    protected function markPluginFailureStatus($pluginId, Throwable $failure, string $event)
+    {
+        try {
+            PluginRegistry::setStatus($pluginId, PluginStatus::ERROR, $failure->getMessage());
+        } catch (Throwable $statusError) {
+            try {
+                ErrorHandler::log($event, $statusError, 500);
+            } catch (Throwable $loggingError) {
+                // Preserve the original installation/migration failure even if
+                // both the status update and secondary diagnostic logging fail.
             }
         }
     }
@@ -1184,10 +1198,13 @@ class PluginManager
         $sql = (string) $sql;
         $connection = Model::db();
         // SQL-level prepared-statement commands are not valid inside PDO's
-        // COM_STMT_PREPARE protocol. Some EXECUTE statements return result
-        // rows (for example the idempotent `SELECT 1` branch), so use the
-        // text protocol and drain the cursor instead of PDO::exec.
-        if (preg_match('/^\s*(?:PREPARE|EXECUTE|DEALLOCATE\s+PREPARE)\b/i', $sql)) {
+        // COM_STMT_PREPARE protocol. Affiliate migrations use these commands
+        // to add columns conditionally, so dispatch them through PDO::exec.
+        if (preg_match('/^\s*(?:PREPARE|DEALLOCATE\s+PREPARE)\b/i', $sql)) {
+            $connection->exec($sql);
+            return;
+        }
+        if (preg_match('/^\s*EXECUTE\b/i', $sql)) {
             $statement = $connection->query($sql);
             if ($statement instanceof PDOStatement) {
                 try {

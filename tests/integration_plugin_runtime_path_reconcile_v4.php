@@ -42,7 +42,13 @@ try {
 
     $resolved = PluginRegistry::find($pluginId);
     $assert(is_array($resolved) && ($resolved['status'] ?? '') === PluginStatus::ACTIVE, 'A moved active plugin should remain active after resolving its local files.');
-    $assert((string) ($resolved['path'] ?? '') === str_replace('\\', '/', $stalePath), 'Runtime resolution should not rewrite the restored historical plugin path.');
+    $resolver = new ReflectionMethod(PluginManager::class, 'resolveRuntimePlugin');
+    $resolver->setAccessible(true);
+    $runtimeResolved = $resolver->invoke(null, $resolved);
+    $assert(realpath((string) ($runtimeResolved['path'] ?? '')) === realpath($repairRoot), 'The runtime resolver should locate the plugin directory in the current install.');
+    $storedPath = str_replace('\\', '/', (string) ($resolved['path'] ?? ''));
+    $expectedStalePath = str_replace('\\', '/', $stalePath);
+    $assert($storedPath === $expectedStalePath, 'Runtime resolution should not rewrite historical registry metadata.');
     $assert(PluginManager::roleAvailable('repair_technician'), 'An active plugin role should remain available after a backup restore to a new path.');
 } finally {
     if ($original) {
