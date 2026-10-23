@@ -32,6 +32,6 @@ try {
     exit;
 }
 $healthRoute = trim((string) ($_GET['route'] ?? ''), '/');
-if (!in_array($healthRoute, ['health/live', 'health/ready'], true)) {
+if (!defined('PROMA_API_REQUEST') && !in_array($healthRoute, ['health/live', 'health/ready'], true)) {
     Auth::start();
 }
