@@ -14,8 +14,10 @@ foreach ([
     'helpers/functions.php', 'helpers/MoneyMath.php', 'helpers/InstallmentFinancialCalculator.php',
     'core/HttpException.php', 'core/Model.php', 'helpers/SchemaGuard.php',
     'helpers/MerchantApiCredentialToken.php', 'helpers/MerchantAccessContext.php',
-    'helpers/MerchantAuditMetadata.php', 'helpers/MerchantApiGateway.php',
+    'helpers/MerchantAuditMetadata.php', 'helpers/MerchantGuaranteeCalculator.php',
+    'helpers/MerchantGuaranteePolicy.php', 'helpers/MerchantApiGateway.php',
     'models/MerchantAuditLog.php', 'models/MerchantApiCredentialRepository.php',
+    'models/MerchantCentralGuaranteePolicyRepository.php',
     'models/MerchantApiGatewayRepository.php',
 ] as $file) {
     require_once $root . '/' . $file;
@@ -32,14 +34,23 @@ $pdo = new PDO(
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
 );
 $pdo->exec("SET time_zone = '+03:30'");
+$quoteTable = $pdo->query("SHOW TABLES LIKE 'merchant_api_quotes'")->fetchColumn();
+if ($quoteTable !== 'merchant_api_quotes') {
+    $quoteMigration = (string) file_get_contents($root . '/database/migrations/2026_10_23_checkout_quote_snapshot_phase7.sql');
+    $quoteMigration = preg_replace('/^--.*$/m', '', $quoteMigration);
+    foreach (array_filter(array_map('trim', explode(';', (string) $quoteMigration))) as $statement) {
+        $pdo->exec($statement);
+    }
+}
 $reflection = new ReflectionProperty(Model::class, 'pdo');
 $reflection->setAccessible(true);
 $reflection->setValue(null, $pdo);
 SchemaGuard::requireTables([
     'merchant_accounts','merchant_sites','merchant_connections','merchant_api_credentials',
     'merchant_policy_versions','merchant_policy_heads','merchant_audit_events',
-    'merchant_api_rate_limits','merchant_api_idempotency','merchant_api_order_requests','merchant_api_webhook_outbox',
+    'merchant_api_rate_limits','merchant_api_idempotency','merchant_api_order_requests','merchant_api_webhook_outbox','merchant_api_quotes',
     'merchant_contract_links','merchant_cheque_guarantees','contracts','users',
+    'merchant_central_guarantee_policy_versions','merchant_central_guarantee_policy_head',
 ]);
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) {
@@ -75,7 +86,12 @@ $connectionId = (int) Model::lastInsertId();
 $policy = [
     'monthly_rate_bps' => 250,
     'methods' => ['flat','compound'],
-    'limits' => ['min_order_toman' => 100000,'max_order_toman' => 10000000,'max_months' => 12,'min_down_payment_bps' => 1000],
+    'limits' => [
+        'min_order_toman' => 100000, 'max_order_toman' => 10000000,
+        'min_months' => 2, 'max_months' => 12,
+        'min_down_payment_bps' => 1000, 'min_down_payment_toman' => 100000,
+        'max_down_payment_bps' => 8000, 'first_due_days' => 30,
+    ],
     'internal_debug_marker' => 'must-not-be-returned-to-a-merchant',
 ];
 $policyJson = json_encode($policy, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
@@ -92,9 +108,45 @@ Model::execute(
      VALUES (?,'financial',?,?)",
     [$connectionId,$policyId,$adminId]
 );
+$guaranteeDocument = [
+    'guarantee_type' => 'sayadi_cheque',
+    'required_cheque_count' => 1,
+    'guarantee_base' => 'scheduled_installments',
+    'cheque_multiplier' => '2.0000',
+];
+$guaranteeUuid = MerchantAuditLog::newUuid();
+Model::execute(
+    "INSERT INTO merchant_policy_versions
+        (connection_id,policy_version_uuid,policy_type,version_no,policy_json,content_sha256,status,created_by,published_by,published_at)
+     VALUES (?,?,'guarantee',1,?,?,'published',?,?,NOW())",
+    [$connectionId,$guaranteeUuid,json_encode($guaranteeDocument, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+        hash('sha256',json_encode($guaranteeDocument, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)),$adminId,$adminId]
+);
+$guaranteePolicyId = (int) Model::lastInsertId();
+Model::execute(
+    "INSERT INTO merchant_policy_heads (connection_id,policy_type,policy_version_id,selected_by)
+     VALUES (?,'guarantee',?,?)",
+    [$connectionId,$guaranteePolicyId,$adminId]
+);
+Model::execute("UPDATE merchant_central_guarantee_policy_versions SET status = 'retired' WHERE status = 'published'");
+$centralPolicyUuid = MerchantAuditLog::newUuid();
+$centralVersion = (int) (Model::fetch('SELECT COALESCE(MAX(version_no),0) AS version_no FROM merchant_central_guarantee_policy_versions')['version_no'] ?? 0) + 1;
+Model::execute(
+    "INSERT INTO merchant_central_guarantee_policy_versions
+        (policy_uuid,version_no,status,enabled,minimum_multiplier_units,maximum_multiplier_units,default_multiplier_units,
+         beneficiary_legal_name,beneficiary_identifier,legal_approval_reference,created_by,published_by,published_at)
+     VALUES (?,?,'published',1,15000,25000,20000,?,'12345678901',?,?,?,NOW())",
+    [$centralPolicyUuid,$centralVersion,'Proma Pay Test Beneficiary','QA-LEGAL-' . $suffix,$adminId,$adminId]
+);
+$centralPolicyId = (int) Model::lastInsertId();
+Model::execute(
+    'INSERT INTO merchant_central_guarantee_policy_head (singleton_id,policy_version_id,selected_by)
+     VALUES (1,?,?) ON DUPLICATE KEY UPDATE policy_version_id = VALUES(policy_version_id), selected_by = VALUES(selected_by)',
+    [$centralPolicyId,$adminId]
+);
 $credential = MerchantApiCredentialRepository::issueForConnection(
     $connectionId,
-    ['merchant.read','policy:read','quote:create','order:create','contract:write','contract:read','guarantee:read','webhook:read','connection:manage'],
+    ['merchant.read','policy:read','quote:create','order:create','order:cancel','contract:write','contract:read','guarantee:read','webhook:read','connection:manage'],
     $adminId,
     new DateTimeImmutable('+1 day'),
     'test'
@@ -129,6 +181,7 @@ $assert($policyResponse['status'] === 200
     && ($publicPolicy['policy_type'] ?? '') === 'financial'
     && ($publicPolicy['document']['monthly_rate_bps'] ?? null) === 250
     && ($publicPolicy['document']['limits']['max_months'] ?? null) === 12
+    && ($publicPolicy['document']['limits']['first_due_days'] ?? null) === 30
     && !isset($publicPolicy['document']['customer_phone'])
     && !isset($publicPolicy['document']['internal_debug_marker'])
     && PromaPay_WC_Policy_Service::valid_policy($publicPolicy),
@@ -136,10 +189,32 @@ $assert($policyResponse['status'] === 200
 $quotePayload = ['cash_price_toman'=>1000000,'down_payment_toman'=>250000,'months'=>3,'interest_method'=>'flat'];
 $quoteResponse = $send('POST','/quotes',$quotePayload);
 $assert($quoteResponse['status'] === 200
-    && $quoteResponse['body']['data']['quote']['calculation']['total_installments'] === 806250,
+    && $quoteResponse['body']['data']['quote']['calculation']['total_installments'] === 806250
+    && count($quoteResponse['body']['data']['quote']['calculation']['installment_schedule'] ?? []) === 3
+    && isset($quoteResponse['body']['data']['quote']['calculation']['first_installment_due_date'])
+    && ($quoteResponse['body']['data']['quote']['guarantee']['calculation']['cheque_due_date'] ?? '')
+        === ($quoteResponse['body']['data']['quote']['calculation']['first_installment_due_date'] ?? null)
+    && ($quoteResponse['body']['data']['quote']['guarantee']['calculation']['cheque_amount_rial'] ?? 0) === 16125000,
     'Published financial policy quote was incorrect.');
+$aboveMaximumDownPayment = $quotePayload;
+$aboveMaximumDownPayment['down_payment_toman'] = 900000;
+$assert($send('POST','/quotes',$aboveMaximumDownPayment)['status'] === 422,
+    'A down payment above the published connection maximum was accepted.');
+$belowMinimumTerm = $quotePayload;
+$belowMinimumTerm['months'] = 1;
+$assert($send('POST','/quotes',$belowMinimumTerm)['status'] === 422,
+    'A term below the published connection minimum was accepted.');
+$guaranteePolicyResponse = $send('GET','/policies/guarantee');
+$publicGuarantee = $guaranteePolicyResponse['body']['data']['policy'] ?? [];
+$assert($guaranteePolicyResponse['status'] === 200
+    && ($publicGuarantee['policy_type'] ?? '') === 'guarantee'
+    && ($publicGuarantee['document']['beneficiary_legal_name'] ?? '') === 'Proma Pay Test Beneficiary'
+    && !isset($publicGuarantee['document']['legal_approval_reference'])
+    && preg_match('/\A[a-f0-9]{64}\z/D', (string) ($publicGuarantee['policy_sha256'] ?? '')) === 1,
+    'Guarantee disclosure did not return the minimized published terms.');
 
-$orderPayload = $quotePayload + ['external_order_id'=>'WC-' . $suffix];
+$quoteUuid = (string) ($quoteResponse['body']['data']['quote']['quote_uuid'] ?? '');
+$orderPayload = $quotePayload + ['external_order_id'=>'WC-' . $suffix, 'quote_uuid'=>$quoteUuid];
 $orderKey = 'phase5-order-' . $suffix . '-0001';
 $orderResponse = $send('POST','/orders',$orderPayload,$orderKey);
 $assert($orderResponse['status'] === 201
@@ -166,6 +241,7 @@ $oldPolicyRetry = $send('POST','/orders',$orderPayload,$orderKey);
 $assert($oldPolicyRetry['status'] === 200
     && $oldPolicyRetry['body']['data']['order_uuid'] === $orderUuid,
     'Completed order retry was not replayed after the active policy changed.');
+Model::execute('UPDATE merchant_policy_versions SET policy_json = ? WHERE id = ?', [$policyJson,$policyId]);
 
 $contractPayload = ['order_uuid'=>$orderUuid,'external_customer_reference'=>'customer-' . $suffix . '-opaque'];
 $contractKey = 'phase5-contract-' . $suffix . '-01';
@@ -181,12 +257,28 @@ $assert($contractState['status'] === 200
     && $contractState['body']['data']['contract']['contract_id'] === null
     && $contractState['body']['data']['contract']['contract_request_status'] === 'pending_review',
     'Contract status leaked or created an internal contract.');
+$cancelQuoteResponse = $send('POST','/quotes',$quotePayload);
+$cancelQuoteUuid = (string) ($cancelQuoteResponse['body']['data']['quote']['quote_uuid'] ?? '');
+$cancelOrderPayload = $quotePayload + ['external_order_id'=>'WC-CANCEL-' . $suffix, 'quote_uuid'=>$cancelQuoteUuid];
+$cancelOrder = $send('POST','/orders',$cancelOrderPayload,'phase5-cancel-order-' . $suffix);
+$cancelOrderUuid = (string) ($cancelOrder['body']['data']['order_uuid'] ?? '');
+$cancelPath = '/orders/' . $cancelOrderUuid . '/cancel';
+$cancelPayload = ['reason_code'=>'payment_failed'];
+$cancelKey = 'phase5-cancel-request-' . $suffix;
+$cancelResponse = $send('POST',$cancelPath,$cancelPayload,$cancelKey);
+$cancelRetry = $send('POST',$cancelPath,$cancelPayload,$cancelKey);
+$cancelState = $send('GET','/contracts/' . $cancelOrderUuid);
+$assert($cancelResponse['status'] === 202
+    && ($cancelResponse['body']['data']['status'] ?? '') === 'cancelled'
+    && $cancelRetry['status'] === 200 && ($cancelRetry['body']['data']['idempotent'] ?? false) === true
+    && ($cancelState['body']['data']['contract']['request_status'] ?? '') === 'cancelled',
+    'Pending external order cancellation did not remain tenant-scoped and idempotent.');
 $guaranteeState = $send('GET','/guarantees/' . $orderUuid);
 $assert($guaranteeState['status'] === 200 && $guaranteeState['body']['data']['guarantee']['status'] === 'not_created',
     'Guarantee endpoint returned an invalid pre-contract state.');
 $webhooks = $send('GET','/webhooks');
 $assert($webhooks['status'] === 200
-    && $webhooks['body']['data']['webhooks']['queued'] === 2,
+    && $webhooks['body']['data']['webhooks']['queued'] === 4,
     'Order/contract request webhook events were not queued.');
 $storedOrder = Model::fetch(
     'SELECT external_customer_reference_hash, request_json, quote_json
@@ -229,6 +321,8 @@ $narrowToken = MerchantApiCredentialRepository::issueForConnection(
 );
 $scopeDenied = $send('POST','/quotes',$quotePayload,null,$narrowToken['token']);
 $assert($scopeDenied['status'] === 403, 'Missing API scope was accepted.');
+$cancelScopeDenied = $send('POST',$cancelPath,$cancelPayload,'phase5-narrow-cancel-' . $suffix,$narrowToken['token']);
+$assert($cancelScopeDenied['status'] === 403, 'Missing order:cancel scope was accepted.');
 $policyScopeDenied = $send('GET','/policies/financial',null,null,$narrowToken['token']);
 $assert($policyScopeDenied['status'] === 403, 'Financial policy was returned without policy:read scope.');
 $badTransport = MerchantApiGateway::handle(

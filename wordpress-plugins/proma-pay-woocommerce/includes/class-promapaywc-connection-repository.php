@@ -11,7 +11,7 @@ final class PromaPay_WC_Connection_Repository
     {
         global $wpdb;
         $rows = $wpdb->get_results(
-            'SELECT connection_uuid,display_name,base_url,token_prefix,enabled,priority,is_default,api_version,
+            'SELECT connection_uuid,display_name,base_url,token_prefix,prepayment_gateway_id,currency_divisor,enabled,priority,is_default,api_version,
                     health_status,last_error_code,last_checked_at,last_policy_sync_at,policy_version_uuid
              FROM ' . PromaPay_WC_Installer::table('connections') . '
              ORDER BY is_default DESC,priority ASC,display_name ASC',
@@ -75,6 +75,14 @@ final class PromaPay_WC_Connection_Repository
         if ($uuid !== null && $existing === null) {
             throw new InvalidArgumentException('promapaywc_connection_not_found');
         }
+        $prepaymentGatewayId = trim((string) ($input['prepayment_gateway_id'] ?? ($existing['prepayment_gateway_id'] ?? '')));
+        if ($prepaymentGatewayId !== '' && !preg_match('/\A[a-z0-9_:-]{1,100}\z/D', $prepaymentGatewayId)) {
+            throw new InvalidArgumentException('promapaywc_prepayment_gateway_invalid');
+        }
+        $currencyDivisor = filter_var($input['currency_divisor'] ?? ($existing['currency_divisor'] ?? 1), FILTER_VALIDATE_INT);
+        if (!in_array($currencyDivisor, [1, 10], true)) {
+            throw new InvalidArgumentException('promapaywc_currency_divisor_invalid');
+        }
         $reassignDefault = $existing !== null && (int) $existing['is_default'] === 1 && $enabled === 0 && !$makeDefault;
 
         $rawToken = trim((string) ($input['bearer_token'] ?? ''));
@@ -105,6 +113,8 @@ final class PromaPay_WC_Connection_Repository
                     'base_url' => $baseUrl,
                     'token_ciphertext' => $ciphertext,
                     'token_prefix' => $prefix,
+                    'prepayment_gateway_id' => $prepaymentGatewayId,
+                    'currency_divisor' => $currencyDivisor,
                     'enabled' => $enabled,
                     'priority' => (int) $priorityValue,
                     'is_default' => ($makeDefault || ($enabled === 1 && $this->count() === 0)) ? 1 : 0,
@@ -118,6 +128,8 @@ final class PromaPay_WC_Connection_Repository
                     'base_url' => $baseUrl,
                     'token_ciphertext' => $ciphertext,
                     'token_prefix' => $prefix,
+                    'prepayment_gateway_id' => $prepaymentGatewayId,
+                    'currency_divisor' => $currencyDivisor,
                     'enabled' => $enabled,
                     'priority' => (int) $priorityValue,
                     'is_default' => $makeDefault ? 1 : ($reassignDefault ? 0 : (int) $existing['is_default']),

@@ -19,6 +19,7 @@ $assert = static function (bool $condition, string $message): void {
 $gateway = $read('helpers/MerchantApiGateway.php');
 $repository = $read('models/MerchantApiGatewayRepository.php');
 $migration = $read('database/migrations/2026_10_23_public_api_gateway_phase5.sql');
+$quoteMigration = $read('database/migrations/2026_10_23_checkout_quote_snapshot_phase7.sql');
 $installer = $read('database/proma-pay-install.sql');
 $frontController = $read('api/v1/index.php');
 $bootstrap = $read('bootstrap.php');
@@ -32,6 +33,8 @@ $assert(strpos($gateway, 'publicFinancialPolicy') !== false && strpos($gateway, 
 $assert(strpos($gateway, 'canonicalRequestHash') !== false && strpos($repository, 'merchant_api_idempotency') !== false, 'Request idempotency is not persisted.');
 $assert(strpos($repository, 'merchant_api_rate_limits') !== false, 'Per-connection rate limiting is missing.');
 $assert(strpos($repository, 'merchant_api_webhook_outbox') !== false && strpos($repository, 'INSERT IGNORE') !== false, 'Idempotent webhook outbox is missing.');
+$assert(strpos($repository, 'issueQuote') !== false && strpos($repository, 'consumeQuote') !== false && strpos($repository, 'quote_uuid') !== false, 'Financial quotes are not persisted and consumed by tenant-scoped checkout orders.');
+$assert(strpos($gateway, 'MerchantApiGatewayRepository::issueQuote') !== false && strpos($gateway, "'quote_uuid'") !== false, 'API order creation does not use an issued financial quote snapshot.');
 $assert(strpos($repository, "'pending_review'") !== false && strpos($repository, 'Contract::createWithInstallments') === false, 'API order requests must remain pending and must not create live contracts.');
 $assert(strpos($gateway, 'external_customer_reference_hash') === false && strpos($repository, 'hash(\'sha256\', $externalCustomerReference)') !== false, 'External customer references must only be retained as a digest.');
 $assert(strpos($frontController, 'PROMA_API_REQUEST') !== false && strpos($bootstrap, "!defined('PROMA_API_REQUEST')") !== false, 'API request must bypass the session-backed HTML login.');
@@ -40,5 +43,12 @@ foreach (['merchant_api_rate_limits','merchant_api_idempotency','merchant_api_or
     $assert(strpos($migration, 'CREATE TABLE IF NOT EXISTS ' . $table) !== false, 'API migration is missing table: ' . $table);
     $assert(strpos($installer, 'CREATE TABLE IF NOT EXISTS ' . $table) !== false, 'Fresh installer is missing table: ' . $table);
 }
+$assert(strpos($quoteMigration, 'CREATE TABLE IF NOT EXISTS merchant_api_quotes') !== false
+    && strpos($quoteMigration, 'consumed_order_uuid') !== false
+    && strpos($quoteMigration, 'REFERENCES merchant_connections (id,merchant_id,site_id)') !== false
+    && strpos($quoteMigration, 'REFERENCES merchant_sites (id,merchant_id)') !== false,
+    'Additive quote snapshot migration or its tenant scope is missing.');
+$assert(strpos($installer, 'CREATE TABLE IF NOT EXISTS merchant_api_quotes') !== false,
+    'Fresh installation is missing the checkout quote snapshot table.');
 
 echo "STATIC_MERCHANT_PUBLIC_API_PHASE5_OK\n";

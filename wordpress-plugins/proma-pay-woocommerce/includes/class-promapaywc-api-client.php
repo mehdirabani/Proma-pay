@@ -47,11 +47,48 @@ final class PromaPay_WC_Api_Client
 
     public function request(array $connection, string $method, string $path): array
     {
-        $allowed = ['GET /connection' => 'connection_read', 'GET /policies/financial' => 'policy_read'];
+        return $this->request_json($connection, $method, $path);
+    }
+
+    /** Send one explicitly allow-listed API operation; request data is never written to logs. */
+    public function request_json(array $connection, string $method, string $path, array $payload = [], string $idempotencyKey = ''): array
+    {
+        $allowed = [
+            'GET /connection' => 'connection_read',
+            'GET /policies/financial' => 'policy_read',
+            'GET /policies/guarantee' => 'guarantee_policy_read',
+            'POST /quotes' => 'quote_create',
+            'POST /orders' => 'order_create',
+            'POST /contracts' => 'contract_submit',
+        ];
         $method = strtoupper($method);
         $operation = $allowed[$method . ' ' . $path] ?? '';
+        if ($method === 'GET' && preg_match('#\A/contracts/[0-9a-f-]{36}\z#iD', $path)) {
+            $operation = 'contract_status_read';
+        } elseif ($method === 'GET' && preg_match('#\A/guarantees/[0-9a-f-]{36}\z#iD', $path)) {
+            $operation = 'guarantee_status_read';
+        } elseif ($method === 'POST' && preg_match('#\A/orders/[0-9a-f-]{36}/cancel\z#iD', $path)) {
+            $operation = 'order_cancel';
+        }
         if ($operation === '') {
             return self::failure('invalid_request', 'invalid_response');
+        }
+        if ($method === 'GET' && $payload !== []) {
+            return self::failure('invalid_request', 'invalid_response');
+        }
+        $allowedFields = [
+            'POST /quotes' => ['cash_price_toman','down_payment_toman','months','interest_method'],
+            'POST /orders' => ['external_order_id','quote_uuid','cash_price_toman','down_payment_toman','months','interest_method'],
+            'POST /contracts' => ['order_uuid','external_customer_reference'],
+            'ORDER_CANCEL' => ['reason_code'],
+        ];
+        $fieldSet = $allowedFields[$method . ' ' . $path] ?? ($operation === 'order_cancel' ? $allowedFields['ORDER_CANCEL'] : null);
+        if (is_array($fieldSet) && array_diff(array_keys($payload), $fieldSet) !== []) {
+            return self::failure('invalid_request', 'invalid_response');
+        }
+        if ($method === 'POST' && $path !== '/quotes'
+            && !preg_match('/\A[A-Za-z0-9][A-Za-z0-9._:-]{15,99}\z/D', $idempotencyKey)) {
+            return self::failure('invalid_idempotency_key', 'invalid_response');
         }
         $uuid = (string) ($connection['connection_uuid'] ?? '');
         $started = microtime(true);
@@ -72,6 +109,13 @@ final class PromaPay_WC_Api_Client
                     'Cache-Control' => 'no-store',
                 ],
             ];
+            if ($method === 'POST') {
+                $args['headers']['Content-Type'] = 'application/json';
+                $args['body'] = wp_json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+                if ($idempotencyKey !== '') {
+                    $args['headers']['Idempotency-Key'] = $idempotencyKey;
+                }
+            }
             $response = is_callable($this->transport)
                 ? ($this->transport)($url, $args)
                 : wp_safe_remote_request($url, $args);
