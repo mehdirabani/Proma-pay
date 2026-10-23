@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS merchant_connections (
   UNIQUE KEY uq_merchant_connection_uuid (connection_uuid),
   UNIQUE KEY uq_merchant_connection_code (connection_code),
   UNIQUE KEY uq_merchant_connection_owner (id,merchant_id),
+  UNIQUE KEY uq_merchant_connection_full_scope (id,merchant_id,site_id),
   KEY idx_merchant_connection_site_owner (site_id,merchant_id),
   KEY idx_merchant_connection_status (merchant_id,site_id,status,emergency_disabled),
   CONSTRAINT fk_merchant_connection_site_owner FOREIGN KEY (site_id,merchant_id) REFERENCES merchant_sites (id,merchant_id) ON DELETE RESTRICT,

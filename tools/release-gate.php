@@ -32,6 +32,8 @@ $staticTests = [
     'tests/installment_financial_calculator.php',
     'tests/merchant_core_phase2.php',
     'tests/static_multi_merchant_core_phase2.php',
+    'tests/merchant_guarantee_engine_phase3.php',
+    'tests/static_merchant_guarantee_engine_phase3.php',
     'tests/financial_v501.php',
     'tests/static_v501.php',
     'tests/static_v502.php',
