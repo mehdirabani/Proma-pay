@@ -4,7 +4,7 @@ Tags: installments, payments, woocommerce
 Requires at least: 7.1
 Tested up to: 7.1
 Requires PHP: 8.3
-Stable tag: 0.8.0
+Stable tag: 0.8.0-rc.1
 License: GPL-2.0-or-later
 
 Connect WooCommerce to multiple test-environment Proma Pay installment services. The plugin provides a WooCommerce gateway, live server-calculated quotes, a separate deposit order routed to the merchant's selected online bank gateway, and pending contract/guarantee synchronization.
@@ -36,7 +36,7 @@ If the WordPress authentication salts change, stored encrypted credentials and p
 
 == Changelog ==
 
-= 0.8.0 =
+= 0.8.0-rc.1 =
 * Add Classic Checkout and Checkout Blocks installment gateway, live quote validation, merchant bank deposit child orders, and HPOS CRUD support.
 * Persist and consume tenant-scoped financial quote snapshots so order creation cannot silently recalculate different terms.
 * Keep the parent order unpaid until contract and guarantee review; restrict refunds to full deposit cancellation and refund.

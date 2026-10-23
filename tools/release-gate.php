@@ -40,6 +40,8 @@ $staticTests = [
     'tests/static_merchant_public_api_phase5.php',
     'tests/merchant_plugin_integration_phase8.php',
     'tests/static_merchant_dashboard_phase9.php',
+    'tests/static_final_integration_phase10.php',
+    'tests/woocommerce_release_package_phase10.php',
     'wordpress-plugins/proma-pay-woocommerce/tests/unit.php',
     'wordpress-plugins/proma-pay-woocommerce/tests/static.php',
     'tests/financial_v501.php',

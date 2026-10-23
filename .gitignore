@@ -16,6 +16,9 @@ backups/
 /output/
 /storage/testing/
 /dist/
+!/dist/
+!/dist/plugins/
+!/dist/plugins/PromaPay-WooCommerce-v0.8.0-rc.1.zip
 /html/RTL/node_modules/
 .env
 .env.*

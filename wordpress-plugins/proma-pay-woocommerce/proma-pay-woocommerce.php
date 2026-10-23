@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Proma Pay for WooCommerce
  * Description: Connect a WordPress site to approved Proma Pay installment services.
- * Version: 0.8.0
+ * Version: 0.8.0-rc.1
  * Requires PHP: 8.3
  * Text Domain: proma-pay-woocommerce
  * Domain Path: /languages
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PROMA_PAY_WC_VERSION', '0.8.0');
+define('PROMA_PAY_WC_VERSION', '0.8.0-rc.1');
 define('PROMA_PAY_WC_FILE', __FILE__);
 define('PROMA_PAY_WC_PATH', plugin_dir_path(__FILE__));
 define('PROMA_PAY_WC_URL', plugin_dir_url(__FILE__));
