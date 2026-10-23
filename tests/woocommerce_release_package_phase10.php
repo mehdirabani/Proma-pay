@@ -9,7 +9,7 @@ if (!preg_match('/^\s*\*\s*Version:\s*(0\.8\.0-rc\.1)\s*$/m', $main, $versionMat
     throw new RuntimeException('Expected the documented WooCommerce release-candidate version.');
 }
 $version = $versionMatch[1];
-$packagePath = $root . '/dist/plugins/PromaPay-WooCommerce-v' . $version . '.zip';
+$packagePath = $root . '/dist/plugins/pre-release/proma-pay-woocommerce/PromaPay-WooCommerce-v' . $version . '.zip';
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) throw new RuntimeException($message);
 };

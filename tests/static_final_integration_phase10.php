@@ -17,6 +17,7 @@ $worker = $read('tests/support/merchant_api_order_worker.php');
 $wooStatic = $read('wordpress-plugins/proma-pay-woocommerce/tests/static.php');
 $installer = $read('wordpress-plugins/proma-pay-woocommerce/includes/class-promapaywc-installer.php');
 $releaseGate = $read('tools/release-gate.php');
+$packageBuilder = $read('tools/package-woocommerce-plugin.php');
 $releaseNotes = $read('docs/releases/PROMAPAY-WOOCOMMERCE-0.8.0-RC1.md');
 $assert(strpos($apiIntegration, 'proc_open') !== false
     && strpos($apiIntegration, 'Idempotency-Key') !== false
@@ -38,6 +39,8 @@ $assert(strpos($releaseGate, 'tests/woocommerce_release_package_phase10.php') !=
     && strpos($releaseGate, 'tests/static_final_integration_phase10.php') !== false
     && strpos($releaseGate, 'tests/integration_merchant_public_api_phase5.php') !== false,
     'Final release evidence is not wired into the release gate.');
+$assert(strpos($packageBuilder, '/dist/plugins/pre-release/proma-pay-woocommerce') !== false,
+    'The prerelease package is not isolated from stable plugin release inputs.');
 $assert(strpos($releaseNotes, 'Production Ready نیست') !== false
     && strpos($releaseNotes, 'بانکی زنده') !== false,
     'Prerelease notes omit production and live-bank limitations.');

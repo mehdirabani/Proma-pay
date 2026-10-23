@@ -1,6 +1,7 @@
 # Proma Pay for WooCommerce 0.8.0-rc.1
 
 این یک prerelease برای آزمایش staging است، نه انتشار عملیاتی.
+بسته: `dist/plugins/pre-release/proma-pay-woocommerce/PromaPay-WooCommerce-v0.8.0-rc.1.zip`
 
 ## موارد افزوده
 

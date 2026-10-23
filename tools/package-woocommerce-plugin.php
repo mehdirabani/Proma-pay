@@ -59,7 +59,7 @@ $manifest = [
     'financial_mode' => 'test_credentials_only',
 ];
 $manifestJson = json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
-$outputDirectory = $root . '/dist/plugins';
+$outputDirectory = $root . '/dist/plugins/pre-release/proma-pay-woocommerce';
 if (!is_dir($outputDirectory) && !mkdir($outputDirectory, 0775, true) && !is_dir($outputDirectory)) {
     throw new RuntimeException('Unable to create plugin release output directory.');
 }
