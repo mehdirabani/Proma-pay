@@ -26,10 +26,16 @@ $policy = $read('includes/class-promapaywc-policy-service.php');
 $gateway = $read('includes/class-promapaywc-gateway.php');
 $commerce = $read('includes/class-promapaywc-commerce.php');
 $blocks = $read('includes/class-promapaywc-blocks-integration.php');
+$bakalaAdapter = $read('includes/class-promapaywc-bakala-compatibility-adapter.php');
 $adapter = $read('includes/class-promapaywc-payment-adapter.php');
 $quoteService = $read('includes/class-promapaywc-quote-service.php');
 $blocksClient = $read('assets/js/checkout-blocks.js');
 $assert(str_contains($main, 'Plugin Name: Proma Pay for WooCommerce') && str_contains($main, 'register_activation_hook'), 'Installable WordPress plugin entry point is missing.');
+$assert(str_contains($main, 'class-promapaywc-bakala-compatibility-adapter.php')
+    && str_contains($commerce, 'PromaPay_WC_BakalaCompatibilityAdapter::register()')
+    && str_contains($bakalaAdapter, "'woocommerce_single_product_summary'")
+    && str_contains($bakalaAdapter, "'woocommerce_after_single_product_summary'")
+    && str_contains($bakalaAdapter, 'get_template') && str_contains($bakalaAdapter, 'get_stylesheet'), 'Bakala theme detection, standard product placement, or safe fallback is missing.');
 $assert(str_contains($main, "add_action('admin_init'") && str_contains($installer, "current_user_can('manage_proma_pay_connections')"), 'Schema upgrades are not restricted to an authorized site manager.');
 $assert(str_contains($admin, 'current_user_can') && str_contains($admin, 'check_admin_referer'), 'Admin actions are missing capability and nonce checks.');
 $assert(str_contains($admin, 'require_admin_tls') && str_contains($admin, 'is_ssl()') && str_contains($admin, "wp_get_environment_type() === 'local'"), 'Connection secrets can be submitted through non-TLS production administration.');
@@ -52,5 +58,11 @@ $assert(str_contains($commerce, 'wc_get_checkout_order_received_url') && str_con
 $assert(str_contains($gateway, 'promapaywc_partial_refund_unsupported') && str_contains($gateway, 'depositOrder->is_paid()'), 'Refund flow does not prevent partial or unpaid deposit refunds.');
 $assert(str_contains($quoteService, 'valid_guarantee') && str_contains($quoteService, 'cheque_due_date') && str_contains($quoteService, 'total_customer_payable'), 'Checkout does not verify the quote, guarantee, and first due date.');
 $assert(str_contains($gateway, 'product_widget_enabled') && str_contains($commerce, 'product_widget_enabled()'), 'Product estimate visibility is not configurable.');
+$assert(str_contains($gateway, 'is_product_taxonomy') && str_contains($gateway, 'PromaPay_WC_BakalaCompatibilityAdapter::is_bakala()'), 'Product quote script is not available on Bakala quick-view surfaces.');
+$productWidget = $read('assets/js/product-widget.js');
+$assert(str_contains($productWidget, 'AbortController') && str_contains($productWidget, 'requests.get($widget[0]) !== state')
+    && str_contains($productWidget, "'found_variation.promapaywc'")
+    && str_contains($productWidget, 'variation.is_in_stock')
+    && str_contains($productWidget, 'MutationObserver'), 'Product quote updates do not reject stale responses, unavailable variations, or dynamically inserted widgets.');
 
 echo "PROMAPAY_WC_PHASE7_STATIC_OK\n";

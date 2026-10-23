@@ -15,15 +15,19 @@ $_SERVER['REMOTE_ADDR'] = '198.51.100.141';
 
 require dirname(__DIR__) . '/bootstrap.php';
 
-$bufferedQueryAttribute = defined('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')
-    ? constant('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')
-    : constant('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY');
-$pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_DB_PASSWORD') ?: '', [
+$pdoOptions = [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES => false,
-    $bufferedQueryAttribute => false,
-]);
+];
+$mysqlBufferedQueryAttribute = defined('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')
+    ? constant('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')
+    : (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY') ? constant('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY') : null);
+if ($mysqlBufferedQueryAttribute === null) {
+    throw new RuntimeException('This PHP build does not expose the PDO MySQL buffered-query option.');
+}
+$pdoOptions[$mysqlBufferedQueryAttribute] = false;
+$pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_DB_PASSWORD') ?: '', $pdoOptions);
 $property = new ReflectionProperty(Model::class, 'pdo');
 
 $property->setValue(null, $pdo);
@@ -187,8 +191,58 @@ $duplicatePayload = [
     'notes' => 'QA duplicate repair ' . $suffix,
     'created_by' => $adminId,
 ];
-$canonicalDuplicateId = Contract::createWithInstallments($duplicatePayload);
-$archivableDuplicateId = Contract::createWithInstallments($duplicatePayload);
+$accountingLinkedCanonicalId = Contract::createWithInstallments($duplicatePayload);
+$accountingLinkedDuplicateId = Contract::createWithInstallments($duplicatePayload);
+$duplicateGroups = ContractDuplicateRepairService::scan(100, $customerId);
+$accountingLinkedGroup = null;
+foreach ($duplicateGroups as $candidate) {
+    $candidateIds = array_map('intval', array_column($candidate['duplicates'] ?? [], 'id'));
+    if ((int) ($candidate['canonical']['id'] ?? 0) === $accountingLinkedCanonicalId && in_array($accountingLinkedDuplicateId, $candidateIds, true)) {
+        $accountingLinkedGroup = $candidate;
+        break;
+    }
+}
+$assert($accountingLinkedGroup !== null, 'Duplicate contract dry-run did not identify the accounting-linked repair group.');
+$accountingRelationCount = (int) ($accountingLinkedGroup['canonical']['accounting_relation_count'] ?? 0);
+foreach ($accountingLinkedGroup['duplicates'] as $accountingLinkedContract) {
+    $accountingRelationCount += (int) ($accountingLinkedContract['accounting_relation_count'] ?? 0);
+}
+if ($accountingRelationCount > 0) {
+    $assert(empty($accountingLinkedGroup['auto_repairable']), 'Dry-run marked an accounting-linked duplicate group as automatically repairable.');
+}
+
+$canonicalDuplicateId = null;
+$archivableDuplicateId = null;
+$directDuplicatePrefix = 'QAD' . strtoupper($suffix);
+$directDuplicateSerial = (int) (microtime(true) * 1000);
+for ($duplicateIndex = 0; $duplicateIndex < 2; $duplicateIndex++) {
+    Model::execute(
+        'INSERT INTO contracts (customer_id, contract_number, prefix, serial, principal_amount, down_payment_amount, monthly_interest_rate, interest_type, months, start_date, first_due_date, status, assigned_operator_id, notes, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+        [
+            $customerId,
+            $directDuplicatePrefix . '-' . $duplicateIndex,
+            $directDuplicatePrefix,
+            $directDuplicateSerial + $duplicateIndex,
+            $duplicatePayload['principal_amount'],
+            $duplicatePayload['down_payment_amount'],
+            $duplicatePayload['monthly_interest_rate'],
+            $duplicatePayload['interest_type'],
+            $duplicatePayload['months'],
+            $duplicatePayload['start_date'],
+            $duplicatePayload['first_due_date'],
+            'active',
+            $operatorId,
+            'QA archiveable duplicate ' . $suffix,
+        ]
+    );
+    $insertedContractId = (int) Model::lastInsertId();
+    if ($duplicateIndex === 0) {
+        $canonicalDuplicateId = $insertedContractId;
+    } else {
+        $archivableDuplicateId = $insertedContractId;
+    }
+}
 $duplicateGroups = ContractDuplicateRepairService::scan(100, $customerId);
 $duplicateGroup = null;
 foreach ($duplicateGroups as $candidate) {
@@ -198,7 +252,7 @@ foreach ($duplicateGroups as $candidate) {
         break;
     }
 }
-$assert($duplicateGroup && !empty($duplicateGroup['auto_repairable']), 'Duplicate contract dry-run did not identify a safe repair group.');
+$assert($duplicateGroup && !empty($duplicateGroup['auto_repairable']), 'Dry-run did not identify a safe duplicate group without accounting links.');
 $archivedDuplicates = ContractDuplicateRepairService::archiveDuplicates($canonicalDuplicateId, [$archivableDuplicateId], $adminId);
 $assert($archivedDuplicates === 1, 'Duplicate repair did not archive exactly one contract.');
 $assert((Contract::find($canonicalDuplicateId)['status'] ?? '') === 'active', 'Duplicate repair changed the canonical contract.');

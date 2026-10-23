@@ -36,9 +36,14 @@ $void = InstallmentChangeService::void((int) $changed[0]['id'], ['version_token'
 $assert(($void['mode'] ?? '') === 'applied', 'Safe installment void was not applied.');
 $assert((Model::fetch('SELECT status FROM installments WHERE id = ?', [(int) $changed[0]['id']])['status'] ?? '') === 'cancelled', 'Installment void did not retain logical cancellation.');
 $assert((int) (Model::fetch('SELECT COUNT(*) AS total FROM installment_voids WHERE installment_id = ?', [(int) $changed[0]['id']])['total'] ?? 0) === 1, 'Installment void lacks immutable record.');
-$costLogId = 900000000 + random_int(1, 999999);
-Model::execute("INSERT INTO legal_cases (customer_id, contract_id, status, stage, created_at, updated_at, legal_referred_at) VALUES (?, ?, 'active', 'legal', NOW(), NOW(), NOW())", [$customerId, $contractId]);
+$legalCaseId = 0;
+Model::execute(
+    "INSERT INTO legal_cases (customer_id, contract_id, status, stage, notes, expense_amount, legal_referred_at, created_at, updated_at)
+     VALUES (?, ?, 'referred', 'QA referral', 'Approved-cost billing precondition', 0, NOW(), NOW(), NOW())",
+    [$customerId, $contractId]
+);
 $legalCaseId = (int) Model::lastInsertId();
+$costLogId = 900000000 + random_int(1, 999999);
 LegalCaseCostService::syncFromLegalLog($costLogId, ['legal_case_id' => $legalCaseId, 'contract_id' => $contractId, 'cost_amount' => 50000, 'cost_type' => 'هزینه دادرسی', 'action_date' => '2027-01-01', 'description' => 'QA cost'], 'هزینه QA', $adminId);
 $cost = Model::fetch('SELECT * FROM legal_case_costs WHERE source_legal_log_id = ?', [$costLogId]);
 $assert(($cost['approval_status'] ?? '') === 'pending_approval', 'New legal cost must require approval.');

@@ -219,7 +219,74 @@ $assert($guaranteePolicyResponse['status'] === 200
 $quoteUuid = (string) ($quoteResponse['body']['data']['quote']['quote_uuid'] ?? '');
 $orderPayload = $quotePayload + ['external_order_id'=>'WC-' . $suffix, 'quote_uuid'=>$quoteUuid];
 $orderKey = 'phase5-order-' . $suffix . '-0001';
-$orderResponse = $send('POST','/orders',$orderPayload,$orderKey);
+$orderWorkerSpec = [
+    'dsn' => $dsn,
+    'db_user' => trim((string) (getenv('PROMA_TEST_DB_USER') ?: 'root')),
+    'db_password' => (string) getenv('PROMA_TEST_DB_PASSWORD'),
+    'bearer' => $token,
+    'idempotency_key' => $orderKey,
+    'body' => json_encode($orderPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+    'start_file' => sys_get_temp_dir() . '/proma-api-phase10-go-' . $suffix,
+];
+$workerPath = $root . '/tests/support/merchant_api_order_worker.php';
+$workerProcesses = [];
+try {
+    if (!function_exists('proc_open') || !is_file($workerPath)) {
+        throw new RuntimeException('Concurrent API idempotency test requires proc_open and the worker script.');
+    }
+    for ($workerIndex = 0; $workerIndex < 2; $workerIndex++) {
+        $pipes = [];
+        $process = proc_open(
+            [PHP_BINARY, $workerPath],
+            [0 => ['pipe','r'], 1 => ['pipe','w'], 2 => ['pipe','w']],
+            $pipes,
+            $root,
+            null,
+            ['bypass_shell' => true]
+        );
+        if (!is_resource($process)) {
+            throw new RuntimeException('Unable to start concurrent API order worker.');
+        }
+        fwrite($pipes[0], json_encode($orderWorkerSpec, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+        fclose($pipes[0]);
+        $workerProcesses[] = ['process' => $process, 'pipes' => $pipes];
+    }
+    $barrier = fopen($orderWorkerSpec['start_file'], 'wb');
+    if (!is_resource($barrier)) {
+        throw new RuntimeException('Unable to open concurrent API worker barrier.');
+    }
+    fclose($barrier);
+    $workerResponses = [];
+    foreach ($workerProcesses as $worker) {
+        $stdout = stream_get_contents($worker['pipes'][1]);
+        $stderr = stream_get_contents($worker['pipes'][2]);
+        fclose($worker['pipes'][1]);
+        fclose($worker['pipes'][2]);
+        $exitCode = proc_close($worker['process']);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Concurrent API worker failed: ' . substr((string) $stderr, 0, 500));
+        }
+        $workerResponses[] = json_decode((string) $stdout, true, 64, JSON_THROW_ON_ERROR);
+    }
+    $createdResponses = array_values(array_filter($workerResponses, static fn (array $response): bool => (int) ($response['status'] ?? 0) === 201));
+    $replayedResponses = array_values(array_filter($workerResponses, static fn (array $response): bool => (int) ($response['status'] ?? 0) === 200));
+    $assert(count($createdResponses) === 1 && count($replayedResponses) === 1
+        && ($replayedResponses[0]['body']['data']['idempotent'] ?? false) === true
+        && ($createdResponses[0]['body']['data']['order_uuid'] ?? '') === ($replayedResponses[0]['body']['data']['order_uuid'] ?? ''),
+        'Two concurrent requests created more than one order or did not replay the same idempotent response.');
+    $orderResponse = $createdResponses[0];
+} finally {
+    foreach ($workerProcesses as $worker) {
+        if (is_resource($worker['process'])) {
+            @proc_terminate($worker['process']);
+            foreach ([$worker['pipes'][1] ?? null, $worker['pipes'][2] ?? null] as $pipe) {
+                if (is_resource($pipe)) @fclose($pipe);
+            }
+            @proc_close($worker['process']);
+        }
+    }
+    if (is_file($orderWorkerSpec['start_file'])) unlink($orderWorkerSpec['start_file']);
+}
 $assert($orderResponse['status'] === 201
     && $orderResponse['body']['data']['status'] === 'pending_review',
     'Order did not remain pending review.');

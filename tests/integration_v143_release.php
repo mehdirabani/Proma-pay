@@ -40,13 +40,14 @@ $adminId = User::create([
     'password' => 'Admin#V143',
     'status' => 'active',
 ]);
+$customerMobile = '0936' . str_pad($suffix, 7, '0', STR_PAD_LEFT);
 $customerId = User::create([
     'role' => 'customer',
     'username' => 'qa-v143-customer-' . $suffix,
     'full_name' => 'مشتری آزمون ۱۴۳',
     'national_id' => '44' . str_pad($suffix, 8, '0', STR_PAD_LEFT),
-    'mobile' => '0936' . str_pad($suffix, 7, '0', STR_PAD_LEFT),
-    'password' => substr('0936' . str_pad($suffix, 7, '0', STR_PAD_LEFT), -4),
+    'mobile' => $customerMobile,
+    'password' => substr($customerMobile, -4),
     'status' => 'active',
 ]);
 

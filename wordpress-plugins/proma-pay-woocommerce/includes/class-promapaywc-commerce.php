@@ -10,7 +10,7 @@ final class PromaPay_WC_Commerce
     public static function register(): void
     {
         add_action('rest_api_init', [self::class, 'register_routes']);
-        add_action('woocommerce_single_product_summary', [self::class, 'render_product_widget'], 25);
+        PromaPay_WC_BakalaCompatibilityAdapter::register();
         add_action('woocommerce_payment_complete', [self::class, 'payment_complete'], 10, 1);
         add_action('promapaywc_sync_deposit', [self::class, 'sync_paid_deposit'], 10, 1);
         add_action('promapaywc_poll_order', [self::class, 'poll_remote_order'], 10, 1);

@@ -16,15 +16,18 @@ $_SERVER['REMOTE_ADDR'] = '198.51.100.142';
 require dirname(__DIR__, 2) . '/bootstrap.php';
 require dirname(__DIR__, 2) . '/plugins/PromaAccounting/src/Services/AccountingRepository.php';
 
-$bufferedQueryAttribute = defined('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')
-    ? constant('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')
-    : constant('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY');
-$pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_DB_PASSWORD') ?: '', [
+$pdoOptions = [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES => false,
-    $bufferedQueryAttribute => true,
-]);
+];
+$mysqlBufferedQueryAttribute = defined('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')
+    ? constant('Pdo\\Mysql::ATTR_USE_BUFFERED_QUERY')
+    : (defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY') ? constant('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY') : null);
+if ($mysqlBufferedQueryAttribute !== null) {
+    $pdoOptions[$mysqlBufferedQueryAttribute] = true;
+}
+$pdo = new PDO($dsn, getenv('PROMA_TEST_DB_USER') ?: 'root', getenv('PROMA_TEST_DB_PASSWORD') ?: '', $pdoOptions);
 $property = new ReflectionProperty(Model::class, 'pdo');
 
 $property->setValue(null, $pdo);

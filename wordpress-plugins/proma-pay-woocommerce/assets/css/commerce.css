@@ -9,10 +9,11 @@
     gap: .65rem;
     margin: 1rem 0;
     padding: 1rem;
-    border: 1px solid #d7dee8;
+    border: 1px solid rgba(127, 139, 152, .42);
+    border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
     border-radius: .65rem;
-    background: #f7f9fc;
-    color: #1c2735;
+    background: transparent;
+    color: inherit;
 }
 .promapaywc-product-widget details { font-size: .92em; }
 .promapaywc-product-widget summary { cursor: pointer; font-weight: 600; }
