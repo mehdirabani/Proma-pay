@@ -40,7 +40,7 @@ Read design-system and its token architecture reference, then use primitives →
 
 ## 5. Page inventory
 
-Authenticated view families: dashboard (admin/customer/operator/lawyer), customers (list/detail), contracts (list/detail/duplicates/print/booklet), installments, payments, overdue, operator, legal (list/detail/cost approvals), lawyer, review, profile-reviews, notifications, chat, calendar, profile, users, medals, file-manager, settings (general/contracts/preview/banners), imports (list/preview), plugins, system-health and AI. Public/auth: login/register/forgot/reset; errors 403/404/system; optional ecommerce has shop/product/catalog/orders/cart/checkout/payment/landing/installment-request. Shared partials: payment card and customer banners. Printing has separate layouts and must stay independent of the app shell.
+Authenticated view families: dashboard (admin/customer/operator/lawyer), customers (list/detail), contracts (list/detail/duplicates/print/booklet), installments, payments, overdue, operator, legal (list/detail/cost approvals), lawyer, review, profile-reviews, notifications, chat, calendar, profile, users, medals, file-manager, settings (general/contracts/preview/banners), imports (list/preview), plugins, system-health and AI. Public/auth: login/register/forgot/reset; errors 403/404/system. Shared partials: payment card and customer banners. Printing has separate layouts and must stay independent of the app shell.
 
 ## 6. Role and workflow map
 

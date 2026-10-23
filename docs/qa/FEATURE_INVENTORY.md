@@ -1,4 +1,6 @@
-# Feature Inventory
+# Historical Feature Inventory
+
+> Historical snapshot of V1.4.1 before the internal store retirement. Ecommerce below is not an active feature of the current Core.
 
 | Domain | Primary roles | V1.4.1 coverage |
 | --- | --- | --- |

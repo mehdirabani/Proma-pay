@@ -11,7 +11,7 @@
 
 ## آخرین milestone تکمیل‌شده
 
-ممیزی Recovery انجام شد؛ coverage دروازهٔ QA برای featureهای جاری V204/Plugin افزایش یافت؛ قواعد حذف‌شدهٔ موبایل و کارت‌های پرداخت/سند در CSS بازیابی شدند؛ نسخه برای بسته‌بندی کاندید به V2.0.4 هماهنگ شد؛ دو ZIP در `dist/candidates/v2.0.4/` ساخته و از نظر ساختار، manifest، checksum، فایل‌های ممنوع و PHP lint بررسی شدند. Release Gate کامل اجرا نشده است.
+ممیزی Recovery انجام شد؛ coverage دروازهٔ QA برای featureهای جاری V204/Plugin افزایش یافت؛ قواعد حذف‌شدهٔ موبایل و کارت‌های پرداخت/سند در CSS بازیابی شدند؛ نسخه برای بسته‌بندی کاندید به V2.0.4 هماهنگ شد؛ دو ZIP در `dist/candidates/archive/v2/v2.0.4/` ساخته و از نظر ساختار، manifest، checksum، فایل‌های ممنوع و PHP lint بررسی شدند. Release Gate کامل اجرا نشده است.
 
 ## اکنون در حال کار
 
@@ -32,7 +32,7 @@ Event envelope/automation/collections/API/webhooks/branch isolation، پوشش �
 
 - `tools/verify-release.php` روی آرشیو موجود v2.0.3 شکست می‌خورد: `dist/core/SHA256SUMS.txt` به `PromaAccounting-v1.2.14.zip` اشاره می‌کند که وجود ندارد. Core/Update آرشیوهای v2.0.3 قدیمی‌تر از سورس جاری‌اند.
 - Candidate فعلی افزونهٔ اختیاری ندارد (قرارداد Core هم آن را جدا نگه می‌دارد). اگر بستهٔ جداگانهٔ Accounting ساخته شد، سورس `1.2.17` با آرشیو immutable هم‌نسخه تعارض دارد و ابتدا باید نسخهٔ Plugin افزایش یابد.
-- آرشیوهای رسمی موجود v2.0.3 قدیمی‌تر از سورس جاری‌اند؛ بسته‌های تازه زیر `dist/candidates/v2.0.4/` جدا شده‌اند تا immutable releaseهای رسمی بازنویسی نشوند.
+- آرشیوهای رسمی موجود v2.0.3 قدیمی‌تر از سورس جاری‌اند؛ بسته‌های تازه زیر `dist/candidates/archive/v2/v2.0.4/` جدا شده‌اند تا immutable releaseهای رسمی بازنویسی نشوند.
 - ۲۱۴ حذف tracked، به‌خصوص نمونه‌های `html/RTL/template/`، از قبل در working tree بوده‌اند؛ بدون اثبات نیاز، برنگردان یا حذف‌های بیشتری اعمال نکن.
 - Release Gate جدید DB integrationها را فقط با DSN پایگاه `proma_qa_v204` و `PROMA_TEST_ALLOW_DESTRUCTIVE=1` اجرا می‌کند؛ HTTP integrationها هم فقط روی localhost/loopback اجرا می‌شوند. هیچ DB یا host دیگری را به این متغیرها وصل نکن.
 

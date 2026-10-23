@@ -9,12 +9,10 @@ $nextInstallment = $openInstallments[0] ?? null;
 $medals = $medals ?? [];
 $loyaltyProfile = $loyaltyProfile ?? ['points' => 0, 'tier' => null, 'next_tier' => null, 'progress' => 0, 'medals' => []];
 $socialLinks = $socialLinks ?? [];
-$ecommerceOrders = $ecommerceOrders ?? [];
 $givenGuarantees = $givenGuarantees ?? [];
 $receivedGuarantees = $receivedGuarantees ?? [];
 $banners = $banners ?? [];
 $customerWidgets = $customerWidgets ?? [];
-$ecommerceEnabled = ecommerce_is_enabled();
 $projectedPenaltyMessage = '';
 foreach ($installments as $installment) {
   if (!empty($installment['show_projected_legal_penalty'])) {
@@ -41,7 +39,6 @@ foreach ($installments as $installment) {
           <div class="proma-role-hero-actions">
             <a class="btn success" href="<?= e(url('installments/panel')) ?>"><i data-feather="credit-card"></i> پرداخت قسط</a>
             <a class="btn secondary" href="<?= e(url('portal/history')) ?>"><i data-feather="shopping-bag"></i> سوابق خرید</a>
-            <?php if ($ecommerceEnabled): ?><a class="btn secondary" href="<?= e(url('ecommerce/shop')) ?>"><i data-feather="shopping-bag"></i> فروشگاه</a><?php endif; ?>
           </div>
         </div>
         <aside class="v7-customer-next-due">
@@ -185,25 +182,6 @@ foreach ($installments as $installment) {
       </div>
     </section>
   </div>
-
-  <?php if ($ecommerceEnabled): ?>
-    <div class="col-xxl-5 col-xl-12">
-      <section class="card proma-role-panel">
-        <div class="card-header card-no-border"><div class="header-top"><h5>سفارش‌های فروشگاه</h5><a class="link-only" href="<?= e(url('ecommerce/myOrders')) ?>">همه سفارش‌ها</a></div></div>
-        <div class="card-body pt-0">
-          <div class="proma-role-list">
-            <?php foreach (array_slice($ecommerceOrders, 0, 6) as $order): ?>
-              <a class="proma-role-list-item" href="<?= e(url('ecommerce/payment/' . (int) $order['id'])) ?>">
-                <span><strong><?= e($order['order_number']) ?></strong><small><?= to_persian_digits($order['quantity_total'] ?? 0) ?> کالا · <?= e(jdatetime($order['created_at'] ?? '')) ?></small></span>
-                <span class="badge <?= e(badge_class($order['order_status'] ?? 'pending')) ?>"><?= e(status_label($order['order_status'] ?? 'pending')) ?></span>
-              </a>
-            <?php endforeach; ?>
-            <?php if (!$ecommerceOrders): ?><div class="empty">هنوز سفارشی در فروشگاه ثبت نکرده‌اید.</div><?php endif; ?>
-          </div>
-        </div>
-      </section>
-    </div>
-  <?php endif; ?>
 
   <div class="col-xxl-6 col-xl-12">
     <section class="card proma-role-panel">

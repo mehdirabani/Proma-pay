@@ -44,12 +44,23 @@ Do not guess in financial, legal, security or file-related tasks.
 ```text
 docs/
 ├── README.md
+├── audit/
+│   ├── database/
+│   ├── php/
+│   ├── security/
+│   └── ui-ux/
+├── desktop/
+├── qa/
+├── releases/
+│   └── history/
 ├── specifications/
 ├── workflows/
 ├── domains/
 ├── database/
 └── codex/
 ```
+
+این نقشه دسته‌های اصلی را نشان می‌دهد؛ پوشه‌های موضوعی موجود مانند `accounting/`، `contracts/`، `plugins/` و `ui/` نیز حفظ شده‌اند. گزارش‌های قدیمی اجرای نسخه‌ها در `releases/history/` قرار می‌گیرند.
 
 ---
 
@@ -65,6 +76,10 @@ docs/
 | `contracts/` | موتور قالب، ویرایشگر، نسخه‌بندی، profile چاپ و بازسازی اسناد قرارداد |
 | `ui/` | معماری و قواعد رابط‌های تخصصی سامانه |
 | `security/` | پاک‌سازی محتوا و کنترل‌های امنیتی قابلیت‌ها |
+| `audit/` | ممیزی‌های سیستم، پایگاه داده، PHP، امنیت و رابط کاربری |
+| `qa/` | نتایج آزمون و گزارش‌های بررسی کیفیت |
+| `releases/` | راهنمای استقرار، انتشار و سوابق نسخه‌ها |
+| `desktop/` | راه‌اندازی و اجرای نسخه دسکتاپ |
 
 ---
 

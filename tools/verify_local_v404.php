@@ -3,7 +3,7 @@ declare(strict_types=1);
 $app = 'C:/laragon/www/proma';
 $_SERVER['REQUEST_METHOD'] = 'CLI'; $_SERVER['REMOTE_ADDR'] = '198.51.100.50'; require $app . '/bootstrap.php';
 if (Model::db()->query('SELECT DATABASE()')->fetchColumn() !== 'proma_pay_restore_20261007') throw new RuntimeException('Unexpected local DB');
-$zip = new ZipArchive(); $zip->open(dirname(__DIR__) . '/dist/candidates/v4.0.4/updates/PromaPay-Update-v4.0.4-from-v4.0.2.zip');
+$zip = new ZipArchive(); $zip->open(dirname(__DIR__) . '/dist/candidates/archive/v4/v4.0.4/updates/PromaPay-Update-v4.0.4-from-v4.0.2.zip');
 $manifest = json_decode($zip->getFromName('proma-update.json'), true, 512, JSON_THROW_ON_ERROR); $zip->close();
 foreach ($manifest['files'] as $file) {
     $target = $file['target'] ?? $file['source'];

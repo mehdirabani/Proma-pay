@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/helpers/RetiredCoreFiles.php';
+
 /**
  * Builds reviewable Core and differential Update ZIPs without claiming that
  * the full release gate passed. Candidate artifacts are isolated from the
@@ -109,8 +111,7 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
     if (preg_match('#^(?:booklet|contact-modal)-v[\w.-]*\.(?:png|pdf)$#i', $path)) {
         return true;
     }
-    if (in_array($path, ['.env', 'config/database.php', 'installed.lock', '1.xlsx', 'design-qa.md', 'laravel/public/hot', 'laravel/.phpunit.result.cache'], true)
-        || preg_match('#^v\d+\.\d+\.\d+-implementation-state\.md$#i', $path)
+    if (in_array($path, ['.env', 'config/database.php', 'installed.lock', '1.xlsx'], true)
         || preg_match('#(?:^|/)\.env(?:\.[^/]*)?$#i', $path)) {
         return true;
     }
@@ -124,8 +125,6 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
         '.git/', '.github/', '.agents/', '.appsec-forge/', '.codex/', '.playwright-cli/', '.project-graph/', 'skill/', 'laravel/',
         'backups/', 'dist/', 'storage/', 'uploads/', 'tmp/', 'output/', 'plugins/', 'plugin-packages/', 'node_modules/',
         'docs/', 'electron/', 'html/', 'scripts/', 'tests/', 'tools/',
-        'laravel/.playwright-cli/', 'laravel/bootstrap/cache/', 'laravel/docs/', 'laravel/node_modules/',
-        'laravel/releases/', 'laravel/storage/', 'laravel/tests/',
     ] as $prefix) {
         if (strpos($path, $prefix) === 0) {
             return true;
@@ -174,18 +173,44 @@ if ($explicitBaseline = trim((string) getenv('PROMA_BASELINE_ARCHIVE'))) {
     }
     $baselineCandidates['0.0.0'] = $resolvedBaseline;
 } else {
+    $baselinePriorities = [];
     foreach (glob($root . '/dist/core/PromaPay-v*.zip') ?: [] as $candidate) {
         if (preg_match('/PromaPay-v(\d+\.\d+\.\d+)\.zip$/', $candidate, $matches)
             && version_compare($matches[1], $version, '<')) {
             $baselineCandidates[$matches[1]] = $candidate;
+            $baselinePriorities[$matches[1]] = 0;
         }
     }
-    // Prefer the newest earlier candidate installer too. This keeps the default
-    // patch update exact for customers already running the latest candidate line.
-    foreach (glob($root . '/dist/candidates/v*/core/PromaPay-v*.zip') ?: [] as $candidate) {
+    foreach (glob($root . '/dist/core/archive/v*/v*/PromaPay-v*.zip') ?: [] as $candidate) {
         if (preg_match('/PromaPay-v(\d+\.\d+\.\d+)\.zip$/', $candidate, $matches)
-            && version_compare($matches[1], $version, '<')) {
+            && version_compare($matches[1], $version, '<')
+            && !isset($baselineCandidates[$matches[1]])) {
             $baselineCandidates[$matches[1]] = $candidate;
+            $baselinePriorities[$matches[1]] = -1;
+        }
+    }
+    // Prefer candidate installers over stable Core packages. Within each
+    // candidate group, exact version folders outrank build-specific snapshots.
+    $candidateArchivePatterns = [
+        $root . '/dist/candidates/v*/core/PromaPay-v*.zip',
+        $root . '/dist/candidates/archive/v*/core/PromaPay-v*.zip',
+        $root . '/dist/candidates/archive/v*/v*/core/PromaPay-v*.zip',
+    ];
+    foreach ($candidateArchivePatterns as $pattern) {
+        foreach (glob($pattern) ?: [] as $candidate) {
+            if (preg_match('/PromaPay-v(\d+\.\d+\.\d+)\.zip$/', $candidate, $matches)
+                && version_compare($matches[1], $version, '<')) {
+                $isArchived = strpos(str_replace('\\', '/', $candidate), '/dist/candidates/archive/') !== false;
+                $candidateFolder = basename(dirname(dirname($candidate)));
+                $isExactVersionFolder = $candidateFolder === 'v' . $matches[1];
+                $priority = $isArchived
+                    ? ($isExactVersionFolder ? 2 : 1)
+                    : ($isExactVersionFolder ? 4 : 3);
+                if ($priority > ($baselinePriorities[$matches[1]] ?? -1)) {
+                    $baselineCandidates[$matches[1]] = $candidate;
+                    $baselinePriorities[$matches[1]] = $priority;
+                }
+            }
         }
     }
 }
@@ -212,10 +237,11 @@ try {
     }
     $baselineFiles = [];
     $preservedBaselineContents = [];
+    $retiredBaselineFiles = [];
 $omittedNonRuntimeAssetRoots = ['ajax', 'audio', 'json', 'pdf', 'pug', 'scss', 'video'];
 $isOmittedPackagingPath = static function (string $path) use ($normalize, $omittedNonRuntimeAssetRoots): bool {
     $path = strtolower($normalize($path));
-    if (strpos($path, 'laravel/') === 0 || strpos($path, 'backups/') === 0 || strpos($path, '.appsec-forge/') === 0) {
+    if (strpos($path, 'backups/') === 0 || strpos($path, '.appsec-forge/') === 0) {
         return true;
     }
     foreach ($omittedNonRuntimeAssetRoots as $assetRoot) {
@@ -235,10 +261,13 @@ $isOmittedPackagingPath = static function (string $path) use ($normalize, $omitt
             throw new RuntimeException('Update baseline content does not match its checksum inventory: ' . $path);
         }
         $baselineFiles[$path] = strtolower((string) $file['sha256']);
-        // The in-app updater cannot delete files. Keep baseline entries that
-        // are absent from the current source in the Core candidate so a fresh
-        // install and an in-place update produce the same file inventory.
-        if (!isset($coreFiles[$path]) && !$isOmittedPackagingPath($path)) {
+        if (!isset($coreFiles[$path]) && RetiredCoreFiles::allows($path)) {
+            $retiredBaselineFiles[] = [
+                'path' => $path,
+                'expected_previous_sha256' => $baselineFiles[$path],
+            ];
+        } elseif (!isset($coreFiles[$path]) && !$isOmittedPackagingPath($path)) {
+            // Preserve unrecognized baseline files outside the retired allowlist.
             $preservedBaselineContents[$path] = $content;
         }
     }
@@ -273,11 +302,12 @@ ksort($coreFiles, SORT_STRING);
 $currentPaths = array_fill_keys(array_keys($coreFiles), true);
 $removedPaths = array_values(array_filter(
     array_diff(array_keys($baselineFiles), array_keys($currentPaths)),
-    static fn (string $path): bool => !$isOmittedPackagingPath($path)
+    static fn (string $path): bool => !$isOmittedPackagingPath($path) && !RetiredCoreFiles::allows($path)
 ));
 if ($removedPaths) {
     throw new RuntimeException('The updater cannot remove files; candidate has runtime deletions: ' . implode(', ', $removedPaths));
 }
+usort($retiredBaselineFiles, static fn (array $a, array $b): int => strcmp($a['path'], $b['path']));
 
 $builtAt = gmdate('c');
 $sourceRevision = trim((string) shell_exec('git -C ' . escapeshellarg($root) . ' rev-parse HEAD 2>NUL'));
@@ -297,8 +327,9 @@ $coreManifest = [
     'production_availability_certified' => false,
     'files' => $manifestFiles,
     'preserved_baseline_files' => array_keys($preservedBaselineContents),
+    'retired_baseline_files' => $retiredBaselineFiles,
+    'retired_files' => $retiredBaselineFiles,
     'omitted_non_runtime_asset_roots' => $omittedNonRuntimeAssetRoots,
-    'omitted_separate_laravel_app' => true,
     'excludes_operational_data' => true,
     'optional_plugins_included' => false,
 ];
@@ -349,6 +380,7 @@ $updateManifest = [
     ...$sourceState,
     'production_availability_certified' => false,
     'files' => $updateManifestFiles,
+    'retired_files' => $retiredBaselineFiles,
     'migrations' => $migrations,
     'preserves' => ['config/database.php', 'plugins/', 'storage/', 'uploads/'],
 ];
@@ -363,7 +395,10 @@ $statusDescription = $releaseGateStatus === 'LOCAL_STATIC_UNIT_PASSED_INTEGRATIO
     : ($releaseGateStatus === 'LOCAL_TARGETED_INTEGRATION_PASSED_FULL_GATE_PENDING'
         ? 'گیت ایستا/واحد و آزمون‌های یکپارچهٔ منتخب روی MySQL 8.4 ایزوله گذشتند؛ گیت کامل پایگاه‌داده و HTTP هنوز اجرا نشده است.'
         : ($releaseGateStatus === 'RELEASE_GATE_PASSED' ? 'گیت QA کامل گذشت؛ گواهی دسترس‌پذیری تولید جداگانه بررسی می‌شود.' : 'گیت QA هنوز اجرا نشده است.'));
-$updateZip->addFromString('UPDATE_README.md', "# بستهٔ کاندید بروزرسانی Proma Pay V{$version}\n\n{$statusDescription} این بسته هنوز برای نصب عملیاتی تأیید نشده است. مبنای تفاضلی: V{$baselineVersion}.\n\n- فایل‌های تغییرکرده: " . count($updateFiles) . "\n- migrationهای جدید: " . count($migrations) . "\n- config/database.php، افزونه‌ها و داده‌های storage در این بسته نیستند.\n");
+$legacyRetirementNote = $baselineVersion === '7.0.3'
+    ? "\nبرای نصب‌هایی که از V7.0.3 ارتقا می‌یابند، updater قبلی فیلد فایل‌های بازنشسته را نمی‌شناسد. پس از نصب موفق این بسته، فرمان `php retire-core-files.php --package=proma-update-YYYY-MM-DD-HH-MM-SS-name.zip --confirm=RETIRE-CORE-FILES` را از ریشهٔ سامانه اجرا کنید؛ نام کامل ZIP بارگذاری‌شده در پنل را جایگزین کنید. این دستور فقط پس از تطبیق نسخه و checksum فایل‌های نصب‌شده، بکاپ پایگاه‌داده می‌سازد و فهرست محدود فایل‌های بازنشسته را پاک می‌کند.\n"
+    : '';
+$updateZip->addFromString('UPDATE_README.md', "# بستهٔ کاندید بروزرسانی Proma Pay V{$version}\n\n{$statusDescription} این بسته هنوز برای نصب عملیاتی تأیید نشده است. مبنای تفاضلی: V{$baselineVersion}.\n{$legacyRetirementNote}\n- فایل‌های تغییرکرده: " . count($updateFiles) . "\n- migrationهای جدید: " . count($migrations) . "\n- config/database.php، افزونه‌ها و داده‌های storage در این بسته نیستند.\n");
 if (!$updateZip->close()) {
     throw new RuntimeException('Cannot finalize candidate Update archive.');
 }

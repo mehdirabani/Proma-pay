@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/helpers/RetiredCoreFiles.php';
+
 $root = dirname(__DIR__);
+require_once $root . '/scripts/release_artifact_paths.php';
 $versionInfo = require $root . '/config/version.php';
 $version = (string) ($versionInfo['application'] ?? '0.0.0');
 $candidateBuildId = trim((string) getenv('PROMA_CANDIDATE_BUILD_ID'));
@@ -75,9 +78,7 @@ foreach (['.env', 'config/database.php', 'installed.lock', '1.xlsx'] as $forbidd
 for ($index = 0; $index < $core->numFiles; $index++) {
     $name = str_replace('\\', '/', (string) $core->getNameIndex($index));
     $assert(!preg_match('#(?:^|/)\.env(?:\.[^/]*)?$#i', $name), 'Core archive includes an environment file: ' . $name);
-    foreach (['laravel/', 'laravel/storage/', 'laravel/tests/', 'laravel/docs/', 'laravel/node_modules/', 'laravel/releases/', 'laravel/bootstrap/cache/', 'laravel/.playwright-cli/'] as $laravelExcludedPrefix) {
-        $assert(strpos($name, $laravelExcludedPrefix) !== 0, 'Core archive includes Laravel operational or development data: ' . $name);
-    }
+    $assert(strpos(strtolower($name), 'laravel/') !== 0, 'Core archive includes a retired Laravel path: ' . $name);
     foreach (['docs/', 'electron/', 'scripts/', 'tests/', 'tools/', 'skill/', '.project-graph/', 'output/'] as $excludedPrefix) {
         // The official V4.0.2 baseline includes this one legacy release note.
         // The differential updater preserves it; all other docs remain excluded.
@@ -126,12 +127,15 @@ $assert($update->locateName('UPDATE_README.md') !== false, 'Update instructions 
 $baselineVersion = (string) ($updateManifest['baseline']['version'] ?? '');
 $assert(($updateManifest['minimum_version'] ?? '') === $baselineVersion, 'Update minimum version differs from its baseline.');
 $baselineCandidates = [
-    $root . '/dist/core/PromaPay-v' . $baselineVersion . '.zip',
+    ReleaseArtifactPaths::core($root, $baselineVersion),
     $root . '/dist/candidates/v' . $baselineVersion . '/core/PromaPay-v' . $baselineVersion . '.zip',
+    $root . '/dist/candidates/archive/v' . explode('.', $baselineVersion, 2)[0] . '/v' . $baselineVersion . '/core/PromaPay-v' . $baselineVersion . '.zip',
 ];
 $baselineCandidates = array_merge(
     $baselineCandidates,
-    glob($root . '/dist/candidates/v' . $baselineVersion . '-*/core/PromaPay-v' . $baselineVersion . '.zip') ?: []
+    glob($root . '/dist/candidates/v' . $baselineVersion . '-*/core/PromaPay-v' . $baselineVersion . '.zip') ?: [],
+    glob($root . '/dist/candidates/archive/v' . explode('.', $baselineVersion, 2)[0] . '/v' . $baselineVersion . '-*/core/PromaPay-v' . $baselineVersion . '.zip') ?: [],
+    glob($root . '/dist/candidates/archive/v' . $baselineVersion . '-*/core/PromaPay-v' . $baselineVersion . '.zip') ?: []
 );
 $expectedBaselineManifestHash = strtolower((string) ($updateManifest['baseline']['release_manifest_sha256'] ?? ''));
 $baselinePath = '';
@@ -157,6 +161,18 @@ foreach (($baselineManifest['files'] ?? []) as $file) {
     if (is_array($file) && !empty($file['path']) && !empty($file['sha256'])) {
         $baselineHashes[(string) $file['path']] = strtolower((string) $file['sha256']);
     }
+}
+$seenRetiredFiles = [];
+foreach (($updateManifest['retired_files'] ?? []) as $retiredFile) {
+    $assert(is_array($retiredFile), 'Update retired-file entry is invalid.');
+    $retiredPath = str_replace('\\', '/', (string) ($retiredFile['path'] ?? ''));
+    $expectedPrevious = strtolower((string) ($retiredFile['expected_previous_sha256'] ?? ''));
+    $assert(RetiredCoreFiles::allows($retiredPath), 'Update retires a path outside the explicit allowlist: ' . $retiredPath);
+    $assert(isset($baselineHashes[$retiredPath]), 'Retired path is absent from the verified baseline: ' . $retiredPath);
+    $assert(isset($baselineHashes[$retiredPath]) && hash_equals($baselineHashes[$retiredPath], $expectedPrevious), 'Retired path checksum differs from the verified baseline: ' . $retiredPath);
+    $assert(!isset($coreHashes[$retiredPath]), 'Retired path remains in the Core candidate: ' . $retiredPath);
+    $assert(!isset($seenRetiredFiles[strtolower($retiredPath)]), 'Update contains a duplicate retired path: ' . $retiredPath);
+    $seenRetiredFiles[strtolower($retiredPath)] = true;
 }
 $updatePayloadBytes = 0;
 foreach (($updateManifest['files'] ?? []) as $file) {

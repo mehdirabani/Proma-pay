@@ -17,7 +17,7 @@ if ($mode === 'init') {
     if (is_dir($app) && !$reuse) throw new RuntimeException('Refusing to overwrite exact-baseline checkout');
     if (!$exists) $pdo->exec('CREATE DATABASE `' . $database . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
     $zip = new ZipArchive();
-    $basePath = dirname(__DIR__) . '/dist/candidates/v4.0.2/core/PromaPay-v4.0.2.zip';
+    $basePath = dirname(__DIR__) . '/dist/candidates/archive/v4/v4.0.2/core/PromaPay-v4.0.2.zip';
     if ($zip->open($basePath) !== true) throw new RuntimeException('Missing official 402 baseline');
     if (!$reuse) $zip->extractTo($app); $zip->close();
     $config['database'] = $database;
@@ -39,7 +39,7 @@ $fingerprint = static function () {
 };
 $before = $fingerprint(); $name = 'proma-update-2026-10-08-09-30-00-v404-exact.zip';
 if (!is_dir($app . '/storage/updates')) mkdir($app . '/storage/updates', 0755, true);
-copy(dirname(__DIR__) . '/dist/candidates/v4.0.4/updates/PromaPay-Update-v4.0.4-from-v4.0.2.zip', $app . '/storage/updates/' . $name);
+copy(dirname(__DIR__) . '/dist/candidates/archive/v4/v4.0.4/updates/PromaPay-Update-v4.0.4-from-v4.0.2.zip', $app . '/storage/updates/' . $name);
 $result = ScriptUpdateService::install($name);
 if (!hash_equals($before, $fingerprint())) throw new RuntimeException('Exact 402 update changed business data');
 echo "EXACT_OFFICIAL_402_TO_404_OK_BUSINESS_AND_CREDENTIALS_PRESERVED\n";

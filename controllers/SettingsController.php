@@ -95,7 +95,7 @@ class SettingsController extends Controller
                 $values[$key] = $rawValue;
             }
         }
-        foreach (['password_reset_enabled', 'calendar_notifications_enabled', 'calendar_notify_admin_without_user', 'calendar_due_day_repeat_enabled', 'notifications_sound_enabled', 'web_push_enabled', 'zibal_enabled', 'zibal_test_mode', 'card_transfer_enabled', 'card_transfer_show_sheba', 'card_transfer_show_account_number', 'email_enabled', 'ecommerce_enabled', 'landing_enabled', 'legal_overdue_amount_enabled', 'legal_allow_self_initiation', 'show_projected_legal_penalty_to_customer', 'payment_legal_cost_priority'] as $checkbox) {
+        foreach (['password_reset_enabled', 'calendar_notifications_enabled', 'calendar_notify_admin_without_user', 'calendar_due_day_repeat_enabled', 'notifications_sound_enabled', 'web_push_enabled', 'zibal_enabled', 'zibal_test_mode', 'card_transfer_enabled', 'card_transfer_show_sheba', 'card_transfer_show_account_number', 'email_enabled', 'legal_overdue_amount_enabled', 'legal_allow_self_initiation', 'show_projected_legal_penalty_to_customer', 'payment_legal_cost_priority'] as $checkbox) {
             $values[$checkbox] = isset($_POST[$checkbox]) ? '1' : '0';
         }
         $notificationTypes = $_POST['notification_event_types'] ?? [];

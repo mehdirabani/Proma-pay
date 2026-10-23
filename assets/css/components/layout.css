@@ -43,8 +43,11 @@
   margin-bottom: 0;
 }
 
-.proma-page-content :where(.grid, .proma-customer-summary, .proma-profile-grid, .proma-store-grid, .proma-file-manager-grid, .proma-calendar-grid) > .card,
-.proma-public-content :where(.grid, .proma-store-grid) > .card {
+.proma-page-content :where(.grid, .proma-customer-summary, .proma-profile-grid, .proma-file-manager-grid, .proma-calendar-grid) > .card {
+  margin-block: 0 !important;
+}
+
+.proma-public-content :where(.grid) > .card {
   margin-block: 0 !important;
 }
 
@@ -76,7 +79,6 @@
 .proma-page-content :where(
   .proma-customer-summary,
   .proma-profile-grid,
-  .proma-store-grid,
   .proma-file-manager-grid,
   .proma-calendar-grid,
   .proma-settings-shell
@@ -86,7 +88,6 @@
 
 .proma-customer-summary,
 .proma-profile-grid,
-.proma-store-grid,
 .proma-file-manager-grid,
 .proma-calendar-grid,
 .proma-settings-shell {

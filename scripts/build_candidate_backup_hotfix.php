@@ -11,15 +11,17 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $patchVersion = '2.2.13';
 $releaseVersion = '3.0.1';
+$patchCandidateRoot = $root . '/dist/candidates/archive/v2/v' . $patchVersion;
+$releaseCandidateRoot = $root . '/dist/candidates/archive/v3/v' . $releaseVersion;
 $manualName = 'PromaPay-Manual-Update-v' . $patchVersion . '-from-v2.2.11.zip';
 $rebasedName = 'PromaPay-Update-v' . $releaseVersion . '-from-v' . $patchVersion . '.zip';
-$manualPath = $root . '/dist/candidates/v' . $patchVersion . '/manual/' . $manualName;
-$previousPatchPath = $root . '/dist/candidates/v2.2.12/manual/PromaPay-Manual-Update-v2.2.12-from-v2.2.11.zip';
-$releaseCorePath = $root . '/dist/candidates/v' . $releaseVersion . '/core/PromaPay-v' . $releaseVersion . '.zip';
-$defaultUpdatePath = $root . '/dist/candidates/v' . $releaseVersion . '/updates/PromaPay-Update-v' . $releaseVersion . '.zip';
-$baselineCorePath = $root . '/dist/candidates/v2.2.11/core/PromaPay-v2.2.11.zip';
-$rebasedPath = $root . '/dist/candidates/v' . $releaseVersion . '/updates/' . $rebasedName;
-$rebasedManifestPath = $root . '/dist/candidates/v' . $releaseVersion . '/updates/' . pathinfo($rebasedName, PATHINFO_FILENAME) . '-manifest.json';
+$manualPath = $patchCandidateRoot . '/manual/' . $manualName;
+$previousPatchPath = $root . '/dist/candidates/archive/v2/v2.2.12/manual/PromaPay-Manual-Update-v2.2.12-from-v2.2.11.zip';
+$releaseCorePath = $releaseCandidateRoot . '/core/PromaPay-v' . $releaseVersion . '.zip';
+$defaultUpdatePath = $releaseCandidateRoot . '/updates/PromaPay-Update-v' . $releaseVersion . '.zip';
+$baselineCorePath = $root . '/dist/candidates/archive/v2/v2.2.11/core/PromaPay-v2.2.11.zip';
+$rebasedPath = $releaseCandidateRoot . '/updates/' . $rebasedName;
+$rebasedManifestPath = $releaseCandidateRoot . '/updates/' . pathinfo($rebasedName, PATHINFO_FILENAME) . '-manifest.json';
 
 if (!class_exists('ZipArchive')) {
     throw new RuntimeException('PHP ZipArchive extension is required.');
@@ -207,7 +209,7 @@ if (!$rebasedZip->close()) {
 file_put_contents($rebasedManifestPath, $updateManifestJson . PHP_EOL);
 
 $rebasedSha = hash_file('sha256', $rebasedPath);
-$releaseRoot = $root . '/dist/candidates/v' . $releaseVersion;
+$releaseRoot = $releaseCandidateRoot;
 $releaseReadmePath = $releaseRoot . '/README.md';
 $releaseReadme = (string) file_get_contents($releaseReadmePath);
 $releaseReadme .= "\n- Update from V{$patchVersion} after applying the V2.2.13 backup hotfix: {$rebasedName}\n";

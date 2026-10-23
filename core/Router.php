@@ -10,11 +10,11 @@ class Router
             $route = Auth::check() ? 'dashboard' : 'auth/login';
         }
         $route = $this->resolveSafeActionAlias($route);
-        if ($route === 'ecommerce' || strpos($route, 'ecommerce/') === 0) {
-            set_flash('info', 'فروشگاه داخلی بازنشسته شده است. سوابق پیشین حفظ شده و فروش جدید از فروشگاه متصل انجام می‌شود.');
-            redirect(Auth::check() ? 'dashboard' : 'auth/login');
-        }
         RequestTelemetry::setRoute($route);
+        if (preg_match('/\\Aecommerce(?:\\/|\\z)/i', $route)) {
+            RequestTelemetry::recordSpan('route.retired', $requestStartedAt, ['route' => $route]);
+            ErrorHandler::respond(410, 'این مسیر بازنشسته شده است.');
+        }
         if ($route === 'health/live' || $route === 'health/ready') {
             RequestTelemetry::recordSpan('route.health', $requestStartedAt, ['route' => $route]);
             $health = new HealthController();

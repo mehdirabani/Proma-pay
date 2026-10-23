@@ -93,14 +93,19 @@ try {
             }
         }
     }
-    $existing = tempnam(sys_get_temp_dir(), 'proma-existing-');
-    $new = tempnam(sys_get_temp_dir(), 'proma-new-');
+    $existing = tempnam($root . DIRECTORY_SEPARATOR . 'tests', 'proma-existing-');
+    $new = tempnam($root . DIRECTORY_SEPARATOR . 'tests', 'proma-new-');
     if ($existing === false || $new === false) {
         throw new RuntimeException('Cannot create rollback fixtures.');
     }
     unlink($new);
     file_put_contents($existing, 'before');
-    $originals = [$snapshotTarget->invoke(null, $existing), $snapshotTarget->invoke(null, $new)];
+    $existingRelative = str_replace('\\', '/', substr($existing, strlen($root) + 1));
+    $newRelative = str_replace('\\', '/', substr($new, strlen($root) + 1));
+    $originals = [
+        $snapshotTarget->invoke(null, $existing, $existingRelative),
+        $snapshotTarget->invoke(null, $new, $newRelative),
+    ];
     try {
         file_put_contents($existing, 'after');
         file_put_contents($new, 'created');

@@ -12,7 +12,7 @@
 
 این کار تست نفوذ کامل نیست. آزمون‌های پویا برای CSRF/IDOR همه‌ی endpointها، race/replay پرداخت، uploadها، secret scanning جامع، security headerهای تمام routeها، plugin install/update و sandbox مرورگر انجام نشده است. فاز integration release gate و test runtime چندمرورگری اجرا نشدند. «همه تست‌های محلی پاس شدند» فقط به مجموعه‌ی static/unit پیکربندی‌شده اشاره دارد.
 
-گزارش محلی قبلی `docs/security-audit/2026-10-07-live-audit.md` موارد و محدودیت‌های نقش‌ها را ثبت می‌کند؛ آن گزارش جای ارزیابی نهایی Candidate را نمی‌گیرد. پیش از انتشار، dependency advisoryهای Electron و کل زنجیره‌ی build باید با lockfile فعلی دوباره ارزیابی شوند.
+گزارش محلی قبلی `docs/audit/security/live-audit-2026-10-07.md` موارد و محدودیت‌های نقش‌ها را ثبت می‌کند؛ آن گزارش جای ارزیابی نهایی Candidate را نمی‌گیرد. پیش از انتشار، dependency advisoryهای Electron و کل زنجیره‌ی build باید با lockfile فعلی دوباره ارزیابی شوند.
 
 ## ریسک باقیمانده
 

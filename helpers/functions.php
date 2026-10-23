@@ -61,19 +61,6 @@ function setting_enabled($key, $default = true)
     return in_array((string) $value, ['1', 'true', 'on', 'yes'], true);
 }
 
-function ecommerce_is_enabled()
-{
-    // فروشگاه داخلی از نسخه 1.5.9 بازنشسته است. داده‌های `ecommerce_*`
-    // صرفاً برای بایگانی خواندنی حفظ می‌شوند و فروش جدید فقط از اتصال خارجی
-    // (مانند WooCommerce) وارد سامانه خواهد شد.
-    return false;
-}
-
-function landing_is_enabled()
-{
-    return false;
-}
-
 function app_version_label()
 {
     return 'v' . ltrim(app_version(), 'vV');

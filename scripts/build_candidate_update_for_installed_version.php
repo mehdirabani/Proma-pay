@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 // Build one exact-baseline update candidate from an existing Core installer.
 $root = dirname(__DIR__);
+require_once $root . '/scripts/release_artifact_paths.php';
 $versionInfo = require $root . '/config/version.php';
 $version = (string) ($versionInfo['application'] ?? '0.0.0');
 $baselineVersion = (string) ($argv[1] ?? '');
@@ -28,9 +29,15 @@ if ($explicitBaseline !== '') {
     }
 } else {
     $baselineCandidates = [
-        $root . '/dist/core/PromaPay-v' . $baselineVersion . '.zip',
+        ReleaseArtifactPaths::core($root, $baselineVersion),
         $root . '/dist/candidates/v' . $baselineVersion . '/core/PromaPay-v' . $baselineVersion . '.zip',
+        $root . '/dist/candidates/archive/v' . explode('.', $baselineVersion, 2)[0] . '/v' . $baselineVersion . '/core/PromaPay-v' . $baselineVersion . '.zip',
     ];
+    $baselineCandidates = array_merge(
+        $baselineCandidates,
+        glob($root . '/dist/candidates/archive/v' . explode('.', $baselineVersion, 2)[0] . '/v' . $baselineVersion . '-*/core/PromaPay-v' . $baselineVersion . '.zip') ?: [],
+        glob($root . '/dist/candidates/archive/v' . $baselineVersion . '-*/core/PromaPay-v' . $baselineVersion . '.zip') ?: []
+    );
     foreach ($baselineCandidates as $candidatePath) {
         if (is_file($candidatePath)) {
             $baselinePath = $candidatePath;

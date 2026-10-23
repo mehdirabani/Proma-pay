@@ -1,5 +1,7 @@
 # ممیزی خروج ایمن فروشگاه داخلی
 
+> Historical planning document from V1.5.8. Its temporary-retention and future-cleanup recommendations were superseded by the V7.0.4 removal recorded in [ECOMMERCE_LARAVEL_REMOVAL_BASELINE.md](ECOMMERCE_LARAVEL_REMOVAL_BASELINE.md); this file describes the old plan, not the current runtime.
+
 تاریخ ممیزی: ۱۴۰۵/۰۶/۱۵  
 نسخه مبنا: Proma Pay 1.5.8
 
