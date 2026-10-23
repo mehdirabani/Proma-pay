@@ -230,6 +230,12 @@ final class MerchantApiGatewayRepository
                         $quoteJson,
                     ]
                 );
+                MerchantApiPluginIntegration::enqueue('merchant_api.order.pending_review', $context, [
+                    'order_uuid' => $orderUuid,
+                    'external_order_id' => $externalOrderId,
+                    'status' => 'pending_review',
+                    'contract_request_status' => 'not_requested',
+                ]);
                 self::enqueueWebhook($context, 'order.pending_review', $orderUuid, [
                     'order_uuid' => $orderUuid,
                     'external_order_id' => $externalOrderId,
@@ -371,6 +377,12 @@ final class MerchantApiGatewayRepository
                      WHERE id = ? AND contract_request_status = 'not_requested'",
                     [$contractRequestUuid, hash('sha256', $externalCustomerReference), (int) $order['id']]
                 );
+                MerchantApiPluginIntegration::enqueue('merchant_api.contract_request.pending_review', $context, [
+                    'order_uuid' => $orderUuid,
+                    'external_order_id' => (string) $order['external_order_id'],
+                    'status' => 'pending_review',
+                    'contract_request_status' => 'pending_review',
+                ], ['contract_request_uuid' => $contractRequestUuid]);
                 self::enqueueWebhook($context, 'contract.pending_review', $orderUuid, [
                     'order_uuid' => $orderUuid,
                     'contract_request_uuid' => $contractRequestUuid,
@@ -441,6 +453,12 @@ final class MerchantApiGatewayRepository
                      WHERE id = ? AND status = 'pending_review'",
                     [(int) $order['id']]
                 );
+                MerchantApiPluginIntegration::enqueue('merchant_api.order.cancelled', $context, [
+                    'order_uuid' => $orderUuid,
+                    'external_order_id' => (string) $order['external_order_id'],
+                    'status' => 'cancelled',
+                    'contract_request_status' => (string) $order['contract_request_status'],
+                ], ['reason_code' => $reasonCode]);
                 self::enqueueWebhook($context, 'order.cancelled', $orderUuid, [
                     'order_uuid' => $orderUuid,
                     'external_order_id' => (string) $order['external_order_id'],

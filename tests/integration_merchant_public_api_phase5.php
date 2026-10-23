@@ -16,9 +16,11 @@ foreach ([
     'helpers/MerchantApiCredentialToken.php', 'helpers/MerchantAccessContext.php',
     'helpers/MerchantAuditMetadata.php', 'helpers/MerchantGuaranteeCalculator.php',
     'helpers/MerchantGuaranteePolicy.php', 'helpers/MerchantApiGateway.php',
+    'helpers/MerchantApiPluginIntegration.php',
     'models/MerchantAuditLog.php', 'models/MerchantApiCredentialRepository.php',
     'models/MerchantCentralGuaranteePolicyRepository.php',
     'models/MerchantApiGatewayRepository.php',
+    'models/SystemOutbox.php',
 ] as $file) {
     require_once $root . '/' . $file;
 }
@@ -51,6 +53,7 @@ SchemaGuard::requireTables([
     'merchant_api_rate_limits','merchant_api_idempotency','merchant_api_order_requests','merchant_api_webhook_outbox','merchant_api_quotes',
     'merchant_contract_links','merchant_cheque_guarantees','contracts','users',
     'merchant_central_guarantee_policy_versions','merchant_central_guarantee_policy_head',
+    'system_outbox',
 ]);
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) {
@@ -273,6 +276,18 @@ $assert($cancelResponse['status'] === 202
     && $cancelRetry['status'] === 200 && ($cancelRetry['body']['data']['idempotent'] ?? false) === true
     && ($cancelState['body']['data']['contract']['request_status'] ?? '') === 'cancelled',
     'Pending external order cancellation did not remain tenant-scoped and idempotent.');
+$cancelPluginEvents = Model::fetchAll(
+    "SELECT payload_json FROM system_outbox WHERE event_type = 'plugin_hook' AND payload_json LIKE ? ORDER BY id ASC",
+    ['%' . $cancelOrderUuid . '%']
+);
+$cancelEventNames = [];
+foreach ($cancelPluginEvents as $row) {
+    $eventDocument = json_decode((string) $row['payload_json'], true);
+    $cancelEventNames[] = (string) ($eventDocument['event'] ?? '');
+}
+sort($cancelEventNames);
+$assert($cancelEventNames === ['merchant_api.order.cancelled','merchant_api.order.pending_review'],
+    'Pending order cancellation did not publish its lifecycle event idempotently.');
 $guaranteeState = $send('GET','/guarantees/' . $orderUuid);
 $assert($guaranteeState['status'] === 200 && $guaranteeState['body']['data']['guarantee']['status'] === 'not_created',
     'Guarantee endpoint returned an invalid pre-contract state.');
@@ -289,6 +304,25 @@ $assert(hash_equals(hash('sha256',$contractPayload['external_customer_reference'
     'External customer reference was not stored only as a digest.');
 $assert(strpos((string) $storedOrder['request_json'], 'customer-' . $suffix) === false,
     'Customer reference leaked into the order request snapshot.');
+$mainPluginEvents = Model::fetchAll(
+    "SELECT payload_json FROM system_outbox WHERE event_type = 'plugin_hook' AND payload_json LIKE ? ORDER BY id ASC",
+    ['%' . $orderUuid . '%']
+);
+$mainEventNames = [];
+foreach ($mainPluginEvents as $row) {
+    $eventDocument = json_decode((string) $row['payload_json'], true);
+    $eventName = (string) ($eventDocument['event'] ?? '');
+    $eventPayload = (array) ($eventDocument['payload'] ?? []);
+    $mainEventNames[] = $eventName;
+    $assert(($eventPayload['financial_posting_permitted'] ?? true) === false
+        && !array_key_exists('external_order_id', $eventPayload)
+        && !array_key_exists('external_customer_reference', $eventPayload)
+        && !array_key_exists('cash_price_toman', $eventPayload),
+        'Plugin lifecycle outbox leaked raw identifiers or enabled financial posting.');
+}
+sort($mainEventNames);
+$assert($mainEventNames === ['merchant_api.contract_request.pending_review','merchant_api.order.pending_review'],
+    'Order and contract request lifecycle events were not durably queued exactly once.');
 
 Model::execute(
     "INSERT INTO merchant_accounts (merchant_uuid,merchant_code,display_name,status,created_by)

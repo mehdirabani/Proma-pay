@@ -20,6 +20,7 @@ $gateway = $read('helpers/MerchantApiGateway.php');
 $repository = $read('models/MerchantApiGatewayRepository.php');
 $migration = $read('database/migrations/2026_10_23_public_api_gateway_phase5.sql');
 $quoteMigration = $read('database/migrations/2026_10_23_checkout_quote_snapshot_phase7.sql');
+$pluginIntegration = $read('helpers/MerchantApiPluginIntegration.php');
 $installer = $read('database/proma-pay-install.sql');
 $frontController = $read('api/v1/index.php');
 $bootstrap = $read('bootstrap.php');
@@ -50,5 +51,14 @@ $assert(strpos($quoteMigration, 'CREATE TABLE IF NOT EXISTS merchant_api_quotes'
     'Additive quote snapshot migration or its tenant scope is missing.');
 $assert(strpos($installer, 'CREATE TABLE IF NOT EXISTS merchant_api_quotes') !== false,
     'Fresh installation is missing the checkout quote snapshot table.');
+$assert(strpos($pluginIntegration, 'SystemOutbox::safeEnqueuePluginHook') !== false
+    && strpos($pluginIntegration, "'merchant_api.order.pending_review'") !== false
+    && strpos($pluginIntegration, "'merchant_api.contract_request.pending_review'") !== false
+    && strpos($pluginIntegration, "'merchant_api.order.cancelled'") !== false,
+    'Merchant API lifecycle events are not routed through the core plugin outbox.');
+$assert(strpos($pluginIntegration, "'financial_posting_permitted' => false") !== false
+    && strpos($pluginIntegration, "'external_order_id_sha256'") !== false
+    && strpos($pluginIntegration, "'external_customer_reference'") === false,
+    'Plugin lifecycle payloads must explicitly prohibit financial posting and minimize identity data.');
 
 echo "STATIC_MERCHANT_PUBLIC_API_PHASE5_OK\n";
