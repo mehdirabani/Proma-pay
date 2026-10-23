@@ -26,6 +26,11 @@ DirectoryIndex index.php
     # /health/live and /health/ready without an application-specific query string.
     RewriteRule ^health/(live|ready)/?$ index.php?route=health/$1 [L,QSA,NC]
 
+    # Public merchant API has its own JSON front controller and does not enter
+    # the session-backed HTML router.
+    RewriteRule ^api/v1/?$ api/v1/index.php [END,QSA,NC]
+    RewriteRule ^api/v1/(.+)$ api/v1/index.php?path=$1 [END,QSA,NC]
+
     # HTTPS redirect is intentionally not forced here. Some shared hosts and
     # reverse proxies terminate SSL before PHP; forcing HTTPS in app code can
     # create redirect loops. Enable HTTPS from the hosting panel/CDN instead.
