@@ -15,6 +15,11 @@
 ## خروجی‌ها و داده‌های محلی
 
 - `dist/`: خروجی‌های قابل‌بازسازی؛ بسته‌ها طبق دسته و نسخه در مسیرهای ثابت مستندشده نگهداری می‌شوند.
+- `output/`: آرشیو محلی و خارج از Git برای گزارش‌های QA و داده‌های ابزارهای توسعه.
+  - `output/qa/`: گزارش‌های اجرای release gate و آزمون‌های محلی.
+  - `output/playwright/cli-captures/`: snapshotهای مرورگر با شناسهٔ بازه یا تاریخ.
+  - `output/analysis-cache/`: cacheهای تحلیل ایستا و نمودار وابستگی.
+  - `output/security-audit/<date>/`: telemetry و خروجی ممیزی امنیتی.
 - `storage/`: داده‌های runtime، گزارش، پایگاه‌داده و QA محلی؛ نباید وارد Git شوند.
   - `storage/testing/releases/<version>/` و `storage/testing/plugins/`: snapshotهای محلی و بسته‌های QA، دسته‌بندی‌شده بر اساس نسخه و نوع.
 - `tmp/updates/<from>-to-<to>/`: cloneها و خروجی‌های موقت آزمون به‌روزرسانی.
