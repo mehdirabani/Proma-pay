@@ -9,7 +9,14 @@
 /.project-graph/
 /.playwright-cli/
 /output/
-/dist/
+/dist/*
+!/dist/plugins/
+/dist/plugins/*
+!/dist/plugins/pre-release/
+/dist/plugins/pre-release/*
+!/dist/plugins/pre-release/proma-pay-woocommerce/
+/dist/plugins/pre-release/proma-pay-woocommerce/*
+!/dist/plugins/pre-release/proma-pay-woocommerce/PromaPay-WooCommerce-v0.8.0-rc.1.zip
 /html/RTL/node_modules/
 .env
 .env.*
