@@ -29,6 +29,7 @@ $staticTests = [
     'tests/static_v134.php',
     'tests/static_v135.php',
     'tests/financial_precision_v136.php',
+    'tests/installment_financial_calculator.php',
     'tests/financial_v501.php',
     'tests/static_v501.php',
     'tests/static_v502.php',
