@@ -1,0 +1,26 @@
+.promapaywc-product-widget,
+.promapaywc-checkout {
+    direction: rtl;
+    text-align: right;
+    box-sizing: border-box;
+}
+.promapaywc-product-widget {
+    display: grid;
+    gap: .65rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px solid #d7dee8;
+    border-radius: .65rem;
+    background: #f7f9fc;
+    color: #1c2735;
+}
+.promapaywc-product-widget details { font-size: .92em; }
+.promapaywc-product-widget summary { cursor: pointer; font-weight: 600; }
+.promapaywc-product-details { padding-top: .5rem; line-height: 1.9; }
+.promapaywc-checkout { display: grid; gap: .8rem; }
+.promapaywc-checkout label { display: grid; gap: .35rem; }
+.promapaywc-checkout input:not([type="checkbox"]),
+.promapaywc-checkout select { width: 100%; max-width: 32rem; min-height: 2.5rem; }
+.promapaywc-checkout .promapaywc-terms { display: flex; align-items: flex-start; gap: .5rem; }
+.promapaywc-checkout .promapaywc-quote,
+.promapaywc-checkout .promapaywc-deposit-note { line-height: 1.9; }

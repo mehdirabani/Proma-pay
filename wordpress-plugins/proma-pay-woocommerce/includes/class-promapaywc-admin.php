@@ -55,10 +55,11 @@ final class PromaPay_WC_Admin
         echo '<p>' . esc_html__('This build accepts test credentials only. Financial rules are read from Proma Pay and cannot be edited here.', 'proma-pay-woocommerce') . '</p>';
         echo '<table class="widefat striped"><thead><tr><th>' . esc_html__('Name', 'proma-pay-woocommerce') . '</th><th>'
             . esc_html__('Service URL', 'proma-pay-woocommerce') . '</th><th>' . esc_html__('Credential', 'proma-pay-woocommerce') . '</th><th>'
-            . esc_html__('Health / API', 'proma-pay-woocommerce') . '</th><th>' . esc_html__('Priority', 'proma-pay-woocommerce') . '</th><th>'
+            . esc_html__('Health / API', 'proma-pay-woocommerce') . '</th><th>' . esc_html__('Deposit gateway', 'proma-pay-woocommerce') . '</th><th>'
+            . esc_html__('Priority', 'proma-pay-woocommerce') . '</th><th>'
             . esc_html__('State', 'proma-pay-woocommerce') . '</th><th>' . esc_html__('Actions', 'proma-pay-woocommerce') . '</th></tr></thead><tbody>';
         if (!$connections) {
-            echo '<tr><td colspan="7">' . esc_html__('No service connections have been configured.', 'proma-pay-woocommerce') . '</td></tr>';
+            echo '<tr><td colspan="8">' . esc_html__('No service connections have been configured.', 'proma-pay-woocommerce') . '</td></tr>';
         }
         foreach ($connections as $connection) {
             $uuid = (string) $connection['connection_uuid'];
@@ -76,7 +77,8 @@ final class PromaPay_WC_Admin
             if (!empty($connection['last_error_code'])) {
                 echo '<br><small>' . esc_html((string) $connection['last_error_code']) . '</small>';
             }
-            echo '</td><td>' . esc_html((string) $connection['priority']) . '</td><td>'
+            echo '</td><td>' . esc_html((string) ($connection['prepayment_gateway_id'] ?? '—'))
+                . '</td><td>' . esc_html((string) $connection['priority']) . '</td><td>'
                 . ((int) $connection['enabled'] === 1 ? esc_html__('Enabled', 'proma-pay-woocommerce') : esc_html__('Disabled', 'proma-pay-woocommerce'))
                 . '</td><td>';
             self::action_form('promapaywc_test_connection', $uuid, __('Test and refresh policy', 'proma-pay-woocommerce'));
@@ -108,12 +110,37 @@ final class PromaPay_WC_Admin
         self::text_field('base_url', __('Proma Pay API base URL', 'proma-pay-woocommerce'), (string) ($editing['base_url'] ?? ''), true, 255, 'url');
         self::text_field('bearer_token', __('Test API token', 'proma-pay-woocommerce'), '', !$isEditing, 128, 'password', $isEditing ? __('Leave blank to keep the saved token.', 'proma-pay-woocommerce') : __('Only pmp_test_ credentials are accepted. Live tokens are not supported in this build.', 'proma-pay-woocommerce'));
         self::text_field('priority', __('Priority (1 is highest)', 'proma-pay-woocommerce'), (string) ($editing['priority'] ?? '10'), true, 3, 'number');
+        self::prepayment_gateway_field((string) ($editing['prepayment_gateway_id'] ?? ''));
+        self::currency_divisor_field((int) ($editing['currency_divisor'] ?? 1));
         echo '<tr><th scope="row">' . esc_html__('Connection options', 'proma-pay-woocommerce') . '</th><td>';
         echo '<label><input type="checkbox" name="enabled" value="1" ' . checked((int) ($editing['enabled'] ?? 1), 1, false) . '> ' . esc_html__('Enabled', 'proma-pay-woocommerce') . '</label><br>';
         echo '<label><input type="checkbox" name="is_default" value="1" ' . checked((int) ($editing['is_default'] ?? 0), 1, false) . '> ' . esc_html__('Make this the default connection', 'proma-pay-woocommerce') . '</label>';
         echo '</td></tr></tbody></table>';
         submit_button($isEditing ? __('Save connection', 'proma-pay-woocommerce') : __('Add connection', 'proma-pay-woocommerce'));
         echo '</form>';
+    }
+
+    private static function prepayment_gateway_field(string $selected): void
+    {
+        $gateways = PromaPay_WC_Payment_Adapter::available_gateways();
+        echo '<tr><th scope="row"><label for="promapaywc-prepayment-gateway">' . esc_html__('Deposit payment gateway', 'proma-pay-woocommerce') . '</label></th><td>';
+        echo '<select id="promapaywc-prepayment-gateway" name="prepayment_gateway_id"><option value="">'
+            . esc_html__('Select an enabled online WooCommerce gateway', 'proma-pay-woocommerce') . '</option>';
+        foreach ($gateways as $id => $title) {
+            echo '<option value="' . esc_attr((string) $id) . '" ' . selected($selected, (string) $id, false) . '>'
+                . esc_html((string) $title . ' (' . $id . ')') . '</option>';
+        }
+        echo '</select><p class="description">' . esc_html__('The gateway charges a separate order for the exact deposit. Cash, cheque, and Proma Pay gateways are excluded.', 'proma-pay-woocommerce') . '</p></td></tr>';
+    }
+
+    private static function currency_divisor_field(int $selected): void
+    {
+        echo '<tr><th scope="row"><label for="promapaywc-currency-divisor">' . esc_html__('Store currency units per Toman', 'proma-pay-woocommerce') . '</label></th><td>';
+        echo '<select id="promapaywc-currency-divisor" name="currency_divisor">';
+        foreach ([1 => __('Store currency is Toman', 'proma-pay-woocommerce'), 10 => __('Store currency is Rial (10 Rial = 1 Toman)', 'proma-pay-woocommerce')] as $value => $label) {
+            echo '<option value="' . esc_attr((string) $value) . '" ' . selected($selected, $value, false) . '>' . esc_html($label) . '</option>';
+        }
+        echo '</select></td></tr>';
     }
 
     private static function render_logs(PromaPay_WC_Connection_Repository $repository): void
@@ -192,6 +219,8 @@ final class PromaPay_WC_Admin
                 'base_url' => trim((string) wp_unslash($_POST['base_url'] ?? '')),
                 'bearer_token' => trim((string) wp_unslash($_POST['bearer_token'] ?? '')),
                 'priority' => wp_unslash($_POST['priority'] ?? '10'),
+                'prepayment_gateway_id' => sanitize_key(wp_unslash($_POST['prepayment_gateway_id'] ?? '')),
+                'currency_divisor' => wp_unslash($_POST['currency_divisor'] ?? '1'),
                 'enabled' => isset($_POST['enabled']),
                 'is_default' => isset($_POST['is_default']),
             ];

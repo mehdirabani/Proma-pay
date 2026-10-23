@@ -42,6 +42,8 @@ require_once dirname(__DIR__) . '/includes/class-promapaywc-installer.php';
 require_once dirname(__DIR__) . '/includes/class-promapaywc-connection-repository.php';
 require_once dirname(__DIR__) . '/includes/class-promapaywc-api-client.php';
 require_once dirname(__DIR__) . '/includes/class-promapaywc-policy-service.php';
+require_once dirname(__DIR__) . '/includes/class-promapaywc-payment-adapter.php';
+require_once dirname(__DIR__) . '/includes/class-promapaywc-quote-service.php';
 
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) {
@@ -120,4 +122,64 @@ $refreshClient = new PromaPay_WC_Api_Client($repository, static function (string
 $refreshed = (new PromaPay_WC_Policy_Service($repository, $refreshClient))->refresh('d71e105a-21af-4af0-bfb7-84da35da3ab6');
 $assert($refreshed['ok'] === true && $repository->cached_policy('d71e105a-21af-4af0-bfb7-84da35da3ab6') === $policy, 'Connection test did not refresh the encrypted policy cache.');
 
-echo "PROMAPAY_WC_PHASE6_UNIT_OK\n";
+$assert(PromaPay_WC_Quote_Service::to_toman('100', 1, 0) === 100, 'Toman currency conversion failed.');
+$assert(PromaPay_WC_Quote_Service::to_toman('1000', 10, 0) === 100, 'Rial to toman conversion failed.');
+$assert(PromaPay_WC_Quote_Service::to_toman('1000.00', 10, 2) === 100, 'Decimal rial conversion failed.');
+$assert(PromaPay_WC_Quote_Service::from_toman(100, 10, 0) === '1000', 'Toman to rial conversion failed.');
+$assert(PromaPay_WC_Quote_Service::from_toman(100, 1, 2) === '100.00', 'Toman decimal formatting failed.');
+$throws(static fn () => PromaPay_WC_Quote_Service::to_toman('1001', 10, 0), 'Fractional-toman value was rounded silently.');
+
+$guaranteeDocument = [
+    'guarantee_type' => 'sayadi_cheque',
+    'required_cheque_count' => 1,
+    'guarantee_base' => 'scheduled_installments',
+    'multiplier_units' => 20000,
+    'multiplier_scale' => 10000,
+    'central_minimum_multiplier_units' => 15000,
+    'central_maximum_multiplier_units' => 25000,
+    'beneficiary_legal_name' => 'Proma Pay Test Legal Entity',
+    'beneficiary_identifier' => '1234567890',
+    'central_policy_uuid' => 'c6da1a65-1186-48e7-85f8-f86b5452b65f',
+    'central_policy_version_no' => 1,
+];
+$guaranteePolicyHash = hash('sha256', json_encode($guaranteeDocument, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION | JSON_THROW_ON_ERROR));
+$quote = [
+    'quote_uuid' => 'd3c8f845-c90e-4545-a94f-52e81d132504',
+    'policy_version_uuid' => 'c3bc78aa-50fb-4e64-9e26-b48c6a32c55a',
+    'policy_sha256' => str_repeat('a', 64),
+    'expires_at' => gmdate('c', time() + 600),
+    'calculation' => [
+        'currency_unit' => 'toman', 'cash_price' => 1100000, 'down_payment' => 200000,
+        'months' => 2, 'interest_method' => 'flat', 'total_installments' => 900000,
+        'total_customer_payable' => 1100000, 'first_installment_due_date' => '2027-01-20',
+        'installment_schedule' => [
+            ['installment_number' => 1, 'amount' => 450000, 'due_date' => '2027-01-20'],
+            ['installment_number' => 2, 'amount' => 450000, 'due_date' => '2027-02-20'],
+        ],
+    ],
+    'guarantee' => [
+        'policy_version_uuid' => 'e33b27c2-6ac6-4f5e-aedb-d2a7d7e865c4',
+        'source_policy_sha256' => str_repeat('c', 64),
+        'policy_sha256' => $guaranteePolicyHash,
+        'document' => $guaranteeDocument,
+        'calculation' => [
+            'guarantee_type' => 'sayadi_cheque', 'required_cheque_count' => 1,
+            'guarantee_base' => 'scheduled_installments', 'scheduled_installments_toman' => 900000,
+            'multiplier_units' => 20000, 'multiplier_scale' => 10000,
+            'cheque_amount_rial' => 18000000, 'first_installment_due_date' => '2027-01-20',
+            'cheque_due_date' => '2027-01-20', 'rounding_policy' => 'nearest_rial_half_up',
+        ],
+    ],
+];
+$assert(PromaPay_WC_Quote_Service::valid_checkout_quote($quote, 1100000, 200000, 2, 'flat'), 'Valid financial and guarantee quote was rejected.');
+$badCheque = $quote;
+$badCheque['guarantee']['calculation']['cheque_due_date'] = '2027-02-20';
+$assert(!PromaPay_WC_Quote_Service::valid_checkout_quote($badCheque, 1100000, 200000, 2, 'flat'), 'Quote accepted a cheque due date that differs from the first installment.');
+$badSum = $quote;
+$badSum['calculation']['total_customer_payable']++;
+$assert(!PromaPay_WC_Quote_Service::valid_checkout_quote($badSum, 1100000, 200000, 2, 'flat'), 'Quote accepted a payable total inconsistent with deposit plus installments.');
+$badAmount = $quote;
+$badAmount['guarantee']['calculation']['cheque_amount_rial']++;
+$assert(!PromaPay_WC_Quote_Service::valid_checkout_quote($badAmount, 1100000, 200000, 2, 'flat'), 'Quote accepted a cheque amount inconsistent with the signed multiplier.');
+
+echo "PROMAPAY_WC_PHASE7_UNIT_OK\n";

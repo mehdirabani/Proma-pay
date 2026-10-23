@@ -5,7 +5,7 @@ declare(strict_types=1);
 /** Additive schema installer. Upgrades never delete plugin or merchant data. */
 final class PromaPay_WC_Installer
 {
-    public const SCHEMA_VERSION = '1';
+    public const SCHEMA_VERSION = '2';
     private const OPTION_SCHEMA_VERSION = 'promapaywc_schema_version';
 
     public static function activate(): void
@@ -45,6 +45,8 @@ final class PromaPay_WC_Installer
             base_url varchar(255) NOT NULL,
             token_ciphertext longtext NOT NULL,
             token_prefix varchar(16) NOT NULL DEFAULT '',
+            prepayment_gateway_id varchar(100) NOT NULL DEFAULT '',
+            currency_divisor smallint unsigned NOT NULL DEFAULT 1,
             enabled tinyint(1) NOT NULL DEFAULT 1,
             priority smallint unsigned NOT NULL DEFAULT 10,
             is_default tinyint(1) NOT NULL DEFAULT 0,

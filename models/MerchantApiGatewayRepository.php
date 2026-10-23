@@ -86,13 +86,64 @@ final class MerchantApiGatewayRepository
         ];
     }
 
+    /** Return only the current, published cheque terms needed for customer disclosure. */
+    public static function publicGuaranteePolicy(MerchantAccessContext $context): array
+    {
+        $row = Model::fetch(
+            "SELECT p.policy_version_uuid, p.content_sha256, p.policy_json
+             FROM merchant_policy_heads h
+             INNER JOIN merchant_policy_versions p
+               ON p.id = h.policy_version_id AND p.connection_id = h.connection_id
+              AND p.policy_type = h.policy_type AND p.status = 'published'
+             WHERE h.connection_id = ? AND h.policy_type = 'guarantee'
+             LIMIT 1",
+            [$context->connectionId()]
+        );
+        if (!$row) {
+            throw new DomainException('merchant_api_guarantee_policy_unavailable');
+        }
+        try {
+            $connectionDocument = json_decode((string) $row['policy_json'], true, 32, JSON_THROW_ON_ERROR);
+        } catch (JsonException $error) {
+            throw new DomainException('merchant_api_guarantee_policy_invalid', 0, $error);
+        }
+        if (!is_array($connectionDocument)) {
+            throw new DomainException('merchant_api_guarantee_policy_invalid');
+        }
+        $central = MerchantCentralGuaranteePolicyRepository::currentPublished();
+        $resolved = MerchantGuaranteePolicy::resolve($connectionDocument, $central);
+        $document = [
+            'guarantee_type' => $resolved['guarantee_type'],
+            'required_cheque_count' => $resolved['required_cheque_count'],
+            'guarantee_base' => $resolved['guarantee_base'],
+            'multiplier_units' => $resolved['multiplier_units'],
+            'multiplier_scale' => $resolved['multiplier_scale'],
+            'central_minimum_multiplier_units' => $resolved['central_minimum_multiplier_units'],
+            'central_maximum_multiplier_units' => $resolved['central_maximum_multiplier_units'],
+            'beneficiary_legal_name' => $resolved['beneficiary_legal_name'],
+            'beneficiary_identifier' => $resolved['beneficiary_identifier'],
+            'central_policy_uuid' => (string) $central['policy_uuid'],
+            'central_policy_version_no' => (int) $central['version_no'],
+        ];
+        $canonical = json_encode(
+            $document,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION | JSON_THROW_ON_ERROR
+        );
+        return [
+            'policy_type' => 'guarantee',
+            'policy_version_uuid' => (string) $row['policy_version_uuid'],
+            'source_policy_sha256' => (string) $row['content_sha256'],
+            'policy_sha256' => hash('sha256', $canonical),
+            'document' => $document,
+        ];
+    }
+
     public static function createOrderRequest(
         MerchantAccessContext $context,
         string $idempotencyKey,
         string $requestHash,
         string $externalOrderId,
-        array $input,
-        array $quote
+        array $input
     ): array {
         return self::withIdempotency(
             $context,
@@ -100,7 +151,7 @@ final class MerchantApiGatewayRepository
             'POST',
             '/orders',
             $requestHash,
-            static function () use ($context, $requestHash, $externalOrderId, $input, $quote): array {
+            static function () use ($context, $requestHash, $externalOrderId, $input): array {
                 $existing = Model::fetch(
                     'SELECT order_uuid, status, request_sha256, quote_json
                      FROM merchant_api_order_requests
@@ -120,11 +171,32 @@ final class MerchantApiGatewayRepository
                     ];
                 }
 
-                $policy = self::financialPolicy($context);
                 $orderUuid = MerchantAuditLog::newUuid();
+                $quoteRequest = [
+                    'cash_price_toman' => $input['cash_price_toman'] ?? null,
+                    'down_payment_toman' => $input['down_payment_toman'] ?? null,
+                    'months' => $input['months'] ?? null,
+                    'interest_method' => $input['interest_method'] ?? null,
+                ];
+                $quote = self::consumeQuote($context, (string) $input['quote_uuid'], $quoteRequest, $orderUuid);
+                $policy = Model::fetch(
+                    "SELECT id AS policy_version_id, policy_version_uuid, content_sha256
+                     FROM merchant_policy_versions
+                     WHERE connection_id = ? AND policy_type = 'financial' AND policy_version_uuid = ?
+                     LIMIT 1 FOR UPDATE",
+                    [$context->connectionId(), (string) $quote['policy_version_uuid']]
+                );
+                if (!$policy || !hash_equals((string) $policy['content_sha256'], (string) $quote['policy_sha256'])) {
+                    throw new DomainException('merchant_api_quote_policy_version_not_found');
+                }
+                $rateUnits = $quote['calculation']['monthly_interest_rate_units'] ?? null;
+                if (!is_int($rateUnits) || $rateUnits < 0 || $rateUnits > 1000000 || $rateUnits % 100 !== 0) {
+                    throw new DomainException('merchant_api_quote_policy_invalid');
+                }
                 $quoteJson = self::encodeJson($quote);
                 $payload = [
                     'external_order_id' => $externalOrderId,
+                    'quote_uuid' => (string) $input['quote_uuid'],
                     'cash_price_toman' => $input['cash_price_toman'],
                     'down_payment_toman' => $input['down_payment_toman'],
                     'months' => $input['months'],
@@ -151,7 +223,7 @@ final class MerchantApiGatewayRepository
                         $input['down_payment_toman'],
                         $quote['calculation']['financed_principal'],
                         $input['months'],
-                        (int) $policy['document']['monthly_rate_bps'],
+                        intdiv($rateUnits, 100),
                         $input['interest_method'],
                         $requestHash,
                         self::encodeJson($payload),
@@ -177,6 +249,92 @@ final class MerchantApiGatewayRepository
                 ];
             }
         );
+    }
+
+    /** Store the exact server-calculated quote so later policy changes cannot alter customer-accepted terms. */
+    public static function issueQuote(MerchantAccessContext $context, array $input, array $quote): void
+    {
+        $quoteUuid = strtolower((string) ($quote['quote_uuid'] ?? ''));
+        $expiresAt = (string) ($quote['expires_at'] ?? '');
+        if (!self::validApiUuid($quoteUuid)
+            || !is_array($quote['calculation'] ?? null)
+            || !is_array($quote['guarantee'] ?? null)) {
+            throw new DomainException('merchant_api_quote_snapshot_invalid');
+        }
+        try {
+            $expiresEpoch = (new DateTimeImmutable($expiresAt))->getTimestamp();
+        } catch (Throwable $error) {
+            throw new DomainException('merchant_api_quote_expiry_invalid', 0, $error);
+        }
+        if ($expiresEpoch <= time() || $expiresEpoch > time() + 3600) {
+            throw new DomainException('merchant_api_quote_expiry_invalid');
+        }
+        $requestHash = MerchantApiGateway::canonicalRequestHash('POST', '/quotes', $input);
+        Model::execute(
+            'INSERT INTO merchant_api_quotes
+                (quote_uuid,merchant_id,site_id,connection_id,policy_version_uuid,request_sha256,request_json,quote_json,expires_at_epoch)
+             VALUES (?,?,?,?,?,?,?,?,?)',
+            [
+                $quoteUuid, $context->merchantId(), $context->siteId(), $context->connectionId(),
+                (string) $quote['policy_version_uuid'], $requestHash, self::encodeJson($input),
+                self::encodeJson($quote), $expiresEpoch,
+            ]
+        );
+        if (random_int(1, 100) === 1) {
+            Model::execute(
+                'DELETE FROM merchant_api_quotes WHERE expires_at_epoch < ? LIMIT 500',
+                [time() - 2592000]
+            );
+        }
+    }
+
+    /** Consume one unexpired quote for the same connection and exact checkout inputs, inside the order transaction. */
+    private static function consumeQuote(
+        MerchantAccessContext $context,
+        string $quoteUuid,
+        array $input,
+        string $orderUuid
+    ): array {
+        if (!self::validApiUuid($quoteUuid)) {
+            throw new DomainException('merchant_api_quote_uuid_invalid');
+        }
+        $row = Model::fetch(
+            'SELECT quote_uuid,policy_version_uuid,request_sha256,quote_json,expires_at_epoch,consumed_order_uuid
+             FROM merchant_api_quotes
+             WHERE quote_uuid = ? AND merchant_id = ? AND site_id = ? AND connection_id = ?
+             LIMIT 1 FOR UPDATE',
+            [$quoteUuid, $context->merchantId(), $context->siteId(), $context->connectionId()]
+        );
+        if (!$row) {
+            throw new DomainException('merchant_api_quote_not_found');
+        }
+        if ((int) $row['expires_at_epoch'] <= time()) {
+            throw new DomainException('merchant_api_quote_expired');
+        }
+        $requestHash = MerchantApiGateway::canonicalRequestHash('POST', '/quotes', $input);
+        if (!hash_equals((string) $row['request_sha256'], $requestHash)) {
+            throw new DomainException('merchant_api_quote_input_conflict');
+        }
+        if ($row['consumed_order_uuid'] !== null && !hash_equals((string) $row['consumed_order_uuid'], $orderUuid)) {
+            throw new DomainException('merchant_api_quote_already_consumed');
+        }
+        $quote = json_decode((string) $row['quote_json'], true, 64, JSON_THROW_ON_ERROR);
+        if (!is_array($quote) || !hash_equals((string) $row['policy_version_uuid'], (string) ($quote['policy_version_uuid'] ?? ''))) {
+            throw new DomainException('merchant_api_quote_snapshot_invalid');
+        }
+        if ($row['consumed_order_uuid'] === null) {
+            Model::execute(
+                'UPDATE merchant_api_quotes SET consumed_order_uuid = ?, consumed_at = UTC_TIMESTAMP()
+                 WHERE quote_uuid = ? AND consumed_order_uuid IS NULL',
+                [$orderUuid, $quoteUuid]
+            );
+        }
+        return $quote;
+    }
+
+    private static function validApiUuid(string $uuid): bool
+    {
+        return (bool) preg_match('/\A[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/iD', $uuid);
     }
 
     public static function submitContractRequest(
@@ -229,6 +387,75 @@ final class MerchantApiGatewayRepository
                     'contract_request_uuid' => $contractRequestUuid,
                     'external_order_id' => (string) $order['external_order_id'],
                     'status' => 'pending_review',
+                    'idempotent' => false,
+                ];
+            }
+        );
+    }
+
+    public static function cancelOrderRequest(
+        MerchantAccessContext $context,
+        string $idempotencyKey,
+        string $requestHash,
+        string $requestPath,
+        string $orderUuid,
+        string $reasonCode
+    ): array {
+        return self::withIdempotency(
+            $context,
+            $idempotencyKey,
+            'POST',
+            $requestPath,
+            $requestHash,
+            static function () use ($context, $orderUuid, $reasonCode): array {
+                $order = Model::fetch(
+                    'SELECT id, external_order_id, status, contract_request_status
+                     FROM merchant_api_order_requests
+                     WHERE order_uuid = ? AND connection_id = ? AND merchant_id = ? AND site_id = ? FOR UPDATE',
+                    [$orderUuid, $context->connectionId(), $context->merchantId(), $context->siteId()]
+                );
+                if (!$order) {
+                    throw new DomainException('merchant_api_order_not_found');
+                }
+                if ((string) $order['status'] === 'cancelled') {
+                    return [
+                        'order_uuid' => $orderUuid,
+                        'external_order_id' => (string) $order['external_order_id'],
+                        'status' => 'cancelled',
+                        'idempotent' => true,
+                    ];
+                }
+                if ((string) $order['status'] !== 'pending_review') {
+                    throw new DomainException('merchant_api_order_cancellation_not_available');
+                }
+                $contract = Model::fetch(
+                    'SELECT id FROM merchant_contract_links
+                     WHERE connection_id = ? AND merchant_id = ? AND site_id = ? AND external_order_id = ? LIMIT 1',
+                    [$context->connectionId(), $context->merchantId(), $context->siteId(), (string) $order['external_order_id']]
+                );
+                if ($contract) {
+                    throw new DomainException('merchant_api_order_contract_already_created');
+                }
+                Model::execute(
+                    "UPDATE merchant_api_order_requests SET status = 'cancelled', updated_at = NOW()
+                     WHERE id = ? AND status = 'pending_review'",
+                    [(int) $order['id']]
+                );
+                self::enqueueWebhook($context, 'order.cancelled', $orderUuid, [
+                    'order_uuid' => $orderUuid,
+                    'external_order_id' => (string) $order['external_order_id'],
+                    'status' => 'cancelled',
+                    'reason_code' => $reasonCode,
+                ]);
+                MerchantAuditLog::append(
+                    $context->merchantId(), $context->siteId(), $context->connectionId(), null,
+                    'api.order_request.cancelled', 'merchant_api_order_request', $orderUuid,
+                    ['order_uuid' => $orderUuid, 'reason_code' => $reasonCode]
+                );
+                return [
+                    'order_uuid' => $orderUuid,
+                    'external_order_id' => (string) $order['external_order_id'],
+                    'status' => 'cancelled',
                     'idempotent' => false,
                 ];
             }

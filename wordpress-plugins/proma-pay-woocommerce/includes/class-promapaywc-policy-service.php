@@ -84,10 +84,14 @@ final class PromaPay_WC_Policy_Service
             return false;
         }
         $limits = $document['limits'] ?? [];
-        if (!is_array($limits) || array_diff(array_keys($limits), ['min_order_toman','max_order_toman','max_months','min_down_payment_bps']) !== []) {
+        $allowedLimitKeys = [
+            'min_order_toman','max_order_toman','min_months','max_months',
+            'min_down_payment_bps','min_down_payment_toman','max_down_payment_bps','first_due_days',
+        ];
+        if (!is_array($limits) || array_diff(array_keys($limits), $allowedLimitKeys) !== []) {
             return false;
         }
-        foreach (['min_order_toman', 'max_order_toman', 'max_months', 'min_down_payment_bps'] as $key) {
+        foreach ($allowedLimitKeys as $key) {
             if (array_key_exists($key, $limits) && (!is_int($limits[$key]) || $limits[$key] < 0)) {
                 return false;
             }
@@ -101,7 +105,19 @@ final class PromaPay_WC_Policy_Service
         if (isset($limits['max_months']) && ($limits['max_months'] < 1 || $limits['max_months'] > 480)) {
             return false;
         }
+        if (isset($limits['min_months']) && ($limits['min_months'] < 1 || $limits['min_months'] > 480)) {
+            return false;
+        }
+        if (isset($limits['min_months'], $limits['max_months']) && $limits['min_months'] > $limits['max_months']) {
+            return false;
+        }
         if (isset($limits['min_down_payment_bps']) && $limits['min_down_payment_bps'] > 10000) {
+            return false;
+        }
+        if (isset($limits['max_down_payment_bps']) && ($limits['max_down_payment_bps'] < 1 || $limits['max_down_payment_bps'] > 10000)) {
+            return false;
+        }
+        if (isset($limits['first_due_days']) && ($limits['first_due_days'] < 1 || $limits['first_due_days'] > 90)) {
             return false;
         }
         $canonical = [

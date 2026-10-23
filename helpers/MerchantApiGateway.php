@@ -159,22 +159,33 @@ final class MerchantApiGateway
         $minOrder = $limits['min_order_toman'] ?? 1;
         $maxOrder = $limits['max_order_toman'] ?? PHP_INT_MAX;
         $maxMonths = $limits['max_months'] ?? 480;
+        $minMonths = $limits['min_months'] ?? 1;
         $minDownPaymentBps = $limits['min_down_payment_bps'] ?? 0;
+        $minDownPaymentToman = $limits['min_down_payment_toman'] ?? 0;
+        $maxDownPaymentBps = $limits['max_down_payment_bps'] ?? 10000;
         if (!is_int($minOrder) || !is_int($maxOrder) || !is_int($maxMonths) || !is_int($minDownPaymentBps)
+            || !is_int($minMonths) || !is_int($minDownPaymentToman) || !is_int($maxDownPaymentBps)
             || $minOrder < 1 || $maxOrder < $minOrder || $maxMonths < 1 || $maxMonths > 480
-            || $minDownPaymentBps < 0 || $minDownPaymentBps > 10000) {
+            || $minMonths < 1 || $minMonths > $maxMonths
+            || $minDownPaymentBps < 0 || $minDownPaymentBps > 10000
+            || $minDownPaymentToman < 0 || $maxDownPaymentBps < 0 || $maxDownPaymentBps > 10000) {
             throw new DomainException('merchant_api_financial_policy_invalid');
         }
         $method = strtolower(trim((string) ($input['interest_method'] ?? '')));
         if (!in_array($method, ['flat', 'compound', 'reducing_balance'], true) || !in_array($method, $methods, true)) {
             throw new InvalidArgumentException('merchant_api_interest_method_not_allowed');
         }
-        if ($cashPrice < $minOrder || $cashPrice > $maxOrder || $months < 1 || $months > $maxMonths
+        if ($cashPrice < $minOrder || $cashPrice > $maxOrder || $months < $minMonths || $months > $maxMonths
             || $downPayment < 0 || $downPayment >= $cashPrice) {
             throw new InvalidArgumentException('merchant_api_quote_outside_policy');
         }
-        if ($minDownPaymentBps > 0 && $downPayment < MoneyMath::ceilMulDiv($cashPrice, $minDownPaymentBps, 10000)) {
+        $minimumDownPayment = max($minDownPaymentToman, MoneyMath::ceilMulDiv($cashPrice, $minDownPaymentBps, 10000));
+        $maximumDownPayment = $cashPrice - MoneyMath::ceilMulDiv($cashPrice, 10000 - $maxDownPaymentBps, 10000);
+        if ($downPayment < $minimumDownPayment) {
             throw new InvalidArgumentException('merchant_api_down_payment_below_policy');
+        }
+        if ($downPayment > $maximumDownPayment) {
+            throw new InvalidArgumentException('merchant_api_down_payment_above_policy');
         }
 
         return InstallmentFinancialCalculator::calculate([
@@ -213,14 +224,21 @@ final class MerchantApiGateway
                 'document' => $document,
             ]];
         }
+        if ($method === 'GET' && $path === '/policies/guarantee') {
+            $context->requireScope('policy:read');
+            return ['policy' => MerchantApiGatewayRepository::publicGuaranteePolicy($context)];
+        }
         if ($method === 'POST' && $path === '/quotes') {
             $context->requireScope('quote:create');
             self::assertAllowedKeys($input, ['cash_price_toman','down_payment_toman','months','interest_method']);
-            return ['quote' => self::quote($context, $input)];
+            $quote = self::quote($context, $input);
+            MerchantApiGatewayRepository::issueQuote($context, $input, $quote);
+            return ['quote' => $quote];
         }
         if ($method === 'POST' && $path === '/orders') {
             $context->requireScope('order:create');
-            self::assertAllowedKeys($input, ['external_order_id','cash_price_toman','down_payment_toman','months','interest_method']);
+            self::assertAllowedKeys($input, ['external_order_id','quote_uuid','cash_price_toman','down_payment_toman','months','interest_method']);
+            $input['quote_uuid'] = self::uuid($input['quote_uuid'] ?? null, 'merchant_api_quote_uuid_invalid');
             $key = self::normalizeIdempotencyKey((string) ($headers['idempotency-key'] ?? ''));
             $externalOrderId = self::externalOrderId($input['external_order_id'] ?? null);
             $hash = self::canonicalRequestHash('POST', $path, $input);
@@ -228,9 +246,18 @@ final class MerchantApiGateway
             if ($replay !== null) {
                 return $replay + ['_http_status' => 200];
             }
-            $quote = self::quote($context, $input);
-            $result = MerchantApiGatewayRepository::createOrderRequest($context, $key, $hash, $externalOrderId, $input, $quote);
+            $result = MerchantApiGatewayRepository::createOrderRequest($context, $key, $hash, $externalOrderId, $input);
             return $result + ['_http_status' => ($result['idempotent'] ?? false) ? 200 : 201];
+        }
+        if ($method === 'POST' && preg_match('#\A/orders/([0-9a-f-]{36})/cancel\z#iD', $path, $match)) {
+            $context->requireScope('order:cancel');
+            self::assertAllowedKeys($input, ['reason_code']);
+            $key = self::normalizeIdempotencyKey((string) ($headers['idempotency-key'] ?? ''));
+            $orderUuid = self::uuid($match[1], 'merchant_api_order_uuid_invalid');
+            $reason = self::orderCancellationReason($input['reason_code'] ?? null);
+            $hash = self::canonicalRequestHash('POST', $path, $input);
+            $result = MerchantApiGatewayRepository::cancelOrderRequest($context, $key, $hash, $path, $orderUuid, $reason);
+            return $result + ['_http_status' => ($result['idempotent'] ?? false) ? 200 : 202];
         }
         if ($method === 'POST' && $path === '/contracts') {
             $context->requireScope('contract:write');
@@ -272,13 +299,51 @@ final class MerchantApiGateway
     {
         $policy = MerchantApiGatewayRepository::financialPolicy($context);
         $snapshot = self::calculateQuote($policy['document'], $input);
-        return [
+        $quote = [
             'quote_uuid' => MerchantAuditLog::newUuid(),
             'policy_version_uuid' => $policy['policy_version_uuid'],
             'policy_sha256' => $policy['content_sha256'],
             'expires_at' => (new DateTimeImmutable('+15 minutes'))->format(DateTimeInterface::ATOM),
             'calculation' => $snapshot,
         ];
+        $limits = is_array($policy['document']['limits'] ?? null) ? $policy['document']['limits'] : [];
+        $firstDueDays = $limits['first_due_days'] ?? null;
+        if (is_int($firstDueDays) && $firstDueDays >= 1 && $firstDueDays <= 90) {
+            $schedule = self::datedSchedule($snapshot['installment_schedule'], $firstDueDays);
+            $quote['calculation']['installment_schedule'] = $schedule;
+            $quote['calculation']['first_installment_due_date'] = $schedule[0]['due_date'];
+            $quote['calculation']['calculation_snapshot']['installment_schedule'] = $schedule;
+            $quote['calculation']['calculation_snapshot']['first_installment_due_date'] = $schedule[0]['due_date'];
+            $guaranteePolicy = MerchantApiGatewayRepository::publicGuaranteePolicy($context);
+            $quote['guarantee'] = [
+                'policy_version_uuid' => $guaranteePolicy['policy_version_uuid'],
+                'policy_sha256' => $guaranteePolicy['policy_sha256'],
+                'document' => $guaranteePolicy['document'],
+                'calculation' => MerchantGuaranteeCalculator::calculate($schedule, (int) $guaranteePolicy['document']['multiplier_units']),
+            ];
+        }
+        return $quote;
+    }
+
+    /** Produce calendar-month dates without PHP's end-of-month rollover ambiguity. */
+    private static function datedSchedule(array $schedule, int $firstDueDays): array
+    {
+        if (!$schedule || $firstDueDays < 1 || $firstDueDays > 90) {
+            throw new DomainException('merchant_api_due_date_policy_invalid');
+        }
+        $first = (new DateTimeImmutable('today'))->modify('+' . $firstDueDays . ' days');
+        $year = (int) $first->format('Y');
+        $month = (int) $first->format('n');
+        $day = (int) $first->format('j');
+        foreach ($schedule as $index => &$installment) {
+            $absoluteMonth = ($year * 12) + ($month - 1) + $index;
+            $targetYear = intdiv($absoluteMonth, 12);
+            $targetMonth = ($absoluteMonth % 12) + 1;
+            $lastDay = (int) (new DateTimeImmutable(sprintf('%04d-%02d-01', $targetYear, $targetMonth)))->modify('last day of this month')->format('j');
+            $installment['due_date'] = sprintf('%04d-%02d-%02d', $targetYear, $targetMonth, min($day, $lastDay));
+        }
+        unset($installment);
+        return $schedule;
     }
 
     /** Expose only the approved display/calculation fields from the stored document. */
@@ -302,13 +367,25 @@ final class MerchantApiGateway
         if (!is_array($sourceLimits)) {
             throw new DomainException('merchant_api_financial_policy_invalid');
         }
-        foreach (['min_order_toman','max_order_toman','max_months','min_down_payment_bps'] as $key) {
+        foreach ([
+            'min_order_toman','max_order_toman','min_months','max_months',
+            'min_down_payment_bps','min_down_payment_toman','max_down_payment_bps','first_due_days',
+        ] as $key) {
             if (array_key_exists($key, $sourceLimits)) {
                 if (!is_int($sourceLimits[$key]) || $sourceLimits[$key] < 0) {
                     throw new DomainException('merchant_api_financial_policy_invalid');
                 }
+                if ($key === 'first_due_days' && ($sourceLimits[$key] < 1 || $sourceLimits[$key] > 90)) {
+                    throw new DomainException('merchant_api_financial_policy_invalid');
+                }
                 $limits[$key] = $sourceLimits[$key];
             }
+        }
+        if (isset($limits['min_months'], $limits['max_months']) && $limits['min_months'] > $limits['max_months']) {
+            throw new DomainException('merchant_api_financial_policy_invalid');
+        }
+        if (isset($limits['max_down_payment_bps']) && $limits['max_down_payment_bps'] > 10000) {
+            throw new DomainException('merchant_api_financial_policy_invalid');
         }
         ksort($limits, SORT_STRING);
         return ['monthly_rate_bps' => $rate, 'methods' => $methods, 'limits' => $limits];
@@ -392,6 +469,15 @@ final class MerchantApiGateway
         $allowed = ['security_incident','credential_compromised','merchant_requested','other'];
         if (!is_string($value) || !in_array($value, $allowed, true)) {
             throw new InvalidArgumentException('merchant_api_disable_reason_invalid');
+        }
+        return $value;
+    }
+
+    private static function orderCancellationReason($value): string
+    {
+        $allowed = ['customer_requested','deposit_refunded','payment_failed','merchant_requested'];
+        if (!is_string($value) || !in_array($value, $allowed, true)) {
+            throw new InvalidArgumentException('merchant_api_order_cancel_reason_invalid');
         }
         return $value;
     }
