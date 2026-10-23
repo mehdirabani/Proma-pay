@@ -497,6 +497,14 @@ class Contract extends Model
         }
         self::begin();
         try {
+            if (SchemaGuard::tableExists('merchant_contract_links')
+                && SchemaGuard::tableExists('merchant_cheque_guarantees')) {
+                MerchantChequeGuaranteeRepository::lockForContractScheduleEdit((int) $id);
+                MerchantChequeGuaranteeRepository::assertScheduleDateChangeAllowed(
+                    (int) $id,
+                    (string) ($data['first_due_date'] ?? ($current['first_due_date'] ?? ''))
+                );
+            }
             self::validateFinancialData($data);
             $old = [
                 'contract' => self::find((int) $id),
@@ -534,6 +542,10 @@ class Contract extends Model
             ContractDocument::saveGuarantee((int) $id, $guarantee);
             ContractDocument::saveGuarantorPeople((int) $id, $guarantorPeople);
             self::syncInstallmentSchedule((int) $id, $data);
+            if (SchemaGuard::tableExists('merchant_contract_links')
+                && SchemaGuard::tableExists('merchant_cheque_guarantees')) {
+                MerchantChequeGuaranteeRepository::assertCurrentScheduleMatchesConfirmedGuarantee((int) $id);
+            }
             Payment::syncDownPayment((int) $id, $data['updated_by'] ?? null, normalize_money($data['down_payment_amount'] ?? 0), $data['start_date']);
             if (($current['status'] ?? '') === 'closed') {
                 self::execute(
