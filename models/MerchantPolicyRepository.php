@@ -51,6 +51,21 @@ final class MerchantPolicyRepository
                 );
             }
 
+            if ($policy['policy_type'] === 'settlement' || $policy['policy_type'] === 'commission') {
+                try {
+                    $typedPolicy = json_decode((string) $policy['policy_json'], true, 64, JSON_THROW_ON_ERROR);
+                } catch (JsonException $e) {
+                    throw new DomainException('merchant_policy_invalid', 0, $e);
+                }
+                if (!is_array($typedPolicy)) {
+                    throw new DomainException('merchant_policy_invalid');
+                }
+                if ($policy['policy_type'] === 'settlement') {
+                    MerchantSettlementPolicy::resolve($typedPolicy);
+                } else {
+                    MerchantCommissionPolicy::resolve($typedPolicy);
+                }
+            }
             $head = Model::fetch(
                 'SELECT policy_version_id FROM merchant_policy_heads
                  WHERE connection_id = ? AND policy_type = ? FOR UPDATE',
