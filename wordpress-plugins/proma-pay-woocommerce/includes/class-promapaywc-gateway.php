@@ -165,11 +165,19 @@ final class PromaPay_WC_Gateway extends WC_Payment_Gateway
 
     public function enqueue_assets(): void
     {
-        if (!function_exists('is_checkout') || (!is_checkout() && !is_product())) {
+        if (!function_exists('is_checkout')) {
+            return;
+        }
+        $isCheckout = is_checkout();
+        $isProductPage = function_exists('is_product') && is_product();
+        $isProductArchive = (function_exists('is_shop') && is_shop())
+            || (function_exists('is_product_taxonomy') && is_product_taxonomy());
+        $isBakalaFrontend = PromaPay_WC_BakalaCompatibilityAdapter::is_bakala() && !$isCheckout;
+        if (!$isCheckout && !$isProductPage && !$isProductArchive && !$isBakalaFrontend) {
             return;
         }
         wp_enqueue_style('promapaywc-commerce', PROMA_PAY_WC_URL . 'assets/css/commerce.css', [], PROMA_PAY_WC_VERSION);
-        if (is_checkout()) {
+        if ($isCheckout) {
             wp_enqueue_script('promapaywc-checkout', PROMA_PAY_WC_URL . 'assets/js/checkout.js', ['jquery'], PROMA_PAY_WC_VERSION, true);
             wp_localize_script('promapaywc-checkout', 'PromaPayWCCheckout', [
                 'endpoint' => rest_url('promapaywc/v1/quote'),
@@ -177,7 +185,7 @@ final class PromaPay_WC_Gateway extends WC_Payment_Gateway
                 'currency' => get_woocommerce_currency(),
             ]);
         }
-        if (is_product()) {
+        if ($isProductPage || $isProductArchive || $isBakalaFrontend) {
             wp_enqueue_script('promapaywc-product', PROMA_PAY_WC_URL . 'assets/js/product-widget.js', ['jquery'], PROMA_PAY_WC_VERSION, true);
             wp_localize_script('promapaywc-product', 'PromaPayWCProduct', [
                 'endpoint' => rest_url('promapaywc/v1/quote'),

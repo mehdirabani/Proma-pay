@@ -27,6 +27,7 @@ require_once PROMA_PAY_WC_PATH . 'includes/class-promapaywc-policy-service.php';
 require_once PROMA_PAY_WC_PATH . 'includes/class-promapaywc-admin.php';
 require_once PROMA_PAY_WC_PATH . 'includes/class-promapaywc-payment-adapter.php';
 require_once PROMA_PAY_WC_PATH . 'includes/class-promapaywc-quote-service.php';
+require_once PROMA_PAY_WC_PATH . 'includes/class-promapaywc-bakala-compatibility-adapter.php';
 require_once PROMA_PAY_WC_PATH . 'includes/class-promapaywc-commerce.php';
 
 register_activation_hook(__FILE__, ['PromaPay_WC_Installer', 'activate']);
