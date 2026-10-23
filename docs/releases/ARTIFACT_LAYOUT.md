@@ -5,7 +5,7 @@ Release and update files are grouped by purpose while keeping the paths used by 
 ```text
 dist/
 ├── candidates/
-│   ├── v<active-version>[-<build-id>/]  Active candidate inputs and QA builds
+│   ├── v<active-version>/                Active candidate inputs and QA builds
 │   └── archive/v<major>/v<version>[-<snapshot-id>]/  Historical candidate builds grouped by major version
 ├── checksums/
 │   └── archive/
@@ -28,4 +28,4 @@ New stable Core and Update packages continue to be built into the canonical `cor
 
 Candidate delivery bundles are written to `releases/v<version>/`; the immutable bundle filename and its adjacent SHA-256 sidecar retain the candidate build identifier. Historical candidates are grouped under `candidates/archive/v<major>/` and previous delivery bundles under `releases/archive/v<version>/`, while new builds use their direct version paths.
 
-Stable plugin archives stay directly in `plugins/` for the release builder and verifier. Pre-release plugin builds are stored under `plugins/pre-release/<plugin>/` so they are not included as stable release inputs. Installation backups, staging files, and candidate QA evidence are retained.
+Stable plugin archives stay directly in `plugins/` for the release builder and verifier. PromaPartnershipLedger alpha builds are stored under `plugins/pre-release/PromaPartnershipLedger/` so they are not included as stable release inputs. Installation backups, staging files, and candidate QA evidence are retained.
