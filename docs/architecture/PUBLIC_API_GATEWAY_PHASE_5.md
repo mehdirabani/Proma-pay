@@ -24,6 +24,7 @@ Base URL برابر `/api/v1` است. درخواست‌های تغییردهند
 | روش و مسیر | scope | کاربرد |
 |---|---|---|
 | `GET /connection` | `merchant.read` | وضعیت اتصال و محدودیت درخواست |
+| `GET /policies/financial` | `policy:read` | دریافت snapshot محدودشدهٔ سیاست مالی منتشرشده |
 | `POST /quotes` | `quote:create` | محاسبه از policy منتشرشده |
 | `POST /orders` | `order:create` | ایجاد درخواست سفارش در انتظار بازبینی |
 | `POST /contracts` | `contract:write` | ارسال درخواست قرارداد برای همان order UUID |

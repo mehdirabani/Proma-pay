@@ -76,6 +76,7 @@ $policy = [
     'monthly_rate_bps' => 250,
     'methods' => ['flat','compound'],
     'limits' => ['min_order_toman' => 100000,'max_order_toman' => 10000000,'max_months' => 12,'min_down_payment_bps' => 1000],
+    'internal_debug_marker' => 'must-not-be-returned-to-a-merchant',
 ];
 $policyJson = json_encode($policy, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 $policyUuid = MerchantAuditLog::newUuid();
@@ -93,7 +94,7 @@ Model::execute(
 );
 $credential = MerchantApiCredentialRepository::issueForConnection(
     $connectionId,
-    ['merchant.read','quote:create','order:create','contract:write','contract:read','guarantee:read','webhook:read','connection:manage'],
+    ['merchant.read','policy:read','quote:create','order:create','contract:write','contract:read','guarantee:read','webhook:read','connection:manage'],
     $adminId,
     new DateTimeImmutable('+1 day'),
     'test'
@@ -120,6 +121,18 @@ $connectionResponse = $send('GET','/connection');
 $assert($connectionResponse['status'] === 200
     && $connectionResponse['body']['data']['connection']['environment'] === 'test',
     'Authenticated connection lookup failed.');
+$policyResponse = $send('GET','/policies/financial');
+$publicPolicy = $policyResponse['body']['data']['policy'] ?? [];
+require_once $root . '/wordpress-plugins/proma-pay-woocommerce/includes/class-promapaywc-connection-repository.php';
+require_once $root . '/wordpress-plugins/proma-pay-woocommerce/includes/class-promapaywc-policy-service.php';
+$assert($policyResponse['status'] === 200
+    && ($publicPolicy['policy_type'] ?? '') === 'financial'
+    && ($publicPolicy['document']['monthly_rate_bps'] ?? null) === 250
+    && ($publicPolicy['document']['limits']['max_months'] ?? null) === 12
+    && !isset($publicPolicy['document']['customer_phone'])
+    && !isset($publicPolicy['document']['internal_debug_marker'])
+    && PromaPay_WC_Policy_Service::valid_policy($publicPolicy),
+    'The policy read route did not return the tenant-scoped, minimized financial policy.');
 $quotePayload = ['cash_price_toman'=>1000000,'down_payment_toman'=>250000,'months'=>3,'interest_method'=>'flat'];
 $quoteResponse = $send('POST','/quotes',$quotePayload);
 $assert($quoteResponse['status'] === 200
@@ -216,6 +229,8 @@ $narrowToken = MerchantApiCredentialRepository::issueForConnection(
 );
 $scopeDenied = $send('POST','/quotes',$quotePayload,null,$narrowToken['token']);
 $assert($scopeDenied['status'] === 403, 'Missing API scope was accepted.');
+$policyScopeDenied = $send('GET','/policies/financial',null,null,$narrowToken['token']);
+$assert($policyScopeDenied['status'] === 403, 'Financial policy was returned without policy:read scope.');
 $badTransport = MerchantApiGateway::handle(
     ['REQUEST_METHOD'=>'GET','REQUEST_URI'=>'/api/v1/connection','REMOTE_ADDR'=>'203.0.113.10'],
     '',['Authorization'=>'Bearer ' . $token]

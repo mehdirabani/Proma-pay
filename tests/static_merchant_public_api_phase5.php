@@ -27,6 +27,8 @@ $htaccess = $read('.htaccess');
 $assert(strpos($gateway, "'pmp_test_") !== false || strpos($gateway, 'pmp_test_') !== false, 'Gateway must authenticate test tokens only.');
 $assert(strpos($gateway, 'https_required') !== false && strpos($gateway, 'isSecureTransport') !== false, 'TLS gate is missing.');
 $assert(strpos($gateway, 'requireScope') !== false && strpos($repository, 'connection_id') !== false, 'Tenant scope and permission checks are missing.');
+$assert(strpos($gateway, "'/policies/financial'") !== false && strpos($gateway, "'policy:read'") !== false, 'Tenant-scoped financial policy read route is missing.');
+$assert(strpos($gateway, 'publicFinancialPolicy') !== false && strpos($gateway, 'source_policy_sha256') !== false, 'Public financial policy response must be minimized and versioned.');
 $assert(strpos($gateway, 'canonicalRequestHash') !== false && strpos($repository, 'merchant_api_idempotency') !== false, 'Request idempotency is not persisted.');
 $assert(strpos($repository, 'merchant_api_rate_limits') !== false, 'Per-connection rate limiting is missing.');
 $assert(strpos($repository, 'merchant_api_webhook_outbox') !== false && strpos($repository, 'INSERT IGNORE') !== false, 'Idempotent webhook outbox is missing.');
