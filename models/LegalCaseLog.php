@@ -314,6 +314,14 @@ class LegalCaseLog extends Model
                 throw new InvalidArgumentException('وکیل یا مسئول پرونده معتبر نیست.');
             }
         }
+        $reimburseLawyerId = null;
+        $hasReimbursementChoice = array_key_exists('reimburse_lawyer', $data);
+        if ($hasReimbursementChoice && !empty($data['reimburse_lawyer'])) {
+            $reimburseLawyerId = (int) ($case['lawyer_id'] ?? $assignedLawyerId ?? 0);
+            if ($reimburseLawyerId <= 0) {
+                throw new InvalidArgumentException('برای ثبت بازپرداخت، ابتدا باید وکیل پرونده مشخص باشد.');
+            }
+        }
 
         return [
             'contract_id' => $contractId,
@@ -328,6 +336,7 @@ class LegalCaseLog extends Model
             'next_status' => trim((string) ($data['next_status'] ?? '')) ?: null,
             'cost_amount' => $costAmount,
             'cost_type' => $costType,
+            ...($hasReimbursementChoice ? ['reimburse_lawyer_id' => $reimburseLawyerId] : []),
         ];
     }
 

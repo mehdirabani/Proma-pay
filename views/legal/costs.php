@@ -79,6 +79,7 @@ $statusClass = [
               <strong>وصول از مشتری: <?= money_toman($cost['paid_amount_toman'] ?? 0) ?></strong>
               <small>پرداخت مجموعه به مرجع: <?= money_toman($cost['company_paid_amount_toman'] ?? 0) ?></small>
               <small>مانده قابل وصول از مشتری: <?= money_toman($cost['customer_receivable_toman'] ?? 0) ?></small>
+              <?php if (!empty($cost['reimburse_lawyer_id'])): ?><small>متقاضی بازپرداخت: <?= e($cost['reimbursement_lawyer_name'] ?? 'وکیل پرونده') ?></small><?php endif; ?>
               <?php if (!empty($cost['third_party_payments'])): ?>
                 <details class="mt-1"><summary>تاریخچه پرداخت به مرجع</summary>
                   <ul class="proma-legal-cost-ledger">
@@ -109,6 +110,12 @@ $statusClass = [
                 <a class="btn small secondary" href="<?= e(url('contracts/show/' . (int) ($cost['contract_id'] ?? 0) . '#legal')) ?>">قرارداد</a>
                 <?php if ($canManageCosts && !empty($thirdPartyLedgerReady) && empty($cost['reversed_at']) && ($cost['approval_status'] ?? '') !== 'reversed' && normalize_money($cost['amount_toman'] ?? 0) > normalize_money($cost['company_paid_amount_toman'] ?? 0)): ?>
                   <button class="btn small secondary" type="button" data-open-modal="legal-cost-third-party-<?= $costId ?>">ثبت پرداخت به مرجع</button>
+                <?php endif; ?>
+                <?php if ($canManageCosts && ($cost['approval_status'] ?? '') === 'approved' && empty($cost['reimburse_lawyer_id']) && !empty($cost['assigned_lawyer_id'])): ?>
+                  <form method="post" action="<?= e(url('legal/markLawyerReimbursement/' . $costId)) ?>">
+                    <?= csrf_field() ?>
+                    <button class="btn small secondary" type="submit">ثبت طلب وکیل</button>
+                  </form>
                 <?php endif; ?>
                 <?php if ($canManageCosts && ($cost['approval_status'] ?? '') === 'pending_approval'): ?>
                   <form method="post" action="<?= e(url('legal/approveCost/' . $costId)) ?>">

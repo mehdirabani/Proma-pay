@@ -79,6 +79,9 @@ final class LegalCaseCostService
             if (!$cost || !empty($cost['reversed_at']) || ($cost['approval_status'] ?? '') === 'reversed') {
                 throw new InvalidArgumentException('هزینه برای ثبت پرداخت مرجع ثالث معتبر نیست.', 409);
             }
+            if (!empty($cost['reimburse_lawyer_id'])) {
+                throw new InvalidArgumentException('این هزینه برای بازپرداخت به وکیل ثبت شده و پرداخت دوباره به مرجع از طرف مجموعه مجاز نیست.', 409);
+            }
             // Serialize same-cost requests on the cost row before the second
             // idempotency lookup; this avoids gap-lock races on MySQL 5.7.
             $existing = Model::fetch('SELECT * FROM legal_cost_disbursements WHERE idempotency_key = ? FOR UPDATE', [$idempotencyKey]);
@@ -152,6 +155,10 @@ final class LegalCaseCostService
             if ($existing) Model::execute("UPDATE legal_case_costs SET approval_status = 'reversed', reversed_at = NOW(), reversal_reason = ? WHERE id = ?", ['حذف مبلغ از اقدام حقوقی پیش از تأیید', (int) $existing['id']]);
             return;
         }
+        $reimburseLawyerId = array_key_exists('reimburse_lawyer_id', $payload)
+            ? (!empty($payload['reimburse_lawyer_id']) ? (int) $payload['reimburse_lawyer_id'] : null)
+            : (!empty($existing['reimburse_lawyer_id']) ? (int) $existing['reimburse_lawyer_id'] : null);
+        if ($reimburseLawyerId && $existing) self::assertNoCompanyDisbursements((int) $existing['id']);
         $values = [
             (int) ($payload['legal_case_id'] ?? 0) ?: null,
             (int) ($payload['contract_id'] ?? 0),
@@ -162,6 +169,7 @@ final class LegalCaseCostService
             (string) ($payload['action_date'] ?? date('Y-m-d')),
             trim((string) ($payload['description'] ?? '')) ?: null,
             $actorId ?: null,
+            $reimburseLawyerId,
         ];
         if ($existing && ($existing['approval_status'] ?? '') === 'approved') {
             if (normalize_money($existing['amount_toman'] ?? 0) !== $amount || (string) ($existing['cost_date'] ?? '') !== $values[6]) {
@@ -171,15 +179,15 @@ final class LegalCaseCostService
         }
         if ($existing) {
             Model::execute(
-                "UPDATE legal_case_costs SET legal_case_id = ?, category = ?, title = ?, amount_toman = ?, cost_date = ?, description = ?, approval_status = 'pending_approval', reversed_at = NULL, reversal_reason = NULL WHERE id = ?",
-                [$values[0], $values[3], $values[4], $values[5], $values[6], $values[7], (int) $existing['id']]
+                "UPDATE legal_case_costs SET legal_case_id = ?, category = ?, title = ?, amount_toman = ?, cost_date = ?, description = ?, reimburse_lawyer_id = ?, approval_status = 'pending_approval', reversed_at = NULL, reversal_reason = NULL WHERE id = ?",
+                [$values[0], $values[3], $values[4], $values[5], $values[6], $values[7], $values[9], (int) $existing['id']]
             );
             return;
         }
         Model::execute(
-            "INSERT INTO legal_case_costs (cost_uuid, legal_case_id, contract_id, source_legal_log_id, category, title, amount_toman, cost_date, payment_status, approval_status, paid_by, chargeable_to_customer, description, created_by, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending_approval', NULL, 1, ?, ?, NOW())",
-            ['LCC-' . date('YmdHis') . '-' . strtoupper(bin2hex(random_bytes(5))), $values[0], $values[1], $values[2], $values[3], $values[4], $values[5], $values[6], $values[7], $values[8]]
+            "INSERT INTO legal_case_costs (cost_uuid, legal_case_id, contract_id, source_legal_log_id, category, title, amount_toman, cost_date, payment_status, approval_status, paid_by, reimburse_lawyer_id, chargeable_to_customer, description, created_by, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending_approval', NULL, ?, 1, ?, ?, NOW())",
+            ['LCC-' . date('YmdHis') . '-' . strtoupper(bin2hex(random_bytes(5))), $values[0], $values[1], $values[2], $values[3], $values[4], $values[5], $values[6], $values[9], $values[7], $values[8]]
         );
     }
 
@@ -385,10 +393,20 @@ final class LegalCaseCostService
 
     private static function assertNoOutstandingThirdPartyDisbursements(int $costId): void
     {
+        LegalLawyerSettlementService::assertCostReversible($costId);
         if (!self::disbursementTableAvailable()) return;
         $row = Model::fetch('SELECT COALESCE(SUM(amount_toman), 0) AS total FROM legal_cost_disbursements WHERE legal_case_cost_id = ?', [$costId]);
         if (normalize_money($row['total'] ?? 0) > 0) {
             throw new InvalidArgumentException('ابتدا پرداخت‌های ثبت‌شده به مرجع ثالث را با رویداد برگشت تطبیق دهید.');
+        }
+    }
+
+    private static function assertNoCompanyDisbursements(int $costId): void
+    {
+        if (!self::disbursementTableAvailable()) return;
+        $row = Model::fetch('SELECT COALESCE(SUM(amount_toman), 0) AS total FROM legal_cost_disbursements WHERE legal_case_cost_id = ?', [$costId]);
+        if (normalize_money($row['total'] ?? 0) > 0) {
+            throw new InvalidArgumentException('برای این هزینه قبلاً پرداخت مجموعه به مرجع ثبت شده است؛ پرداخت دوباره به وکیل مجاز نیست.');
         }
     }
 }

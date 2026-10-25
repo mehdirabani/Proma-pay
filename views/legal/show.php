@@ -153,6 +153,7 @@ foreach ($payments as $payment) {
           <label>عنوان هزینه<input name="action_title" required value="ثبت هزینه حقوقی"></label>
           <label>نوع هزینه<select name="cost_type" required><option value="">انتخاب کنید</option><?php foreach ($legalCostTypeOptions as $costType): ?><option value="<?= e($costType) ?>"><?= e($costType) ?></option><?php endforeach; ?></select></label>
           <label>مبلغ (تومان)<input name="cost_amount" data-money required inputmode="numeric"></label>
+          <label class="full proma-checkbox-field"><input type="checkbox" name="reimburse_lawyer" value="1"<?= Auth::role() === 'lawyer' && !empty($case['lawyer_id']) ? ' checked' : '' ?>><span>این هزینه را وکیل پرداخت کرده است — پس از تأیید مدیریت، مبلغ به مانده تسویه همان وکیل اضافه می‌شود.</span></label>
           <label>تاریخ هزینه<input name="action_date" data-jalali-input required value="<?= e(jdate(date('Y-m-d'))) ?>"></label>
           <label>ساعت ثبت<input name="action_time" type="time" value="<?= e(date('H:i')) ?>"></label>
           <label>مرحله حقوقی<select name="action_stage" required><?php foreach ($legalStageOptions as $stage): ?><option value="<?= e($stage) ?>"<?= selected($case['stage'] ?? '', $stage) ?>><?= e($stage) ?></option><?php endforeach; ?></select></label>

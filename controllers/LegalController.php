@@ -139,13 +139,16 @@ class LegalController extends Controller
         }
         $costs = LegalCaseCostService::tableAvailable() ? Model::fetchAll(
             "SELECT c.*, co.contract_number, cu.full_name AS customer_name, u.full_name AS created_by_name, a.full_name AS approved_by_name,
-                    lc.legal_referred_at
+                    reimbursement_lawyer.full_name AS reimbursement_lawyer_name,
+                    lc.lawyer_id AS assigned_lawyer_id, case_lawyer.full_name AS assigned_lawyer_name, lc.legal_referred_at
              FROM legal_case_costs c
              LEFT JOIN contracts co ON co.id = c.contract_id
              LEFT JOIN users cu ON cu.id = co.customer_id
              LEFT JOIN users u ON u.id = c.created_by
              LEFT JOIN users a ON a.id = c.approved_by
+             LEFT JOIN users reimbursement_lawyer ON reimbursement_lawyer.id = c.reimburse_lawyer_id
              LEFT JOIN legal_cases lc ON lc.id = c.legal_case_id AND lc.contract_id = c.contract_id
+             LEFT JOIN users case_lawyer ON case_lawyer.id = lc.lawyer_id
              {$where}
              ORDER BY c.cost_date DESC, c.id DESC
              LIMIT 200",
@@ -240,6 +243,125 @@ class LegalController extends Controller
             set_flash('error', $e instanceof InvalidArgumentException || $e instanceof RuntimeException ? $e->getMessage() : 'برگشت پرداخت به مرجع ثالث انجام نشد.');
         }
         redirect('legal/costs?status=approved');
+    }
+
+    public function lawyerPayments()
+    {
+        $this->requireRole(['admin', 'lawyer']);
+        $isAdmin = Auth::role() === 'admin';
+        $ready = LegalLawyerSettlementService::ready();
+        $summaries = $ready ? LegalLawyerSettlementService::lawyerSummaries() : [];
+        $lawyerId = $isAdmin ? (int) ($_GET['lawyer_id'] ?? 0) : (int) Auth::id();
+        if (!$isAdmin) {
+            $summaries = array_values(array_filter($summaries, static fn (array $row): bool => (int) $row['lawyer_id'] === $lawyerId));
+        }
+        $selectedSummary = null;
+        foreach ($summaries as $summary) {
+            if ((int) $summary['lawyer_id'] === $lawyerId) {
+                $selectedSummary = $summary;
+                break;
+            }
+        }
+        if ($isAdmin && !$selectedSummary && $summaries) {
+            $selectedSummary = $summaries[0];
+            $lawyerId = (int) $selectedSummary['lawyer_id'];
+        }
+        $this->render('legal/lawyer-payments', [
+            'title' => $isAdmin ? 'تسویه حساب وکلا' : 'صورت‌حساب من',
+            'isAdmin' => $isAdmin,
+            'registryReady' => $ready,
+            'lawyerSummaries' => $summaries,
+            'selectedLawyerId' => $lawyerId,
+            'selectedSummary' => $selectedSummary,
+            'outstandingCosts' => $ready && $selectedSummary ? LegalLawyerSettlementService::outstandingCosts($lawyerId) : [],
+            'paymentBatches' => $ready && $selectedSummary ? LegalLawyerSettlementService::paymentBatches($lawyerId) : [],
+            'adjustments' => $ready && $selectedSummary ? LegalLawyerSettlementService::adjustments($lawyerId) : [],
+        ], is_ajax_request() ? null : 'app');
+    }
+
+    public function recordLawyerPayment()
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            $costIds = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['cost_ids'] ?? [])), static fn (int $id): bool => $id > 0)));
+            $amounts = (array) ($_POST['amounts'] ?? []);
+            $allocations = [];
+            foreach ($costIds as $costId) {
+                $allocations[] = ['cost_id' => $costId, 'amount_toman' => normalize_money($amounts[$costId] ?? 0)];
+            }
+            $paidAt = parse_jalali_date((string) ($_POST['paid_at'] ?? '')) ?: trim((string) ($_POST['paid_at'] ?? ''));
+            $row = LegalLawyerSettlementService::recordPayment(
+                (int) ($_POST['lawyer_id'] ?? 0), $allocations, $paidAt,
+                (string) ($_POST['payment_reference'] ?? ''), (string) ($_POST['note'] ?? ''),
+                (string) ($_POST['idempotency_key'] ?? ''), (int) Auth::id()
+            );
+            set_flash('success', 'پرداخت وکیل ثبت شد و به هزینه‌های انتخاب‌شده تخصیص یافت.');
+            redirect('legal/lawyerPayments?lawyer_id=' . (int) ($row['lawyer_id'] ?? $_POST['lawyer_id'] ?? 0));
+            return;
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException || $e instanceof RuntimeException ? $e->getMessage() : 'ثبت تسویه وکیل انجام نشد.');
+        }
+        redirect('legal/lawyerPayments?lawyer_id=' . (int) ($_POST['lawyer_id'] ?? 0));
+    }
+
+    public function reverseLawyerPayment($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $lawyerId = (int) ($_POST['lawyer_id'] ?? 0);
+        try {
+            LegalLawyerSettlementService::reversePayment((int) $id, (string) ($_POST['reason'] ?? ''), (int) Auth::id());
+            set_flash('success', 'برگشت پرداخت وکیل ثبت شد و مانده قابل تسویه دوباره محاسبه می‌شود.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException || $e instanceof RuntimeException ? $e->getMessage() : 'برگشت پرداخت وکیل انجام نشد.');
+        }
+        redirect('legal/lawyerPayments?lawyer_id=' . $lawyerId);
+    }
+
+    public function markLawyerReimbursement($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        try {
+            LegalLawyerSettlementService::markCostForReimbursement((int) $id, (int) Auth::id());
+            set_flash('success', 'هزینهٔ تأییدشده در صورت‌حساب وکیل پرونده ثبت شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException || $e instanceof RuntimeException ? $e->getMessage() : 'ثبت هزینه در حساب وکیل انجام نشد.');
+        }
+        redirect('legal/costs?status=approved');
+    }
+
+    public function addLawyerAdjustment()
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $lawyerId = (int) ($_POST['lawyer_id'] ?? 0);
+        try {
+            $effectiveAt = parse_jalali_date((string) ($_POST['effective_at'] ?? '')) ?: trim((string) ($_POST['effective_at'] ?? ''));
+            LegalLawyerSettlementService::addAdjustment(
+                $lawyerId, (string) ($_POST['entry_type'] ?? ''), normalize_money($_POST['amount_toman'] ?? 0),
+                $effectiveAt, (string) ($_POST['description'] ?? ''), (string) ($_POST['idempotency_key'] ?? ''), (int) Auth::id()
+            );
+            set_flash('success', 'رویداد بستانکاری/بدهکاری وکیل در دفتر حساب ثبت شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException || $e instanceof RuntimeException ? $e->getMessage() : 'ثبت رویداد حساب وکیل انجام نشد.');
+        }
+        redirect('legal/lawyerPayments?lawyer_id=' . $lawyerId);
+    }
+
+    public function reverseLawyerAdjustment($id)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $lawyerId = (int) ($_POST['lawyer_id'] ?? 0);
+        try {
+            LegalLawyerSettlementService::reverseAdjustment((int) $id, (string) ($_POST['reason'] ?? ''), (int) Auth::id());
+            set_flash('success', 'اصلاحیه برگشت ثبت شد و مانده وکیل دوباره محاسبه می‌شود.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException || $e instanceof RuntimeException ? $e->getMessage() : 'برگشت رویداد حساب وکیل انجام نشد.');
+        }
+        redirect('legal/lawyerPayments?lawyer_id=' . $lawyerId);
     }
 
     public function show($id)
@@ -361,10 +483,11 @@ class LegalController extends Controller
                 'action_date' => $_POST['action_date'] ?? date('Y-m-d'),
                 'action_time' => $_POST['action_time'] ?? date('H:i'),
                 'registered_by' => Auth::id(),
-                'assigned_lawyer_id' => $case['lawyer_id'] ?? Auth::id(),
+                'assigned_lawyer_id' => $case['lawyer_id'] ?? (Auth::role() === 'lawyer' ? Auth::id() : null),
                 'next_status' => $case['status'] ?? 'under_legal_review',
                 'cost_amount' => $amount,
                 'cost_type' => $type,
+                'reimburse_lawyer' => !empty($_POST['reimburse_lawyer']),
             ], $_FILES['attachment'] ?? []);
             set_flash('success', 'هزینه حقوقی ثبت و برای تأیید مدیریت ارسال شد.');
         } catch (Throwable $e) {

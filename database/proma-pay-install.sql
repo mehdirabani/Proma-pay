@@ -1159,6 +1159,7 @@ CREATE TABLE IF NOT EXISTS `legal_case_costs` (
   `payment_status` varchar(30) NOT NULL DEFAULT 'pending',
   `approval_status` varchar(30) NOT NULL DEFAULT 'pending_approval',
   `paid_by` bigint unsigned DEFAULT NULL,
+  `reimburse_lawyer_id` bigint unsigned DEFAULT NULL,
   `chargeable_to_customer` tinyint(1) NOT NULL DEFAULT 1,
   `description` text DEFAULT NULL,
   `external_reference` varchar(190) DEFAULT NULL,
@@ -1173,7 +1174,8 @@ CREATE TABLE IF NOT EXISTS `legal_case_costs` (
   UNIQUE KEY `uq_legal_case_cost_uuid` (`cost_uuid`),
   UNIQUE KEY `uq_legal_case_cost_source_log` (`source_legal_log_id`),
   KEY `idx_legal_case_cost_contract_status` (`contract_id`,`approval_status`,`payment_status`),
-  KEY `idx_legal_case_cost_case_date` (`legal_case_id`,`cost_date`)
+  KEY `idx_legal_case_cost_case_date` (`legal_case_id`,`cost_date`),
+  KEY `idx_legal_cost_reimburse_lawyer` (`reimburse_lawyer_id`,`approval_status`,`cost_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS `legal_cost_payment_allocations` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
@@ -1212,6 +1214,58 @@ CREATE TABLE IF NOT EXISTS `legal_cost_disbursements` (
   UNIQUE KEY `uq_legal_cost_disbursement_reversal` (`reversal_of_id`),
   KEY `idx_legal_cost_disbursement_cost` (`legal_case_cost_id`,`id`),
   KEY `idx_legal_cost_disbursement_contract` (`contract_id`,`paid_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS `legal_lawyer_payment_batches` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `batch_uuid` varchar(64) NOT NULL,
+  `lawyer_id` bigint unsigned NOT NULL,
+  `amount_toman` bigint NOT NULL,
+  `paid_at` date NOT NULL,
+  `payment_reference` varchar(190) DEFAULT NULL,
+  `note` text DEFAULT NULL,
+  `idempotency_key` varchar(64) NOT NULL,
+  `request_fingerprint` char(64) NOT NULL,
+  `is_reversal` tinyint(1) NOT NULL DEFAULT 0,
+  `reversal_of_batch_id` bigint unsigned DEFAULT NULL,
+  `reversal_reason` text DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_legal_lawyer_batch_uuid` (`batch_uuid`),
+  UNIQUE KEY `uq_legal_lawyer_batch_request` (`idempotency_key`),
+  UNIQUE KEY `uq_legal_lawyer_batch_reversal` (`reversal_of_batch_id`),
+  KEY `idx_legal_lawyer_batch_lawyer_date` (`lawyer_id`,`paid_at`,`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS `legal_lawyer_payment_allocations` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `payment_batch_id` bigint unsigned NOT NULL,
+  `legal_case_cost_id` bigint unsigned NOT NULL,
+  `allocated_amount_toman` bigint NOT NULL,
+  `reversal_of_allocation_id` bigint unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_legal_lawyer_batch_cost` (`payment_batch_id`,`legal_case_cost_id`),
+  UNIQUE KEY `uq_legal_lawyer_allocation_reversal` (`reversal_of_allocation_id`),
+  KEY `idx_legal_lawyer_allocation_cost` (`legal_case_cost_id`,`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS `legal_lawyer_adjustments` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `entry_uuid` varchar(64) NOT NULL,
+  `lawyer_id` bigint unsigned NOT NULL,
+  `entry_type` varchar(20) NOT NULL,
+  `signed_amount_toman` bigint NOT NULL,
+  `idempotency_key` char(64) NOT NULL,
+  `request_fingerprint` char(64) NOT NULL,
+  `effective_at` date NOT NULL,
+  `description` text NOT NULL,
+  `reversal_of_id` bigint unsigned DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_legal_lawyer_adjustment_uuid` (`entry_uuid`),
+  UNIQUE KEY `uq_legal_lawyer_adjustment_request` (`idempotency_key`),
+  UNIQUE KEY `uq_legal_lawyer_adjustment_reversal` (`reversal_of_id`),
+  KEY `idx_legal_lawyer_adjustment_lawyer_date` (`lawyer_id`,`effective_at`,`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS `installment_change_requests` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,

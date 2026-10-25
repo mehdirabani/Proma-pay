@@ -112,6 +112,7 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
         return true;
     }
     if (in_array($path, ['.env', 'config/database.php', 'installed.lock', '1.xlsx'], true)
+        || preg_match('#(?:^|/)\.git(?:/|$)#i', $path)
         || preg_match('#(?:^|/)\.env(?:\.[^/]*)?$#i', $path)) {
         return true;
     }
@@ -355,6 +356,7 @@ foreach ($coreFiles as $archivePath => $sourcePath) {
 }
 ksort($updateFiles, SORT_STRING);
 $migrations = array_values(array_filter(array_keys($updateFiles), static fn (string $path): bool => strpos($path, 'database/migrations/') === 0));
+$newMigrations = array_values(array_filter($migrations, static fn (string $path): bool => !array_key_exists($path, $baselineFiles)));
 $updateManifestFiles = [];
 foreach ($updateFiles as $archivePath => $sourcePath) {
     $updateManifestFiles[] = [
@@ -398,7 +400,7 @@ $statusDescription = $releaseGateStatus === 'LOCAL_STATIC_UNIT_PASSED_INTEGRATIO
 $legacyRetirementNote = $baselineVersion === '7.0.3'
     ? "\nبرای نصب‌هایی که از V7.0.3 ارتقا می‌یابند، updater قبلی فیلد فایل‌های بازنشسته را نمی‌شناسد. پس از نصب موفق این بسته، فرمان `php retire-core-files.php --package=proma-update-YYYY-MM-DD-HH-MM-SS-name.zip --confirm=RETIRE-CORE-FILES` را از ریشهٔ سامانه اجرا کنید؛ نام کامل ZIP بارگذاری‌شده در پنل را جایگزین کنید. این دستور فقط پس از تطبیق نسخه و checksum فایل‌های نصب‌شده، بکاپ پایگاه‌داده می‌سازد و فهرست محدود فایل‌های بازنشسته را پاک می‌کند.\n"
     : '';
-$updateZip->addFromString('UPDATE_README.md', "# بستهٔ کاندید بروزرسانی Proma Pay V{$version}\n\n{$statusDescription} این بسته هنوز برای نصب عملیاتی تأیید نشده است. مبنای تفاضلی: V{$baselineVersion}.\n{$legacyRetirementNote}\n- فایل‌های تغییرکرده: " . count($updateFiles) . "\n- migrationهای جدید: " . count($migrations) . "\n- config/database.php، افزونه‌ها و داده‌های storage در این بسته نیستند.\n");
+$updateZip->addFromString('UPDATE_README.md', "# بستهٔ کاندید بروزرسانی Proma Pay V{$version}\n\n{$statusDescription} این بسته هنوز برای نصب عملیاتی تأیید نشده است. مبنای تفاضلی: V{$baselineVersion}.\n{$legacyRetirementNote}\n- فایل‌های تغییرکرده: " . count($updateFiles) . "\n- migrationهای جدید: " . count($newMigrations) . "\n- config/database.php، افزونه‌ها و داده‌های storage در این بسته نیستند.\n");
 if (!$updateZip->close()) {
     throw new RuntimeException('Cannot finalize candidate Update archive.');
 }
@@ -406,7 +408,7 @@ if (file_put_contents($updateManifestPath, $updateJson . PHP_EOL) === false) {
     throw new RuntimeException('Cannot write candidate Update sidecar manifest.');
 }
 
-$candidateReadme = "# Proma Pay V{$version} — Candidate artifacts\n\n{$statusDescription} این بسته‌ها برای نصب عملیاتی یا توزیع عمومی تأیید نشده‌اند.\n\n- Baseline آپدیت پیش‌فرض: V{$baselineVersion}\n- Core runtime files: " . count($coreFiles) . "\n- Update files: " . count($updateFiles) . "\n- New migrations: " . count($migrations) . "\n- QA gate: {$releaseGateStatus}\n- Production certified: no\n- Source revision: {$sourceRevision}\n- Source tree clean: " . ($sourceState['source_tree_clean'] ? 'yes' : 'no') . "\n- Source status entries: " . $sourceState['source_status_entry_count'] . "\n- Source status SHA-256: " . $sourceState['source_status_sha256'] . "\n";
+$candidateReadme = "# Proma Pay V{$version} — Candidate artifacts\n\n{$statusDescription} این بسته‌ها برای نصب عملیاتی یا توزیع عمومی تأیید نشده‌اند.\n\n- Baseline آپدیت پیش‌فرض: V{$baselineVersion}\n- Core runtime files: " . count($coreFiles) . "\n- Update files: " . count($updateFiles) . "\n- Migration entries in update: " . count($migrations) . "\n- New migration files: " . count($newMigrations) . "\n- QA gate: {$releaseGateStatus}\n- Production certified: no\n- Source revision: {$sourceRevision}\n- Source tree clean: " . ($sourceState['source_tree_clean'] ? 'yes' : 'no') . "\n- Source status entries: " . $sourceState['source_status_entry_count'] . "\n- Source status SHA-256: " . $sourceState['source_status_sha256'] . "\n";
 if (file_put_contents($candidateRoot . '/README.md', $candidateReadme) === false) {
     throw new RuntimeException('Cannot write candidate status report.');
 }

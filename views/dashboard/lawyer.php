@@ -28,6 +28,7 @@ $openCases = array_values(array_filter($cases, static fn ($case) => ($case['stat
     <a href="<?= e(url('legal')) ?>"><i data-feather="folder"></i><span><b>پرونده‌های من</b><small>مرحله و وضعیت رسیدگی</small></span><i data-feather="chevron-left"></i></a>
     <a href="<?= e(url('legal/eligible')) ?>"><i data-feather="scale"></i><span><b>آماده بررسی حقوقی</b><small><?= to_persian_digits(count($eligible)) ?> قرارداد در صف</small></span><i data-feather="chevron-left"></i></a>
     <a href="<?= e(url('legal/costs')) ?>"><i data-feather="credit-card"></i><span><b>هزینه‌های حقوقی</b><small>ثبت و بررسی هزینه پرونده</small></span><i data-feather="chevron-left"></i></a>
+    <a href="<?= e(url('legal/lawyerPayments')) ?>"><i data-feather="dollar-sign"></i><span><b>صورت‌حساب من</b><small>مانده و پرداخت‌های ثبت‌شده</small></span><i data-feather="chevron-left"></i></a>
     <a href="<?= e(url('calendar')) ?>"><i data-feather="calendar"></i><span><b>تقویم جلسات</b><small>موعدهای پیش‌رو</small></span><i data-feather="chevron-left"></i></a>
   </nav>
 
