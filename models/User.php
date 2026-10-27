@@ -210,6 +210,7 @@ class User extends Model
              FROM users
              WHERE role = 'customer'
              AND status = 'active'
+             AND archived_at IS NULL
              AND (full_name LIKE ? OR mobile LIKE ? OR secondary_phone LIKE ? OR national_id LIKE ? OR address LIKE ? OR id = ?)
              ORDER BY full_name ASC
              LIMIT {$limit}",
@@ -237,6 +238,7 @@ class User extends Model
             "SELECT id, full_name, mobile, secondary_phone, national_id, role, department, is_department_manager, status
              FROM users
              WHERE status = 'active'
+             AND (role != 'customer' OR archived_at IS NULL)
              AND (username IS NULL OR username != 'proma_notice_bot')
              AND (full_name LIKE ? OR mobile LIKE ? OR secondary_phone LIKE ? OR national_id LIKE ? OR role LIKE ? OR department LIKE ? OR username LIKE ? OR email LIKE ?)
              {$roleSql}
@@ -286,10 +288,11 @@ class User extends Model
         $rows = self::fetchAll(
             "SELECT u.id, u.full_name, u.father_name, u.issued_from, u.national_id,
              u.mobile, u.secondary_phone, u.address, u.avatar_key, u.avatar_path,
-             u.avatar_version, u.status, u.created_at,
+             u.avatar_version, u.status, u.archived_at, u.created_at,
              COUNT(DISTINCT CASE WHEN c.status != 'cancelled' THEN c.id END) AS contract_count,
              COUNT(DISTINCT CASE WHEN c.status != 'cancelled' AND i.status != 'cancelled' THEN i.id END) AS installment_count,
              COUNT(DISTINCT CASE WHEN c.status != 'cancelled' AND i.status = 'paid' THEN i.id END) AS paid_installments,
+             COUNT(DISTINCT CASE WHEN c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') THEN i.id END) AS open_obligation_count,
              COUNT(DISTINCT CASE WHEN c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE() THEN i.id END) AS overdue_installments,
              COALESCE(SUM(CASE WHEN p.status = 'paid' AND COALESCE(p.is_corrected,0) = 0 THEN p.amount ELSE 0 END),0) AS paid_total
              FROM users u
@@ -314,7 +317,12 @@ class User extends Model
     protected static function customerSummaryWhere($search, $status, array &$params)
     {
         $where = ["u.role = 'customer'"];
-        if ($status) {
+        if ($status === 'archived') {
+            $where[] = 'u.archived_at IS NOT NULL';
+        } else {
+            $where[] = 'u.archived_at IS NULL';
+        }
+        if (in_array($status, ['active', 'inactive', 'blocked'], true)) {
             $where[] = 'u.status = ?';
             $params[] = $status;
         }
@@ -534,6 +542,77 @@ class User extends Model
         if (!$user) {
             return false;
         }
+        if (($user['role'] ?? '') === 'customer'
+            && isset($data['role'])
+            && (string) $data['role'] !== 'customer') {
+            throw new InvalidArgumentException('نقش مشتری دارای سابقه از مسیر ویرایش کاربران قابل تغییر نیست.');
+        }
+        $newStatus = (string) ($data['status'] ?? ($user['status'] ?? ''));
+        if (($user['role'] ?? '') === 'customer' && $newStatus !== (string) ($user['status'] ?? '')) {
+            return self::updateCustomer($id, $data);
+        }
+        return self::updateUserInternal($id, $data, $user);
+    }
+
+    public static function updateCustomer($id, array $data)
+    {
+        self::ensureProfileColumns();
+        $id = (int) $id;
+        $connection = self::db();
+        $ownsTransaction = !$connection->inTransaction();
+        if ($ownsTransaction) {
+            self::begin();
+        }
+        try {
+            $user = self::fetch('SELECT * FROM users WHERE id = ? FOR UPDATE', [$id]);
+            if (!$user || ($user['role'] ?? '') !== 'customer') {
+                throw new InvalidArgumentException('مشتری پیدا نشد.');
+            }
+            if (isset($data['role']) && (string) $data['role'] !== 'customer') {
+                throw new InvalidArgumentException('نقش مشتری دارای سابقه از مسیر ویرایش کاربران قابل تغییر نیست.');
+            }
+            $data['role'] = 'customer';
+            $oldStatus = (string) ($user['status'] ?? '');
+            $newStatus = (string) ($data['status'] ?? $oldStatus);
+            if (!empty($user['archived_at']) && $newStatus !== $oldStatus) {
+                throw new InvalidArgumentException('برای تغییر وضعیت حساب، ابتدا مشتری را از بایگانی بازیابی کنید.');
+            }
+
+            $updated = self::updateUserInternal($id, $data, $user);
+            if ($updated && $newStatus !== $oldStatus) {
+                AuditLog::record(
+                    'customer',
+                    $newStatus === 'active' ? 'customer_activated' : 'customer_deactivated',
+                    'customer',
+                    $id,
+                    [
+                        'actor_user_id' => Auth::id(),
+                        'customer_id' => $id,
+                        'old_values' => ['status' => $oldStatus],
+                        'new_values' => ['status' => $newStatus],
+                        'description' => $newStatus === 'active' ? 'وضعیت حساب مشتری فعال شد.' : 'وضعیت حساب مشتری غیرفعال شد.',
+                    ]
+                );
+            }
+            if ($ownsTransaction) {
+                self::commit();
+            }
+            return $updated;
+        } catch (Throwable $e) {
+            if ($ownsTransaction) {
+                self::rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    protected static function updateUserInternal($id, array $data, ?array $user = null)
+    {
+        self::ensureProfileColumns();
+        $user = $user ?: self::find($id);
+        if (!$user) {
+            return false;
+        }
         $data = self::prepareUserData($data, $user);
         if (($data['role'] ?? $user['role']) !== $user['role']
             && !PluginManager::roleAssignable($data['role'])) {
@@ -714,20 +793,27 @@ class User extends Model
         if ($keepId <= 0 || $mergeId <= 0 || $keepId === $mergeId) {
             throw new InvalidArgumentException('دو مشتری متفاوت را برای ادغام انتخاب کنید.');
         }
-        $keep = self::find($keepId);
-        $merge = self::find($mergeId);
-        if (!$keep || !$merge || ($keep['role'] ?? '') !== 'customer' || ($merge['role'] ?? '') !== 'customer') {
-            throw new InvalidArgumentException('هر دو پرونده باید مشتری معتبر باشند.');
-        }
-
-        $snapshot = [
-            'keep' => $keep,
-            'merge' => $merge,
-        ];
-        $keepUpdates = self::mergedCustomerProfile($keep, $merge);
-
         self::begin();
         try {
+            $lockedCustomers = self::fetchAll(
+                'SELECT * FROM users WHERE id IN (?, ?) ORDER BY id FOR UPDATE',
+                [$keepId, $mergeId]
+            );
+            $customersById = [];
+            foreach ($lockedCustomers as $customer) {
+                $customersById[(int) $customer['id']] = $customer;
+            }
+            $keep = $customersById[$keepId] ?? null;
+            $merge = $customersById[$mergeId] ?? null;
+            if (!$keep || !$merge || ($keep['role'] ?? '') !== 'customer' || ($merge['role'] ?? '') !== 'customer') {
+                throw new InvalidArgumentException('هر دو پرونده باید مشتری معتبر باشند.');
+            }
+            if (!empty($keep['archived_at']) || !empty($merge['archived_at'])) {
+                throw new InvalidArgumentException('برای ادغام، ابتدا پرونده بایگانی‌شده را بازیابی کنید.');
+            }
+
+            $snapshot = ['keep' => $keep, 'merge' => $merge];
+            $keepUpdates = self::mergedCustomerProfile($keep, $merge);
             self::execute(
                 'INSERT INTO customer_merge_logs (keep_customer_id, merged_customer_id, merged_by, snapshot_json, created_at) VALUES (?, ?, ?, ?, NOW())',
                 [$keepId, $mergeId, $adminId ?: null, json_encode($snapshot, JSON_UNESCAPED_UNICODE)]
@@ -764,6 +850,21 @@ class User extends Model
                 'UPDATE users SET username = NULL, national_id = NULL, mobile = NULL, email = NULL, status = ?, full_name = ?, updated_at = NOW() WHERE id = ?',
                 ['inactive', trim((string) $merge['full_name']) . ' (ادغام شده در #' . $keepId . ')', $mergeId]
             );
+
+            AuditLog::record('customer', 'customer_deactivated', 'customer', $mergeId, [
+                'actor_user_id' => $adminId,
+                'customer_id' => $mergeId,
+                'old_values' => ['status' => (string) ($merge['status'] ?? '')],
+                'new_values' => ['status' => 'inactive', 'merged_into_customer_id' => $keepId],
+                'description' => 'حساب مشتری هنگام ادغام غیرفعال شد.',
+            ]);
+            AuditLog::record('customer', 'customer_merged', 'customer', $mergeId, [
+                'actor_user_id' => $adminId,
+                'customer_id' => $mergeId,
+                'old_values' => ['customer_id' => $mergeId],
+                'new_values' => ['merged_into_customer_id' => $keepId],
+                'description' => 'سوابق مشتری با حفظ شناسه‌ها به پرونده اصلی منتقل شد.',
+            ]);
 
             if ($keepUpdates) {
                 $sets = [];
@@ -1039,9 +1140,170 @@ class User extends Model
         return self::updateUser($id, $payload);
     }
 
+    public static function archiveCustomer($customerId, $actorId, $reason)
+    {
+        $customerId = (int) $customerId;
+        $actorId = (int) $actorId;
+        $reason = trim((string) $reason);
+        if ($customerId <= 0) {
+            self::recordCustomerLifecycleFailure($customerId, $actorId, 'customer_archive_rejected', 'invalid_customer_id');
+            throw new InvalidArgumentException('شناسه مشتری معتبر نیست.');
+        }
+        if ($reason === '' || mb_strlen($reason, 'UTF-8') > 500) {
+            self::recordCustomerLifecycleFailure($customerId, $actorId, 'customer_archive_rejected', 'invalid_reason');
+            throw new InvalidArgumentException('علت بایگانی الزامی است و نباید بیش از ۵۰۰ نویسه باشد.');
+        }
+
+        self::begin();
+        $failureCode = null;
+        try {
+            try {
+                self::assertCustomerLifecycleAdmin($actorId);
+            } catch (InvalidArgumentException $e) {
+                $failureCode = 'unauthorized_actor';
+                throw $e;
+            }
+            $customer = self::fetch('SELECT id, role, status, archived_at FROM users WHERE id = ? FOR UPDATE', [$customerId]);
+            if (!$customer || ($customer['role'] ?? '') !== 'customer') {
+                $failureCode = 'customer_not_found';
+                throw new InvalidArgumentException('مشتری پیدا نشد.');
+            }
+            if (!empty($customer['archived_at'])) {
+                $failureCode = 'already_archived';
+                throw new InvalidArgumentException('این مشتری قبلاً بایگانی شده است.');
+            }
+
+            $changed = self::execute(
+                'UPDATE users SET archived_at = NOW(), archived_by = ?, archive_reason = ?, restored_at = NULL
+                 WHERE id = ? AND role = ? AND archived_at IS NULL',
+                [$actorId, $reason, $customerId, 'customer']
+            );
+            if ($changed !== 1) {
+                $failureCode = 'state_changed';
+                throw new RuntimeException('وضعیت مشتری هنگام بایگانی تغییر کرد؛ دوباره تلاش کنید.');
+            }
+            $archivedAt = self::fetch('SELECT archived_at FROM users WHERE id = ? LIMIT 1', [$customerId]);
+            AuditLog::record('customer', 'customer_archived', 'customer', $customerId, [
+                'actor_user_id' => $actorId,
+                'customer_id' => $customerId,
+                'old_values' => ['status' => (string) ($customer['status'] ?? ''), 'archived_at' => null],
+                'new_values' => ['status' => (string) ($customer['status'] ?? ''), 'archived_at' => $archivedAt['archived_at'] ?? null, 'reason' => $reason],
+                'description' => 'پرونده مشتری بایگانی شد؛ سوابق مالی و حقوقی حفظ شدند.',
+            ]);
+            self::commit();
+            return true;
+        } catch (Throwable $e) {
+            self::rollBack();
+            if ($failureCode !== null) {
+                self::recordCustomerLifecycleFailure($customerId, $actorId, 'customer_archive_rejected', $failureCode);
+            } else {
+                self::logCustomerLifecycleFailure('customer_archive_failed', $e);
+            }
+            throw $e;
+        }
+    }
+
+    public static function restoreCustomer($customerId, $actorId)
+    {
+        $customerId = (int) $customerId;
+        $actorId = (int) $actorId;
+        if ($customerId <= 0) {
+            self::recordCustomerLifecycleFailure($customerId, $actorId, 'customer_restore_rejected', 'invalid_customer_id');
+            throw new InvalidArgumentException('شناسه مشتری معتبر نیست.');
+        }
+
+        self::begin();
+        $failureCode = null;
+        try {
+            try {
+                self::assertCustomerLifecycleAdmin($actorId);
+            } catch (InvalidArgumentException $e) {
+                $failureCode = 'unauthorized_actor';
+                throw $e;
+            }
+            $customer = self::fetch('SELECT id, role, status, archived_at FROM users WHERE id = ? FOR UPDATE', [$customerId]);
+            if (!$customer || ($customer['role'] ?? '') !== 'customer') {
+                $failureCode = 'customer_not_found';
+                throw new InvalidArgumentException('مشتری پیدا نشد.');
+            }
+            if (empty($customer['archived_at'])) {
+                $failureCode = 'not_archived';
+                throw new InvalidArgumentException('این مشتری در حال حاضر بایگانی نیست.');
+            }
+
+            $changed = self::execute(
+                'UPDATE users SET archived_at = NULL, restored_at = NOW()
+                 WHERE id = ? AND role = ? AND archived_at IS NOT NULL',
+                [$customerId, 'customer']
+            );
+            if ($changed !== 1) {
+                $failureCode = 'state_changed';
+                throw new RuntimeException('وضعیت مشتری هنگام بازیابی تغییر کرد؛ دوباره تلاش کنید.');
+            }
+            $restored = self::fetch('SELECT restored_at FROM users WHERE id = ? LIMIT 1', [$customerId]);
+            AuditLog::record('customer', 'customer_restored', 'customer', $customerId, [
+                'actor_user_id' => $actorId,
+                'customer_id' => $customerId,
+                'old_values' => ['status' => (string) ($customer['status'] ?? ''), 'archived_at' => $customer['archived_at']],
+                'new_values' => ['status' => (string) ($customer['status'] ?? ''), 'archived_at' => null, 'restored_at' => $restored['restored_at'] ?? null],
+                'description' => 'پرونده از بایگانی بازیابی شد؛ وضعیت حساب قبلی حفظ شد.',
+            ]);
+            self::commit();
+            return true;
+        } catch (Throwable $e) {
+            self::rollBack();
+            if ($failureCode !== null) {
+                self::recordCustomerLifecycleFailure($customerId, $actorId, 'customer_restore_rejected', $failureCode);
+            } else {
+                self::logCustomerLifecycleFailure('customer_restore_failed', $e);
+            }
+            throw $e;
+        }
+    }
+
+    protected static function assertCustomerLifecycleAdmin($actorId)
+    {
+        $actor = self::fetch('SELECT role, status FROM users WHERE id = ? FOR UPDATE', [(int) $actorId]);
+        if (!$actor || ($actor['role'] ?? '') !== 'admin' || ($actor['status'] ?? '') !== 'active') {
+            throw new InvalidArgumentException('برای تغییر چرخه عمر مشتری دسترسی مدیر فعال لازم است.');
+        }
+    }
+
+    protected static function recordCustomerLifecycleFailure($customerId, $actorId, $action, $reasonCode)
+    {
+        try {
+            AuditLog::record('customer', $action, 'customer', max(0, (int) $customerId), [
+                'actor_user_id' => (int) $actorId ?: null,
+                'customer_id' => (int) $customerId > 0 ? (int) $customerId : null,
+                'event_result' => 'rejected',
+                'severity' => 'high',
+                'new_values' => ['result' => 'rejected', 'reason_code' => (string) $reasonCode],
+                'description' => 'درخواست تغییر چرخه عمر مشتری رد شد.',
+            ]);
+        } catch (Throwable $e) {
+            self::logCustomerLifecycleFailure('customer_lifecycle_audit_failure', $e);
+        }
+    }
+
+    protected static function logCustomerLifecycleFailure($event, Throwable $e)
+    {
+        if (class_exists('ErrorHandler')) {
+            try {
+                ErrorHandler::log((string) $event, $e, 500);
+            } catch (Throwable $ignored) {
+            }
+        }
+    }
+
     public static function deleteUser($id)
     {
-        return self::execute('DELETE FROM users WHERE id = ?', [(int) $id]);
+        $id = (int) $id;
+        $user = self::find($id);
+        if (($user['role'] ?? '') === 'customer') {
+            self::recordCustomerLifecycleFailure($id, Auth::id(), 'customer_delete_blocked', 'physical_delete_forbidden');
+            throw new LogicException('حذف فیزیکی مشتری مجاز نیست؛ برای نگهداری سوابق از بایگانی استفاده کنید.');
+        }
+        return self::execute('DELETE FROM users WHERE id = ?', [$id]);
     }
 
     public static function countAdmins()

@@ -26,7 +26,8 @@ $assert(strpos($view, 'قابل پرداخت امروز') !== false && strpos($v
 $assert(strpos($view, 'edit-installment-') !== false && strpos($view, 'void-installment-') !== false, 'Safe installment actions are not rendered.');
 $assert(strpos($engine, "'inconsistent_referral'") !== false && strpos($engine, "'configuration_missing'") !== false, 'Legal calculation failures can still be silently zero.');
 $assert(strpos($engine, "status IN ('referred', 'external_submission_confirmed')") !== false, 'Canonical legal referral inconsistency is not checked in batch.');
-$assert(strpos($change, 'DELETE FROM installments') === false && strpos($change, 'installment_voids') !== false, 'Installment change service permits physical deletion or lacks void audit.');
+$amendments = $read('helpers/ContractAmendmentService.php');
+$assert(strpos($change, 'DELETE FROM installments') === false && strpos($change, 'ContractAmendmentService::requestInstallmentChange') !== false && strpos($amendments, 'installment_voids') !== false, 'Installment change is not routed through the versioned amendment/void audit boundary.');
 $assert(strpos($operatorDebt, 'مبلغ واقعی قابل پرداخت امروز') !== false && strpos($operatorDebt, 'غیرقابل پرداخت') !== false, 'Operator debt scenarios do not distinguish projected legal debt.');
 $assert(strpos($legalCosts, "'pending_approval'") !== false && strpos($costSummary, 'outstanding_chargeable_legal_costs') !== false, 'Approved legal-cost boundary is missing.');
 $assert(strpos($legalCosts, 'recordPaymentAllocation') !== false && strpos($legalCosts, 'reversePaymentAllocations') !== false, 'Legal-cost payment allocation lifecycle is incomplete.');

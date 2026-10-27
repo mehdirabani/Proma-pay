@@ -98,10 +98,13 @@ $renderedDocumentHeader = trim((string) ($document['rendered_header'] ?? '')) ?:
   <button type="button" data-contract-tab-open="installments">اقساط</button>
   <button type="button" data-contract-tab-open="payments">پرداخت‌ها</button>
   <button type="button" data-contract-tab-open="settlement">تسویه و محاسبات</button>
+  <button type="button" data-contract-tab-open="amendments">اصلاحیه‌ها و نسخه مالی</button>
   <?php if ($isInternalViewer): ?><button type="button" data-contract-tab-open="legal">پرونده حقوقی</button><?php endif; ?>
   <button type="button" data-contract-tab-open="files">فایل‌ها و مدارک</button>
   <?php if ($canManageDocument): ?><button type="button" data-contract-tab-open="activity">تاریخچه فعالیت</button><?php endif; ?>
 </nav>
+
+<?php require __DIR__ . '/_amendment_workspace.php'; ?>
 
 <?php
 $settlementPreview = $settlementPreview ?? ['selected_count' => 0, 'principal_total' => 0, 'normal_penalty_total' => 0, 'legal_penalty_total' => 0, 'reward_total' => 0, 'full_settlement_total' => 0];
@@ -227,6 +230,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
   <section class="card proma-contract-document" data-contract-tab-panel="files" hidden>
     <div class="card-header card-no-border"><div class="header-top"><h2>متن قرارداد</h2><?php if ($document): ?><button class="btn secondary small" type="button" data-contract-copy-textarea="resolved-contract-text"><i data-feather="copy"></i> کپی متن قرارداد تولیدشده</button><?php endif; ?></div></div>
     <div class="card-body">
+      <?php if (!empty(array_filter($amendmentWorkspace['amendments'] ?? [], static fn(array $amendment): bool => ($amendment['status'] ?? '') === 'applied'))): ?><div class="notice warning">سند منتشرشدهٔ زیر نسخهٔ پیشین قرارداد است. اصلاحیه با تأیید داخلی در نسخه مالی اعمال شده، اما رضایت طرف قرارداد در سامانه ثبت نشده است.</div><?php endif; ?>
       <?php if ($document): ?>
         <textarea id="resolved-contract-text" hidden><?= e(trim(html_entity_decode(strip_tags(str_ireplace(['<br>', '<br/>', '<br />', '</p>', '</h2>', '</h3>', '</li>', '</tr>'], ["\n", "\n", "\n", "\n\n", "\n\n", "\n\n", "\n", "\n"], (string) $document['rendered_body'])), ENT_QUOTES | ENT_HTML5, 'UTF-8'))) ?></textarea>
         <div class="contract-document-preview">
@@ -252,7 +256,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
          </form>
          <?php if (!empty($documentVersions)): ?>
            <div class="table-wrap mt-3"><table><thead><tr><th scope="col">نسخه</th><th scope="col">منبع</th><th scope="col">تاریخ</th><th scope="col">وضعیت</th><th scope="col">عملیات</th></tr></thead><tbody>
-           <?php foreach ($documentVersions as $documentVersion): ?><tr><td>v<?= to_persian_digits($documentVersion['version_number']) ?></td><td><?= e($documentVersion['source']) ?></td><td><?= e(jdatetime($documentVersion['created_at'])) ?></td><td><?= !empty($documentVersion['is_finalized']) ? 'نهایی' : (!empty($documentVersion['is_published']) ? 'منتشرشده' : 'پیش‌نویس') ?></td><td class="actions"><?php if (empty($documentVersion['is_published'])): ?><form method="post" action="<?= e(url('contracts/publishDocumentVersion/' . (int) $documentVersion['id'])) ?>"><?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $contract['id'] ?>"><button class="btn small secondary" type="submit">انتشار</button></form><?php endif; ?><?php if (empty($documentVersion['is_finalized'])): ?><form method="post" action="<?= e(url('contracts/finalizeDocumentVersion/' . (int) $documentVersion['id'])) ?>" onsubmit="return confirm('این نسخه نهایی شود و دیگر بازنویسی خودکار نشود؟')"><?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $contract['id'] ?>"><button class="btn small warning" type="submit">نهایی‌سازی</button></form><?php endif; ?></td></tr><?php endforeach; ?>
+            <?php foreach ($documentVersions as $documentVersion): $isAmendmentDraft = ($documentVersion['source'] ?? '') === 'amendment_draft'; ?><tr><td>v<?= to_persian_digits($documentVersion['version_number']) ?></td><td><?= e($documentVersion['source']) ?></td><td><?= e(jdatetime($documentVersion['created_at'])) ?></td><td><?= $isAmendmentDraft ? 'پیش‌نویس داخلی؛ امضای طرف ثبت نشده' : (!empty($documentVersion['is_finalized']) ? 'نهایی' : (!empty($documentVersion['is_published']) ? 'منتشرشده' : 'پیش‌نویس')) ?></td><td class="actions"><?php if ($isAmendmentDraft && Auth::role() === 'admin'): ?><a class="btn small secondary" href="<?= e(url('contracts/printDocumentVersion/' . (int) $documentVersion['id'])) ?>" target="_blank" rel="noopener">مشاهده</a><?php elseif (!$isAmendmentDraft && empty($documentVersion['is_published'])): ?><form method="post" action="<?= e(url('contracts/publishDocumentVersion/' . (int) $documentVersion['id'])) ?>"><?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $contract['id'] ?>"><button class="btn small secondary" type="submit">انتشار</button></form><?php endif; ?><?php if (!$isAmendmentDraft && empty($documentVersion['is_finalized'])): ?><form method="post" action="<?= e(url('contracts/finalizeDocumentVersion/' . (int) $documentVersion['id'])) ?>" onsubmit="return confirm('این نسخه نهایی شود و دیگر بازنویسی خودکار نشود؟')"><?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $contract['id'] ?>"><button class="btn small warning" type="submit">نهایی‌سازی</button></form><?php endif; ?></td></tr><?php endforeach; ?>
            </tbody></table></div>
          <?php endif; ?>
        </div>
@@ -317,7 +321,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
     <div class="card-header card-no-border">
       <div class="header-top">
         <h2>اقساط</h2>
-        <?php if ($canManageActiveContract): ?><button class="btn small" type="button" data-open-modal="add-contract-installment">افزودن قسط</button><?php endif; ?>
+        <?php if ($canManageActiveContract): ?><a class="btn small" href="#contract-amendments" data-contract-tab-link="amendments">درخواست اصلاح اقساط</a><?php endif; ?>
       </div>
     </div>
     <?php if ($canManageActiveContract): ?><form method="post" action="<?= e(url('contracts/bulkInstallmentAction/' . (int) $contract['id'])) ?>" id="installment-bulk-form"><?= csrf_field() ?><input type="hidden" name="settlement_scope" value="selected" data-installment-payment-scope><?php endif; ?>
@@ -353,8 +357,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
             <?php if ($canManageActiveContract): ?>
               <td class="actions" data-label="عملیات">
                 <?php if (!empty($installment['payment_allowed'])): ?><button class="btn small success" type="button" data-open-modal="pay-installment-<?= (int) $installment['id'] ?>">پرداخت</button><?php endif; ?>
-                <button class="btn small secondary" type="button" data-open-modal="edit-installment-<?= (int) $installment['id'] ?>">ویرایش قسط</button>
-                <button class="btn small danger" type="button" data-open-modal="void-installment-<?= (int) $installment['id'] ?>">ابطال</button>
+                <?php if (empty($installment['is_custom'])): ?><button class="btn small secondary" type="button" data-open-modal="edit-installment-<?= (int) $installment['id'] ?>">درخواست اصلاح</button><button class="btn small danger" type="button" data-open-modal="void-installment-<?= (int) $installment['id'] ?>">ابطال</button><?php else: ?><span class="text-muted" title="قسط سفارشی با این گردش حفظ می‌شود">قسط سفارشی: تغییر/ابطال فعلاً غیرفعال</span><?php endif; ?>
               </td>
             <?php endif; ?>
           </tr>
@@ -635,28 +638,6 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
 
 </div><!-- contract tabs root: modals remain outside the panel tree -->
 <?php if ($canManageActiveContract): ?>
-  <div class="modal" id="add-contract-installment">
-    <div class="modal-content">
-      <div class="modal-header"><h3>افزودن قسط جدید</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('installments/store')) ?>" data-disable-on-submit>
-        <div class="modal-body form-grid">
-          <?= csrf_field() ?>
-          <input type="hidden" name="contract_id" value="<?= (int) $contract['id'] ?>">
-          <input type="hidden" name="redirect_to" value="contract">
-          <label><span class="proma-form-label">قرارداد</span><input value="<?= e($contract['contract_number']) ?> - <?= e($contract['customer_name']) ?>" disabled></label>
-          <label><span class="proma-form-label">سررسید</span><input name="due_date" value="<?= e(jdate(FinanceHelper::addMonths(date('Y-m-d'), 1))) ?>" required placeholder="۱۴۰۵/۰۱/۰۱"></label>
-          <label><span class="proma-form-label">مبلغ پایه</span><input name="base_amount" data-money required></label>
-          <label><span class="proma-form-label">عنوان قسط</span><input name="custom_title" maxlength="100" placeholder="مثلاً هزینه خدمات اضافه"></label>
-          <label><span class="proma-form-label">شناسه ضمانت</span><input name="guarantee_serial" dir="ltr" placeholder="شماره چک یا سفته"></label>
-          <label class="full"><span class="proma-form-label">توضیح قسط برای مشتری</span><textarea name="customer_description" required rows="3" placeholder="علت ایجاد این قسط را به زبان قابل نمایش برای مشتری بنویسید."></textarea><small class="proma-form-help">این توضیح در پنل مدیریت و پنل مشتری نمایش داده می‌شود.</small></label>
-          <label class="full"><span class="proma-form-label">یادداشت داخلی</span><textarea name="internal_note" rows="2" placeholder="نکته داخلی برای مدیریت؛ این متن به مشتری نمایش داده نمی‌شود."></textarea><small class="proma-form-help">این یادداشت فقط برای کاربران مجاز مدیریت قابل مشاهده است.</small></label>
-          <label class="proma-confirm-check full"><input type="checkbox" name="customer_visible" value="1" checked> توضیح قسط در پنل مشتری نمایش داده شود.</label>
-        </div>
-        <div class="modal-footer"><button class="btn" type="submit" data-submit-label="در حال ثبت...">ثبت قسط</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
-      </form>
-    </div>
-  </div>
-
   <?php foreach ($installments as $installment): ?>
     <?php $installmentVersionToken = InstallmentChangeService::versionToken($installment); ?>
     <?php if (!empty($installment['payment_allowed'])): ?>
@@ -684,17 +665,17 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
     </div>
     <?php endif; ?>
 
-    <div class="modal" id="edit-installment-<?= (int) $installment['id'] ?>">
+    <?php if (empty($installment['is_custom'])): ?><div class="modal" id="edit-installment-<?= (int) $installment['id'] ?>">
       <div class="modal-content proma-modal-lg">
         <div class="modal-header"><h3>ویرایش امن قسط <?= to_persian_digits($installment['installment_number']) ?></h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
         <form method="post" action="<?= e(url('contracts/changeInstallment/' . (int) $contract['id'])) ?>" data-disable-on-submit>
           <?= csrf_field() ?><input type="hidden" name="installment_id" value="<?= (int) $installment['id'] ?>"><input type="hidden" name="version_token" value="<?= e($installmentVersionToken) ?>">
           <div class="modal-body form-grid two">
-            <div class="notice info full">مبلغ قبلی: <?= money_toman($installment['base_amount']) ?> | سررسید قبلی: <?= e(jdate($installment['due_date'])) ?> | مانده اصل: <?= money_toman($installment['remaining_principal'] ?? 0) ?></div>
+            <div class="notice info full">این فرم فقط درخواست ثبت می‌کند؛ برنامه قسط تا تأیید مدیر دوم تغییر نمی‌کند. مبلغ قبلی: <?= money_toman($installment['base_amount']) ?> | سررسید قبلی: <?= e(jdate($installment['due_date'])) ?> | مانده اصل: <?= money_toman($installment['remaining_principal'] ?? 0) ?></div>
             <label>تاریخ سررسید جدید<input name="due_date" value="<?= e(jdate($installment['due_date'])) ?>" required></label>
             <label>مبلغ جدید<input name="base_amount" data-money value="<?= e(number_format(normalize_money($installment['base_amount']), 0)) ?>" required></label>
             <label>عنوان قسط<input name="custom_title" maxlength="100" value="<?= e($installment['custom_title'] ?? '') ?>"></label>
-            <label>روش اختلاف مبلغ<select name="difference_mode"><option value="transfer_to_last_unpaid">انتقال اختلاف به آخرین قسط پرداخت‌نشده</option><option value="selected_distribution">توزیع بین اقساط انتخاب‌شده (درخواست بررسی)</option><option value="contract_adjustment">ثبت اصلاحیه مستقل قرارداد (درخواست بررسی)</option><option value="manual_schedule">بازطراحی دستی برنامه (درخواست بررسی)</option></select></label>
+            <label>روش اختلاف مبلغ<select name="difference_mode"><option value="manual_schedule">ثبت مبلغ صریح در اصلاحیه قرارداد</option></select></label>
             <label class="full">توضیح قابل نمایش<input name="custom_description" value="<?= e($installment['custom_description'] ?? $installment['notes'] ?? '') ?>"></label>
             <label class="full">یادداشت داخلی<textarea name="internal_note" rows="3"><?= e($installment['internal_note'] ?? '') ?></textarea></label>
             <label class="full required-field">علت تغییر<input name="reason" required minlength="3" placeholder="اثر مالی، علت تغییر و تأیید مسئول را بنویسید"></label>
@@ -702,15 +683,15 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
           <div class="modal-footer"><button class="btn" type="submit">بررسی و ثبت تغییر</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
         </form>
       </div>
-    </div>
+    </div><?php endif; ?>
 
-    <div class="modal" id="void-installment-<?= (int) $installment['id'] ?>">
+    <?php if (empty($installment['is_custom'])): ?><div class="modal" id="void-installment-<?= (int) $installment['id'] ?>">
       <div class="modal-content">
         <div class="modal-header"><h3>لغو / ابطال امن قسط</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
         <form method="post" action="<?= e(url('contracts/voidInstallment/' . (int) $contract['id'])) ?>" data-disable-on-submit>
           <?= csrf_field() ?><input type="hidden" name="installment_id" value="<?= (int) $installment['id'] ?>"><input type="hidden" name="version_token" value="<?= e($installmentVersionToken) ?>">
           <div class="modal-body form-grid">
-            <div class="notice warning full">قسط <?= to_persian_digits($installment['installment_number']) ?>، مبلغ <?= money_toman($installment['base_amount']) ?> و سررسید <?= e(jdate($installment['due_date'])) ?>. اگر پرداخت، پرونده حقوقی یا سند حسابداری داشته باشد، هیچ سابقه‌ای حذف نمی‌شود و فقط درخواست اصلاح برنامه ثبت خواهد شد.</div>
+            <div class="notice warning full">ابطال از مسیر اصلاحیهٔ قرارداد انجام می‌شود. قسط <?= to_persian_digits($installment['installment_number']) ?>، مبلغ <?= money_toman($installment['base_amount']) ?> و سررسید <?= e(jdate($installment['due_date'])) ?> تا تأیید مدیر دوم و اعمال اصلاحیه باقی می‌ماند.</div>
             <label class="full required-field">علت ابطال<textarea name="reason" required minlength="3" rows="3"></textarea></label>
             <label class="full required-field">برای تأیید دقیقاً بنویسید: <strong><?= e('ابطال قسط شماره ' . to_persian_digits($installment['installment_number'])) ?></strong><input name="typed_confirmation" required autocomplete="off"></label>
             <label class="proma-confirm-check full"><input type="checkbox" name="confirm_void" value="1" required> اثر ابطال بر مانده قرارداد و پیگیری‌ها را بررسی کردم.</label>
@@ -718,7 +699,7 @@ $settlementPreview['full_settlement_total'] = normalize_money($settlementPreview
           <div class="modal-footer"><button class="btn danger" type="submit">تأیید ابطال</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
         </form>
       </div>
-    </div>
+    </div><?php endif; ?>
   <?php endforeach; ?>
 <?php endif; ?>
 

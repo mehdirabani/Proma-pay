@@ -87,7 +87,12 @@ class InventoryPartnersServiceProvider implements \PluginServiceProviderInterfac
         }
     }
 
-    public function activate(\PluginManager $manager, array $manifest) {}
+    public function activate(\PluginManager $manager, array $manifest)
+    {
+        if (\PluginManager::isActive('proma-partnership-ledger')) {
+            throw new \RuntimeException('Proma Partnership Ledger فعال است؛ برای جلوگیری از ثبت دوبارهٔ hookها، دو افزونه را هم‌زمان فعال نکنید.');
+        }
+    }
     public function deactivate(\PluginManager $manager, array $manifest) {}
     public function update(\PluginManager $manager, array $manifest) {}
 

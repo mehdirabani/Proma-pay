@@ -174,9 +174,15 @@ $issues = array_values(array_filter(InstallmentReconciliationService::scan(500, 
     return (int) ($issue['id'] ?? 0) === (int) $repairInstallment['id'];
 }));
 $assert(count($issues) === 1, 'Dry-run reconciliation did not detect a mismatched installment.');
-InstallmentReconciliationService::apply($issues);
+$legacyApplyRejected = false;
+try {
+    InstallmentReconciliationService::apply($issues);
+} catch (LogicException $e) {
+    $legacyApplyRejected = true;
+}
+$assert($legacyApplyRejected, 'Legacy raw-snapshot apply accepted an unreviewed correction request.');
 $repaired = Model::fetch('SELECT paid_amount, remaining_amount, status FROM installments WHERE id = ?', [(int) $repairInstallment['id']]);
-$assert((float) $repaired['paid_amount'] === 0.0 && (float) $repaired['remaining_amount'] === (float) $repairInstallment['base_amount'], 'Reconciliation did not derive state from effective payments.');
+$assert((float) $repaired['paid_amount'] === (float) $repairInstallment['base_amount'] && (float) $repaired['remaining_amount'] === 0.0 && $repaired['status'] === 'paid', 'Rejected raw-snapshot apply changed the stored installment state.');
 
 $duplicatePayload = [
     'customer_id' => $customerId,

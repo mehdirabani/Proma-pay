@@ -21,7 +21,7 @@ $assert(strpos($layout, "assets/css/components/panels.css") !== false, 'Shared p
 foreach (['.proma-page-content .card', '.proma-history-kpis', '.proma-history-card', 'height: auto !important', '@media (max-width: 767.98px)'] as $needle) {
     $assert(strpos($panels, $needle) !== false, 'Panel system is missing: ' . $needle);
 }
-foreach (['proma-customer-history', 'proma-history-kpis', 'proma-purchase-contract-list', 'proma-purchase-contract-card', 'proma-payment-progress'] as $needle) {
+foreach (['customer-history-page', 'customer-history-summary', 'customer-history-workspace', 'customer-purchase-card', 'customer-purchase-progress'] as $needle) {
     $assert(strpos($history, $needle) !== false, 'Customer history composition is missing: ' . $needle);
 }
 $assert(strpos($forms, 'td.actions {') !== false, 'Table action cells must preserve native table layout.');

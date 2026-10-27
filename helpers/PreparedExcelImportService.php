@@ -21,9 +21,14 @@ class PreparedExcelImportService
         $customers = self::normalizeRows($data['customers'] ?? []);
         $contracts = self::normalizeRows($data['contracts'] ?? []);
         $installments = self::normalizeRows($data['installments'] ?? []);
+        if (($contracts || $installments) && !ContractAmendmentService::isAvailable()) {
+            throw new RuntimeException('پیش از ورود یا تغییر مالی قرارداد، Migration نسخه‌بندی اصلاحیه باید اجرا شود.');
+        }
         $installmentsByContract = self::groupInstallments($installments);
         $customerMap = [];
         $contractMap = [];
+        $existingContractIds = [];
+        $newContractIds = [];
 
         Model::begin();
         try {
@@ -82,6 +87,7 @@ class PreparedExcelImportService
                 $existing = Model::fetch('SELECT id, customer_id FROM contracts WHERE contract_number = ?', [$contractNumber]);
                 if ($existing) {
                     $contractMap[$contractNumber] = (int) $existing['id'];
+                    $existingContractIds[(int) $existing['id']] = true;
                     $summary['contracts_existing']++;
                     continue;
                 }
@@ -120,6 +126,7 @@ class PreparedExcelImportService
                     'notes' => 'وارد شده از فایل اکسل 1.xlsx' . (!empty($row['contract_id']) ? ' - شناسه: ' . self::text($row['contract_id']) : ''),
                 ], $userId);
                 $contractMap[$contractNumber] = $contractId;
+                $newContractIds[$contractId] = true;
                 $summary['contracts_created']++;
             }
 
@@ -129,12 +136,17 @@ class PreparedExcelImportService
                 if (!$contractId && $contractNumber !== '') {
                     $contract = Model::fetch('SELECT id FROM contracts WHERE contract_number = ?', [$contractNumber]);
                     $contractId = $contract ? (int) $contract['id'] : null;
+                    if ($contractId) $existingContractIds[$contractId] = true;
                 }
                 $number = (int) to_english_digits($row['installment_number'] ?? 0);
                 $dueDate = self::parseDate($row['due_date'] ?? '');
                 $amount = normalize_money($row['amount_toman'] ?? $row['amount'] ?? 0);
                 if (!$contractId || $number <= 0 || !$dueDate || $amount <= 0) {
                     $summary['skipped'][] = 'قسط ناقص قرارداد ' . ($contractNumber ?: '-') . ' رد شد.';
+                    continue;
+                }
+                if (isset($existingContractIds[(int) $contractId]) || !isset($newContractIds[(int) $contractId])) {
+                    $summary['skipped'][] = 'افزودن قسط به قرارداد موجود فقط از مسیر اصلاحیهٔ تأییدشده مجاز است: ' . $contractNumber;
                     continue;
                 }
                 $exists = Model::fetch('SELECT id FROM installments WHERE contract_id = ? AND installment_number = ?', [$contractId, $number]);
@@ -159,6 +171,10 @@ class PreparedExcelImportService
                     ]
                 );
                 $summary['installments_created']++;
+            }
+
+            foreach (array_keys($newContractIds) as $createdContractId) {
+                ContractAmendmentService::recordImportedBaseline((int) $createdContractId, $userId ? (int) $userId : null);
             }
 
             self::syncNextSerial();
@@ -239,6 +255,16 @@ class PreparedExcelImportService
 
     protected static function insertContract(array $data, $userId = null)
     {
+        $customer = Model::fetch(
+            "SELECT id FROM users
+             WHERE id = ? AND role = 'customer' AND status = 'active' AND archived_at IS NULL
+             LIMIT 1 FOR UPDATE",
+            [(int) ($data['customer_id'] ?? 0)]
+        );
+        if (!$customer) {
+            throw new InvalidArgumentException('ورود قرارداد برای مشتری غیرفعال یا بایگانی‌شده مجاز نیست.');
+        }
+
         $serial = self::nextSerial();
         $prefix = 'IMP';
         while (Model::fetch('SELECT id FROM contracts WHERE prefix = ? AND serial = ?', [$prefix, $serial])) {

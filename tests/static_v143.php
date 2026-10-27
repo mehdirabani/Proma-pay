@@ -71,8 +71,9 @@ $assert(strpos($appJs, 'fieldLabelNormalized') !== false, 'Legacy form labels ar
 $assert(strpos($appJs, "modal.addEventListener('proma:modal-opened', update)") !== false, 'Payment previews must be lazy-loaded when their modal opens.');
 $assert(strpos($appJs, 'fetchJsonCached') !== false && strpos($appJs, 'jsonGetCache.size > 120') !== false, 'Bounded GET request deduplication is missing.');
 $assert(strpos($appJs, 'initSubmitGuards();') !== false && strpos($appJs, 'disableSubmitBound') !== false, 'Duplicate-submit guards are not safely reusable.');
-$assert(strpos($contractShow, 'action="<?= e(url(\'installments/store\')) ?>" data-disable-on-submit') !== false, 'Custom installment form lacks duplicate-submit protection.');
-$assert(substr_count($contractShow, '<span class="proma-form-label">') >= 7, 'Custom installment modal does not use explicit field labels.');
+$amendmentWorkspace = (string) file_get_contents($root . '/views/contracts/_amendment_workspace.php');
+$assert(strpos($contractShow, "url('installments/store')") === false, 'Legacy direct custom-installment writes must not bypass the amendment approval flow.');
+$assert(strpos($amendmentWorkspace, 'data-preview-amendment') !== false && strpos($amendmentWorkspace, 'data-submit-amendment') !== false, 'Controlled contract amendment preview and approval request are missing.');
 
 $model = (string) file_get_contents($root . '/core/Model.php');
 foreach (['PROMA_DB_DSN', 'PROMA_DB_HOST', 'PROMA_DB_NAME', 'PROMA_DB_USER', 'PROMA_DB_PASSWORD'] as $environmentKey) {

@@ -69,7 +69,7 @@ $assert(!preg_match('/\b(drop\s+table|truncate\s+table|delete\s+from)\b/i', $mig
 $installment = (string) file_get_contents($root . '/models/Installment.php');
 $installmentView = (string) file_get_contents($root . '/views/installments/index.php');
 $contractView = (string) file_get_contents($root . '/views/contracts/show.php');
-foreach (['public static function createCustom', 'custom_description', 'internal_note', 'customer_visible', 'return (int) self::lastInsertId()'] as $needle) {
+foreach (['public static function createCustom', 'custom_description', 'internal_note', 'customer_visible', 'افزودن قسط سفارشی در گردش اصلاحیهٔ فعلی پشتیبانی نمی‌شود'] as $needle) {
     $assert(strpos($installment, $needle) !== false, 'Custom installment model is missing ' . $needle . '.');
 }
 $assert(strpos($installmentView, '!$customerMode || !empty($item[\'customer_visible\'])') !== false, 'Customer portal does not guard hidden custom descriptions.');

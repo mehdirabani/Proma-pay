@@ -26,13 +26,16 @@ class PluginManager
             return $manager;
         }
         self::$booted = true;
-        foreach (PluginRegistry::all() as $registeredPlugin) {
+        $registeredPlugins = PluginRegistry::all();
+        usort($registeredPlugins, [self::class, 'comparePluginBootPriority']);
+        foreach ($registeredPlugins as $registeredPlugin) {
             $plugin = self::resolveRuntimePlugin($registeredPlugin);
             if (($plugin['status'] ?? '') !== 'active') {
                 continue;
             }
             $pluginStartedAt = microtime(true);
             try {
+                $manager->assertPluginRouteCompatibility($plugin, true);
                 $manager->loadProvider($plugin);
                 if (class_exists('RequestTelemetry', false)) {
                     RequestTelemetry::recordPlugin($plugin['plugin_id'] ?? 'unknown');
@@ -215,10 +218,12 @@ class PluginManager
         if ($existing && in_array(PluginRegistry::normalizeStatus($existing['status']), [PluginStatus::INSTALLED, PluginStatus::ACTIVE, PluginStatus::INACTIVE, PluginStatus::VALIDATING, PluginStatus::UPDATING, PluginStatus::ACTIVATING, PluginStatus::DEACTIVATING, PluginStatus::UNINSTALLING], true)) {
             throw new InvalidArgumentException('این افزونه قبلاً نصب شده است.');
         }
+        $this->assertPluginRouteCompatibility($manifest, false, true);
         $this->ensureRegistryTables();
         PluginRegistry::upsert($manifest, $manifest['_root'], $userId, PluginStatus::VALIDATING);
         try {
             $this->assertRequirements($manifest);
+            $this->assertPluginRouteCompatibility($manifest, false, true);
             $this->runMigrations($manifest);
             $registeredForInstall = PluginRegistry::find($manifest['id']);
             if (!$registeredForInstall) {
@@ -253,6 +258,7 @@ class PluginManager
         }
         $manifest = $this->manifestFromRegistered($registered);
         $this->assertRequirements($manifest);
+        $this->assertPluginRouteCompatibility($manifest);
         PluginRegistry::setStatus($manifest['id'], PluginStatus::ACTIVATING);
         try {
             $provider = $this->loadProvider($registered, false);
@@ -589,6 +595,7 @@ class PluginManager
         }
         try {
             $this->assertRequirements($manifest);
+            $this->assertPluginRouteCompatibility($manifest);
             $destination = $this->assertManagedPluginPath($registered['path'] ?? '');
         } catch (Throwable $e) {
             $this->removePluginFiles($temp);
@@ -674,7 +681,7 @@ class PluginManager
                     && ($route['options'] ?? []) === array_merge($options, ['method' => $method])) {
                     return;
                 }
-                throw new InvalidArgumentException('تعارض route افزونه شناسایی شد.');
+                throw new InvalidArgumentException('تعارض route افزونه با ' . (string) ($route['plugin_id'] ?? 'افزونه دیگر') . ' شناسایی شد: ' . $method . ' ' . $path);
             }
         }
         $this->routes[] = [
@@ -1031,6 +1038,111 @@ class PluginManager
         }
         array_shift($matches);
         return array_map('urldecode', $matches);
+    }
+
+    /**
+     * Return whether two plugin manifests claim routes that the router cannot
+     * distinguish. Variable path segments overlap literal segments as well as
+     * other variables, so /items/{id} conflicts with /items/create.
+     */
+    public static function routeManifestsConflict(array $left, array $right)
+    {
+        foreach ((array) ($left['routes'] ?? []) as $leftRoute) {
+            if (!is_array($leftRoute)) {
+                continue;
+            }
+            $leftMethod = strtoupper(trim((string) ($leftRoute['method'] ?? 'GET')));
+            $leftPath = trim((string) ($leftRoute['path'] ?? ''), '/');
+            if ($leftPath === '') {
+                continue;
+            }
+            foreach ((array) ($right['routes'] ?? []) as $rightRoute) {
+                if (!is_array($rightRoute)
+                    || strtoupper(trim((string) ($rightRoute['method'] ?? 'GET'))) !== $leftMethod) {
+                    continue;
+                }
+                $rightPath = trim((string) ($rightRoute['path'] ?? ''), '/');
+                if ($rightPath !== '' && self::routePatternsOverlap($leftPath, $rightPath)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static function pluginManifestsConflict(array $left, array $right)
+    {
+        $leftId = trim((string) ($left['id'] ?? ''));
+        $rightId = trim((string) ($right['id'] ?? ''));
+        $leftConflicts = array_map('strval', (array) ($left['conflicts_with'] ?? []));
+        $rightConflicts = array_map('strval', (array) ($right['conflicts_with'] ?? []));
+        return self::routeManifestsConflict($left, $right)
+            || ($leftId !== '' && in_array($leftId, $rightConflicts, true))
+            || ($rightId !== '' && in_array($rightId, $leftConflicts, true));
+    }
+
+    public static function comparePluginBootPriority(array $left, array $right)
+    {
+        $leftPreRelease = self::hasPreReleaseVersion((string) ($left['version'] ?? ''));
+        $rightPreRelease = self::hasPreReleaseVersion((string) ($right['version'] ?? ''));
+        if ($leftPreRelease !== $rightPreRelease) {
+            return $leftPreRelease <=> $rightPreRelease;
+        }
+        return strcmp(
+            (string) ($left['plugin_id'] ?? $left['id'] ?? ''),
+            (string) ($right['plugin_id'] ?? $right['id'] ?? '')
+        );
+    }
+
+    protected static function routePatternsOverlap($leftPath, $rightPath)
+    {
+        $leftSegments = explode('/', trim((string) $leftPath, '/'));
+        $rightSegments = explode('/', trim((string) $rightPath, '/'));
+        if (count($leftSegments) !== count($rightSegments)) {
+            return false;
+        }
+        foreach ($leftSegments as $index => $leftSegment) {
+            $rightSegment = $rightSegments[$index];
+            $leftVariable = preg_match('/^\{[a-zA-Z0-9_]+\}$/', $leftSegment) === 1;
+            $rightVariable = preg_match('/^\{[a-zA-Z0-9_]+\}$/', $rightSegment) === 1;
+            if (!$leftVariable && !$rightVariable && $leftSegment !== $rightSegment) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    protected static function hasPreReleaseVersion($version)
+    {
+        return strpos((string) $version, '-') !== false;
+    }
+
+    /**
+     * Reject route conflicts during activation. During startup, the boot order
+     * is stable-first and then plugin-id, so the lower-priority claimant is
+     * marked failed while the winner remains available deterministically.
+     */
+    protected function assertPluginRouteCompatibility(array $manifest, $boot = false, $includeInstalled = false)
+    {
+        $pluginId = (string) ($manifest['id'] ?? '');
+        foreach (PluginRegistry::all() as $registered) {
+            $otherId = trim((string) ($registered['plugin_id'] ?? ''));
+            $otherStatus = PluginRegistry::normalizeStatus($registered['status'] ?? '');
+            $eligibleStatuses = $includeInstalled
+                ? [PluginStatus::INSTALLED, PluginStatus::ACTIVE, PluginStatus::INACTIVE, PluginStatus::UPDATE_AVAILABLE, PluginStatus::ERROR, PluginStatus::RECOVERY_REQUIRED]
+                : [PluginStatus::ACTIVE];
+            if ($otherId === '' || $otherId === $pluginId || !in_array($otherStatus, $eligibleStatuses, true)) {
+                continue;
+            }
+            $otherManifest = $this->manifestFromRegistered($registered);
+            if (!self::pluginManifestsConflict($manifest, $otherManifest)) {
+                continue;
+            }
+            if ($boot && self::comparePluginBootPriority($manifest, $otherManifest) < 0) {
+                continue;
+            }
+            throw new RuntimeException('مسیرهای این افزونه با «' . $otherId . '» تداخل دارند؛ این دو افزونه را هم‌زمان نصب یا فعال نکنید.');
+        }
     }
 
     protected function registerFailedRouteClaims(array $plugin, Throwable $error)

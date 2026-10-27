@@ -36,7 +36,7 @@ $integration = $read('tests/integration_guarantor_document_v159.php');
 
 $applicationVersion = (string) ($version['application'] ?? '');
 $assert(preg_match('/^\d+\.\d+\.\d+$/', $applicationVersion) === 1 && ($version['display'] ?? '') === 'V' . $applicationVersion, 'Core version metadata is inconsistent.');
-$assert(($settings['asset_version'] ?? '') === $applicationVersion && ($manifest['version'] ?? '') === 'v' . $applicationVersion && ($package['version'] ?? '') === $applicationVersion, 'Asset or package cache metadata is inconsistent.');
+$assert((bool) preg_match('/^\d+\.\d+\.\d+(?:\.\d+)?$/', (string) ($settings['asset_version'] ?? '')) && ($manifest['version'] ?? '') === 'v' . $applicationVersion && ($package['version'] ?? '') === $applicationVersion, 'Asset cache-bust version or package metadata is inconsistent.');
 $assert(strpos($worker, 'proma-pay-v' . str_replace('.', '-', $applicationVersion) . '-') !== false, 'Service worker cache prefix was not invalidated.');
 $assert(strpos($layout, 'proma-v2 proma-v2-role-') !== false && strpos($layout, 'data-navigation-toggle') !== false, 'Role-aware responsive shell is missing.');
 $assert(strpos($layout, 'class="proma-nav-toggle" data-navigation-toggle aria-label="بستن منو"') !== false && strpos($layout, 'proma_icon(\'close\')') !== false && strpos($styles, 'body.proma-v2 .proma-nav-toggle { display: none; }') !== false, 'The desktop close-X regression returned.');

@@ -11,6 +11,7 @@ class SystemResetService
             throw new RuntimeException('کاربر مدیر معتبر نیست.');
         }
 
+        self::assertNoProtectedHistory();
         $backup = BackupService::create('before-data-reset');
         $tables = self::databaseTables();
         $preserveTables = [
@@ -27,6 +28,8 @@ class SystemResetService
 
         Model::begin();
         try {
+            Model::fetchAll("SELECT id FROM users WHERE role = 'customer' ORDER BY id FOR UPDATE");
+            self::assertNoProtectedHistory();
             Model::db()->exec('SET FOREIGN_KEY_CHECKS=0');
             foreach ($tables as $table) {
                 if (in_array($table, $preserveTables, true)) {
@@ -69,6 +72,65 @@ class SystemResetService
             return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
         } finally {
             $stmt->closeCursor();
+        }
+    }
+
+    protected static function assertNoProtectedHistory()
+    {
+        $tables = array_fill_keys(self::databaseTables(), true);
+        if (isset($tables['audit_logs']) && Model::fetch(
+            "SELECT 1 FROM audit_logs AS history
+             INNER JOIN users AS customer ON customer.id = history.customer_id
+             WHERE customer.role = 'customer' LIMIT 1"
+        )) {
+            throw new RuntimeException('بازنشانی متوقف شد؛ ردپای حسابرسی مشتری باید حفظ شود.');
+        }
+        $protectedTables = [
+            'contracts', 'installments', 'payments', 'payment_corrections', 'payment_receipts',
+            'legal_cases', 'legal_case_logs', 'identity_documents', 'operator_calls',
+            'contract_change_logs', 'contract_guarantees', 'contract_guarantor_people', 'contract_items',
+            'generated_contract_documents', 'customer_point_ledger', 'customer_merge_logs',
+            'financial_ledger_events', 'financial_ledger_lines', 'collection_tasks', 'payment_groups',
+            'payment_allocations', 'contract_requests', 'profile_update_requests',
+        ];
+        foreach ($protectedTables as $table) {
+            if (!isset($tables[$table])) {
+                continue;
+            }
+            $safeTable = str_replace('`', '``', $table);
+            if (Model::fetch('SELECT 1 FROM `' . $safeTable . '` LIMIT 1')) {
+                throw new RuntimeException('بازنشانی متوقف شد؛ سوابق مالی، قراردادی یا حقوقی باید حفظ شوند. از بایگانی مشتری استفاده کنید.');
+            }
+        }
+        if (isset($tables['file_relations']) && Model::fetch(
+            "SELECT 1 FROM file_relations WHERE entity_type IN ('customer', 'user', 'contract', 'legal_case', 'identity_document', 'payment_receipt') LIMIT 1"
+        )) {
+            throw new RuntimeException('بازنشانی متوقف شد؛ سند مرتبط با مشتری یا قرارداد باید حفظ شود.');
+        }
+        if (isset($tables['files']) && Model::fetch(
+            "SELECT 1 FROM files WHERE related_entity_type IN ('customer', 'user', 'contract', 'legal_case', 'identity_document', 'payment_receipt') LIMIT 1"
+        )) {
+            throw new RuntimeException('بازنشانی متوقف شد؛ سند مرتبط با مشتری یا قرارداد باید حفظ شود.');
+        }
+
+        $userReferences = Model::fetchAll(
+            "SELECT TABLE_NAME, COLUMN_NAME
+             FROM information_schema.KEY_COLUMN_USAGE
+             WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME = 'users' AND REFERENCED_COLUMN_NAME = 'id'"
+        );
+        foreach ($userReferences as $reference) {
+            $table = str_replace('`', '``', (string) ($reference['TABLE_NAME'] ?? ''));
+            $column = str_replace('`', '``', (string) ($reference['COLUMN_NAME'] ?? ''));
+            if ($table === '' || $column === '') {
+                continue;
+            }
+            if (Model::fetch(
+                "SELECT 1 FROM `{$table}` AS child
+                 INNER JOIN users AS customer ON customer.id = child.`{$column}`
+                 WHERE customer.role = 'customer' LIMIT 1"
+            )) {
+                throw new RuntimeException('بازنشانی متوقف شد؛ یک رکورد وابسته به مشتری باید حفظ شود.');
+            }
         }
     }
 

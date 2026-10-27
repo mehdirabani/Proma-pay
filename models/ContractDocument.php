@@ -499,6 +499,9 @@ TEXT;
         if (!$version) {
             throw new InvalidArgumentException('نسخه قرارداد پیدا نشد.');
         }
+        if (($version['source'] ?? '') === 'amendment_draft') {
+            throw new InvalidArgumentException('پیش‌نویس الحاقیه تا ثبت مستند رضایت طرف قرارداد قابل انتشار نیست.');
+        }
         self::assertEditableContract((int) $version['contract_id']);
         self::begin();
         try {
@@ -519,6 +522,9 @@ TEXT;
         if (!$version) {
             throw new InvalidArgumentException('نسخه قرارداد پیدا نشد.');
         }
+        if (($version['source'] ?? '') === 'amendment_draft') {
+            throw new InvalidArgumentException('پیش‌نویس الحاقیه بدون ثبت رضایت طرف قرارداد قابل نهایی‌سازی نیست.');
+        }
         self::assertEditableContract((int) $version['contract_id']);
         self::begin();
         try {
@@ -530,6 +536,68 @@ TEXT;
             self::rollBack();
             throw $e;
         }
+    }
+
+    /** Store an internal amendment addendum without publishing or finalizing it. */
+    public static function recordAmendmentDraftVersion(array $data): ?int
+    {
+        self::ensureSchema();
+        if (!Model::db()->inTransaction()) throw new LogicException('پیش‌نویس الحاقیه باید در تراکنش اصلاحیه ثبت شود.');
+        if (!SchemaGuard::tableExists('contract_document_versions') || !SchemaGuard::columnsExist('contract_document_versions', ['version_number', 'rendered_title', 'rendered_header', 'rendered_body', 'source', 'checksum', 'is_published', 'is_finalized', 'generated_by', 'created_at'])) return null;
+        foreach (['contract_id', 'amendment_number', 'financial_version_id', 'requested_by', 'approved_by', 'generated_by'] as $key) {
+            if ((int) ($data[$key] ?? 0) <= 0) throw new InvalidArgumentException('اطلاعات نسخه سند اصلاحیه کامل نیست.');
+        }
+        $contractId = (int) $data['contract_id'];
+        $contract = self::fetch('SELECT contract_number FROM contracts WHERE id = ? FOR UPDATE', [$contractId]);
+        if (!$contract) throw new InvalidArgumentException('قرارداد نسخه سند اصلاحیه پیدا نشد.');
+        $before = is_array($data['before'] ?? null) ? $data['before'] : [];
+        $after = is_array($data['after'] ?? null) ? $data['after'] : [];
+        $escape = static function ($value): string {
+            return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        };
+        $terms = [
+            'principal_amount' => 'اصل قرارداد', 'down_payment_amount' => 'پیش‌پرداخت',
+            'monthly_interest_rate' => 'نرخ سود ماهانه', 'interest_type' => 'روش محاسبه سود',
+            'months' => 'تعداد اقساط', 'start_date' => 'تاریخ شروع', 'first_due_date' => 'اولین سررسید',
+        ];
+        $html = '<div dir="rtl"><h2>پیش‌نویس داخلی الحاقیه شماره ' . (int) $data['amendment_number'] . '</h2>'
+            . '<p><strong>قرارداد:</strong> ' . $escape($contract['contract_number'] ?? $contractId) . '</p>'
+            . '<p><strong>وضعیت حقوقی:</strong> تأیید داخلی ثبت شده؛ رضایت یا امضای طرف قرارداد در سامانه ثبت نشده است. این متن پیش‌نویس است و به‌تنهایی سند لازم‌الاجرا محسوب نمی‌شود.</p>'
+            . '<p><strong>تاریخ اثرگذاری:</strong> ' . $escape($data['effective_on'] ?? '') . '</p>'
+            . '<p><strong>علت:</strong> ' . nl2br($escape($data['reason'] ?? ''), false) . '</p>'
+            . '<p><strong>درخواست‌کننده:</strong> ' . $escape($data['requested_by_name'] ?? $data['requested_by'])
+            . ' &nbsp; <strong>تأییدکننده داخلی:</strong> ' . $escape($data['approved_by_name'] ?? $data['approved_by']) . '</p>'
+            . '<h3>شرایط مالی قبل و بعد</h3><table><thead><tr><th>شرط</th><th>قبل</th><th>بعد</th></tr></thead><tbody>';
+        foreach ($terms as $key => $label) {
+            $old = $before['terms'][$key] ?? '';
+            $new = $after['terms'][$key] ?? '';
+            if (in_array($key, ['principal_amount', 'down_payment_amount'], true)) {
+                $old = number_format(normalize_money($old));
+                $new = number_format(normalize_money($new));
+            }
+            $html .= '<tr><th>' . $escape($label) . '</th><td>' . $escape($old) . '</td><td>' . $escape($new) . '</td></tr>';
+        }
+        $html .= '</tbody></table><h3>برنامه اقساط پس از اعمال داخلی</h3><table><thead><tr><th>شماره</th><th>سررسید</th><th>مبلغ</th><th>پرداخت ثبت‌شده</th><th>وضعیت</th></tr></thead><tbody>';
+        foreach ((array) ($after['schedule'] ?? []) as $row) {
+            if (!is_array($row) || ($row['status'] ?? '') === 'cancelled') continue;
+            $html .= '<tr><td>' . $escape($row['installment_number'] ?? '') . '</td><td>' . $escape($row['due_date'] ?? '')
+                . '</td><td>' . $escape(number_format(normalize_money($row['base_amount'] ?? 0)))
+                . '</td><td>' . $escape(number_format(normalize_money($row['paid_amount'] ?? 0)))
+                . '</td><td>' . $escape($row['status'] ?? '') . '</td></tr>';
+        }
+        $html .= '</tbody></table><p><strong>نسخه مالی مرتبط:</strong> ' . (int) $data['financial_version_id']
+            . ' — <strong>شماره اصلاحیه:</strong> ' . (int) $data['amendment_number'] . '</p></div>';
+        $title = 'پیش‌نویس داخلی الحاقیه قرارداد ' . (string) ($contract['contract_number'] ?? $contractId);
+        $header = 'اصلاحیه ' . (int) $data['amendment_number'] . ' — تأیید طرف قرارداد ثبت نشده';
+        $latest = self::fetch('SELECT version_number FROM contract_document_versions WHERE contract_id = ? ORDER BY version_number DESC, id DESC LIMIT 1 FOR UPDATE', [$contractId]);
+        $versionNumber = (int) ($latest['version_number'] ?? 0) + 1;
+        $checksum = hash('sha256', $title . "\0" . $header . "\0" . $html);
+        self::execute(
+            'INSERT INTO contract_document_versions (contract_id, template_version_id, version_number, rendered_title, rendered_header, rendered_body, source, checksum, is_published, is_finalized, generated_by, created_at)
+             VALUES (?, NULL, ?, ?, ?, ?, ?, ?, 0, 0, ?, NOW())',
+            [$contractId, $versionNumber, $title, $header, $html, 'amendment_draft', $checksum, (int) $data['generated_by']]
+        );
+        return (int) self::lastInsertId();
     }
 
     protected static function recordVersion($contractId, $title, $header, $body, $source, $userId = null, $templateVersionId = null)
@@ -569,6 +637,15 @@ TEXT;
         if (($contract['status'] ?? '') === 'cancelled') {
             throw new InvalidArgumentException('قرارداد لغوشده فقط قابل مشاهده و چاپ است و متن آن قابل تغییر نیست.');
         }
+        if (self::hasUnconsentedAmendment((int) $contractId)) {
+            throw new InvalidArgumentException('پس از اعمال داخلی اصلاحیه، تولید، انتشار یا نهایی‌سازی سند تا ثبت مستند رضایت طرف قرارداد متوقف است.');
+        }
+    }
+
+    public static function hasUnconsentedAmendment(int $contractId): bool
+    {
+        if (!SchemaGuard::tableExists('contract_amendments')) return false;
+        return (bool) self::fetch("SELECT id FROM contract_amendments WHERE contract_id = ? AND status = 'applied' LIMIT 1", [$contractId]);
     }
 
     protected static function missingVersionTable(Throwable $e)

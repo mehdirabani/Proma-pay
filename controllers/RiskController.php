@@ -2,6 +2,131 @@
 
 class RiskController extends Controller
 {
+    public function portfolio()
+    {
+        $this->requireRole('admin');
+        $report = PortfolioRiskAnalyticsService::report($_GET);
+        $this->render('risk/portfolio', [
+            'title' => 'تحلیل ریسک پرتفوی و جریان نقدی',
+            'report' => $report,
+            'filters' => $report['filters'],
+        ]);
+    }
+
+    public function portfolioDetail()
+    {
+        $this->requireRole('admin');
+        $metric = (string) ($_GET['metric'] ?? '');
+        try {
+            $snapshot = PortfolioRiskAnalyticsService::readOnlySnapshot(static function () use ($metric): array {
+                $detail = PortfolioRiskAnalyticsService::details($metric, $_GET);
+                return ['detail' => $detail, 'report' => PortfolioRiskAnalyticsService::report($detail['filters'])];
+            });
+            $detail = $snapshot['detail'];
+            $report = $snapshot['report'];
+        } catch (InvalidArgumentException $e) {
+            ErrorHandler::abort(404);
+            return;
+        }
+        $labels = [
+            'balance' => 'اصل ماندهٔ اقساط',
+            'due' => 'اقساط سررسیدشده',
+            'cash' => 'دریافت واقعی اقساط',
+            'cohort' => 'تطبیق Cohort سررسید',
+            'aging' => 'مطالبات معوق',
+            'forecast' => 'ورودی نقدی برنامه‌ریزی‌شده',
+        ];
+        $metricTotal = $this->portfolioMetricTotal($metric, $report, $detail['filters']);
+        $this->render('risk/portfolio-detail', [
+            'title' => 'جزئیات ' . ($labels[$metric] ?? 'گزارش پرتفوی'),
+            'detail' => $detail,
+            'report' => $report,
+            'metricLabel' => $labels[$metric] ?? 'گزارش پرتفوی',
+            'metricTotal' => $metricTotal,
+        ]);
+    }
+
+    public function portfolioExport()
+    {
+        $this->requireRole('admin');
+        $metric = (string) ($_GET['metric'] ?? '');
+        if (!in_array($metric, ['balance', 'due', 'cash', 'cohort', 'aging', 'forecast'], true)) {
+            ErrorHandler::abort(404);
+            return;
+        }
+        $filters = PortfolioRiskAnalyticsService::normalizeFilters($_GET);
+        PortfolioRiskAnalyticsService::readOnlySnapshot(function () use ($metric, $filters): void {
+            $detail = PortfolioRiskAnalyticsService::details($metric, $filters);
+            $report = PortfolioRiskAnalyticsService::report($detail['filters']);
+            $metricTotal = $this->portfolioMetricTotal($metric, $report, $detail['filters']);
+            $filterSnapshot = json_encode([
+                'from' => $detail['filters']['from'], 'to' => $detail['filters']['to'],
+                'group' => $detail['filters']['group'], 'horizon_days' => $detail['filters']['horizon'],
+                'risk' => $detail['filters']['risk'], 'aging' => $detail['filters']['aging'],
+                'status' => $detail['filters']['status'], 'search' => $detail['filters']['q'],
+                'contract_id' => $detail['filters']['contract_id'], 'customer_id' => $detail['filters']['customer_id'],
+                'operator_id' => $detail['filters']['operator_id'], 'period' => $detail['filters']['period'],
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}';
+            $coverage = (string) ($report['coverage']['schedule_basis'] ?? 'current_schedule');
+            $extractedAt = date('Y-m-d H:i:s');
+            $metricLabels = [
+                'balance' => 'اصل ماندهٔ اقساط', 'due' => 'اقساط سررسیدشده',
+                'cash' => 'دریافت واقعی اقساط', 'cohort' => 'وصول اصل Cohort',
+                'aging' => 'مطالبات معوق', 'forecast' => 'ورودی قراردادی برنامه‌ریزی‌شده',
+            ];
+            SpreadsheetHelper::downloadPaginatedXlsx(
+                'portfolio-' . $metric . '-' . date('Ymd-His') . '.xlsx',
+                'Portfolio Evidence',
+                ['Metric ID', 'Metric Version', 'Metric Name', 'Period Start', 'Period End', 'As Of Date', 'Extracted At', 'Filters', 'Metric Total (Toman)', 'Source Row Count', 'Currency', 'Source Scope', 'Contract ID', 'Contract Number', 'Customer', 'Installment ID', 'Installment Number', 'Payment ID', 'Payment Date', 'Due Date', 'Record Status', 'Payment Type', 'Contribution (Toman)', 'Scheduled Principal (Toman)', 'Collected Principal (Toman)', 'Remaining Principal (Toman)', 'Penalty (Toman)', 'Delay Days', 'Coverage'],
+                static function (int $page, int $perPage) use ($metric, $filters): array {
+                    $pageFilters = array_merge($filters, ['page' => $page, 'per_page' => min(200, $perPage)]);
+                    $result = PortfolioRiskAnalyticsService::details($metric, $pageFilters);
+                    return ['items' => $result['rows'], 'total' => $result['total'], 'pages' => $result['pages']];
+                },
+                static function (array $row) use ($metric, $metricLabels, $filters, $detail, $metricTotal, $filterSnapshot, $coverage, $extractedAt): array {
+                    $isCash = $metric === 'cash';
+                    $penalty = normalize_money($row['normal_penalty'] ?? 0) + normalize_money($row['legal_penalty'] ?? 0);
+                    return [
+                        $metric, PortfolioRiskAnalyticsService::METRIC_VERSION, $metricLabels[$metric] ?? $metric,
+                        $filters['from'], $filters['to'], $detail['as_of'], $extractedAt, $filterSnapshot,
+                        $metricTotal, (int) $detail['total'], 'Toman', $isCash ? 'payments: paid, uncorrected installment payments' : 'current installments + canonical installment state',
+                        (int) ($row['contract_id'] ?? 0), (string) ($row['contract_number'] ?? ''), (string) ($row['customer_name'] ?? ''),
+                        (int) ($row['id'] ?? $row['installment_id'] ?? 0), (int) ($row['installment_number'] ?? 0),
+                        (int) ($row['payment_id'] ?? 0), (string) ($row['payment_date'] ?? ''), (string) ($row['due_date'] ?? ''),
+                        (string) ($row['status'] ?? $row['calculation_status'] ?? ''), (string) ($row['payment_type'] ?? 'installment'),
+                        normalize_money($row['contribution'] ?? $row['amount'] ?? 0), normalize_money($row['base_amount'] ?? 0),
+                        normalize_money($row['paid_principal'] ?? 0), normalize_money($row['remaining_principal'] ?? 0),
+                        $penalty, (int) ($row['overdue_days'] ?? 0), $coverage,
+                    ];
+                },
+                50
+            );
+        });
+    }
+
+    private function portfolioMetricTotal(string $metric, array $report, array $filters): int
+    {
+        if ($metric === 'balance') return (int) ($report['summary']['outstanding_principal'] ?? 0);
+        if ($metric === 'due') return (int) ($report['summary']['scheduled_period_amount'] ?? 0);
+        if ($metric === 'cash') return (int) ($report['summary']['period_cash_collection'] ?? 0);
+        if ($metric === 'cohort') return (int) ($report['summary']['due_cohort_collected'] ?? 0);
+        if ($metric === 'aging') {
+            $total = 0;
+            foreach (($report['aging'] ?? []) as $bucket) {
+                if (($filters['aging'] ?? 'all') === 'all' || ($filters['aging'] ?? '') === ($bucket['key'] ?? '')) $total += (int) ($bucket['total'] ?? 0);
+            }
+            return $total;
+        }
+        if ($metric === 'forecast') {
+            $total = 0;
+            foreach (($report['forecast'] ?? []) as $bucket) {
+                if (empty($filters['period']) || $filters['period'] === ($bucket['period_key'] ?? '')) $total += (int) ($bucket['amount'] ?? 0);
+            }
+            return $total;
+        }
+        throw new InvalidArgumentException('شاخص خروجی معتبر نیست.');
+    }
+
     public function index()
     {
         $this->requireRole('admin');

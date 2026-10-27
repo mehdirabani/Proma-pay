@@ -102,6 +102,8 @@ $safeCorePath = static function (string $path) use ($normalizePath, $protectedFi
         return null;
     }
     if (strpos($lower, 'plugins/') === 0
+        || strpos($lower, 'backups/') === 0
+        || strpos($lower, '2- themes/') === 0
         || strpos($lower, 'storage/') === 0
         || strpos($lower, 'uploads/') === 0
         || strpos($lower, 'vendor/') === 0) {

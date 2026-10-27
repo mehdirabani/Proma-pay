@@ -499,6 +499,12 @@ td.actions > form {
   align-items: center;
 }
 
+.proma-inline-form {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+}
+
 /* Keep payment-table controls in a real table cell. Applying a flex layout to
    the <td> itself breaks column alignment in some Chromium/RTL combinations. */
 .proma-payment-row-actions {

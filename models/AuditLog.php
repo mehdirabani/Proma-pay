@@ -2,6 +2,23 @@
 
 class AuditLog extends Model
 {
+    public static function customerLifecycleHistory($customerId, $limit = 40)
+    {
+        $customerId = (int) $customerId;
+        if ($customerId <= 0) {
+            return [];
+        }
+        $limit = max(1, min(100, (int) $limit));
+        return self::fetchAll(
+            "SELECT event_action, event_result, old_values, new_values, description, actor_user_id, created_at
+             FROM audit_logs
+             WHERE event_type = 'customer' AND related_type = 'customer' AND related_id = ?
+             ORDER BY id DESC
+             LIMIT {$limit}",
+            [$customerId]
+        );
+    }
+
     public static function record($eventType, $eventAction, $relatedType, $relatedId, array $data = [])
     {
         $actorId = !empty($data['actor_user_id']) ? (int) $data['actor_user_id'] : null;

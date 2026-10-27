@@ -451,6 +451,9 @@ function legal_stage_label($stage)
 
 function status_label($status)
 {
+    if ($status === 'archived') {
+        return 'بایگانی‌شده';
+    }
     return app_config('statuses', [])[$status] ?? 'نامشخص';
 }
 
@@ -475,6 +478,7 @@ function badge_class($status)
         'processing' => 'info',
         'completed' => 'success',
         'cancelled' => 'danger',
+        'archived' => 'muted',
         'reviewing' => 'warning',
         'pending' => 'warning',
         'partial' => 'info',

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
+require_once $root . '/helpers/RetiredCoreFiles.php';
 $fail = static function (string $message): void {
     throw new RuntimeException($message);
 };
@@ -32,7 +33,17 @@ fclose($pipes[1]);
 fclose($pipes[2]);
 $gitExit = proc_close($process);
 $expect($gitExit === 0, 'git ls-files failed: ' . trim((string) $gitError));
-$expect(trim((string) $trackedLaravel) === '', 'Tracked Laravel paths remain in the repository.');
+$trackedLaravelPresent = [];
+foreach (explode("\0", (string) $trackedLaravel) as $trackedPath) {
+    $trackedPath = trim($trackedPath);
+    if ($trackedPath !== '' && file_exists($root . '/' . $trackedPath)) {
+        $trackedLaravelPresent[] = $trackedPath;
+    }
+}
+$expect($trackedLaravelPresent === [], 'Tracked Laravel paths remain in the repository: ' . implode(', ', $trackedLaravelPresent));
+$expect(RetiredCoreFiles::allows('wordpress-plugins/proma-pay-woocommerce/proma-pay-woocommerce.php'), 'The old root-level WooCommerce source must be eligible for safe Core-update cleanup.');
+$expect(RetiredCoreFiles::pruneBoundary('wordpress-plugins/proma-pay-woocommerce/proma-pay-woocommerce.php') === 'wordpress-plugins', 'The old root-level WooCommerce directory cleanup boundary is missing.');
+$expect(!RetiredCoreFiles::allows('plugins/wordpress-plugins/proma-pay-woocommerce/proma-pay-woocommerce.php'), 'The plugin-managed WooCommerce source under plugins/ must be preserved.');
 
 $retiredPaths = [
     'controllers/EcommerceController.php',

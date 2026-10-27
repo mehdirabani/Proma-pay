@@ -61,7 +61,9 @@ class UpdatesController extends Controller
             $result = ScriptUpdateService::install($decoded);
             $this->flashSafely(
                 'success',
-                'بروزرسانی نصب شد. بکاپ ایمنی: ' . $result['backup'] . '، فایل‌های نصب‌شده: ' . to_persian_digits(count($result['installed_files'])) . '.'
+                'بروزرسانی نصب شد. بکاپ ایمنی: ' . $result['backup']
+                . '، فایل‌های نصب‌شده: ' . to_persian_digits(count($result['installed_files']))
+                . '، فایل‌های قدیمی بازنشسته و پاک‌شده: ' . to_persian_digits(count($result['retired_files'] ?? [])) . '.'
             );
         } catch (Throwable $e) {
             BackupService::log('update_install', $decoded, 'failed', $e->getMessage());

@@ -1,8 +1,20 @@
 <?php
 
-if (!getenv('PROMA_DB_DSN')) putenv('PROMA_DB_DSN=mysql:host=127.0.0.1;port=33311;dbname=proma_v150_qa;charset=utf8mb4');
-if (!getenv('PROMA_DB_USER')) putenv('PROMA_DB_USER=root');
-if (getenv('PROMA_DB_PASSWORD') === false) putenv('PROMA_DB_PASSWORD=');
+if (PHP_SAPI !== 'cli-server') {
+    echo "QA_SERVER_ROUTER_ONLY\n";
+    return;
+}
+
+$testDsn = trim((string) getenv('PROMA_TEST_DB_DSN'));
+if ($testDsn === '') {
+    http_response_code(503);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'PROMA_TEST_DB_DSN is required for the QA server.';
+    exit;
+}
+putenv('PROMA_DB_DSN=' . $testDsn);
+putenv('PROMA_DB_USER=' . (getenv('PROMA_TEST_DB_USER') ?: 'root'));
+putenv('PROMA_DB_PASSWORD=' . (getenv('PROMA_TEST_DB_PASSWORD') ?: ''));
 // The real guard is tested separately.  HTTP smoke tests are intentionally
 // bursty and run through one local loopback address, unlike real clients.
 putenv('PROMA_REQUEST_RATE_CAPACITY=1000');

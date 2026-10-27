@@ -33,33 +33,12 @@ class DashboardController extends Controller
     {
         Payment::ensureCorrectionSchema();
 
-        $monthStart = date('Y-m-01');
-        $nextMonthStart = date('Y-m-01', strtotime('+1 month'));
-
-        $receivedMonth = $this->sumValue(
-            "SELECT COALESCE(SUM(amount),0) AS total
-             FROM payments
-             WHERE status = 'paid'
-             AND COALESCE(payment_date, DATE(paid_at), DATE(created_at)) >= ?
-             AND COALESCE(payment_date, DATE(paid_at), DATE(created_at)) < ?",
-            [$monthStart, $nextMonthStart]
-        );
-        $dueMonth = $this->sumValue(
-            "SELECT COALESCE(SUM(base_amount),0) AS total
-             FROM installments
-             WHERE status != 'cancelled' AND due_date >= ? AND due_date < ?",
-            [$monthStart, $nextMonthStart]
-        );
-        $outstanding = $this->sumValue(
-            "SELECT COALESCE(SUM(GREATEST(base_amount - paid_amount, 0)),0) AS total
-             FROM installments
-             WHERE status NOT IN ('paid', 'cancelled')"
-        );
-        $overdueAmount = $this->sumValue(
-            "SELECT COALESCE(SUM(GREATEST(base_amount - paid_amount, 0)),0) AS total
-             FROM installments
-             WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE()"
-        );
+        $portfolioReport = PortfolioRiskAnalyticsService::report();
+        $portfolioKpis = $portfolioReport['summary'];
+        $receivedMonth = $portfolioKpis['current_month_cash'];
+        $dueMonth = $portfolioKpis['current_month_due'];
+        $outstanding = $portfolioKpis['outstanding_principal'];
+        $overdueAmount = $portfolioKpis['overdue_principal'];
         $pendingPayment = Model::fetch(
             "SELECT COUNT(*) AS total, COALESCE(SUM(amount),0) AS amount
              FROM payments
@@ -73,9 +52,9 @@ class DashboardController extends Controller
             'contracts' => $this->countValue("SELECT COUNT(*) AS total FROM contracts WHERE status = 'active'"),
             'contracts_total' => $this->countValue('SELECT COUNT(*) AS total FROM contracts'),
             'installments_total' => $this->countValue('SELECT COUNT(*) AS total FROM installments'),
-            'overdue' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE()"),
-            'due_today' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date = CURDATE()"),
-            'due_week' => $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)"),
+            'overdue' => $portfolioKpis['overdue_installments'],
+            'due_today' => $portfolioKpis['due_today'],
+            'due_week' => $portfolioKpis['due_week'],
             'received' => $receivedMonth,
             'due_month' => $dueMonth,
             'outstanding' => $outstanding,
@@ -86,11 +65,18 @@ class DashboardController extends Controller
             'pending_identity' => $pendingIdentity,
             'pending_reviews' => $pendingReceipts + $pendingIdentity,
             'legal_open' => $this->countValue("SELECT COUNT(*) AS total FROM legal_cases WHERE status != 'closed'"),
-            'collection_rate' => $dueMonth > 0 ? round(min(100, ($receivedMonth / $dueMonth) * 100), 1) : 0,
-            'overdue_share' => $outstanding > 0 ? round(min(100, ($overdueAmount / $outstanding) * 100), 1) : 0,
+            'collection_rate' => $portfolioKpis['current_month_cohort_rate'],
+            'cohort_collected' => $portfolioKpis['current_month_cohort_collected'],
+            'cohort_obligation' => $portfolioKpis['current_month_cohort_obligation'],
+            'overdue_share' => $portfolioKpis['overdue_share'],
+            'scheduled_inflow_30_days' => $portfolioKpis['scheduled_inflow_30_days'],
+            'calculation_review_rows' => $portfolioKpis['calculation_review_rows'],
         ];
 
-        $paymentTrend = $this->paymentTrend();
+        $paymentTrend = [
+            'labels' => array_column($portfolioReport['trend'], 'label'),
+            'data' => array_column($portfolioReport['trend'], 'cash_amount'),
+        ];
         $installmentStatus = $this->statusChart(
             Model::fetchAll('SELECT status, COUNT(*) AS total FROM installments GROUP BY status ORDER BY total DESC'),
             [
@@ -111,13 +97,13 @@ class DashboardController extends Controller
                 'cancelled' => '#8b8d98',
             ]
         );
+        $agingByKey = [];
+        foreach ($portfolioReport['aging'] as $bucket) $agingByKey[$bucket['key']] = (int) $bucket['installments'];
         $overdueBuckets = [
             'labels' => ['امروز', '۱ تا ۷ روز', '۸ تا ۳۰ روز', 'بیش از ۳۰ روز'],
             'data' => [
-                $kpis['due_today'],
-                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) BETWEEN 1 AND 7"),
-                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) BETWEEN 8 AND 30"),
-                $this->countValue("SELECT COUNT(*) AS total FROM installments WHERE status NOT IN ('paid', 'cancelled') AND due_date < CURDATE() AND DATEDIFF(CURDATE(), due_date) > 30"),
+                $kpis['due_today'], $agingByKey['1-7'] ?? 0, $agingByKey['8-30'] ?? 0,
+                ($agingByKey['31-60'] ?? 0) + ($agingByKey['61-90'] ?? 0) + ($agingByKey['90+'] ?? 0),
             ],
         ];
         $upcoming = Model::fetchAll(
@@ -136,22 +122,12 @@ class DashboardController extends Controller
              JOIN contracts c ON c.id = p.contract_id
              JOIN users u ON u.id = c.customer_id
              LEFT JOIN installments i ON i.id = p.installment_id
-             WHERE p.status = 'paid'
+              WHERE p.status = 'paid' AND COALESCE(p.is_corrected, 0) = 0
+                AND COALESCE(p.payment_type, 'installment') = 'installment'
              ORDER BY COALESCE(p.payment_date, DATE(p.paid_at), DATE(p.created_at)) DESC, p.id DESC
              LIMIT 7"
         );
-        $riskCustomers = Model::fetchAll(
-            "SELECT u.id, u.full_name, u.mobile, COUNT(i.id) AS overdue_count,
-             COALESCE(SUM(GREATEST(i.base_amount - i.paid_amount, 0)),0) AS debt,
-             MIN(i.due_date) AS oldest_due_date
-             FROM installments i
-             JOIN contracts c ON c.id = i.contract_id
-             JOIN users u ON u.id = c.customer_id
-              WHERE c.status != 'cancelled' AND i.status NOT IN ('paid', 'cancelled') AND i.due_date < CURDATE()
-             GROUP BY u.id, u.full_name, u.mobile
-             ORDER BY debt DESC, overdue_count DESC
-             LIMIT 6"
-        );
+        $riskCustomers = $portfolioReport['risk_customers'];
         $operatorLoad = Model::fetchAll(
             "SELECT op.full_name, COUNT(DISTINCT c.id) AS contracts,
              COUNT(i.id) AS overdue_count
@@ -205,7 +181,9 @@ class DashboardController extends Controller
             "SELECT DATE_FORMAT(COALESCE(payment_date, DATE(paid_at), DATE(created_at)), '%Y-%m') AS month_key,
              COALESCE(SUM(amount),0) AS total
              FROM payments
-             WHERE status = 'paid' AND COALESCE(payment_date, DATE(paid_at), DATE(created_at)) >= ?
+             WHERE status = 'paid' AND COALESCE(is_corrected, 0) = 0
+               AND COALESCE(payment_type, 'installment') = 'installment'
+               AND COALESCE(payment_date, DATE(paid_at), DATE(created_at)) >= ?
              GROUP BY month_key
              ORDER BY month_key",
             [$start->format('Y-m-01')]

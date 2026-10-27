@@ -42,7 +42,7 @@ class CustomersController extends Controller
     {
         $this->requireRole('admin');
         $search = trim((string) ($_GET['q'] ?? ''));
-        $status = in_array($_GET['status'] ?? '', ['active', 'inactive', 'blocked'], true) ? $_GET['status'] : null;
+        $status = in_array($_GET['status'] ?? '', ['active', 'inactive', 'blocked', 'archived'], true) ? $_GET['status'] : null;
         SpreadsheetHelper::downloadPaginatedXlsx(
             'مشتریان.xlsx',
             'مشتریان',
@@ -154,22 +154,57 @@ class CustomersController extends Controller
         redirect('customers');
     }
 
+    public function archive($id)
+    {
+        $this->requireCustomerLifecycleAdmin((int) $id, 'customer_archive_denied');
+        $this->onlyPost();
+        try {
+            User::archiveCustomer((int) $id, Auth::id(), $_POST['archive_reason'] ?? '');
+            set_flash('success', 'مشتری بایگانی شد؛ سوابق مالی، قراردادها و پیگیری‌های حقوقی حفظ شدند.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'بایگانی مشتری انجام نشد. هیچ سابقه‌ای حذف نشد.');
+        }
+        redirect('customers');
+    }
+
+    /** Keep the legacy endpoint non-destructive. */
     public function delete($id)
     {
-        $this->requireRole('admin');
+        return $this->archive($id);
+    }
+
+    public function restore($id)
+    {
+        $this->requireCustomerLifecycleAdmin((int) $id, 'customer_restore_denied');
         $this->onlyPost();
-        if (!ConfirmationCode::verify('customer_delete_' . (int) $id, $_POST['confirm_text'] ?? '')) {
-            set_flash('error', 'عدد تأیید حذف مشتری درست وارد نشده است.');
-            redirect('customers');
+        try {
+            User::restoreCustomer((int) $id, Auth::id());
+            set_flash('success', 'پرونده مشتری بازیابی شد؛ وضعیت حساب و همه سوابق قبلی حفظ شدند.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'بازیابی مشتری انجام نشد.');
         }
-        $activeContracts = Model::fetch("SELECT COUNT(*) AS total FROM contracts WHERE customer_id = ? AND status = 'active'", [(int) $id]);
-        if ((int) ($activeContracts['total'] ?? 0) > 0) {
-            set_flash('error', 'این مشتری دارای قرارداد فعال است و امکان حذف او وجود ندارد.');
-            redirect('customers');
-        }
-        User::deleteUser((int) $id);
-        set_flash('success', 'مشتری حذف شد.');
         redirect('customers');
+    }
+
+    protected function requireCustomerLifecycleAdmin($customerId, $deniedAction)
+    {
+        Auth::requireLogin();
+        if (Auth::role() === 'admin') {
+            return;
+        }
+        try {
+            AuditLog::record('customer', (string) $deniedAction, 'customer', max(0, (int) $customerId), [
+                'actor_user_id' => Auth::id(),
+                'customer_id' => (int) $customerId > 0 ? (int) $customerId : null,
+                'event_result' => 'denied',
+                'severity' => 'high',
+                'new_values' => ['result' => 'denied'],
+                'description' => 'درخواست تغییر چرخه عمر مشتری به‌دلیل نداشتن مجوز مدیر رد شد.',
+            ]);
+        } catch (Throwable $e) {
+            ErrorHandler::log('customer_lifecycle_denied_audit', $e, 500);
+        }
+        ErrorHandler::abort(403);
     }
 
     public function show($id)
@@ -204,6 +239,7 @@ class CustomersController extends Controller
             'medals' => CustomerLoyalty::medalsForUsers([(int) $id])[(int) $id] ?? [],
             'loyaltyProfile' => CustomerLoyalty::profile((int) $id),
             'creditProfile' => $creditProfile,
+            'customerLifecycleHistory' => AuditLog::customerLifecycleHistory((int) $id),
         ]);
     }
 
@@ -290,6 +326,7 @@ class CustomersController extends Controller
                 'summary' => Customer360Service::summary($customerId), 'account' => $account,
                 'accountingAvailable' => $accountingAvailable,
                 'medals' => CustomerLoyalty::medalsForUsers([$customerId])[$customerId] ?? [],
+                'customerLifecycleHistory' => AuditLog::customerLifecycleHistory($customerId),
                 'activeTab' => (string) $tab, 'activeTabData' => $data,
             ]);
             return;

@@ -93,9 +93,22 @@ $hashList = static function (array $files): array {
     }
     return $items;
 };
-$walk = static function (string $directory, callable $accept, string $prefix = '') use ($normalize): array {
+$walk = static function (string $directory, callable $accept, string $prefix = '', ?callable $pruneDirectory = null) use ($normalize): array {
     $files = [];
-    $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS));
+    $directoryIterator = new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS);
+    if ($pruneDirectory !== null) {
+        $directoryIterator = new RecursiveCallbackFilterIterator(
+            $directoryIterator,
+            static function (SplFileInfo $item) use ($directory, $prefix, $normalize, $pruneDirectory): bool {
+                if (!$item->isDir()) {
+                    return true;
+                }
+                $relativePath = $normalize(substr($item->getPathname(), strlen($directory)));
+                return !$pruneDirectory($normalize($prefix . '/' . $relativePath));
+            }
+        );
+    }
+    $iterator = new RecursiveIteratorIterator($directoryIterator);
     foreach ($iterator as $item) {
         if (!$item->isFile() || $item->isLink()) {
             continue;
@@ -178,7 +191,7 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
     }
     foreach ([
         '.git/', '.github/', '.agents/', '.appsec-forge/', '.codex/', '.playwright-cli/', '.project-graph/', 'skill/', 'laravel/',
-        'dist/', 'storage/', 'tmp/', 'output/', 'plugins/', 'plugin-packages/', 'node_modules/',
+        'backups/', '2- themes/', 'dist/', 'storage/', 'tmp/', 'output/', 'plugins/', 'plugin-packages/', 'node_modules/',
         'docs/', 'electron/', 'html/', 'scripts/', 'tests/', 'tools/',
     ] as $prefix) {
         if (strpos($path, $prefix) === 0) {
@@ -188,9 +201,17 @@ $coreExcluded = static function (string $relativePath) use ($normalize): bool {
     return (bool) preg_match('/\.(?:zip|log|bak|sql\.gz|sqlite|db|tmp)$/i', basename($path));
 };
 
-$coreFiles = $walk($root, static function (string $relativePath) use ($coreExcluded): bool {
-    return !$coreExcluded($relativePath);
-});
+$pruneCoreDirectory = static function (string $relativeDirectory) use ($coreExcluded): bool {
+    return $coreExcluded(rtrim($relativeDirectory, '/') . '/__core_walk_probe__');
+};
+$coreFiles = $walk(
+    $root,
+    static function (string $relativePath) use ($coreExcluded): bool {
+        return !$coreExcluded($relativePath);
+    },
+    '',
+    $pruneCoreDirectory
+);
 $templateRuntimeFiles = $walk(
     $root . '/html/RTL/assets',
     static function (string $relativePath): bool {

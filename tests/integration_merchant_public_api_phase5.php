@@ -178,8 +178,8 @@ $assert($connectionResponse['status'] === 200
     'Authenticated connection lookup failed.');
 $policyResponse = $send('GET','/policies/financial');
 $publicPolicy = $policyResponse['body']['data']['policy'] ?? [];
-require_once $root . '/wordpress-plugins/proma-pay-woocommerce/includes/class-promapaywc-connection-repository.php';
-require_once $root . '/wordpress-plugins/proma-pay-woocommerce/includes/class-promapaywc-policy-service.php';
+require_once $root . '/plugins/wordpress-plugins/proma-pay-woocommerce/includes/class-promapaywc-connection-repository.php';
+require_once $root . '/plugins/wordpress-plugins/proma-pay-woocommerce/includes/class-promapaywc-policy-service.php';
 $assert($policyResponse['status'] === 200
     && ($publicPolicy['policy_type'] ?? '') === 'financial'
     && ($publicPolicy['document']['monthly_rate_bps'] ?? null) === 250
@@ -197,6 +197,7 @@ $assert($quoteResponse['status'] === 200
     && isset($quoteResponse['body']['data']['quote']['calculation']['first_installment_due_date'])
     && ($quoteResponse['body']['data']['quote']['guarantee']['calculation']['cheque_due_date'] ?? '')
         === ($quoteResponse['body']['data']['quote']['calculation']['first_installment_due_date'] ?? null)
+    && preg_match('/\A[a-f0-9]{64}\z/D', (string) ($quoteResponse['body']['data']['quote']['guarantee']['source_policy_sha256'] ?? '')) === 1
     && ($quoteResponse['body']['data']['quote']['guarantee']['calculation']['cheque_amount_rial'] ?? 0) === 16125000,
     'Published financial policy quote was incorrect.');
 $aboveMaximumDownPayment = $quotePayload;

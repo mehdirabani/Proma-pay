@@ -2,7 +2,7 @@
 <section class="card">
   <div class="card-header"><h1>بروزرسانی سامانه</h1><span class="badge success">نسخه نصب‌شده: <?= e(app_version_label()) ?></span></div>
   <div class="card-body grid">
-    <p>فایل آپدیت متناسب با نسخهٔ نصب‌شده را انتخاب کنید. پس از بارگذاری، بسته در فهرست زیر نمایش داده می‌شود؛ سپس دکمهٔ نصب را بزنید. پیش از نصب بکاپ ایمنی ساخته می‌شود.</p>
+    <p>فایل آپدیت متناسب با نسخهٔ نصب‌شده را انتخاب کنید. پیش از نصب بکاپ ایمنی ساخته می‌شود؛ فایل‌های قدیمی که بسته به‌صراحت بازنشسته اعلام کرده و checksum آن‌ها با نسخهٔ نصب‌شده برابر است، در همان به‌روزرسانی حذف می‌شوند.</p>
     <form id="standalone-update-upload" method="post" action="<?= e(url('updates/upload')) ?>" enctype="multipart/form-data" data-loading-form data-update-upload-form>
       <?= csrf_field() ?>
       <label>فایل ZIP آپدیت
@@ -13,17 +13,18 @@
       <button class="btn" type="submit" data-loading-text="در حال ارسال فایل...">بارگذاری بسته</button>
     </form>
     <div class="table-wrap">
-      <table><thead><tr><th scope="col">بسته</th><th scope="col">نسخه</th><th scope="col">وضعیت</th><th scope="col">عملیات</th></tr></thead><tbody>
+      <table><thead><tr><th scope="col">بسته</th><th scope="col">نسخه</th><th scope="col">محتوا</th><th scope="col">وضعیت</th><th scope="col">عملیات</th></tr></thead><tbody>
         <?php foreach ($updatePackages as $package): ?>
           <tr>
             <td><strong><?= e($package['title'] ?: 'بسته آپدیت') ?></strong><small class="ltr d-block"><?= e($package['name']) ?></small></td>
             <td><?= e($package['version'] ?: '-') ?></td>
+            <td><small>فایل جدید: <?= to_persian_digits((int) ($package['files_count'] ?? 0)) ?></small><small class="d-block">فایل قدیمی برای پاک‌سازی: <?= to_persian_digits((int) ($package['retired_files_count'] ?? 0)) ?></small><small class="d-block">پایگاه‌داده: <?= to_persian_digits((int) ($package['migrations_count'] ?? 0)) ?> migration</small></td>
             <td><?php if (!$package['is_valid']): ?><span class="badge danger">نامعتبر</span><p><?= e($package['error']) ?></p>
               <?php else: ?><span class="badge <?= $package['is_installable'] ? 'success' : 'muted' ?>"><?= $package['is_installable'] ? 'آماده نصب' : (($package['version_state']??'')==='current' ? 'نصب‌شده' : 'ناسازگار') ?></span><p><?= e($package['version_message']) ?></p><?php endif; ?></td>
             <td><?php if ($package['is_installable']): ?><button class="btn success" type="button" data-open-modal="install-update-<?= e(md5($package['name'])) ?>">نصب</button><?php endif; ?></td>
           </tr>
         <?php endforeach; ?>
-        <?php if (!$updatePackages): ?><tr><td colspan="4">هنوز بسته‌ای بارگذاری نشده است.</td></tr><?php endif; ?>
+        <?php if (!$updatePackages): ?><tr><td colspan="5">هنوز بسته‌ای بارگذاری نشده است.</td></tr><?php endif; ?>
       </tbody></table>
     </div>
     <a class="btn secondary" href="<?= e(url('settings',['tab'=>'backup'])) ?>">بکاپ و بازیابی اطلاعات</a>

@@ -55,10 +55,18 @@ final class OverdueAggregationService
                 GROUP BY contract_id
             ) lc ON lc.contract_id = c.id
             LEFT JOIN (
-                SELECT contract_id, MAX(created_at) AS last_contact_at, MAX(promise_payment_date) AS latest_promise_date
-                FROM operator_calls
-                GROUP BY contract_id
-            ) oc ON oc.contract_id = c.id";
+                SELECT contract_id, MAX(created_at) AS last_contact_at
+                FROM operator_calls GROUP BY contract_id
+            ) oc ON oc.contract_id = c.id
+            LEFT JOIN operator_calls active_promise ON active_promise.id = (
+                SELECT candidate.id FROM operator_calls candidate
+                 WHERE candidate.contract_id=c.id AND candidate.promise_payment_date IS NOT NULL
+                   AND COALESCE(candidate.promise_event_type,'registered') IN ('registered','rescheduled')
+                   AND NOT EXISTS (SELECT 1 FROM operator_calls event_row WHERE event_row.related_promise_call_id=candidate.id AND event_row.promise_event_type IN ('cancelled','rescheduled'))
+                   AND NOT EXISTS (SELECT 1 FROM operator_calls newer WHERE newer.contract_id=c.id AND newer.promise_payment_date IS NOT NULL
+                        AND (newer.created_at>candidate.created_at OR (newer.created_at=candidate.created_at AND newer.id>candidate.id)))
+                 ORDER BY candidate.created_at DESC,candidate.id DESC LIMIT 1
+            )";
 
         $where = ["c.status NOT IN ('cancelled', 'closed')", "i.status NOT IN ('paid', 'cancelled')"];
         $params = [];
@@ -83,8 +91,12 @@ final class OverdueAggregationService
         if ($criteria->contractId) { $where[] = 'c.id = ?'; $params[] = $criteria->contractId; }
         if ($criteria->contractStatus !== '') { $where[] = 'c.status = ?'; $params[] = $criteria->contractStatus; }
         if ($criteria->legalStatus !== '') { $where[] = 'c.legal_status = ?'; $params[] = $criteria->legalStatus; }
-        $operatorId = $forcedOperatorId ?: $criteria->operatorId;
-        if ($operatorId) { $where[] = 'c.assigned_operator_id = ?'; $params[] = $operatorId; }
+        $operatorId = $forcedOperatorId !== null ? $forcedOperatorId : $criteria->operatorId;
+        if ($operatorId === 0) {
+            $where[] = "(c.assigned_operator_id IS NULL OR NOT EXISTS (SELECT 1 FROM users owner_user WHERE owner_user.id=c.assigned_operator_id AND owner_user.role='operator' AND owner_user.status='active' AND owner_user.archived_at IS NULL))";
+        } elseif ($operatorId !== null) {
+            $where[] = 'c.assigned_operator_id = ?'; $params[] = $operatorId;
+        }
         if ($criteria->lawyerId) {
             $where[] = 'EXISTS (SELECT 1 FROM legal_cases lc_filter WHERE lc_filter.contract_id = c.id AND lc_filter.lawyer_id = ? AND lc_filter.status != \'closed\')';
             $params[] = $criteria->lawyerId;
@@ -130,13 +142,13 @@ final class OverdueAggregationService
             SUM(GREATEST(COALESCE(i.base_amount, 0) - COALESCE(i.paid_amount, 0), 0)
                 + GREATEST(COALESCE(i.manual_penalty_adjustment, 0) - COALESCE(i.penalty_discount_amount, 0), 0)) AS estimated_payable,
             COALESCE(lc.legal_case_count, 0) AS legal_case_count, lc.legal_referred_at, lc.latest_notice_date, lc.next_legal_action,
-            oc.last_contact_at, oc.latest_promise_date";
+            oc.last_contact_at, active_promise.promise_payment_date AS latest_promise_date";
     }
 
     private static function groupBy(): string
     {
         return 'c.id, c.customer_id, c.contract_number, c.status, c.legal_status, c.assigned_operator_id, u.full_name, u.mobile, u.secondary_phone,
-            lc.legal_case_count, lc.legal_referred_at, lc.latest_notice_date, lc.next_legal_action, oc.last_contact_at, oc.latest_promise_date';
+            lc.legal_case_count, lc.legal_referred_at, lc.latest_notice_date, lc.next_legal_action, oc.last_contact_at, active_promise.promise_payment_date';
     }
 
     private static function legalEligibilityHaving(string $value, array $policy, array &$params): string

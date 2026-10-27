@@ -46,12 +46,12 @@ try {
     $suffix = strtolower(bin2hex(random_bytes(6)));
     Model::execute(
         'INSERT INTO users (role,username,full_name,password_hash,created_at) VALUES (?,?,?,?,NOW())',
-        ['admin','qa-merchant-dashboard-' . $suffix,'Merchant dashboard QA',password_hash(random_bytes(20), PASSWORD_DEFAULT)]
+        ['admin','qa-merchant-dashboard-' . $suffix,'Merchant dashboard QA',password_hash(bin2hex(random_bytes(20)), PASSWORD_DEFAULT)]
     );
     $ownerId = (int) Model::lastInsertId();
     Model::execute(
         'INSERT INTO users (role,username,full_name,password_hash,created_at) VALUES (?,?,?,?,NOW())',
-        ['operator','qa-merchant-dashboard-viewer-' . $suffix,'Merchant dashboard viewer',password_hash(random_bytes(20), PASSWORD_DEFAULT)]
+        ['operator','qa-merchant-dashboard-viewer-' . $suffix,'Merchant dashboard viewer',password_hash(bin2hex(random_bytes(20)), PASSWORD_DEFAULT)]
     );
     $viewerId = (int) Model::lastInsertId();
     Model::execute(

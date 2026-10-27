@@ -2268,7 +2268,15 @@
     const yearInput = modal.querySelector('[data-jalali-year]');
     const monthSelect = modal.querySelector('[data-jalali-month]');
     let activeInput = null;
+    let ownerDialog = null;
     let view = todayJalali();
+
+    const restoreModalToDocument = function () {
+      if (modal.parentElement !== document.body) document.body.appendChild(modal);
+      ownerDialog = null;
+    };
+
+    modal.addEventListener('proma:modal-closed', restoreModalToDocument);
 
     if (monthSelect && !monthSelect.options.length) {
       monthNames.forEach(function (name, index) {
@@ -2314,6 +2322,8 @@
             activeInput.dispatchEvent(new Event('change', { bubbles: true }));
           }
           modal.classList.remove('open');
+          modal.setAttribute('aria-hidden', 'true');
+          modal.dispatchEvent(new CustomEvent('proma:modal-closed'));
         });
         grid.appendChild(button);
       }
@@ -2321,9 +2331,13 @@
 
     const openForInput = function (input) {
       activeInput = input;
+      ownerDialog = input.closest('dialog[open]');
+      if (ownerDialog) ownerDialog.appendChild(modal);
+      else restoreModalToDocument();
       view = parseJalaliParts(input.value);
       render();
       modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
     };
 
     const bindInput = function (input) {
@@ -3338,6 +3352,74 @@
     });
   };
 
+  const initContractAmendmentWorkspace = function () {
+    document.querySelectorAll('[data-contract-amendment-form]').forEach(function (form) {
+      if (form.dataset.amendmentBound === '1') return;
+      form.dataset.amendmentBound = '1';
+      const rows = form.querySelector('[data-amendment-schedule-rows]');
+      const fingerprint = form.querySelector('[data-amendment-preview-fingerprint]');
+      const previewButton = form.querySelector('[data-preview-amendment]');
+      const submitButton = form.querySelector('[data-submit-amendment]');
+      const output = form.querySelector('[data-amendment-preview-output]');
+      const addButton = form.querySelector('[data-add-amendment-row]');
+      if (!rows || !fingerprint || !previewButton || !submitButton || !output || !addButton) return;
+      let nextRow = Number(form.dataset.nextRow || 0);
+      const clearPreview = function () {
+        fingerprint.value = '';
+        submitButton.disabled = true;
+        output.textContent = 'مقادیر تغییر کرده‌اند؛ پیش‌نمایش را دوباره اجرا کنید.';
+        output.className = 'notice mt-3';
+      };
+      form.addEventListener('input', function (event) {
+        if (!event.target.matches('[data-preview-amendment]')) clearPreview();
+      });
+      form.addEventListener('change', clearPreview);
+      rows.addEventListener('click', function (event) {
+        const remove = event.target.closest('[data-remove-amendment-row]');
+        if (!remove) return;
+        const row = remove.closest('[data-amendment-row]');
+        if (row && row.dataset.protected !== '1') { row.remove(); clearPreview(); }
+      });
+      addButton.addEventListener('click', function () {
+        const tr = document.createElement('tr');
+        tr.dataset.amendmentRow = '';
+        tr.dataset.protected = '0';
+        tr.innerHTML = '<td>قسط جدید<input type="hidden" name="schedule[' + nextRow + '][installment_id]" value="0"></td>' +
+          '<td><input type="date" name="schedule[' + nextRow + '][due_date]" required></td>' +
+          '<td><input type="number" name="schedule[' + nextRow + '][base_amount]" min="1" step="1" required></td>' +
+          '<td>قابل اصلاح در صورت تأیید</td><td><button class="btn small danger" type="button" data-remove-amendment-row>حذف</button></td>';
+        nextRow += 1;
+        rows.appendChild(tr);
+        clearPreview();
+      });
+      previewButton.addEventListener('click', async function () {
+        previewButton.disabled = true;
+        submitButton.disabled = true;
+        output.textContent = 'در حال محاسبه پیش‌نمایش فقط‌خواندنی…';
+        try {
+          const response = await fetchWithDeadline(form.dataset.previewUrl, {
+            method: 'POST', body: new FormData(form), credentials: 'same-origin', headers: { 'Accept': 'application/json' }
+          }, 12000);
+          const result = await response.json();
+          if (!response.ok || !result.ok) throw new Error(result.message || 'پیش‌نمایش انجام نشد.');
+          const preview = result.preview;
+          const impact = preview.impact;
+          const number = new Intl.NumberFormat('fa-IR');
+          fingerprint.value = preview.base_fingerprint;
+          output.textContent = 'قبل: ' + number.format(impact.current_future_total) + ' تومان · بعد: ' + number.format(impact.proposed_future_total) + ' تومان · اختلاف: ' + number.format(impact.future_total_delta) + ' تومان · نسخه پایه: ' + (preview.base_version_number || 'Legacy Baseline') + ' · فرمول سود مجدداً محاسبه نشده است.';
+          output.className = 'notice warning mt-3';
+          submitButton.disabled = false;
+        } catch (error) {
+          fingerprint.value = '';
+          output.textContent = error.message || 'پیش‌نمایش انجام نشد.';
+          output.className = 'notice error mt-3';
+        } finally {
+          previewButton.disabled = false;
+        }
+      });
+    });
+  };
+
   document.addEventListener('error', function (event) {
     const image = event.target;
     if (!image || !image.matches || !image.matches('[data-avatar-image]')) return;
@@ -3700,6 +3782,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initCardLinks();
     initContractDetailWorkspace();
     initContractSettlement();
+    initContractAmendmentWorkspace();
     initContactActions();
     initCustomer360();
     initCopyShortcodes();

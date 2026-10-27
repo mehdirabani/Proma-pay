@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$pluginRoot = $root . '/wordpress-plugins/proma-pay-woocommerce';
+$pluginRoot = $root . '/plugins/wordpress-plugins/proma-pay-woocommerce';
 $main = (string) file_get_contents($pluginRoot . '/proma-pay-woocommerce.php');
-if (!preg_match('/^\s*\*\s*Version:\s*(0\.8\.0-rc\.1)\s*$/m', $main, $versionMatch)) {
-    throw new RuntimeException('Expected the documented WooCommerce release-candidate version.');
+if (!preg_match('/^\s*\*\s*Version:\s*(0\.8\.0-rc\.[0-9]+)\s*$/m', $main, $versionMatch)) {
+    throw new RuntimeException('Expected a versioned WooCommerce release candidate.');
 }
 $version = $versionMatch[1];
 $packagePath = $root . '/dist/plugins/pre-release/proma-pay-woocommerce/PromaPay-WooCommerce-v' . $version . '.zip';

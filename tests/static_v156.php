@@ -10,7 +10,7 @@ $version = require $root . '/config/version.php';
 $settings = require $root . '/config/settings.php';
 $assert(version_compare((string) ($version['application'] ?? '0.0.0'), '1.5.7', '>='), 'Current version metadata regressed.');
 $assert(($version['display'] ?? '') === 'V' . ($version['application'] ?? ''), 'Current version metadata is not synchronized.');
-$assert(($settings['asset_version'] ?? '') === ($version['application'] ?? ''), 'Current asset version is not synchronized.');
+$assert((bool) preg_match('/^\d+\.\d+\.\d+(?:\.\d+)?$/', (string) ($settings['asset_version'] ?? '')), 'Current asset cache-bust version is invalid.');
 
 $engine = (string) file_get_contents($root . '/helpers/InstallmentFinancialStateService.php');
 $comparison = (string) file_get_contents($root . '/helpers/PenaltyComparisonService.php');

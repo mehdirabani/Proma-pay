@@ -528,6 +528,7 @@ $installmentTabUrl = static function (string $tab) use ($filters): string {
             <?= csrf_field() ?>
             <label>افزایش جریمه<input name="manual_penalty_adjustment" data-money value="<?= e(number_format(normalize_money($item['manual_penalty_adjustment']), 0)) ?>"></label>
             <label>افزایش پاداش<input name="manual_reward_adjustment" data-money value="<?= e(number_format(normalize_money($item['manual_reward_adjustment']), 0)) ?>"></label>
+            <label class="span-2">علت تنظیم مالی<input name="adjustment_reason" required minlength="3" maxlength="500"></label>
           </div>
           <div class="modal-footer"><button class="btn" type="submit">ذخیره تنظیمات</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
         </form>

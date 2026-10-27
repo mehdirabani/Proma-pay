@@ -3,6 +3,8 @@
 /** Explainable, advisory Proma Score built only from recorded application data. */
 final class CreditRiskEngine
 {
+    public const SUMMARY_FRESHNESS_SECONDS = 21600;
+
     public static function defaultRules(): array
     {
         return [
@@ -157,7 +159,7 @@ final class CreditRiskEngine
     }
 
     /** Load cached customer badges in one query; refresh only when requested by the caller. */
-    public static function summariesForCustomers(array $customerIds, bool $refreshStale = false, int $maxAgeSeconds = 21600): array
+    public static function summariesForCustomers(array $customerIds, bool $refreshStale = false, int $maxAgeSeconds = self::SUMMARY_FRESHNESS_SECONDS): array
     {
         $ids = array_values(array_unique(array_filter(array_map('intval', $customerIds), static fn (int $id): bool => $id > 0)));
         if (!$ids) return [];
@@ -233,6 +235,12 @@ final class CreditRiskEngine
     private static function rulesHash(): string
     {
         return hash('sha256', json_encode(self::rules(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
+    /** Stable public fingerprint for read-only reporting filters. */
+    public static function rulesFingerprint(): string
+    {
+        return self::rulesHash();
     }
 
     private static function apply(int &$score, array &$reasons, string $label, int $points): void

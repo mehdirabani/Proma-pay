@@ -97,6 +97,7 @@ class ScriptUpdateService
                 'title' => '',
                 'version' => '',
                 'files_count' => 0,
+                'retired_files_count' => 0,
                 'migrations_count' => 0,
                 'is_installable' => false,
                 'version_state' => 'invalid',

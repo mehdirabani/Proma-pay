@@ -358,20 +358,7 @@ class Installment extends Model
         if (in_array(($contract['status'] ?? ''), ['cancelled', 'completed', 'closed'], true)) {
             throw new InvalidArgumentException('برای قرارداد لغو یا تسویه‌شده قسط جدید قابل ثبت نیست.');
         }
-        $number = (int) self::fetch('SELECT COALESCE(MAX(installment_number), 0) + 1 AS n FROM installments WHERE contract_id = ?', [$contractId])['n'];
-        $amount = normalize_money($amount);
-        $description = trim((string) $description);
-        if ($description === '') {
-            throw new InvalidArgumentException('توضیح قابل نمایش برای مشتری را وارد کنید.');
-        }
-        $title = trim((string) $title) ?: 'قسط سفارشی';
-        self::execute(
-            'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, notes, guarantee_serial, is_custom, custom_title, custom_description, internal_note, customer_visible, created_reason, created_at)
-             VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, NOW())',
-            [(int) $contractId, $number, $dueDate, $amount, $amount, $dueDate < date('Y-m-d') ? 'overdue' : 'pending', $description, trim(to_english_digits($guaranteeSerial)) ?: null, $title, $description, trim((string) $internalNote) ?: null, $customerVisible ? 1 : 0, $title]
-        );
-
-        return (int) self::lastInsertId();
+        throw new InvalidArgumentException('افزودن قسط سفارشی در گردش اصلاحیهٔ فعلی پشتیبانی نمی‌شود؛ اقساط موجود حفظ می‌شوند و برنامه عادی فقط با اصلاحیهٔ تأییدشده تغییر می‌کند.');
     }
 
     public static function updateInstallment($id, array $data)
@@ -392,16 +379,12 @@ class Installment extends Model
         if ($amount <= 0) {
             throw new InvalidArgumentException('مبلغ قسط معتبر نیست.');
         }
-        $paid = min(normalize_money($row['paid_amount'] ?? 0), $amount);
-        $status = FinanceHelper::status($amount, $paid, $dueDate);
+        if ($dueDate !== (string) ($row['due_date'] ?? '') || $amount !== normalize_money($row['base_amount'] ?? 0)) {
+            throw new InvalidArgumentException('مبلغ یا سررسید قسط فقط از مسیر اصلاحیهٔ تأییدشده قابل تغییر است.');
+        }
         self::execute(
-            'UPDATE installments SET due_date = ?, base_amount = ?, paid_amount = ?, remaining_amount = ?, status = ?, notes = ?, guarantee_serial = ?, custom_title = ?, custom_description = ?, internal_note = ?, customer_visible = ?, created_reason = ? WHERE id = ?',
+            'UPDATE installments SET notes = ?, guarantee_serial = ?, custom_title = ?, custom_description = ?, internal_note = ?, customer_visible = ?, created_reason = ?, updated_at = NOW() WHERE id = ?',
             [
-                $dueDate,
-                $amount,
-                $paid,
-                max(0, $amount - $paid),
-                $status,
                 trim((string) ($data['customer_description'] ?? $data['notes'] ?? $row['notes'] ?? '')) ?: null,
                 trim(to_english_digits($data['guarantee_serial'] ?? $row['guarantee_serial'] ?? '')) ?: null,
                 trim((string) ($data['custom_title'] ?? $row['custom_title'] ?? '')) ?: null,
@@ -424,7 +407,7 @@ class Installment extends Model
         if ((int) ($row['is_custom'] ?? 0) !== 1) {
             throw new InvalidArgumentException('فقط قسط دلخواه قابل ابطال است.');
         }
-        throw new InvalidArgumentException('حذف فیزیکی قسط مجاز نیست؛ از گردش کار ابطال با ثبت علت استفاده کنید.');
+        throw new InvalidArgumentException('حذف فیزیکی قسط مجاز نیست؛ گردش ابطال قسط سفارشی در نسخه فعلی پشتیبانی نمی‌شود و سابقه باید حفظ شود.');
     }
 
     public static function bulkAction($contractId, array $ids, $action, $reason, $userId)
@@ -462,6 +445,9 @@ class Installment extends Model
                     }
                     self::execute('UPDATE installments SET status = \'cancelled\', cancelled_at = NOW(), cancelled_by = ?, cancellation_reason = ?, updated_at = NOW() WHERE id = ?', [(int) $userId, $reason, (int) $row['id']]);
                 } elseif ($action === 'restore_pending') {
+                    if (($row['status'] ?? '') === 'cancelled') {
+                        throw new InvalidArgumentException('قسط لغوشده، از جمله قسط جایگزین‌شده در اصلاحیه، از عملیات دسته‌جمعی قابل بازگردانی نیست.');
+                    }
                     if (($row['status'] ?? '') === 'paid' || normalize_money($row['paid_amount'] ?? 0) > 0) {
                         throw new InvalidArgumentException('قسط پرداخت‌شده قابل بازگردانی مستقیم نیست.');
                     }
@@ -503,17 +489,40 @@ class Installment extends Model
         }
     }
 
-    public static function adjust($id, $penalty, $reward)
+    public static function adjust($id, $penalty, $reward, $actorId = null, $reason = '')
     {
-        $row = self::fetch('SELECT status FROM installments WHERE id = ?', [(int) $id]);
-        if (!$row || ($row['status'] ?? '') === 'cancelled') {
-            throw new InvalidArgumentException('قسط لغو شده قابل اصلاح نیست.');
+        $actorId = (int) $actorId;
+        $reason = trim((string) $reason);
+        if ($actorId <= 0 || mb_strlen($reason, 'UTF-8') < 3) {
+            throw new InvalidArgumentException('ثبت‌کننده و علت تنظیم جریمه یا پاداش الزامی است.');
         }
-        self::execute(
-            'UPDATE installments SET manual_penalty_adjustment = ?, manual_reward_adjustment = ? WHERE id = ?',
-            [normalize_money($penalty), normalize_money($reward), (int) $id]
-        );
-        self::refreshStatus($id);
+        self::begin();
+        try {
+            $row = self::fetch('SELECT i.*, c.customer_id FROM installments i JOIN contracts c ON c.id = i.contract_id WHERE i.id = ? FOR UPDATE', [(int) $id]);
+            if (!$row || ($row['status'] ?? '') === 'cancelled') {
+                throw new InvalidArgumentException('قسط لغو شده قابل اصلاح نیست.');
+            }
+            $old = ['manual_penalty_adjustment' => normalize_money($row['manual_penalty_adjustment'] ?? 0), 'manual_reward_adjustment' => normalize_money($row['manual_reward_adjustment'] ?? 0)];
+            $new = ['manual_penalty_adjustment' => normalize_money($penalty), 'manual_reward_adjustment' => normalize_money($reward)];
+            self::execute(
+                'UPDATE installments SET manual_penalty_adjustment = ?, manual_reward_adjustment = ?, updated_at = NOW() WHERE id = ?',
+                [$new['manual_penalty_adjustment'], $new['manual_reward_adjustment'], (int) $id]
+            );
+            self::refreshStatus($id);
+            if (class_exists('AuditLog') && SchemaGuard::tableExists('audit_logs')) {
+                AuditLog::record('installment', 'manual_penalty_reward_adjusted', 'installment', (int) $id, [
+                    'actor_user_id' => $actorId, 'contract_id' => (int) $row['contract_id'], 'customer_id' => (int) $row['customer_id'],
+                    'installment_id' => (int) $id, 'old_values' => $old, 'new_values' => $new, 'description' => $reason,
+                    'severity' => 'high',
+                ]);
+            } else {
+                throw new RuntimeException('ثبت ممیزی تنظیم مالی قسط در دسترس نیست.');
+            }
+            self::commit();
+        } catch (Throwable $e) {
+            self::rollBack();
+            throw $e;
+        }
     }
 
     public static function discountPenalty($id, $type, $value, $createdBy)

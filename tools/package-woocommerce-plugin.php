@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$pluginRoot = realpath($root . '/wordpress-plugins/proma-pay-woocommerce');
+$pluginRoot = realpath($root . '/plugins/wordpress-plugins/proma-pay-woocommerce');
 if ($pluginRoot === false) {
     throw new RuntimeException('WooCommerce plugin source directory is missing.');
 }

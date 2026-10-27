@@ -66,7 +66,7 @@ for ($i = 0; $i < $core->numFiles; $i++) {
     if (strpos($name, 'html/') === 0) {
         $assert(strpos($name, 'html/RTL/assets/') === 0, 'Core archive contains a non-runtime HTML asset: ' . $name);
     }
-    foreach (['docs/', 'electron/', 'scripts/', 'tests/', 'tools/', 'skill/', '.project-graph/', 'output/'] as $developmentPrefix) {
+    foreach (['docs/', 'electron/', 'scripts/', 'tests/', 'tools/', 'skill/', '.project-graph/', 'output/', 'backups/', '2- themes/'] as $developmentPrefix) {
         $assert(strpos($name, $developmentPrefix) !== 0, 'Core archive contains development-only content: ' . $name);
     }
 }

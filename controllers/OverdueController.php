@@ -126,22 +126,15 @@ class OverdueController extends Controller
             redirect('overdue');
         }
         $this->authorizeInstallment($installment);
-        $result = trim((string) ($_POST['call_result'] ?? ''));
-        if ($result === '') {
-            set_flash('error', 'نتیجه تماس الزامی است.');
-            redirect('overdue');
+        try {
+            $input = $_POST;
+            $input['contract_id'] = (int) $installment['contract_id'];
+            $input['installment_id'] = (int) $installment['id'];
+            CollectionCommandCenter::recordFollowup($input, (int) Auth::id(), (string) Auth::role());
+            set_flash('success', 'نتیجه پیگیری در تاریخچهٔ واحد ثبت شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت پیگیری انجام نشد.');
         }
-        $promiseDate = parse_jalali_date($_POST['promise_payment_date'] ?? '');
-        OperatorCall::createCall(
-            Auth::id(),
-            (int) $installment['contract_id'],
-            $result,
-            $_POST['notes'] ?? '',
-            null,
-            $promiseDate,
-            (int) $installment['id']
-        );
-        set_flash('success', 'نتیجه پیگیری ثبت شد.');
         redirect('overdue');
     }
 
@@ -152,8 +145,18 @@ class OverdueController extends Controller
         $installment = Installment::find((int) $id);
         if ($installment) {
             $this->authorizeInstallment($installment);
-            OperatorCall::createCall(Auth::id(), (int) $installment['contract_id'], 'تماس با مشتری', $_POST['notes'] ?? '', null, null, (int) $installment['id']);
-            set_flash('success', 'تماس در سوابق پیگیری ثبت شد.');
+            try {
+                CollectionCommandCenter::recordFollowup([
+                    'contract_id' => (int) $installment['contract_id'], 'installment_id' => (int) $installment['id'],
+                    'action_type' => 'customer_call', 'contact_target' => 'customer', 'call_result' => 'تماس ثبت شد؛ نتیجه طبقه‌بندی نشده است.',
+                    'notes' => (string) ($_POST['notes'] ?? ''),
+                    'next_action_type' => (string) ($_POST['next_action_type'] ?? ''),
+                    'next_followup_date' => (string) ($_POST['next_followup_date'] ?? ''),
+                ], (int) Auth::id(), (string) Auth::role());
+                set_flash('success', 'تماس در تاریخچهٔ واحد ثبت شد.');
+            } catch (Throwable $e) {
+                set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت تماس انجام نشد.');
+            }
         }
         redirect('overdue');
     }

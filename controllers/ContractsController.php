@@ -258,6 +258,10 @@ class ContractsController extends Controller
         $contract = Contract::find($contractId);
         $this->authorizeContractAccess($contract);
         $contractDocument = ContractDocument::viewModel($contractId);
+        $amendmentSchemaReady = ContractAmendmentService::isAvailable();
+        $amendmentWorkspace = $amendmentSchemaReady
+            ? ContractAmendmentService::viewModel($contractId)
+            : ['current_version' => null, 'versions' => [], 'amendments' => [], 'schedule_editor' => [], 'migration_required' => true];
 
         $user = Auth::user();
         $isCustomer = (Auth::role() ?? '') === 'customer';
@@ -319,6 +323,8 @@ class ContractsController extends Controller
             'paymentTimeline' => Payment::recentForContract($contractId, 8),
             'logs' => ContractDocument::logs($contractId),
             'canManageDocument' => Auth::role() === 'admin',
+            'amendmentWorkspace' => $amendmentWorkspace,
+            'canManageAmendments' => Auth::role() === 'admin',
             'legalCases' => $legalCases,
             'currentLegalCase' => $currentLegalCase,
             'legalLogs' => $legalLogs,
@@ -352,14 +358,108 @@ class ContractsController extends Controller
         $contract = Contract::find((int) $contractId);
         $this->authorizeContractAccess($contract);
         try {
-            $result = InstallmentChangeService::change((int) ($_POST['installment_id'] ?? 0), $_POST, Auth::id());
-            set_flash('success', ($result['mode'] ?? '') === 'applied'
-                ? 'قسط با ثبت تاریخچه و محاسبه مجدد مالی به‌روزرسانی شد.'
-                : 'قسط دارای سابقه مالی/حقوقی است؛ درخواست اصلاح برنامه برای بررسی ثبت شد.');
+            $result = InstallmentChangeService::change((int) ($_POST['installment_id'] ?? 0), $_POST, Auth::id(), (int) $contractId);
+            set_flash('success', 'درخواست تغییر قسط در گردش اصلاحیه قرارداد ثبت شد و تا تأیید مدیر دوم اثری مالی ندارد.');
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ویرایش امن قسط انجام نشد.');
         }
         redirect('contracts/show/' . (int) $contractId);
+    }
+
+    public function requestAmendment($contractId)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $contract = Contract::find((int) $contractId);
+        $this->authorizeContractAccess($contract);
+        try {
+            $result = ContractAmendmentService::request((int) $contractId, $_POST, (int) Auth::id());
+            set_flash('success', 'درخواست اصلاحیه شماره ' . to_persian_digits($result['amendment_number']) . ' ثبت شد؛ شرایط قرارداد هنوز تغییر نکرده است.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت درخواست اصلاحیه انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) $contractId . '#contract-amendments');
+    }
+
+    public function previewAmendment($contractId)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $contract = Contract::find((int) $contractId);
+        $this->authorizeContractAccess($contract);
+        try {
+            $this->json(['ok' => true, 'preview' => ContractAmendmentService::preview((int) $contractId, $_POST)]);
+        } catch (Throwable $e) {
+            $this->json(['ok' => false, 'message' => $e instanceof InvalidArgumentException ? $e->getMessage() : 'پیش‌نمایش اصلاحیه انجام نشد.'], $e instanceof InvalidArgumentException ? 422 : 500);
+        }
+    }
+
+    public function approveAmendment($amendmentId)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $amendment = Model::fetch('SELECT contract_id FROM contract_amendments WHERE id = ?', [(int) $amendmentId]);
+        $contract = $amendment ? Contract::find((int) $amendment['contract_id']) : null;
+        $this->authorizeContractAccess($contract);
+        try {
+            $result = ContractAmendmentService::approve((int) $amendmentId, (int) Auth::id());
+            set_flash(($result['status'] ?? '') === 'conflict' ? 'error' : 'success', ($result['status'] ?? '') === 'conflict'
+                ? 'نسخه پایه تغییر کرده است؛ درخواست قبلی برای جلوگیری از تأیید منسوخ قفل شد.'
+                : 'تأیید داخلی ثبت شد. هنوز هیچ تغییر مالی اعمال نشده است.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'تأیید اصلاحیه انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) ($amendment['contract_id'] ?? 0) . '#contract-amendments');
+    }
+
+    public function rejectAmendment($amendmentId)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $amendment = Model::fetch('SELECT contract_id FROM contract_amendments WHERE id = ?', [(int) $amendmentId]);
+        $contract = $amendment ? Contract::find((int) $amendment['contract_id']) : null;
+        $this->authorizeContractAccess($contract);
+        try {
+            ContractAmendmentService::reject((int) $amendmentId, (int) Auth::id(), $_POST['rejection_reason'] ?? '');
+            set_flash('success', 'رد اصلاحیه ثبت شد و شرایط قرارداد تغییر نکرد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'رد اصلاحیه انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) ($amendment['contract_id'] ?? 0) . '#contract-amendments');
+    }
+
+    public function applyAmendment($amendmentId)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $amendment = Model::fetch('SELECT contract_id FROM contract_amendments WHERE id = ?', [(int) $amendmentId]);
+        $contract = $amendment ? Contract::find((int) $amendment['contract_id']) : null;
+        $this->authorizeContractAccess($contract);
+        try {
+            $result = ContractAmendmentService::apply((int) $amendmentId, (int) Auth::id());
+            set_flash(($result['status'] ?? '') === 'conflict' ? 'error' : 'success', ($result['status'] ?? '') === 'conflict'
+                ? 'پرداخت، تخصیص یا نسخه مالی پس از تأیید تغییر کرده است؛ اصلاحیه اعمال نشد و باید دوباره بررسی شود.'
+                : 'اصلاحیه در تراکنش ثبت و نسخه مالی جدید ایجاد شد. این ثبت، امضای طرف قرارداد را اثبات نمی‌کند.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'اعمال اصلاحیه انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) ($amendment['contract_id'] ?? 0) . '#contract-amendments');
+    }
+
+    public function cancelAmendment($amendmentId)
+    {
+        $this->requireRole('admin');
+        $this->onlyPost();
+        $amendment = Model::fetch('SELECT contract_id FROM contract_amendments WHERE id = ?', [(int) $amendmentId]);
+        $contract = $amendment ? Contract::find((int) $amendment['contract_id']) : null;
+        $this->authorizeContractAccess($contract);
+        try {
+            ContractAmendmentService::cancel((int) $amendmentId, (int) Auth::id(), $_POST['cancel_reason'] ?? '');
+            set_flash('success', 'لغو اصلاحیه ثبت شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'لغو اصلاحیه انجام نشد.');
+        }
+        redirect('contracts/show/' . (int) ($amendment['contract_id'] ?? 0) . '#contract-amendments');
     }
 
     public function voidInstallment($contractId)
@@ -369,10 +469,8 @@ class ContractsController extends Controller
         $contract = Contract::find((int) $contractId);
         $this->authorizeContractAccess($contract);
         try {
-            $result = InstallmentChangeService::void((int) ($_POST['installment_id'] ?? 0), $_POST, Auth::id());
-            set_flash('success', ($result['mode'] ?? '') === 'applied'
-                ? 'قسط به‌صورت منطقی ابطال و سوابق آن حفظ شد.'
-                : 'قسط دارای وابستگی مالی یا حقوقی است؛ درخواست اصلاح برنامه ثبت شد.');
+            $result = InstallmentChangeService::void((int) ($_POST['installment_id'] ?? 0), $_POST, Auth::id(), (int) $contractId);
+            set_flash('success', 'درخواست ابطال قسط به‌صورت اصلاحیه ثبت شد؛ خود قسط تا تأیید و اعمال تغییر می‌کند.');
         } catch (Throwable $e) {
             set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ابطال امن قسط انجام نشد.');
         }
@@ -730,14 +828,48 @@ class ContractsController extends Controller
         $contractDocument = ContractDocument::viewModel((int) $id);
         $settings = Settings::allKeyed();
         $printBody = ContractDocument::injectSellerSignature($contractDocument['body'], $settings, $contract);
+        $documentTitle = $contractDocument['title'];
+        $documentHeader = $contractDocument['header'];
+        if (ContractDocument::hasUnconsentedAmendment((int) $id)) {
+            $documentTitle .= ' — نسخه پیشین پس از اصلاحیه داخلی';
+            $documentHeader = trim($documentHeader . "\n" . 'هشدار: اصلاحیه مالی با تأیید داخلی اعمال شده است؛ رضایت طرف قرارداد در سامانه ثبت نشده و این سند نسخه پیشین است.');
+        }
         $this->render('contracts/print', [
             'title' => 'چاپ قرارداد',
             'contract' => $contract,
             'settings' => $settings,
             'printProfile' => ContractPrintProfile::load($settings),
-            'documentTitle' => $contractDocument['title'],
-            'documentHeader' => $contractDocument['header'],
+            'documentTitle' => $documentTitle,
+            'documentHeader' => $documentHeader,
             'body' => $printBody,
+        ], null);
+    }
+
+    public function printDocumentVersion($id)
+    {
+        Auth::requireLogin();
+        $version = Model::fetch('SELECT * FROM contract_document_versions WHERE id = ? LIMIT 1', [(int) $id]);
+        if (!$version) {
+            http_response_code(404);
+            exit('نسخه سند قرارداد پیدا نشد.');
+        }
+        if (($version['source'] ?? '') === 'amendment_draft') $this->requireRole('admin');
+        $contract = Contract::find((int) $version['contract_id']);
+        $this->authorizeContractAccess($contract);
+        $settings = Settings::allKeyed();
+        $body = (string) ($version['rendered_body'] ?? '');
+        if (($version['source'] ?? '') !== 'amendment_draft') {
+            $body = ContractDocument::injectSellerSignature($body, $settings, $contract);
+        }
+        $this->render('contracts/print', [
+            'title' => ($version['source'] ?? '') === 'amendment_draft' ? 'پیش‌نویس داخلی الحاقیه' : 'چاپ نسخه قرارداد',
+            'contract' => $contract,
+            'settings' => $settings,
+            'printProfile' => ContractPrintProfile::load($settings),
+            'documentTitle' => (string) ($version['rendered_title'] ?? 'نسخه قرارداد'),
+            'documentHeader' => (string) ($version['rendered_header'] ?? ''),
+            'body' => $body,
+            'autoPrint' => ($version['source'] ?? '') !== 'amendment_draft',
         ], null);
     }
 

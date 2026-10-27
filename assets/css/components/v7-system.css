@@ -209,6 +209,22 @@ body.dark-only.proma-v2 .proma-page-content :is(.proma-risk-metric strong, .prom
 /* Contracts, installments, overdue work, and collection operations. */
 body.proma-v2 .proma-contracts-page,
 body.proma-v2 .proma-collections-workspace { display: grid; gap: 14px; min-width: 0; }
+body.proma-v2 .proma-collections-workspace .collection-worklist-row { align-items: flex-start; gap: 14px; padding: 13px 0; }
+body.proma-v2 .proma-collections-workspace .collection-worklist-main { display: grid; gap: 5px; min-width: 0; flex: 1 1 500px; }
+body.proma-v2 .proma-collections-workspace .collection-worklist-main > strong { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+body.proma-v2 .proma-collections-workspace .collection-worklist-main > small { line-height: 1.65; }
+body.proma-v2 .proma-collections-workspace .collection-worklist-actions { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; gap: 7px; }
+body.proma-v2 .proma-collections-workspace details { position: relative; }
+body.proma-v2 .proma-collections-workspace details > summary { cursor: pointer; list-style: none; }
+body.proma-v2 .proma-collections-workspace details > summary::-webkit-details-marker { display: none; }
+body.proma-v2 .proma-collections-workspace details[open] > form { min-width: min(420px, 82vw); margin-top: 8px; padding: 12px; border: 1px solid var(--pp-line); border-radius: 12px; background: var(--pp-surface); box-shadow: 0 12px 30px rgba(20,30,50,.12); }
+body.proma-v2 .proma-collections-workspace .pagination { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 14px 0 3px; }
+body.proma-v2 .proma-collections-workspace .collection-queue .table-wrap { overflow-x: auto; }
+@media (max-width: 720px) {
+  body.proma-v2 .proma-collections-workspace .collection-worklist-row { flex-direction: column; }
+  body.proma-v2 .proma-collections-workspace .collection-worklist-actions { justify-content: flex-start; width: 100%; }
+  body.proma-v2 .proma-collections-workspace details[open] > form { min-width: 0; width: min(82vw, 420px); }
+}
 body.proma-v2 .proma-contracts-intro__actions { display: flex; align-items: center; gap: 8px; }
 body.proma-v2 .proma-contracts-intro__actions form { margin: 0; }
 body.proma-v2 .proma-contracts-intro__actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }

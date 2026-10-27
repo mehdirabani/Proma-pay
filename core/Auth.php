@@ -128,7 +128,7 @@ class Auth
         $identifier = trim(to_english_digits($identifier));
         $user = Model::fetch(
             "SELECT * FROM users
-             WHERE status = 'active'
+             WHERE status = 'active' AND archived_at IS NULL
              AND (username = :username OR mobile = :mobile OR national_id = :national_id OR email = :email)
              LIMIT 1",
             [
@@ -245,7 +245,7 @@ class Auth
         }
 
         $user = Model::fetch(
-            'SELECT role, status, password_hash FROM users WHERE id = ? LIMIT 1',
+            'SELECT role, status, archived_at, password_hash FROM users WHERE id = ? LIMIT 1',
             [(int) $_SESSION['user_id']]
         );
         $passwordHash = (string) ($user['password_hash'] ?? '');
@@ -253,7 +253,7 @@ class Auth
         $passwordSessionValid = $passwordHash !== ''
             && is_string($sessionFingerprint)
             && hash_equals(hash('sha256', $passwordHash), $sessionFingerprint);
-        if (!$user || ($user['status'] ?? '') !== 'active'
+        if (!$user || ($user['status'] ?? '') !== 'active' || !empty($user['archived_at'])
             || ($user['role'] ?? '') !== (string) ($_SESSION['role'] ?? '')
             || !$passwordSessionValid) {
             self::logout();

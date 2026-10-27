@@ -405,6 +405,10 @@ if (!isset($tabs[$activeTab])) {
       <div class="full notice info">امتیاز Proma Score از سوابق واقعی ثبت‌شده محاسبه می‌شود و فقط پیشنهاد اعتباری است؛ تصمیم نهایی قرارداد همچنان با مدیر است. منبع چک برگشتی در این نسخه موجود نیست و در امتیاز لحاظ نمی‌شود.</div>
       <label class="full">قواعد امتیاز ریسک (JSON)<textarea name="credit_risk_rules_json" rows="12" dir="ltr" spellcheck="false"><?= e(json_encode($creditRiskRules, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?></textarea></label>
       <label class="full">آستانه‌های مراحل وصول (JSON)<textarea name="collection_stage_rules_json" rows="8" dir="ltr" spellcheck="false"><?= e(json_encode($collectionStageRules ?: ['reminder_min_days' => 1, 'reminder_max_days' => 3, 'operator_task_min_days' => 4, 'operator_task_max_days' => 10, 'serious_warning_min_days' => 11, 'serious_warning_max_days' => 20, 'legal_review_min_days' => 21], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) ?></textarea></label>
+      <label class="full">مسئول مدیریتی پرونده‌های بدون اپراتور
+        <select name="collection_assignment_manager_id"><option value="">تعیین نشده؛ در صف تخصیص مدیران نمایش داده شود</option><?php foreach (($collectionManagers ?? []) as $manager): ?><option value="<?= (int) $manager['id'] ?>"<?= (int) ($settings['collection_assignment_manager_id'] ?? 0) === (int) $manager['id'] ? ' selected' : '' ?>><?= e($manager['full_name']) ?></option><?php endforeach; ?></select>
+        <small>اگر انتخاب شود، وظیفهٔ فوری تخصیص به همین مدیر فعال می‌رسد. سامانه پرونده را تصادفی به اولین مدیر واگذار نمی‌کند.</small>
+      </label>
       <div class="full notice warning">قواعد فعلی تعیین اولویت پرداخت، شامل اولویت هزینهٔ حقوقی و سپس جریمه و اقساط، در تنظیمات پیش‌فاکتور مالی نگهداری می‌شود و این فرم آن را تغییر نمی‌دهد.</div>
       <div class="full actions"><button class="btn" type="submit">ذخیره قواعد ریسک و وصول</button></div>
     </div>

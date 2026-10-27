@@ -1,0 +1,453 @@
+{
+  "id": "proma-partnership-ledger",
+  "name": "مدیریت انبار، شرکا و مشارکت",
+  "description": "افزونهٔ یکپارچهٔ انبار، خریدوفروش و حسابداری مشارکت با تداوم داده‌های PromaInventoryPartners",
+  "version": "2.0.0-alpha.4",
+  "author": "Proma Pay",
+  "plugin_api_version": "1.1",
+  "requires_core": ">=7.1.0",
+  "conflicts_with": [
+    "proma-inventory-partners"
+  ],
+  "requires_php": ">=8.1",
+  "provider": "Proma\\Plugins\\PartnershipLedger\\PartnershipLedgerServiceProvider",
+  "permissions": [
+    {
+      "key": "plugin.proma-partnership-ledger.view_inventory",
+      "label": "مشاهده داشبورد انبار"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_products",
+      "label": "مشاهده کالاها"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.manage_products",
+      "label": "مدیریت کالاها"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_purchases",
+      "label": "مشاهده خریدها"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.record_purchases",
+      "label": "ثبت خرید و ورود کالا"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_stock",
+      "label": "مشاهده موجودی"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.adjust_stock",
+      "label": "تعدیل موجودی"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_pricing",
+      "label": "مشاهده قیمت‌گذاری"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.change_prices",
+      "label": "تغییر قیمت‌ها"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_sales",
+      "label": "مشاهده فروش‌ها"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.record_sales",
+      "label": "ثبت فروش"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.manage_sales",
+      "label": "مدیریت و تطبیق فروش‌ها"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_partners",
+      "label": "مشاهده شرکا"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.manage_partners",
+      "label": "مدیریت شرکا"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.record_capital",
+      "label": "ثبت آورده سرمایه"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_partner_ledger",
+      "label": "مشاهده دفتر شرکا"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_settlements",
+      "label": "مشاهده تسویه‌ها"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_expenses",
+      "label": "مشاهده هزینه‌های شراکت"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.record_expenses",
+      "label": "ثبت هزینه‌های شراکت"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.request_settlement",
+      "label": "درخواست تسویه"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.approve_settlement",
+      "label": "تأیید تسویه"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.pay_settlement",
+      "label": "ثبت پرداخت تسویه"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_transfers",
+      "label": "مشاهده انتقال انبار"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.transfer_stock",
+      "label": "ثبت و دریافت انتقال"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_financial_reports",
+      "label": "مشاهده گزارش سود و زیان"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_reports",
+      "label": "مشاهده گزارش‌ها"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_audit",
+      "label": "مشاهده تاریخچه فعالیت‌ها"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.manage_settings",
+      "label": "مدیریت تنظیمات انبار و شرکا"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_costs",
+      "label": "مشاهده بهای خرید و سود"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.view_financial_rules",
+      "label": "مشاهده قواعد مالی مشارکت"
+    },
+    {
+      "key": "plugin.proma-partnership-ledger.manage_financial_rules",
+      "label": "ثبت نسخهٔ جدید قواعد مالی"
+    }
+  ],
+  "dependencies": [],
+  "routes": [
+    {
+      "path": "plugin/inventory-partners/dashboard",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@dashboard",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_inventory"
+    },
+    {
+      "path": "plugin/inventory-partners/products",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@products",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_products"
+    },
+    {
+      "path": "plugin/inventory-partners/products/create",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@createProduct",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.manage_products"
+    },
+    {
+      "path": "plugin/inventory-partners/products/update",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@updateProduct",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.manage_products"
+    },
+    {
+      "path": "plugin/inventory-partners/products/prices",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@updatePrices",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.change_prices"
+    },
+    {
+      "path": "plugin/inventory-partners/purchases",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@purchases",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_purchases"
+    },
+    {
+      "path": "plugin/inventory-partners/purchases/create",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@createPurchase",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.record_purchases"
+    },
+    {
+      "path": "plugin/inventory-partners/stock",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@stock",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_stock"
+    },
+    {
+      "path": "plugin/inventory-partners/stock/adjust",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@adjustStock",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.adjust_stock"
+    },
+    {
+      "path": "plugin/inventory-partners/pricing",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@pricing",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_pricing"
+    },
+    {
+      "path": "plugin/inventory-partners/sales",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@sales",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_sales"
+    },
+    {
+      "path": "plugin/inventory-partners/sales/cash",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@createCashSale",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.record_sales"
+    },
+    {
+      "path": "plugin/inventory-partners/sales/contract",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@createContractSale",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.record_sales"
+    },
+    {
+      "path": "plugin/inventory-partners/sales/reconcile/{saleId}",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@reconcileSale",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.manage_sales"
+    },
+    {
+      "path": "plugin/inventory-partners/sales/return/{saleId}",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@returnSale",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.manage_sales"
+    },
+    {
+      "path": "plugin/inventory-partners/partners",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@partners",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_partners"
+    },
+    {
+      "path": "plugin/inventory-partners/partners/create",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@createPartner",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.manage_partners"
+    },
+    {
+      "path": "plugin/inventory-partners/partners/capital",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@recordCapital",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.record_capital"
+    },
+    {
+      "path": "plugin/inventory-partners/ledger",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@partnerLedgers",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_partner_ledger"
+    },
+    {
+      "path": "plugin/inventory-partners/ledger/{partnerId}",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@partnerLedger",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_partner_ledger"
+    },
+    {
+      "path": "plugin/inventory-partners/settlements",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@settlements",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_settlements"
+    },
+    {
+      "path": "plugin/inventory-partners/settlements/request",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@requestSettlement",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.request_settlement"
+    },
+    {
+      "path": "plugin/inventory-partners/settlements/approve/{settlementId}",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@approveSettlement",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.approve_settlement"
+    },
+    {
+      "path": "plugin/inventory-partners/settlements/reject/{settlementId}",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@rejectSettlement",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.approve_settlement"
+    },
+    {
+      "path": "plugin/inventory-partners/settlements/pay/{settlementId}",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@paySettlement",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.pay_settlement"
+    },
+    {
+      "path": "plugin/inventory-partners/settlements/reverse/{settlementId}",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@reverseSettlement",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.pay_settlement"
+    },
+    {
+      "path": "plugin/inventory-partners/transfers",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@transfers",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_transfers"
+    },
+    {
+      "path": "plugin/inventory-partners/transfers/create",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@createTransfer",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.transfer_stock"
+    },
+    {
+      "path": "plugin/inventory-partners/transfers/receive/{transferId}",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@receiveTransfer",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.transfer_stock"
+    },
+    {
+      "path": "plugin/inventory-partners/transfers/cancel/{transferId}",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@cancelTransfer",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.transfer_stock"
+    },
+    {
+      "path": "plugin/inventory-partners/profit-loss",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@profitLoss",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_financial_reports"
+    },
+    {
+      "path": "plugin/inventory-partners/reports",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@reports",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_reports"
+    },
+    {
+      "path": "plugin/inventory-partners/reports/export",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@exportReport",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_reports"
+    },
+    {
+      "path": "plugin/inventory-partners/activity",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@activity",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_audit"
+    },
+    {
+      "path": "plugin/inventory-partners/settings",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@settings",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.manage_settings"
+    },
+    {
+      "path": "plugin/inventory-partners/settings/save",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@saveSettings",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.manage_settings"
+    },
+    {
+      "path": "plugin/inventory-partners/settings/warehouse",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@createWarehouse",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.manage_settings"
+    },
+    {
+      "path": "plugin/inventory-partners/settings/supplier",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@createSupplier",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.manage_settings"
+    },
+    {
+      "path": "plugin/inventory-partners/settings/brand",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@createBrand",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.manage_settings"
+    },
+    {
+      "path": "plugin/inventory-partners/settings/category",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@createCategory",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.manage_settings"
+    },
+    {
+      "path": "plugin/inventory-partners/expenses",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@expenses",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_expenses"
+    },
+    {
+      "path": "plugin/inventory-partners/expenses/create",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@createExpense",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.record_expenses"
+    },
+    {
+      "path": "api/plugin/inventory-partners/brands",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@apiBrands",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_products"
+    },
+    {
+      "path": "api/plugin/inventory-partners/categories",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@apiCategories",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_products"
+    },
+    {
+      "path": "api/plugin/inventory-partners/contracts",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@apiContracts",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_sales"
+    },
+    {
+      "path": "api/plugin/inventory-partners/dashboard",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@apiDashboard",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_inventory"
+    },
+    {
+      "path": "api/plugin/inventory-partners/products",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@apiProducts",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_products"
+    },
+    {
+      "path": "plugin/inventory-partners/financial-policies",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@financialPolicies",
+      "method": "GET",
+      "permission": "plugin.proma-partnership-ledger.view_financial_rules"
+    },
+    {
+      "path": "plugin/inventory-partners/financial-policies/save",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@saveFinancialPolicy",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.manage_financial_rules"
+    },
+    {
+      "path": "plugin/inventory-partners/financial-policies/quote",
+      "handler": "Proma\\Plugins\\PartnershipLedger\\Controllers\\PartnershipLedgerController@quoteInstallment",
+      "method": "POST",
+      "permission": "plugin.proma-partnership-ledger.view_financial_rules"
+    }
+  ],
+  "migrations": [
+    "migrations/2026_10_13_inventory_partners_core.sql",
+    "migrations/2026_10_13_inventory_partners_v110.sql",
+    "migrations/2026_10_21_partnership_ledger.sql"
+  ],
+  "assets": [
+    "assets/css/inventory-partners-v111.css",
+    "assets/js/inventory-partners-v111.js"
+  ],
+  "settings": []
+}

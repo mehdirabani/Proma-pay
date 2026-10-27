@@ -1,14 +1,15 @@
 <?php
 
 /**
- * Paths that may be removed by a Core update after the internal store and
- * abandoned Laravel application were retired. Keep this list narrow: update
- * manifests may not use file deletion for arbitrary application paths.
+ * Paths that may be removed by a Core update after retired modules and the
+ * old root-level WooCommerce source tree were moved out of the Core package.
+ * Keep this list narrow: update manifests may not delete arbitrary runtime files.
  */
 final class RetiredCoreFiles
 {
     private const PREFIXES = [
         'laravel/',
+        'wordpress-plugins/',
     ];
 
     private const FILES = [
@@ -61,6 +62,9 @@ final class RetiredCoreFiles
         $path = strtolower(str_replace('\\', '/', (string) $path));
         if (strpos($path, 'laravel/') === 0) {
             return 'laravel';
+        }
+        if (strpos($path, 'wordpress-plugins/') === 0) {
+            return 'wordpress-plugins';
         }
         if (strpos($path, 'views/ecommerce/') === 0) {
             return 'views/ecommerce';

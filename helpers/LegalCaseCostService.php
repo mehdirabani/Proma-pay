@@ -79,6 +79,9 @@ final class LegalCaseCostService
             if (!$cost || !empty($cost['reversed_at']) || ($cost['approval_status'] ?? '') === 'reversed') {
                 throw new InvalidArgumentException('هزینه برای ثبت پرداخت مرجع ثالث معتبر نیست.', 409);
             }
+            if (($cost['approval_status'] ?? '') !== 'approved') {
+                throw new InvalidArgumentException('پرداخت به مرجع فقط پس از تأیید هزینه توسط مدیریت مجاز است.', 409);
+            }
             if (!empty($cost['reimburse_lawyer_id'])) {
                 throw new InvalidArgumentException('این هزینه برای بازپرداخت به وکیل ثبت شده و پرداخت دوباره به مرجع از طرف مجموعه مجاز نیست.', 409);
             }
@@ -92,6 +95,7 @@ final class LegalCaseCostService
             }
             $sum = Model::fetch('SELECT COALESCE(SUM(amount_toman), 0) AS total FROM legal_cost_disbursements WHERE legal_case_cost_id = ?', [$costId]);
             $paid = normalize_money($sum['total'] ?? 0);
+            if ($paid < 0) throw new InvalidArgumentException('گردش پرداخت مرجع نامعتبر است؛ ابتدا سابقه پرداخت و برگشت این هزینه بررسی شود.', 409);
             $remaining = max(0, normalize_money($cost['amount_toman'] ?? 0) - $paid);
             if ($amount > $remaining) throw new InvalidArgumentException('مبلغ پرداختی از مانده هزینهٔ ثبت‌شده بیشتر است.', 409);
 

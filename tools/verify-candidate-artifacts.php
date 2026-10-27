@@ -79,7 +79,7 @@ for ($index = 0; $index < $core->numFiles; $index++) {
     $name = str_replace('\\', '/', (string) $core->getNameIndex($index));
     $assert(!preg_match('#(?:^|/)\.env(?:\.[^/]*)?$#i', $name), 'Core archive includes an environment file: ' . $name);
     $assert(strpos(strtolower($name), 'laravel/') !== 0, 'Core archive includes a retired Laravel path: ' . $name);
-    foreach (['docs/', 'electron/', 'scripts/', 'tests/', 'tools/', 'skill/', '.project-graph/', 'output/'] as $excludedPrefix) {
+    foreach (['docs/', 'electron/', 'scripts/', 'tests/', 'tools/', 'skill/', '.project-graph/', 'output/', 'backups/', '2- themes/'] as $excludedPrefix) {
         // The official V4.0.2 baseline includes this one legacy release note.
         // The differential updater preserves it; all other docs remain excluded.
         $legacyBaselineReleaseNote = strtolower($name) === 'docs/releases/release_notes-v4.0.2.md';
@@ -101,6 +101,8 @@ $assert(($fullManifest['optional_plugins_included'] ?? false) === true, 'Full bu
 $assert(($fullManifest['candidate_only'] ?? false) === true, 'Full bundle candidate-only marker is missing.');
 foreach (($fullManifest['files'] ?? []) as $file) {
     $path = (string) ($file['path'] ?? '');
+    $lowerPath = strtolower($path);
+    $assert(strpos($lowerPath, 'backups/') !== 0 && strpos($lowerPath, '2- themes/') !== 0, 'Full bundle includes local backup or ignored theme content: ' . $path);
     $content = $full->getFromName($path);
     $assert($path !== '' && is_string($content), 'Full bundle file is missing: ' . $path);
     $assert(hash_equals(strtolower((string) ($file['sha256'] ?? '')), hash('sha256', $content)), 'Full bundle checksum mismatch: ' . $path);

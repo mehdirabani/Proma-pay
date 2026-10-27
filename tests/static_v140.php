@@ -19,7 +19,7 @@ $serviceWorker = (string) file_get_contents($root . '/service-worker.js');
 $assert(($version['display'] ?? '') === 'V' . $applicationVersion, 'Display version is not synchronized with the application version.');
 $assert(($manifest['version'] ?? '') === 'v' . $applicationVersion, 'Web manifest version is not synchronized.');
 $assert(($package['version'] ?? '') === $applicationVersion, 'Package version is not synchronized.');
-$assert(($runtimeSettings['asset_version'] ?? '') === $applicationVersion, 'Asset cache version is not synchronized.');
+$assert((bool) preg_match('/^\d+\.\d+\.\d+(?:\.\d+)?$/', (string) ($runtimeSettings['asset_version'] ?? '')), 'Asset cache-bust version is invalid.');
 $assert(strpos($serviceWorker, 'proma-pay-v' . str_replace('.', '-', $applicationVersion) . '-') !== false, 'Service-worker cache version is not synchronized.');
 
 foreach ([

@@ -42,8 +42,8 @@ $staticTests = [
     'tests/static_merchant_dashboard_phase9.php',
     'tests/static_final_integration_phase10.php',
     'tests/woocommerce_release_package_phase10.php',
-    'wordpress-plugins/proma-pay-woocommerce/tests/unit.php',
-    'wordpress-plugins/proma-pay-woocommerce/tests/static.php',
+    'plugins/wordpress-plugins/proma-pay-woocommerce/tests/unit.php',
+    'plugins/wordpress-plugins/proma-pay-woocommerce/tests/static.php',
     'tests/financial_v501.php',
     'tests/static_v501.php',
     'tests/static_v502.php',
@@ -89,6 +89,9 @@ $staticTests = [
     'tests/static_v600_financial_risk_collections.php',
     'tests/static_v204_mobile_customer_installments.php',
     'tests/static_csp_customer_progress.php',
+    'tests/static_customer_archive_v704.php',
+    'tests/static_financial_reconciliation_v704.php',
+    'tests/static_collection_operations_v704.php',
     'tests/static_accounting_update_2014.php',
     'plugins/PromaAccounting/tests/static.php',
     'plugins/PromaAccounting/tests/v110.php',
@@ -145,6 +148,7 @@ $integrationTests = [
     'tests/merchant_dashboard_phase9.php',
     'tests/integration_installment_settlement_v150.php',
     'tests/integration_installment_settlement_concurrency_v150.php',
+    'tests/integration_collection_operations_v704.php',
     'tests/integration_legal_workflow_v150.php',
     'tests/integration_legal_penalty_projection_v156.php',
     'tests/integration_contract_installment_management_v157.php',
@@ -175,13 +179,24 @@ $run = static function (string $test) use ($root, &$failed): void {
 
 echo "[PHASE] PHP lint\n";
 $linted = 0;
-$iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS));
+$lintDirectoryIterator = new RecursiveCallbackFilterIterator(
+    new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
+    static function (SplFileInfo $item) use ($root): bool {
+        if (!$item->isDir()) {
+            return true;
+        }
+        $relativeDirectory = strtolower(str_replace('\\', '/', substr($item->getPathname(), strlen($root) + 1)));
+        return !preg_match('#^(?:\.git|dist|html|storage|tmp|skill|backups|2- themes)(?:/|$)#', $relativeDirectory)
+            && !preg_match('#(?:^|/)(?:node_modules|vendor)(?:/|$)#', $relativeDirectory);
+    }
+);
+$iterator = new RecursiveIteratorIterator($lintDirectoryIterator);
 foreach ($iterator as $file) {
     if (!$file->isFile() || strtolower($file->getExtension()) !== 'php') {
         continue;
     }
     $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
-    if (preg_match('#^(?:\.git|dist|html|storage|tmp|skill)/#', $relative)
+    if (preg_match('#^(?:\.git|dist|html|storage|tmp|skill|backups|2- themes)/#', $relative)
         || preg_match('#(?:^|/)(?:node_modules|vendor)/#', $relative)) {
         continue;
     }

@@ -1,8 +1,10 @@
 <?php
 $costs = $costs ?? [];
 $status = $status ?? 'pending_approval';
+$companyPayment = $companyPayment ?? 'all';
 $search = $search ?? '';
 $canManageCosts = !empty($canManageCosts);
+$thirdPartyLedgerReady = !empty($thirdPartyLedgerReady);
 $statusLabels = [
     'pending_approval' => 'در انتظار تأیید',
     'approved' => 'تأییدشده',
@@ -13,22 +15,43 @@ $statusClass = [
     'approved' => 'success',
     'reversed' => 'danger',
 ];
+$companyStatusLabels = [
+    'awaiting_approval' => ['در انتظار تأیید هزینه', 'warning'],
+    'lawyer_reimbursement' => ['بازپرداخت به وکیل', 'info'],
+    'unpaid' => ['پرداخت به مرجع نشده', 'warning'],
+    'partial' => ['پرداخت جزئی به مرجع', 'info'],
+    'paid' => ['پرداخت مرجع کامل', 'success'],
+    'not_payable' => ['مبلغ قابل پرداخت ندارد', 'muted'],
+];
 ?>
 
 <section class="card proma-legal-cost-approval">
   <div class="card-header card-no-border">
     <div class="header-top">
       <div>
-        <h2><?= $canManageCosts ? 'تأیید هزینه‌های حقوقی' : 'هزینه‌های حقوقی پرونده‌های من' ?></h2>
-        <p>هزینه‌هایی که وکیل یا واحد حقوقی ثبت می‌کند تا زمان تأیید مدیریت وارد مبلغ قابل مطالبه مشتری نمی‌شود.</p>
+        <h2><?= $canManageCosts ? 'تأیید هزینه‌های حقوقی و پرداخت به مرجع' : 'هزینه‌های حقوقی پرونده‌های من' ?></h2>
+        <p><?= $canManageCosts ? 'هزینه را ابتدا تأیید کنید؛ سپس پرداخت انجام‌شده به مرجع را با تاریخ و شناسه پیگیری ثبت کنید. ثبت پرداخت مرجع، بدهی یا دریافتی مشتری را تغییر نمی‌دهد.' : 'هزینه‌های ثبت‌شده تا زمان تأیید مدیریت وارد مبلغ قابل مطالبه مشتری نمی‌شوند.' ?></p>
       </div>
       <span class="badge <?= e($statusClass[$status] ?? 'info') ?>"><?= e($statusLabels[$status] ?? $status) ?></span>
     </div>
   </div>
+  <?php if ($canManageCosts): ?>
+    <div class="card-body proma-legal-cost-shortcuts" aria-label="صف‌های مدیریت هزینه حقوقی">
+      <a class="btn<?= $status === 'pending_approval' && $companyPayment === 'all' ? ' success' : ' secondary' ?>" href="<?= e(url('legal/costs', ['status' => 'pending_approval'])) ?>">هزینه‌های در انتظار تأیید</a>
+      <?php if ($thirdPartyLedgerReady): ?>
+        <a class="btn<?= $companyPayment === 'unpaid' ? ' success' : ' secondary' ?>" href="<?= e(url('legal/costs', ['status' => 'approved', 'company_payment' => 'unpaid'])) ?>">پرداخت‌نشده به مرجع</a>
+        <a class="btn<?= $companyPayment === 'partial' ? ' success' : ' secondary' ?>" href="<?= e(url('legal/costs', ['status' => 'approved', 'company_payment' => 'partial'])) ?>">پرداخت جزئی</a>
+        <a class="btn<?= $companyPayment === 'paid' ? ' success' : ' secondary' ?>" href="<?= e(url('legal/costs', ['status' => 'approved', 'company_payment' => 'paid'])) ?>">پرداخت کامل</a>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
   <div class="card-body">
     <?php if (empty($registryReady)): ?>
       <div class="notice warning">ساختار هزینه‌های حقوقی هنوز نصب نشده است. ابتدا بسته بروزرسانی پایگاه داده را اجرا کنید.</div>
     <?php else: ?>
+      <?php if ($canManageCosts && $companyPayment !== 'all' && !$thirdPartyLedgerReady): ?>
+        <div class="notice warning">دفتر پرداخت به مرجع نصب نشده است؛ برای جلوگیری از نمایش ماندهٔ نادرست، صف پرداخت قابل نمایش نیست.</div>
+      <?php endif; ?>
       <form method="get" action="<?= e(url('legal/costs')) ?>" class="proma-filter-bar">
         <div class="proma-filter-bar__fields">
           <label class="proma-filter-bar__search">جستجو
@@ -41,6 +64,16 @@ $statusClass = [
               <?php endforeach; ?>
             </select>
           </label>
+          <?php if ($canManageCosts && $thirdPartyLedgerReady): ?>
+            <label>پرداخت مجموعه به مرجع
+              <select name="company_payment">
+                <option value="all"<?= selected($companyPayment, 'all') ?>>همه</option>
+                <option value="unpaid"<?= selected($companyPayment, 'unpaid') ?>>پرداخت‌نشده</option>
+                <option value="partial"<?= selected($companyPayment, 'partial') ?>>پرداخت جزئی</option>
+                <option value="paid"<?= selected($companyPayment, 'paid') ?>>پرداخت کامل</option>
+              </select>
+            </label>
+          <?php endif; ?>
         </div>
         <div class="proma-filter-bar__actions">
           <button class="btn" type="submit">اعمال فیلتر</button>
@@ -60,6 +93,7 @@ $statusClass = [
             <th scope="col">ثبت‌کننده</th>
             <th scope="col">تاریخ</th>
             <th scope="col">وضعیت</th>
+            <?php if ($canManageCosts && $thirdPartyLedgerReady): ?><th scope="col">وضعیت پرداخت به مرجع</th><?php endif; ?>
             <th scope="col">عملیات</th>
           </tr>
         </thead>
@@ -105,10 +139,14 @@ $statusClass = [
               <span class="badge <?= e($statusClass[$cost['approval_status'] ?? ''] ?? 'muted') ?>"><?= e($statusLabels[$cost['approval_status'] ?? ''] ?? ($cost['approval_status'] ?? '-')) ?></span>
               <?php if (!empty($cost['approved_by_name'])): ?><small>توسط <?= e($cost['approved_by_name']) ?></small><?php endif; ?>
             </td>
+            <?php if ($canManageCosts && $thirdPartyLedgerReady): ?>
+              <?php [$companyStatusLabel, $companyStatusClass] = $companyStatusLabels[$cost['company_payment_status'] ?? ''] ?? ['نامشخص', 'muted']; ?>
+              <td><span class="badge <?= e($companyStatusClass) ?>"><?= e($companyStatusLabel) ?></span><small>پرداخت‌شده <?= money_toman(max(0, $cost['company_paid_amount_toman'] ?? 0)) ?> · مانده <?= money_toman($cost['company_payment_remaining_toman'] ?? 0) ?></small></td>
+            <?php endif; ?>
             <td>
               <div class="proma-table-actions">
                 <a class="btn small secondary" href="<?= e(url('contracts/show/' . (int) ($cost['contract_id'] ?? 0) . '#legal')) ?>">قرارداد</a>
-                <?php if ($canManageCosts && !empty($thirdPartyLedgerReady) && empty($cost['reversed_at']) && ($cost['approval_status'] ?? '') !== 'reversed' && normalize_money($cost['amount_toman'] ?? 0) > normalize_money($cost['company_paid_amount_toman'] ?? 0)): ?>
+                <?php if ($canManageCosts && !empty($cost['can_pay_to_authority'])): ?>
                   <button class="btn small secondary" type="button" data-open-modal="legal-cost-third-party-<?= $costId ?>">ثبت پرداخت به مرجع</button>
                 <?php endif; ?>
                 <?php if ($canManageCosts && ($cost['approval_status'] ?? '') === 'approved' && empty($cost['reimburse_lawyer_id']) && !empty($cost['assigned_lawyer_id'])): ?>
@@ -130,7 +168,7 @@ $statusClass = [
             </td>
           </tr>
         <?php endforeach; ?>
-        <?php if (!$costs): ?><tr><td colspan="7" class="empty">هزینه‌ای مطابق فیلتر انتخاب‌شده وجود ندارد.</td></tr><?php endif; ?>
+        <?php if (!$costs): ?><tr><td colspan="<?= $canManageCosts && $thirdPartyLedgerReady ? 8 : 7 ?>" class="empty">هزینه‌ای مطابق فیلتر انتخاب‌شده وجود ندارد.</td></tr><?php endif; ?>
         </tbody>
       </table>
     </div>
@@ -162,7 +200,7 @@ $statusClass = [
     </div>
   </div>
   <?php endif; ?>
-  <?php if (!empty($thirdPartyLedgerReady) && empty($cost['reversed_at']) && ($cost['approval_status'] ?? '') !== 'reversed' && normalize_money($cost['amount_toman'] ?? 0) > normalize_money($cost['company_paid_amount_toman'] ?? 0)): ?>
+  <?php if (!empty($cost['can_pay_to_authority'])): ?>
     <div class="modal" id="legal-cost-third-party-<?= $costId ?>">
       <div class="modal-content">
         <div class="modal-header">
@@ -172,11 +210,11 @@ $statusClass = [
         <form method="post" action="<?= e(url('legal/recordThirdPartyCostPayment/' . $costId)) ?>">
           <?= csrf_field() ?>
           <div class="modal-body form-grid two">
-            <div class="notice info full">این رویداد هزینهٔ پرداخت‌شده توسط مجموعه را ثبت می‌کند و به‌تنهایی مبلغ وصول‌شده از مشتری یا مانده بدهی او را تغییر نمی‌دهد. سقف این هزینه: <?= money_toman(max(0, normalize_money($cost['amount_toman'] ?? 0) - normalize_money($cost['company_paid_amount_toman'] ?? 0))) ?>.</div>
+            <div class="notice info full">این فرم پرداخت بانکی را آغاز نمی‌کند؛ پرداخت انجام‌شدهٔ مجموعه به مرجع را در دفتر هزینه ثبت می‌کند و مبلغ وصول‌شده یا مانده بدهی مشتری را تغییر نمی‌دهد. سقف باقیمانده: <?= money_toman($cost['company_payment_remaining_toman'] ?? 0) ?>.</div>
             <input type="hidden" name="idempotency_key" value="<?= e(bin2hex(random_bytes(24))) ?>">
-            <label>مبلغ پرداخت‌شده<input name="amount_toman" data-money inputmode="numeric" required max="<?= max(0, normalize_money($cost['amount_toman'] ?? 0) - normalize_money($cost['company_paid_amount_toman'] ?? 0)) ?>"></label>
+            <label>مبلغ پرداخت‌شده<input name="amount_toman" data-money inputmode="numeric" required max="<?= (int) ($cost['company_payment_remaining_toman'] ?? 0) ?>"></label>
             <label>مرجع یا دریافت‌کننده<input name="recipient" maxlength="190" required></label>
-            <label>تاریخ پرداخت<input name="paid_at" type="date" value="<?= e(date('Y-m-d')) ?>" required></label>
+            <label>تاریخ پرداخت<input name="paid_at" data-jalali-input inputmode="numeric" value="<?= e(jdate(date('Y-m-d'))) ?>" required></label>
             <label>شناسه پیگیری<input name="payment_reference" maxlength="190"></label>
             <label class="full">شرح<textarea name="note" rows="3" maxlength="2000"></textarea></label>
           </div>

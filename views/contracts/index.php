@@ -164,7 +164,7 @@ foreach (($contracts ?? []) as $summaryContract) {
             <button class="btn small info" type="button" data-open-modal="contract-chart-<?= (int) $contract['id'] ?>">نمودار</button>
             <button class="btn small warning" type="button" data-open-modal="contract-timeline-<?= (int) $contract['id'] ?>">تایم‌لاین</button>
             <a class="btn small success" href="<?= e(url('contracts/printDocument/' . $contract['id'])) ?>" target="_blank" rel="noopener"><i data-feather="printer"></i> چاپ قرارداد</a>
-            <?php if (!$readOnly): ?><button class="btn small info" type="button" data-open-modal="custom-installment-<?= (int) $contract['id'] ?>">قسط دلخواه</button><?php endif; ?>
+            <?php if (!$readOnly): ?><a class="btn small info" href="<?= e(url('contracts/show/' . (int) $contract['id'] . '#contract-amendments')) ?>">درخواست اصلاح اقساط</a><?php endif; ?>
             <a class="btn small success" href="<?= e(url('contracts/booklet/' . $contract['id'])) ?>" target="_blank">چاپ دفترچه</a>
             <?php if (!$readOnly && ($contract['status'] ?? '') !== 'cancelled'): ?><button class="btn small danger" type="button" data-open-modal="cancel-contract-<?= (int) $contract['id'] ?>"><i data-feather="slash"></i> لغو</button><?php endif; ?>
             <?php if (!$readOnly): ?><button class="btn small danger icon-only" type="button" data-open-modal="delete-contract-<?= (int) $contract['id'] ?>" title="حذف دائمی قرارداد" aria-label="حذف دائمی قرارداد"><i data-feather="trash-2"></i></button><?php endif; ?>
@@ -625,28 +625,6 @@ foreach (($contracts ?? []) as $summaryContract) {
           </section>
         </div>
         <div class="modal-footer"><button class="btn" type="submit">ذخیره تغییرات</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
-      </form>
-    </div>
-  </div>
-
-  <div class="modal" id="custom-installment-<?= (int) $contract['id'] ?>">
-    <div class="modal-content">
-      <div class="modal-header"><h3>افزودن قسط دلخواه</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('installments/store')) ?>">
-        <div class="modal-body form-grid">
-          <?= csrf_field() ?>
-          <input type="hidden" name="contract_id" value="<?= (int) $contract['id'] ?>">
-          <input type="hidden" name="redirect_to" value="contracts">
-          <label>قرارداد<input value="<?= e($contract['contract_number']) ?> - <?= e($contract['customer_name']) ?>" disabled></label>
-          <label>سررسید<input name="due_date" value="<?= e($defaultFirstDueDate ?? '') ?>" required placeholder="۱۴۰۳/۰۱/۰۱"></label>
-          <label>مبلغ پایه<input name="base_amount" data-money required></label>
-          <label>عنوان قسط<input name="custom_title" maxlength="100" placeholder="مثلاً هزینه خدمات اضافه"></label>
-          <label>شناسه ضمانت<input name="guarantee_serial" dir="ltr" placeholder="شماره چک یا سفته"></label>
-          <label class="full">توضیح قسط برای مشتری<textarea name="customer_description" required rows="3" placeholder="علت ایجاد این قسط را به زبان قابل نمایش برای مشتری بنویسید."></textarea><small class="proma-form-help">این توضیح در پنل مدیریت و پنل مشتری نمایش داده می‌شود.</small></label>
-          <label class="full">یادداشت داخلی<textarea name="internal_note" rows="2" placeholder="نکته داخلی برای مدیریت؛ این متن به مشتری نمایش داده نمی‌شود."></textarea><small class="proma-form-help">این یادداشت فقط برای کاربران مجاز مدیریت قابل مشاهده است.</small></label>
-          <label class="proma-confirm-check full"><input type="checkbox" name="customer_visible" value="1" checked> توضیح قسط در پنل مشتری نمایش داده شود.</label>
-        </div>
-        <div class="modal-footer"><button class="btn" type="submit">ثبت قسط</button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
       </form>
     </div>
   </div>

@@ -55,8 +55,13 @@
       <form method="post" action="<?= e(url('operator/call')) ?>">
         <div class="modal-body form-grid two">
           <?= csrf_field() ?><input type="hidden" name="contract_id" value="<?= (int) $contract['id'] ?>">
-          <label>نتیجه تماس <span class="required-mark" aria-hidden="true">*</span><input name="call_result" required data-modal-autofocus></label>
-          <label>پیگیری بعدی<input name="next_followup_date" class="jalali-date" autocomplete="off" placeholder="انتخاب تاریخ"></label>
+          <label>نوع اقدام<select name="action_type"><option value="customer_call">تماس با مشتری</option><option value="guarantor_call">تماس با ضامن</option><option value="reminder">یادآوری مجاز</option><option value="payment_review">بررسی پرداخت</option></select></label>
+          <label>مخاطب<select name="contact_target"><option value="customer">مشتری</option><option value="guarantor">ضامن</option><option value="other_authorized">سایر فرد مجاز</option></select></label>
+          <label>نتیجه پیگیری <span class="required-mark" aria-hidden="true">*</span><select name="result_code" required data-modal-autofocus><option value="contacted">تماس برقرار شد</option><option value="no_answer">پاسخ نداد</option><option value="unreachable">در دسترس نبود</option><option value="promise_given">قول پرداخت داد</option><option value="requested_extension">درخواست مهلت</option><option value="disputed">اعتراض یا اختلاف</option><option value="needs_followup">نیازمند پیگیری</option><option value="referred_to_legal">پیشنهاد بررسی حقوقی</option><option value="other">سایر</option></select></label>
+          <label>تاریخ وعده پرداخت<input name="promise_payment_date" class="jalali-date" autocomplete="off" placeholder="انتخاب تاریخ"></label>
+          <label>مبلغ وعده (تومان، اختیاری)<input name="promise_amount_toman" inputmode="numeric" min="1"></label>
+          <label>اقدام بعدی<select name="next_action_type" required><option value="call_customer">تماس با مشتری</option><option value="call_guarantor">تماس با ضامن</option><option value="check_promise">بررسی قول پرداخت</option><option value="send_reminder">ارسال یادآوری مجاز</option><option value="review_payment">بررسی پرداخت</option><option value="review_legal_referral">بررسی ارجاع حقوقی</option><option value="legal_followup">پیگیری حقوقی</option><option value="manager_review">بررسی مدیریتی</option></select></label>
+          <label>موعد اقدام بعدی<span class="required-mark" aria-hidden="true">*</span><input name="next_followup_date" class="jalali-date" autocomplete="off" placeholder="انتخاب تاریخ" required></label>
           <label class="full">یادداشت<textarea name="notes" rows="4"></textarea></label>
         </div>
         <div class="modal-footer"><button class="btn" type="submit"><i data-feather="check"></i><span>ثبت تماس</span></button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>

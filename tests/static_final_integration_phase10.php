@@ -14,8 +14,8 @@ $assert = static function (bool $condition, string $message): void {
 
 $apiIntegration = $read('tests/integration_merchant_public_api_phase5.php');
 $worker = $read('tests/support/merchant_api_order_worker.php');
-$wooStatic = $read('wordpress-plugins/proma-pay-woocommerce/tests/static.php');
-$installer = $read('wordpress-plugins/proma-pay-woocommerce/includes/class-promapaywc-installer.php');
+$wooStatic = $read('plugins/wordpress-plugins/proma-pay-woocommerce/tests/static.php');
+$installer = $read('plugins/wordpress-plugins/proma-pay-woocommerce/includes/class-promapaywc-installer.php');
 $releaseGate = $read('tools/release-gate.php');
 $packageBuilder = $read('tools/package-woocommerce-plugin.php');
 $releaseNotes = $read('docs/releases/PROMAPAY-WOOCOMMERCE-0.8.0-RC1.md');

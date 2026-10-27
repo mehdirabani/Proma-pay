@@ -317,6 +317,7 @@ final class MerchantApiGateway
             $guaranteePolicy = MerchantApiGatewayRepository::publicGuaranteePolicy($context);
             $quote['guarantee'] = [
                 'policy_version_uuid' => $guaranteePolicy['policy_version_uuid'],
+                'source_policy_sha256' => $guaranteePolicy['source_policy_sha256'],
                 'policy_sha256' => $guaranteePolicy['policy_sha256'],
                 'document' => $guaranteePolicy['document'],
                 'calculation' => MerchantGuaranteeCalculator::calculate($schedule, (int) $guaranteePolicy['document']['multiplier_units']),

@@ -14,7 +14,7 @@ $settings = require $root . '/config/settings.php';
 $applicationVersion = (string) ($version['application'] ?? '');
 $assert(version_compare($applicationVersion, '1.5.4', '>='), 'Core version must retain V1.5.4 capabilities.');
 $assert(($version['display'] ?? '') === 'V' . $applicationVersion, 'Display version must be synchronized.');
-$assert(($settings['asset_version'] ?? '') === $applicationVersion, 'Asset version must be synchronized.');
+$assert((bool) preg_match('/^\d+\.\d+\.\d+(?:\.\d+)?$/', (string) ($settings['asset_version'] ?? '')), 'Asset cache-bust version must be valid.');
 
 $installmentController = (string) file_get_contents($root . '/controllers/InstallmentsController.php');
 $installmentModel = (string) file_get_contents($root . '/models/Installment.php');

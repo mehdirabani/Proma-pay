@@ -20,10 +20,17 @@ class OperatorController extends Controller
     {
         $this->requireRole(['admin', 'operator']);
         $this->onlyPost();
-        $contract = $this->authorizedContract((int) ($_POST['contract_id'] ?? 0));
-        $next = parse_jalali_date($_POST['next_followup_date'] ?? '');
-        OperatorCall::createCall(Auth::id(), (int) $contract['id'], $_POST['call_result'] ?? '', $_POST['notes'] ?? '', $next);
-        set_flash('success', 'گزارش تماس ثبت شد.');
+        try {
+            $contract = $this->authorizedContract((int) ($_POST['contract_id'] ?? 0));
+            $input = $_POST;
+            $input['contract_id'] = (int) $contract['id'];
+            $input['action_type'] = $input['action_type'] ?? 'customer_call';
+            $input['contact_target'] = $input['contact_target'] ?? 'customer';
+            CollectionCommandCenter::recordFollowup($input, (int) Auth::id(), (string) Auth::role());
+            set_flash('success', 'گزارش پیگیری در تاریخچهٔ واحد ثبت شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'ثبت پیگیری انجام نشد.');
+        }
         redirect('operator');
     }
 

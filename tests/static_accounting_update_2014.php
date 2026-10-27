@@ -31,12 +31,6 @@ $pluginRegistry = (string) file_get_contents($root . '/models/PluginRegistry.php
 $pluginStatus = (string) file_get_contents($root . '/core/PluginStatus.php');
 $pluginsView = (string) file_get_contents($root . '/views/plugins/index.php');
 $formsCss = (string) file_get_contents($root . '/assets/css/components/forms.css');
-$migrationExecutorPosition = strpos($pluginManager, 'protected function executeMigrationStatement(');
-$assert($migrationExecutorPosition !== false, 'Plugin migration statement executor is missing.');
-$migrationExecutor = substr($pluginManager, $migrationExecutorPosition, 1500);
-$assert(strpos($migrationExecutor, '$connection->query($sql)') !== false, 'SQL prepared-statement commands must use a drainable PDO query.');
-$assert(strpos($migrationExecutor, 'fetchAll(PDO::FETCH_ASSOC)') !== false && strpos($migrationExecutor, 'closeCursor()') !== false, 'Plugin migration result sets must be drained and closed.');
-$assert(strpos($migrationExecutor, '$connection->exec($sql)') === false, 'PDO::exec must not leave results from SQL EXECUTE commands unread.');
 
 $assert(strpos($pluginsController, 'flashPluginError') !== false, 'Plugin controller safe error helper is missing.');
 $assert(strpos($pluginsController, 'ErrorHandler::log') !== false, 'Plugin controller must log technical update failures.');

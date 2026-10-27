@@ -63,7 +63,7 @@ $footerText = $settings['footer_text'] ?? 'پروما پی سامانه جامع
 $sprite = template_asset_url('svg/icon-sprite.svg');
 $needsContractTemplateEditor = $route === 'settings/contracts/template'
     || (str_starts_with($route, 'settings/contracts') && (($section ?? '') === 'template'));
-$needsCharts = in_array($route, ['dashboard', 'customers', 'contracts'], true)
+$needsCharts = in_array($route, ['dashboard', 'customers', 'contracts', 'risk/portfolio', 'risk/portfolioDetail'], true)
     || str_starts_with($route, 'plugin/accounting');
 $needsRichEditor = str_starts_with($route, 'contracts/show/')
     || $needsContractTemplateEditor
@@ -82,12 +82,14 @@ if (Auth::role() === 'admin') {
         ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
         ['collections', 'مرکز عملیات وصول', 'stroke-board', 'fill-board'],
         ['payments', 'پرداخت‌ها', 'stroke-ecommerce', 'fill-ecommerce'],
+        ['financial-reconciliation', 'مرکز تطبیق مالی', 'stroke-board', 'fill-board'],
         ['risk', 'ریسک اعتباری مشتری', 'stroke-user', 'fill-user'],
+        ['risk/portfolio', 'تحلیل ریسک پرتفوی', 'stroke-board', 'fill-board'],
         ['legal', 'حقوقی و شکایت‌ها', 'stroke-file', 'fill-file', [
             ['legal', 'پرونده‌های حقوقی'],
             ['legal/referred', 'پرونده‌های ارجاع‌شده'],
             ['legal/eligible', 'واجد شرایط بررسی حقوقی'],
-            ['legal/costs', 'تأیید هزینه‌های حقوقی'],
+            ['legal/costs', 'تأیید و پرداخت هزینه‌های حقوقی'],
             ['legal/lawyerPayments', 'تسویه حساب وکلا'],
         ]],
         ['review', 'بررسی موارد ارسالی', 'stroke-task', 'fill-task'],
@@ -116,6 +118,7 @@ if (Auth::role() === 'admin') {
 } elseif (Auth::role() === 'operator') {
     $nav = [
         ['collections', 'مرکز عملیات وصول', 'stroke-board', 'fill-board'],
+        ['financial-reconciliation', 'مرکز تطبیق مالی', 'stroke-board', 'fill-board'],
         ['overdue', 'سررسید گذشته', 'stroke-board', 'fill-board'],
         ['contracts', 'قراردادها', 'stroke-project', 'fill-project'],
         ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
@@ -129,7 +132,7 @@ if (Auth::role() === 'admin') {
             ['legal', 'پرونده‌های حقوقی'],
             ['legal/referred', 'پرونده‌های ارجاع‌شده'],
             ['legal/eligible', 'واجد شرایط بررسی حقوقی'],
-            ['legal/costs', 'تأیید هزینه‌های حقوقی'],
+            ['legal/costs', 'هزینه‌های حقوقی پرونده‌های من'],
             ['legal/lawyerPayments', 'صورت‌حساب وکیل'],
         ]],
         ['calendar', 'تقویم رویدادها', 'stroke-task', 'fill-task'],
@@ -232,6 +235,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
         'users' => 'users', 'medals' => 'award', 'loyalty' => 'award', 'settings' => 'settings', 'ai' => 'activity',
         'file-manager' => 'folder', 'system-health' => 'activity', 'plugins' => 'package',
         'portal' => 'user', 'profile-reviews' => 'user-check'];
+    $icons['financial-reconciliation'] = 'activity';
     $routeKey = explode('/', (string) ($item[0] ?? ''))[0];
     return '<i data-feather="' . e($icons[$routeKey] ?? 'layers') . '" aria-hidden="true"></i>';
 };
@@ -260,6 +264,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
    <link rel="stylesheet" href="<?= e(asset_url('assets/css/design-system/tokens.css')) ?>">
    <?php foreach ($pluginPageAssets as $pluginAsset): ?><?php if (($pluginAsset['type'] ?? '') === 'css'): ?><link rel="stylesheet" href="<?= e(asset_url($pluginAsset['path'])) ?>"><?php endif; ?><?php endforeach; ?>
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/forms.css')) ?>">
+  <?php if (str_starts_with($route, 'financial-reconciliation')): ?><link rel="stylesheet" href="<?= e(asset_url('assets/css/components/financial-reconciliation.css')) ?>"><?php endif; ?>
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/layout.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/responsive.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/panels.css')) ?>">
@@ -270,6 +275,7 @@ $sidebarIcon = static function (array $item, string $sprite, bool $filled = fals
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/v7-system.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/v7-reference-rhythm.css') . '&rhythm=6') ?>">
   <link rel="stylesheet" href="<?= e(asset_url('assets/css/components/customer-experience.css') . '&customer-ui=1') ?>">
+  <?php if (str_starts_with($route, 'risk/portfolio')): ?><link rel="stylesheet" href="<?= e(asset_url('assets/css/pages/portfolio-analytics.css')) ?>"><?php endif; ?>
   <?php if ($needsCharts): ?><script src="<?= e(asset_url('assets/vendor/chart.umd.min.js')) ?>" defer></script><?php endif; ?>
 </head>
 <body class="proma-v2 proma-v2-role-<?= e(Auth::role()) ?>" data-user-id="<?= (int) Auth::id() ?>" data-notification-sound="<?= $notificationSoundEnabled ? '1' : '0' ?>" data-notification-volume="<?= e($notificationSoundVolume) ?>">

@@ -171,8 +171,12 @@ class UsersController extends Controller
             set_flash('error', 'حذف آخرین مدیر سامانه مجاز نیست.');
             redirect('users');
         }
-        User::deleteUser((int) $id);
-        set_flash('success', 'کاربر حذف شد.');
+        try {
+            User::deleteUser((int) $id);
+            set_flash('success', 'کاربر حذف شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof LogicException ? $e->getMessage() : 'حذف کاربر انجام نشد.');
+        }
         redirect('users');
     }
 

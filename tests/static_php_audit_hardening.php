@@ -26,8 +26,8 @@ $worker = $read('service-worker.js');
 
 $assert((bool) preg_match('/RewriteRule\s+\^storage\/\(\?!uploads\(\?:\/\|\$\)\)/i', $htaccess),
     'HTTP access to storage outside the public upload tree is not denied.');
-$assert(strpos($auth, "SELECT role, status, password_hash FROM users WHERE id = ? LIMIT 1") !== false,
-    'Protected requests do not reload current account status, role, and password state.');
+$assert(strpos($auth, "SELECT role, status, archived_at, password_hash FROM users WHERE id = ? LIMIT 1") !== false,
+    'Protected requests do not reload current account status, archive state, role, and password state.');
 $assert(strpos($auth, "(\$user['status'] ?? '') !== 'active'") !== false
     && strpos($auth, "(\$user['role'] ?? '') !== (string) (\$_SESSION['role'] ?? '')") !== false
     && strpos($auth, "hash_equals(hash('sha256', \$passwordHash), \$sessionFingerprint)") !== false,
@@ -48,9 +48,9 @@ $assert(strpos($cron, "if (PHP_SAPI !== 'cli')") !== false
 $assert(strpos($dashboard, 'customerRanking(') === false,
     'Unused customer ranking query path remains in the dashboard controller.');
 $applicationVersion = (string) ($version['application'] ?? '');
-$assert(($settings['asset_version'] ?? '') === $applicationVersion
+$assert((bool) preg_match('/^\d+\.\d+\.\d+(?:\.\d+)?$/', (string) ($settings['asset_version'] ?? ''))
     && ($manifest['version'] ?? '') === 'v' . $applicationVersion
     && strpos($worker, 'proma-pay-v' . str_replace('.', '-', $applicationVersion) . '-') !== false,
-    'Application, manifest, and service-worker cache versions are inconsistent.');
+    'Asset cache-bust version is invalid or application metadata is inconsistent.');
 
 echo "STATIC_PHP_AUDIT_HARDENING_OK\n";

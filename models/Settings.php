@@ -123,6 +123,7 @@ class Settings extends Model
             'web_push_event_types_json' => '["payment","payment_receipt","legal","identity","profile","overdue","calendar","message","bot","repair","installment","due_soon","due_today","followup","system"]',
             'credit_risk_rules_json' => '{"starting_score":700,"successful_contract_points":20,"successful_contract_cap":100,"on_time_points_cap":150,"early_installment_points":3,"early_installment_cap":60,"average_delay_penalty_per_day":4,"average_delay_penalty_cap":180,"open_legal_case_penalty":60,"open_legal_case_penalty_cap":240,"broken_promise_penalty":25,"broken_promise_penalty_cap":100,"debt_penalty_per_million":2,"debt_penalty_cap":150}',
             'collection_stage_rules_json' => '{"reminder_min_days":1,"reminder_max_days":3,"operator_task_min_days":4,"operator_task_max_days":10,"serious_warning_min_days":11,"serious_warning_max_days":20,"legal_review_min_days":21}',
+            'collection_assignment_manager_id' => '',
             'chat_file_auto_delete_days' => '7',
             'password_reset_enabled' => '1',
             'ippanel_api_key' => '',

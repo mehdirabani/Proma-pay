@@ -511,6 +511,17 @@ body:not(.dark-only) .page-wrapper.compact-wrapper .page-body-wrapper .page-body
   margin-block-end: var(--space-4);
 }
 
+.proma-legal-cost-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-block-start: 0;
+}
+
+.proma-legal-cost-shortcuts .btn {
+  white-space: nowrap;
+}
+
 .proma-quick-action-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

@@ -3,12 +3,14 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
+require_once $root . '/core/PluginManager.php';
 $core = require $root . '/config/version.php';
 $pluginApi = (string) ($core['plugin_api'] ?? '0.0');
 $pluginsRoot = $root . '/plugins';
 $failures = [];
 $manifestCount = 0;
 $routeCount = 0;
+$allManifests = [];
 $manifestPaths = glob($pluginsRoot . '/*/plugin.json') ?: [];
 $knownPluginIds = [];
 foreach ($manifestPaths as $knownManifestPath) {
@@ -95,6 +97,14 @@ foreach ($manifestPaths as $manifestPath) {
         $failures[] = $pluginName . ': plugin.json root must be an object';
         continue;
     }
+    $manifestId = trim((string) ($manifest['id'] ?? ''));
+    if ($manifestId === '') {
+        $failures[] = $pluginName . ': plugin id is required';
+    } elseif (isset($allManifests[$manifestId])) {
+        $failures[] = $pluginName . ': duplicate plugin id ' . $manifestId;
+    } else {
+        $allManifests[$manifestId] = $manifest;
+    }
 
     $symbols = [];
     $sourceRoot = $pluginRoot . '/src';
@@ -179,6 +189,56 @@ foreach ($manifestPaths as $manifestPath) {
             $failures[] = $pluginName . ': missing or invalid plugin dependency: ' . ($dependencyId ?: '(empty)');
         }
     }
+    $declaredConflicts = [];
+    foreach ((array) ($manifest['conflicts_with'] ?? []) as $conflictId) {
+        $conflictId = trim((string) $conflictId);
+        if ($conflictId === '' || $conflictId === $manifestId || !isset($knownPluginIds[$conflictId])) {
+            $failures[] = $pluginName . ': missing or invalid plugin conflict declaration: ' . ($conflictId ?: '(empty)');
+        }
+        if (isset($declaredConflicts[$conflictId])) {
+            $failures[] = $pluginName . ': duplicate plugin conflict declaration: ' . $conflictId;
+        }
+        $declaredConflicts[$conflictId] = true;
+    }
+}
+
+foreach ($allManifests as $leftId => $leftManifest) {
+    foreach ($allManifests as $rightId => $rightManifest) {
+        if (strcmp($leftId, $rightId) >= 0 || !PluginManager::routeManifestsConflict($leftManifest, $rightManifest)) {
+            continue;
+        }
+        $leftDeclares = in_array($rightId, (array) ($leftManifest['conflicts_with'] ?? []), true);
+        $rightDeclares = in_array($leftId, (array) ($rightManifest['conflicts_with'] ?? []), true);
+        if (!$leftDeclares && !$rightDeclares) {
+            $failures[] = 'undeclared cross-plugin route conflict: ' . $leftId . ' <-> ' . $rightId;
+        }
+    }
+}
+
+if (!PluginManager::routeManifestsConflict(
+    ['routes' => [['path' => 'records/{recordId}', 'method' => 'GET']]],
+    ['routes' => [['path' => 'records/export', 'method' => 'GET']]]
+)) {
+    $failures[] = 'route conflict detector missed overlapping variable and literal segments';
+}
+if (PluginManager::routeManifestsConflict(
+    ['routes' => [['path' => 'records/{recordId}', 'method' => 'GET']]],
+    ['routes' => [['path' => 'records/export', 'method' => 'POST']]]
+)) {
+    $failures[] = 'route conflict detector incorrectly treats different methods as conflicting';
+}
+$inventoryManifest = $allManifests['proma-inventory-partners'] ?? [];
+$partnershipManifest = $allManifests['proma-partnership-ledger'] ?? [];
+if (!$inventoryManifest || !$partnershipManifest
+    || !PluginManager::pluginManifestsConflict($inventoryManifest, $partnershipManifest)) {
+    $failures[] = 'the Inventory Partners and Partnership Ledger conflict is not enforced';
+}
+if ($inventoryManifest && $partnershipManifest
+    && PluginManager::comparePluginBootPriority($inventoryManifest, $partnershipManifest) >= 0) {
+    $failures[] = 'stable Inventory Partners must boot before the pre-release Partnership Ledger';
+}
+if (!preg_match('/^>=\s*7\.1\.0$/', (string) ($partnershipManifest['requires_core'] ?? ''))) {
+    $failures[] = 'Partnership Ledger must require Core 7.1.0 or newer';
 }
 
 if ($manifestCount === 0) $failures[] = 'no plugin manifests found';

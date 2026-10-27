@@ -1,0 +1,78 @@
+-- Proma Pay v7.0.4: immutable financial snapshots and controlled contract amendments.
+-- Existing contracts are baselined lazily as Legacy Baseline / Incomplete History;
+-- this migration intentionally does not invent original approvals or snapshots.
+CREATE TABLE IF NOT EXISTS contract_financial_versions (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  contract_id BIGINT UNSIGNED NOT NULL,
+  version_number INT UNSIGNED NOT NULL,
+  parent_version_id BIGINT UNSIGNED NULL,
+  source_amendment_id BIGINT UNSIGNED NULL,
+  provenance VARCHAR(96) NOT NULL,
+  history_complete TINYINT(1) NOT NULL DEFAULT 0,
+  is_current TINYINT(1) NOT NULL DEFAULT 0,
+  terms_snapshot_json LONGTEXT NOT NULL,
+  schedule_snapshot_json LONGTEXT NOT NULL,
+  calculation_version VARCHAR(64) NOT NULL,
+  content_hash CHAR(64) NOT NULL,
+  created_by BIGINT UNSIGNED NULL,
+  effective_from DATE NOT NULL,
+  document_version_id BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_contract_financial_version (contract_id, version_number),
+  UNIQUE KEY uq_contract_financial_source_amendment (source_amendment_id),
+  KEY idx_contract_financial_current (contract_id, is_current, version_number),
+  KEY idx_contract_financial_parent (parent_version_id),
+  KEY idx_contract_financial_document (document_version_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS contract_amendments (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  contract_id BIGINT UNSIGNED NOT NULL,
+  amendment_number INT UNSIGNED NOT NULL,
+  base_version_id BIGINT UNSIGNED NOT NULL,
+  result_version_id BIGINT UNSIGNED NULL,
+  status VARCHAR(32) NOT NULL,
+  reason TEXT NOT NULL,
+  effective_on DATE NOT NULL,
+  base_fingerprint CHAR(64) NOT NULL,
+  requested_changes_json LONGTEXT NOT NULL,
+  before_snapshot_json LONGTEXT NOT NULL,
+  proposed_snapshot_json LONGTEXT NOT NULL,
+  impact_snapshot_json LONGTEXT NOT NULL,
+  requested_by BIGINT UNSIGNED NOT NULL,
+  requested_at DATETIME NOT NULL,
+  approved_by BIGINT UNSIGNED NULL,
+  approved_at DATETIME NULL,
+  rejected_by BIGINT UNSIGNED NULL,
+  rejected_at DATETIME NULL,
+  rejection_reason TEXT NULL,
+  applied_by BIGINT UNSIGNED NULL,
+  applied_at DATETIME NULL,
+  document_version_id BIGINT UNSIGNED NULL,
+  idempotency_key VARCHAR(100) NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_contract_amendment_number (contract_id, amendment_number),
+  UNIQUE KEY uq_contract_amendment_idempotency (contract_id, idempotency_key),
+  KEY idx_contract_amendment_status (contract_id, status, requested_at),
+  KEY idx_contract_amendment_base_version (base_version_id),
+  KEY idx_contract_amendment_result_version (result_version_id),
+  KEY idx_contract_amendment_document (document_version_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS contract_amendment_history (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  amendment_id BIGINT UNSIGNED NOT NULL,
+  contract_id BIGINT UNSIGNED NOT NULL,
+  action VARCHAR(48) NOT NULL,
+  actor_id BIGINT UNSIGNED NULL,
+  old_status VARCHAR(32) NULL,
+  new_status VARCHAR(32) NULL,
+  reason TEXT NULL,
+  metadata_json LONGTEXT NULL,
+  request_id VARCHAR(64) NULL,
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_contract_amendment_history (amendment_id, created_at, id),
+  KEY idx_contract_amendment_history_contract (contract_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

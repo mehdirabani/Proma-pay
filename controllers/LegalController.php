@@ -125,9 +125,25 @@ class LegalController extends Controller
         $this->requireRole(['admin', 'lawyer']);
         $isAdmin = Auth::role() === 'admin';
         $status = in_array($_GET['status'] ?? '', ['pending_approval', 'approved', 'reversed'], true) ? $_GET['status'] : 'pending_approval';
+        $companyPayment = $isAdmin && in_array($_GET['company_payment'] ?? '', ['unpaid', 'partial', 'paid'], true)
+            ? (string) $_GET['company_payment']
+            : 'all';
+        if ($companyPayment !== 'all') $status = 'approved';
+        $thirdPartyLedgerReady = LegalCaseCostService::disbursementTableAvailable();
         $search = trim((string) ($_GET['q'] ?? ''));
         $params = [$status];
         $where = "WHERE c.approval_status = ?";
+        if ($companyPayment !== 'all') {
+            if (!$thirdPartyLedgerReady) {
+                $where .= ' AND 1 = 0';
+            } else {
+                $companyPaidSql = '(SELECT COALESCE(SUM(d.amount_toman), 0) FROM legal_cost_disbursements d WHERE d.legal_case_cost_id = c.id)';
+                $where .= " AND c.approval_status = 'approved' AND c.reversed_at IS NULL AND c.reimburse_lawyer_id IS NULL AND c.amount_toman > 0";
+                if ($companyPayment === 'unpaid') $where .= " AND {$companyPaidSql} <= 0";
+                if ($companyPayment === 'partial') $where .= " AND {$companyPaidSql} > 0 AND {$companyPaidSql} < c.amount_toman";
+                if ($companyPayment === 'paid') $where .= " AND {$companyPaidSql} >= c.amount_toman";
+            }
+        }
         if (!$isAdmin) {
             $where .= ' AND lc.lawyer_id = ?';
             $params[] = (int) Auth::id();
@@ -137,6 +153,7 @@ class LegalController extends Controller
             $needle = '%' . $search . '%';
             array_push($params, $needle, $needle, $needle, $needle);
         }
+        $orderBy = $companyPayment === 'all' ? 'c.cost_date DESC, c.id DESC' : 'c.cost_date ASC, c.id ASC';
         $costs = LegalCaseCostService::tableAvailable() ? Model::fetchAll(
             "SELECT c.*, co.contract_number, cu.full_name AS customer_name, u.full_name AS created_by_name, a.full_name AS approved_by_name,
                     reimbursement_lawyer.full_name AS reimbursement_lawyer_name,
@@ -150,7 +167,7 @@ class LegalController extends Controller
              LEFT JOIN legal_cases lc ON lc.id = c.legal_case_id AND lc.contract_id = c.contract_id
              LEFT JOIN users case_lawyer ON case_lawyer.id = lc.lawyer_id
              {$where}
-             ORDER BY c.cost_date DESC, c.id DESC
+             ORDER BY {$orderBy}
              LIMIT 200",
             $params
         ) : [];
@@ -159,6 +176,19 @@ class LegalController extends Controller
             $ledger = $thirdPartyByCost[(int) $cost['id']] ?? ['total' => 0, 'items' => []];
             $cost['company_paid_amount_toman'] = normalize_money($ledger['total'] ?? 0);
             $cost['third_party_payments'] = $ledger['items'] ?? [];
+            $companyCostAmount = normalize_money($cost['amount_toman'] ?? 0);
+            $companyRemaining = max(0, $companyCostAmount - max(0, $cost['company_paid_amount_toman']));
+            $cost['company_payment_remaining_toman'] = $companyRemaining;
+            $cost['company_payment_status'] = ($cost['approval_status'] ?? '') !== 'approved'
+                ? 'awaiting_approval'
+                : (!empty($cost['reimburse_lawyer_id'])
+                    ? 'lawyer_reimbursement'
+                    : ($companyCostAmount <= 0 ? 'not_payable' : ($companyRemaining <= 0 ? 'paid' : ($cost['company_paid_amount_toman'] > 0 ? 'partial' : 'unpaid'))));
+            $cost['can_pay_to_authority'] = $thirdPartyLedgerReady
+                && ($cost['approval_status'] ?? '') === 'approved'
+                && empty($cost['reversed_at'])
+                && empty($cost['reimburse_lawyer_id'])
+                && $companyRemaining > 0;
             $canCharge = ($cost['approval_status'] ?? '') === 'approved'
                 && (int) ($cost['chargeable_to_customer'] ?? 0) === 1
                 && empty($cost['reversed_at'])
@@ -170,12 +200,13 @@ class LegalController extends Controller
         }
         unset($cost);
         $this->render('legal/costs', [
-            'title' => $isAdmin ? 'تأیید هزینه‌های حقوقی' : 'هزینه‌های حقوقی پرونده‌های من',
+            'title' => $isAdmin ? ($companyPayment === 'all' ? 'مدیریت تأیید و پرداخت هزینه‌های حقوقی' : 'پرداخت هزینه‌های حقوقی به مرجع') : 'هزینه‌های حقوقی پرونده‌های من',
             'costs' => $costs,
             'status' => $status,
+            'companyPayment' => $companyPayment,
             'search' => $search,
             'registryReady' => LegalCaseCostService::tableAvailable(),
-            'thirdPartyLedgerReady' => LegalCaseCostService::disbursementTableAvailable(),
+            'thirdPartyLedgerReady' => $thirdPartyLedgerReady,
             'canManageCosts' => $isAdmin,
         ], is_ajax_request() ? null : 'app');
     }

@@ -5,6 +5,8 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $builder = (string) file_get_contents($root . '/scripts/build_candidate_delivery_bundle.php');
 $candidateBuilder = (string) file_get_contents($root . '/scripts/build_candidate_artifacts.php');
+$releaseBuilder = (string) file_get_contents($root . '/scripts/build_release.php');
+$rcBuilder = (string) file_get_contents($root . '/scripts/build_rc.php');
 $candidateVerifier = (string) file_get_contents($root . '/tools/verify-candidate-artifacts.php');
 $artifactPaths = (string) file_get_contents($root . '/scripts/release_artifact_paths.php');
 $releaseVerifier = (string) file_get_contents($root . '/tools/verify-release.php');
@@ -29,6 +31,12 @@ $assert(
 $assert(
     strpos($candidateBuilder, '/dist/candidates/archive/v*/v*/core/PromaPay-v*.zip') !== false,
     'Candidate generation must continue finding historical baselines in the versioned archive.'
+);
+$assert(
+    strpos($releaseBuilder, "'backups/'") !== false && strpos($releaseBuilder, "'2- themes/'") !== false
+        && strpos($candidateBuilder, "'backups/'") !== false && strpos($candidateBuilder, "'2- themes/'") !== false
+        && strpos($rcBuilder, "'backups/'") !== false && strpos($rcBuilder, "'2- themes/'") !== false,
+    'Core package builders must exclude local backups and ignored theme archives.'
 );
 $assert(
     strpos($candidateBuilder, '/dist/core/archive/v*/v*/PromaPay-v*.zip') !== false,

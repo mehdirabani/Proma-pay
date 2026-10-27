@@ -62,7 +62,7 @@ final class OverdueFilterCriteria
         $criteria->legalEligible = self::allowed($input['legal_eligible'] ?? '', ['yes', 'no']);
         $criteria->legalCaseExists = self::allowed($input['legal_case_exists'] ?? '', ['yes', 'no']);
         $criteria->excludeLegalCases = self::boolean($input['exclude_legal_cases'] ?? false);
-        $criteria->operatorId = self::positiveInt($input['operator_id'] ?? null);
+        $criteria->operatorId = self::boundedInt($input['operator_id'] ?? null, 0, PHP_INT_MAX);
         $criteria->lawyerId = self::positiveInt($input['lawyer_id'] ?? null);
         $criteria->minOverdueCount = self::boundedInt($input['min_overdue_count'] ?? null, 0, 10000);
         $criteria->maxOverdueCount = self::boundedInt($input['max_overdue_count'] ?? null, 0, 10000);

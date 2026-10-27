@@ -3,6 +3,7 @@
 class Contract extends Model
 {
     protected static $schemaReady = false;
+    private static $approvedScheduleSyncAmendmentId = null;
 
     public static function ensureSchema()
     {
@@ -407,9 +408,14 @@ class Contract extends Model
         self::begin();
         try {
             self::validateFinancialData($data);
-            $customer = self::fetch("SELECT id FROM users WHERE id = ? AND role = 'customer' LIMIT 1", [(int) ($data['customer_id'] ?? 0)]);
+            $customer = self::fetch(
+                "SELECT id, status, archived_at FROM users
+                 WHERE id = ? AND role = 'customer' AND status = 'active' AND archived_at IS NULL
+                 LIMIT 1 FOR UPDATE",
+                [(int) ($data['customer_id'] ?? 0)]
+            );
             if (!$customer) {
-                throw new InvalidArgumentException('مشتری انتخاب‌شده معتبر نیست.');
+                throw new InvalidArgumentException('فقط مشتری فعال و بایگانی‌نشده می‌تواند قرارداد جدید داشته باشد.');
             }
             $settings = Settings::allKeyed();
             $prefix = trim((string) ($settings['contract_prefix'] ?? 'PR')) ?: 'PR';
@@ -452,6 +458,7 @@ class Contract extends Model
             // later setting changes must not silently change its legal terms.
             LegalEligibilityService::snapshotForContract($contractId, $data['created_by'] ?? null);
             Payment::syncDownPayment($contractId, $data['created_by'] ?? null, normalize_money($data['down_payment_amount'] ?? 0), $data['start_date']);
+            ContractAmendmentService::recordCreationBaseline($contractId, $data['created_by'] ?? null);
             ContractDocument::generate($contractId, $data['created_by'] ?? null);
             Settings::set('contract_next_serial', (string) ($serial + 1));
             ContractDocument::log($contractId, 'create_contract', null, [
@@ -497,6 +504,12 @@ class Contract extends Model
         }
         self::begin();
         try {
+            $lockedCurrent = self::fetch('SELECT * FROM contracts WHERE id = ? FOR UPDATE', [(int) $id]);
+            if (!$lockedCurrent) throw new InvalidArgumentException('قرارداد پیدا نشد.');
+            $current = $lockedCurrent;
+            if (self::financialTermsChanged($current, $data)) {
+                throw new InvalidArgumentException('شرایط مالی قرارداد پس از ایجاد فقط از مسیر درخواست و تأیید اصلاحیه قابل تغییر است.');
+            }
             if (SchemaGuard::tableExists('merchant_contract_links')
                 && SchemaGuard::tableExists('merchant_cheque_guarantees')) {
                 MerchantChequeGuaranteeRepository::lockForContractScheduleEdit((int) $id);
@@ -505,6 +518,18 @@ class Contract extends Model
                     (string) ($data['first_due_date'] ?? ($current['first_due_date'] ?? ''))
                 );
             }
+            $targetCustomerId = (int) ($data['customer_id'] ?? 0);
+            if ($targetCustomerId !== (int) ($current['customer_id'] ?? 0)) {
+                $targetCustomer = self::fetch(
+                    "SELECT id, status, archived_at FROM users WHERE id = ? AND role = 'customer' LIMIT 1 FOR UPDATE",
+                    [$targetCustomerId]
+                );
+                if (!$targetCustomer
+                    || ($targetCustomer['status'] ?? '') !== 'active'
+                    || !empty($targetCustomer['archived_at'])) {
+                    throw new InvalidArgumentException('قرارداد را نمی‌توان به مشتری غیرفعال یا بایگانی‌شده منتقل کرد.');
+                }
+            }
             self::validateFinancialData($data);
             $old = [
                 'contract' => self::find((int) $id),
@@ -512,6 +537,7 @@ class Contract extends Model
                 'guarantees' => ContractDocument::guarantees((int) $id),
                 'guarantor_people' => ContractDocument::guarantorPeople((int) $id),
             ];
+            self::assertUnchangedLegalTerms((int) $id, $old, $guarantorIds, $items, $guarantee, $guarantorPeople);
             self::execute(
                 'UPDATE contracts SET customer_id = :customer_id, principal_amount = :principal_amount,
                  down_payment_amount = :down_payment_amount,
@@ -535,18 +561,12 @@ class Contract extends Model
                     'notes' => $data['notes'] ?? '',
                 ]
             );
-            $guarantorIds = array_merge($guarantorIds, ContractGuarantorService::customerIds($guarantorPeople, (int) $data['customer_id'], $old['guarantor_people']));
-            self::syncGuarantors($id, $guarantorIds, (int) $data['customer_id']);
-            ContractDocument::snapshotLinkedGuarantors((int) $id, $data['updated_by'] ?? null);
-            ContractDocument::saveItems((int) $id, $items);
-            ContractDocument::saveGuarantee((int) $id, $guarantee);
-            ContractDocument::saveGuarantorPeople((int) $id, $guarantorPeople);
-            self::syncInstallmentSchedule((int) $id, $data);
+            // Legal/product/guarantee terms were proven unchanged above. Do not
+            // delete-and-recreate their rows while an admin edits metadata.
             if (SchemaGuard::tableExists('merchant_contract_links')
                 && SchemaGuard::tableExists('merchant_cheque_guarantees')) {
                 MerchantChequeGuaranteeRepository::assertCurrentScheduleMatchesConfirmedGuarantee((int) $id);
             }
-            Payment::syncDownPayment((int) $id, $data['updated_by'] ?? null, normalize_money($data['down_payment_amount'] ?? 0), $data['start_date']);
             if (($current['status'] ?? '') === 'closed') {
                 self::execute(
                     "UPDATE contracts SET status = 'active', updated_at = NOW()
@@ -556,7 +576,6 @@ class Contract extends Model
                 );
             }
             self::syncCompletionStatuses((int) $id);
-            ContractDocument::generate((int) $id, $data['updated_by'] ?? null);
             ContractDocument::log((int) $id, 'update_contract', $old, [
                 'contract' => $data,
                 'items' => $items,
@@ -1265,55 +1284,202 @@ class Contract extends Model
 
     protected static function syncInstallmentSchedule($contractId, array $data)
     {
+        $amendmentId = (int) (self::$approvedScheduleSyncAmendmentId ?? 0);
+        if ($amendmentId <= 0 || !Model::db()->inTransaction()) {
+            throw new LogicException('همگام‌سازی برنامه اقساط فقط در تراکنش اصلاحیهٔ تأییدشده مجاز است.');
+        }
         $contractId = (int) $contractId;
-        $amount = FinanceHelper::installmentAmount(
-            self::financedAmount($data),
-            max(1, (int) to_english_digits($data['months'] ?? 1)),
-            MoneyMath::rateLabel(MoneyMath::rateUnits($data['monthly_interest_rate'] ?? 0)),
-            ($data['interest_type'] ?? 'simple') === 'compound' ? 'compound' : 'simple'
-        );
-        $months = max(1, (int) to_english_digits($data['months'] ?? 1));
-        $firstDue = $data['first_due_date'];
-        $rows = self::fetchAll(
-            'SELECT * FROM installments WHERE contract_id = ? AND COALESCE(is_custom, 0) = 0 ORDER BY installment_number ASC',
-            [$contractId]
-        );
-        $byNumber = [];
-        foreach ($rows as $row) {
-            $byNumber[(int) $row['installment_number']] = $row;
+        $amendment = self::fetch('SELECT id, contract_id, status, approved_by, amendment_number, reason, effective_on, proposed_snapshot_json FROM contract_amendments WHERE id = ? FOR UPDATE', [$amendmentId]);
+        if (!$amendment || (int) $amendment['contract_id'] !== $contractId || ($amendment['status'] ?? '') !== 'approved' || empty($amendment['approved_by'])) {
+            throw new LogicException('نسخه مجاز برای همگام‌سازی برنامه اقساط پیدا نشد.');
+        }
+        $proposed = json_decode((string) $amendment['proposed_snapshot_json'], true);
+        $schedule = $proposed['future_schedule'] ?? null;
+        $effectiveOn = (string) ($proposed['effective_on'] ?? $amendment['effective_on'] ?? '');
+        $terms = $proposed['terms'] ?? [];
+        if (!is_array($schedule) || !is_array($terms) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $effectiveOn)) {
+            throw new LogicException('Snapshot اصلاحیهٔ تأییدشده معتبر نیست.');
+        }
+        $snapshot = ContractAmendmentService::snapshot($contractId);
+        $current = ContractAmendmentService::candidateSchedule($snapshot['schedule'], $effectiveOn);
+        $currentById = [];
+        foreach ($current as $row) $currentById[(int) $row['id']] = $row;
+        $proposedById = [];
+        foreach ($schedule as $line) {
+            $installmentId = (int) ($line['installment_id'] ?? 0);
+            $dueDate = (string) ($line['due_date'] ?? '');
+            $baseAmount = normalize_money($line['base_amount'] ?? 0);
+            if ($baseAmount <= 0 || $dueDate < $effectiveOn || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dueDate)) {
+                throw new LogicException('ردیف برنامه پیشنهادی اصلاحیه معتبر نیست.');
+            }
+            if ($installmentId > 0) {
+                if (!isset($currentById[$installmentId]) || isset($proposedById[$installmentId])) throw new LogicException('ارجاع قسط در Snapshot اصلاحیه معتبر نیست.');
+                $row = $currentById[$installmentId];
+                $changed = $dueDate !== (string) $row['due_date'] || $baseAmount !== normalize_money($row['base_amount'] ?? 0);
+                if (!empty($row['has_history']) && $changed) throw new InvalidArgumentException('قسط دارای سابقه مالی در فاصله درخواست تا اعمال تغییر کرده است؛ نسخه جدید درخواست لازم است.');
+                $proposedById[$installmentId] = ['line' => $line, 'row' => $row];
+            } else {
+                $proposedById['new:' . count($proposedById)] = ['line' => $line, 'row' => null];
+            }
+        }
+        foreach ($currentById as $id => $row) {
+            if (!isset($proposedById[$id]) && !empty($row['has_history'])) {
+                throw new InvalidArgumentException('قسط دارای سابقه مالی باید در برنامه اصلاحیه حفظ شود.');
+            }
+        }
+        foreach ($currentById as $id => $row) {
+            if (isset($proposedById[$id])) continue;
+            $reason = 'جایگزین‌شده در اصلاحیه قرارداد ' . (int) $amendment['amendment_number'] . ': ' . trim((string) $amendment['reason']);
+            self::execute("UPDATE installments SET status = 'cancelled', cancelled_at = NOW(), cancelled_by = ?, cancellation_reason = ?, updated_at = NOW() WHERE id = ? AND contract_id = ? AND COALESCE(is_custom, 0) = 0 AND status != 'cancelled'", [(int) $amendment['approved_by'], $reason, (int) $id, $contractId]);
+            if (SchemaGuard::tableExists('installment_voids')) {
+                $alreadyVoided = self::fetch('SELECT installment_id FROM installment_voids WHERE installment_id = ? LIMIT 1', [(int) $id]);
+                if (!$alreadyVoided) {
+                    self::execute('INSERT INTO installment_voids (installment_id, contract_id, previous_amount, previous_due_date, void_reason, voided_by, request_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())', [(int) $id, $contractId, normalize_money($row['base_amount'] ?? 0), (string) $row['due_date'], $reason, (int) $amendment['approved_by'], 'AMN-' . (int) $amendment['id'] . '-' . (int) $id]);
+                }
+            }
+        }
+        $nextNumber = (int) (self::fetch('SELECT COALESCE(MAX(installment_number), 0) AS n FROM installments WHERE contract_id = ?', [$contractId])['n'] ?? 0);
+        foreach ($proposedById as $entry) {
+            $line = $entry['line'];
+            $row = $entry['row'];
+            $dueDate = (string) $line['due_date'];
+            $baseAmount = normalize_money($line['base_amount']);
+            $status = FinanceHelper::status($baseAmount, 0, $dueDate);
+            if ($row) {
+                self::execute('UPDATE installments SET due_date = ?, base_amount = ?, remaining_amount = ?, status = ?, updated_at = NOW() WHERE id = ? AND contract_id = ? AND COALESCE(is_custom, 0) = 0', [$dueDate, $baseAmount, $baseAmount, $status, (int) $row['id'], $contractId]);
+            } else {
+                $nextNumber++;
+                self::execute('INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, is_custom, created_reason, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, 0, ?, NOW())', [$contractId, $nextNumber, $dueDate, $baseAmount, $baseAmount, $status, 'اصلاحیه قرارداد ' . (int) $amendment['amendment_number']]);
+            }
+        }
+        $activeRegularCount = (int) (self::fetch("SELECT COUNT(*) AS total FROM installments WHERE contract_id = ? AND COALESCE(is_custom, 0) = 0 AND status != 'cancelled'", [$contractId])['total'] ?? 0);
+        if ($activeRegularCount !== (int) ($terms['months'] ?? -1)) {
+            throw new InvalidArgumentException('تعداد اقساط فعال پس از اعمال با مدت پیشنهادی قرارداد برابر نیست؛ برنامه را بازبینی کنید.');
+        }
+    }
+
+    /** Apply only an approved amendment's stored values; callers cannot provide arbitrary schedule payloads. */
+    public static function applyApprovedAmendmentSchedule(int $amendmentId): void
+    {
+        if (!Model::db()->inTransaction()) throw new LogicException('اعمال اصلاحیه باید در تراکنش مالک انجام شود.');
+        $amendment = self::fetch('SELECT * FROM contract_amendments WHERE id = ? FOR UPDATE', [$amendmentId]);
+        if (!$amendment || ($amendment['status'] ?? '') !== 'approved' || empty($amendment['approved_by']) || empty($amendment['approved_at'])) {
+            throw new InvalidArgumentException('اصلاحیهٔ تأییدشده برای اعمال پیدا نشد.');
+        }
+        if ((string) ($amendment['effective_on'] ?? '') > date('Y-m-d')) {
+            throw new InvalidArgumentException('تاریخ اثرگذاری اصلاحیه هنوز نرسیده است.');
+        }
+        if (!ContractAmendmentService::baseStillCurrent($amendment)) throw new InvalidArgumentException('نسخه پایه تغییر کرده است؛ اصلاحیه باید دوباره بررسی شود.');
+        $proposal = json_decode((string) $amendment['proposed_snapshot_json'], true);
+        $terms = $proposal['terms'] ?? null;
+        if (!is_array($terms)) throw new InvalidArgumentException('شرایط Snapshot اصلاحیه معتبر نیست.');
+        self::validateFinancialData($terms);
+        $contractId = (int) $amendment['contract_id'];
+        self::execute('UPDATE contracts SET principal_amount = ?, down_payment_amount = ?, monthly_interest_rate = ?, interest_type = ?, months = ?, start_date = ?, first_due_date = ?, updated_at = NOW() WHERE id = ?', [
+            normalize_money($terms['principal_amount']), normalize_money($terms['down_payment_amount']),
+            MoneyMath::rateLabel(MoneyMath::rateUnits($terms['monthly_interest_rate'])), $terms['interest_type'] === 'compound' ? 'compound' : 'simple',
+            (int) $terms['months'], (string) $terms['start_date'], (string) $terms['first_due_date'], $contractId,
+        ]);
+        self::$approvedScheduleSyncAmendmentId = $amendmentId;
+        try {
+            self::syncInstallmentSchedule($contractId, $proposal);
+        } finally {
+            self::$approvedScheduleSyncAmendmentId = null;
+        }
+    }
+
+    private static function financialTermsChanged(array $current, array $data): bool
+    {
+        $comparisons = [
+            normalize_money($current['principal_amount'] ?? 0) !== normalize_money($data['principal_amount'] ?? $current['principal_amount'] ?? 0),
+            normalize_money($current['down_payment_amount'] ?? 0) !== normalize_money($data['down_payment_amount'] ?? $current['down_payment_amount'] ?? 0),
+            MoneyMath::rateUnits($current['monthly_interest_rate'] ?? 0) !== MoneyMath::rateUnits($data['monthly_interest_rate'] ?? $current['monthly_interest_rate'] ?? 0),
+            (string) ($current['interest_type'] ?? 'simple') !== ((string) ($data['interest_type'] ?? $current['interest_type'] ?? 'simple') === 'compound' ? 'compound' : 'simple'),
+            (int) ($current['months'] ?? 0) !== (int) to_english_digits($data['months'] ?? $current['months'] ?? 0),
+            (string) ($current['start_date'] ?? '') !== (string) ($data['start_date'] ?? $current['start_date'] ?? ''),
+            (string) ($current['first_due_date'] ?? '') !== (string) ($data['first_due_date'] ?? $current['first_due_date'] ?? ''),
+            (int) ($current['customer_id'] ?? 0) !== (int) ($data['customer_id'] ?? $current['customer_id'] ?? 0),
+        ];
+        return in_array(true, $comparisons, true);
+    }
+
+    private static function assertUnchangedLegalTerms(int $contractId, array $old, array $guarantorIds, array $items, array $guarantee, array $guarantorPeople): void
+    {
+        $normalizeItems = static function (array $rows): array {
+            $result = [];
+            foreach ($rows as $row) {
+                $model = trim((string) ($row['product_model'] ?? ''));
+                if ($model === '') continue;
+                $result[] = [
+                    'product_model' => $model,
+                    'imei_1' => trim(to_english_digits($row['imei_1'] ?? '')),
+                    'imei_2' => trim(to_english_digits($row['imei_2'] ?? '')),
+                    'description' => trim((string) ($row['description'] ?? '')),
+                ];
+            }
+            usort($result, static function ($a, $b) { return strcmp(json_encode($a), json_encode($b)); });
+            return $result;
+        };
+        if ($normalizeItems($old['items'] ?? []) !== $normalizeItems($items)) {
+            throw new InvalidArgumentException('تغییر کالا یا شناسه آن شرط قراردادی است و از ویرایش مستقیم قابل انجام نیست.');
         }
 
-        for ($number = 1; $number <= $months; $number++) {
-            $dueDate = FinanceHelper::addMonths($firstDue, $number - 1);
-            $existing = $byNumber[$number] ?? null;
-            if (!$existing) {
-                self::execute(
-                    'INSERT INTO installments (contract_id, installment_number, due_date, base_amount, paid_amount, remaining_amount, status, is_custom, created_at)
-                     VALUES (?, ?, ?, ?, 0, ?, ?, 0, NOW())',
-                    [$contractId, $number, $dueDate, $amount, $amount, $amount <= 0 ? 'paid' : ($dueDate < date('Y-m-d') ? 'overdue' : 'pending')]
-                );
-                continue;
-            }
-
-            $paid = normalize_money($existing['paid_amount'] ?? 0);
-            $remaining = max(0, $amount - $paid);
-            $status = $remaining <= 0
-                ? 'paid'
-                : FinanceHelper::status($amount, $paid, $dueDate);
-            self::execute(
-                'UPDATE installments
-                 SET due_date = ?, base_amount = ?, remaining_amount = ?, status = ?, updated_at = NOW()
-                 WHERE id = ?',
-                [$dueDate, $amount, $remaining, $status, (int) $existing['id']]
-            );
+        $oldGuarantees = [];
+        foreach (($old['guarantees'] ?? []) as $row) {
+            $oldGuarantees[] = [
+                'guarantee_type' => trim((string) ($row['guarantee_type'] ?? '')),
+                'guarantee_count' => max(1, (int) ($row['guarantee_count'] ?? 1)),
+                'guarantee_amount' => normalize_money($row['guarantee_amount'] ?? 0),
+                'guarantee_serial' => trim(to_english_digits($row['guarantee_serial'] ?? '')),
+                'guarantee_description' => trim((string) ($row['guarantee_description'] ?? '')),
+            ];
+        }
+        $type = trim((string) ($guarantee['guarantee_type'] ?? ''));
+        $newGuarantees = [];
+        if ($type !== '') {
+            $description = trim((string) ($guarantee['guarantee_description'] ?? ''));
+            $other = trim((string) ($guarantee['guarantee_type_other'] ?? ''));
+            if ($type === 'سایر' && $other !== '') $description = 'نوع ضمانت: ' . $other . ($description !== '' ? "\n" . $description : '');
+            $newGuarantees[] = [
+                'guarantee_type' => $type,
+                'guarantee_count' => max(1, (int) to_english_digits($guarantee['guarantee_count'] ?? 1)),
+                'guarantee_amount' => normalize_money($guarantee['guarantee_amount'] ?? 0),
+                'guarantee_serial' => trim(to_english_digits($guarantee['guarantee_serial'] ?? '')),
+                'guarantee_description' => $description,
+            ];
+        }
+        if ($oldGuarantees !== $newGuarantees) {
+            throw new InvalidArgumentException('تغییر نوع یا مبلغ ضمانت شرط قراردادی است و از ویرایش مستقیم قابل انجام نیست.');
         }
 
-        foreach ($rows as $row) {
-            $number = (int) $row['installment_number'];
-            if ($number <= $months || normalize_money($row['paid_amount'] ?? 0) > 0 || ($row['status'] ?? '') === 'paid') {
-                continue;
+        $normalizePeople = static function (array $rows): array {
+            $result = [];
+            foreach ($rows as $row) {
+                $name = trim((string) ($row['full_name'] ?? ''));
+                if ($name === '') continue;
+                $result[] = [
+                    'full_name' => $name,
+                    'father_name' => trim((string) ($row['father_name'] ?? '')),
+                    'national_id' => trim(to_english_digits($row['national_id'] ?? '')),
+                    'mobile' => trim(to_english_digits($row['mobile'] ?? '')),
+                    'address' => trim((string) ($row['address'] ?? '')),
+                    'relationship' => trim((string) ($row['relationship'] ?? '')),
+                    'description' => trim((string) ($row['description'] ?? '')),
+                ];
             }
-            self::execute('DELETE FROM installments WHERE id = ? AND COALESCE(is_custom, 0) = 0', [(int) $row['id']]);
+            usort($result, static function ($a, $b) { return strcmp(json_encode($a), json_encode($b)); });
+            return $result;
+        };
+        if ($normalizePeople($old['guarantor_people'] ?? []) !== $normalizePeople($guarantorPeople)) {
+            throw new InvalidArgumentException('تغییر هویت یا تعهد ضامن از ویرایش مستقیم مجاز نیست.');
+        }
+
+        $oldGuarantors = array_map('intval', array_column(self::fetchAll('SELECT guarantor_id FROM contract_guarantors WHERE contract_id = ? ORDER BY guarantor_id', [$contractId]), 'guarantor_id'));
+        $newGuarantors = array_values(array_unique(array_filter(array_map('intval', $guarantorIds))));
+        sort($oldGuarantors);
+        sort($newGuarantors);
+        if ($oldGuarantors !== $newGuarantors) {
+            throw new InvalidArgumentException('تغییر ضامن‌های متصل‌شده از ویرایش مستقیم مجاز نیست.');
         }
     }
 
@@ -1400,7 +1566,7 @@ class Contract extends Model
                 continue;
             }
             $guarantor = self::fetch(
-                "SELECT id FROM users WHERE id = ? AND role = 'customer' AND status = 'active' LIMIT 1",
+                "SELECT id FROM users WHERE id = ? AND role = 'customer' AND status = 'active' AND archived_at IS NULL LIMIT 1",
                 [(int) $guarantorId]
             );
             if (!$guarantor) {

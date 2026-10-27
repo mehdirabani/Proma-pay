@@ -28,7 +28,7 @@ $install = $read('database/proma-pay-install.sql');
 $settings = $read('views/settings/index.php');
 $sellerSignature = $read('models/ContractDocument.php');
 
-$assert(version_compare((string) ($version['application'] ?? '0.0.0'), '6.0.2', '>=') && ($version['database'] ?? '') === '2026.10.12', 'V6 financial/risk feature and database version metadata is missing.');
+$assert(version_compare((string) ($version['application'] ?? '0.0.0'), '6.0.2', '>=') && version_compare((string) ($version['database'] ?? '0.0.0'), '2026.10.12', '>='), 'V6 financial/risk feature or minimum database schema version is missing.');
 $assert(strpos($engine, 'class FinancialDebtEngine') !== false && strpos($compat, 'FinancialDebtEngine::summarize') !== false, 'Legacy financial summary callers do not delegate to the V6 debt engine.');
 $assert(strpos($ledger, 'financial_ledger_events') !== false && strpos($ledger, 'idempotency_key') !== false && strpos($ledger, 'payment-reversal:') !== false, 'Append-only payment journal or idempotent correction path is missing.');
 $assert(strpos($payment, 'FinancialLedgerService::append') !== false && strpos($payment, 'FinancialLedgerService::reversePayment') !== false && strpos($group, 'FinancialLedgerService::payment') !== false, 'Direct/grouped payment and correction paths are not journaled.');

@@ -38,21 +38,21 @@ class AccountingServiceProvider implements \PluginServiceProviderInterface
     public function boot(\PluginManager $manager, array $manifest)
     {
         \PluginHooks::listen('contract.created', function (array $payload) {
-            SalesService::recordFromContract((int) ($payload['contract_id'] ?? 0), (int) ($payload['actor_user_id'] ?? 0), (int) ($payload['seller_user_id'] ?? 0));
+            Services\SalesService::recordFromContract((int) ($payload['contract_id'] ?? 0), (int) ($payload['actor_user_id'] ?? 0), (int) ($payload['seller_user_id'] ?? 0));
         }, 20);
         \PluginHooks::listen('contract.updated', function (array $payload) {
-            SalesService::syncFromContract((int) ($payload['contract_id'] ?? 0), (int) ($payload['actor_user_id'] ?? 0));
+            Services\SalesService::syncFromContract((int) ($payload['contract_id'] ?? 0), (int) ($payload['actor_user_id'] ?? 0));
         }, 20);
         \PluginHooks::listen('contract.cancelled', function (array $payload) {
-            CommissionService::reverseForContract((int) ($payload['contract_id'] ?? 0), (int) ($payload['actor_user_id'] ?? 0), 'لغو قرارداد');
+            Services\CommissionService::reverseForContract((int) ($payload['contract_id'] ?? 0), (int) ($payload['actor_user_id'] ?? 0), 'لغو قرارداد');
         }, 20);
         \PluginHooks::listen('contract.deleted', function (array $payload) {
             $contractId = (int) ($payload['contract_id'] ?? 0);
             \Model::execute('UPDATE plugin_accounting_sales SET status = \'deleted\', updated_by = ?, updated_at = NOW() WHERE contract_id = ?', [(int) ($payload['actor_user_id'] ?? 0), $contractId]);
-            CommissionService::reverseForContract($contractId, (int) ($payload['actor_user_id'] ?? 0), 'حذف دائمی قرارداد');
+            Services\CommissionService::reverseForContract($contractId, (int) ($payload['actor_user_id'] ?? 0), 'حذف دائمی قرارداد');
         }, 20);
         \PluginHooks::listen('payment.completed', function (array $payload) {
-            CommissionService::refreshForContract((int) ($payload['contract_id'] ?? 0), (int) ($payload['actor_user_id'] ?? 0));
+            Services\CommissionService::refreshForContract((int) ($payload['contract_id'] ?? 0), (int) ($payload['actor_user_id'] ?? 0));
         }, 30);
         \PluginHooks::listen('accounting.repair_expense.post', function (array $payload) {
             $context = (array) ($payload['context'] ?? []);

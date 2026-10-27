@@ -185,8 +185,12 @@ class InstallmentsController extends Controller
     {
         $this->requireRole('admin');
         $this->onlyPost();
-        Installment::adjust((int) $id, $_POST['manual_penalty_adjustment'] ?? 0, $_POST['manual_reward_adjustment'] ?? 0);
-        set_flash('success', 'جریمه و پاداش قسط به‌روزرسانی شد.');
+        try {
+            Installment::adjust((int) $id, $_POST['manual_penalty_adjustment'] ?? 0, $_POST['manual_reward_adjustment'] ?? 0, Auth::id(), $_POST['adjustment_reason'] ?? '');
+            set_flash('success', 'تنظیم جریمه و پاداش همراه با ثبت ممیزی انجام شد.');
+        } catch (Throwable $e) {
+            set_flash('error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'تنظیم مالی قسط انجام نشد.');
+        }
         redirect('installments');
     }
 

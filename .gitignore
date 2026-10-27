@@ -1,25 +1,22 @@
 /config/database.php
 /installed.lock
 /tmp/
-storage/
-backups/
-/storage/cache/
-/storage/backups/
-/storage/releases/
-/storage/updates/
-/storage/secure_uploads/
-/storage/uploads/
+/2- Themes/
+# Local runtime data, backups, and QA workspaces
+/backups/
+/storage/
 /vendor/
 /node_modules/
 /.project-graph/
 /.playwright-cli/
 /output/
-/storage/testing/
-/dist/
-!/dist/
+/dist/*
 !/dist/plugins/
+/dist/plugins/*
 !/dist/plugins/pre-release/
+/dist/plugins/pre-release/*
 !/dist/plugins/pre-release/proma-pay-woocommerce/
+/dist/plugins/pre-release/proma-pay-woocommerce/*
 !/dist/plugins/pre-release/proma-pay-woocommerce/PromaPay-WooCommerce-v0.8.0-rc.1.zip
 /html/RTL/node_modules/
 .env
@@ -44,6 +41,5 @@ proma-pay_v*.zip
 proma-accounting_v*.zip
 proma-update-*.zip
 proma-update-*-manifest.json
-/storage/private/
 __pycache__/
 *.pyc

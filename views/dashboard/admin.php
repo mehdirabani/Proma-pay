@@ -6,6 +6,7 @@ $quickActions = [
     ['label' => 'ثبت قرارداد', 'url' => url('contracts', ['open' => 'create-contract']), 'icon' => 'file-plus', 'tone' => 'primary'],
     ['label' => 'پیگیری معوقات', 'url' => url('overdue'), 'icon' => 'phone-call', 'tone' => 'danger'],
     ['label' => 'بررسی رسیدها', 'url' => url('review', ['tab' => 'receipts']), 'icon' => 'check-square', 'tone' => 'success'],
+    ['label' => 'تحلیل پرتفوی', 'url' => url('risk/portfolio'), 'icon' => 'activity', 'tone' => 'info'],
     ['label' => 'تنظیمات', 'url' => url('settings'), 'icon' => 'settings', 'tone' => 'muted'],
 ];
 if (class_exists('PluginManager') && PluginManager::isActive('proma-accounting') && PluginManager::can('plugin.proma-accounting.view')) {
@@ -17,14 +18,14 @@ if (class_exists('PluginManager') && PluginManager::isActive('proma-repair') && 
 $mainKpis = [
     ['label' => 'مشتریان فعال', 'value' => to_persian_digits($kpis['customers'] ?? 0), 'meta' => 'پرونده مشتری', 'tone' => 'info', 'icon' => 'users'],
     ['label' => 'قرارداد فعال', 'value' => to_persian_digits($kpis['contracts'] ?? 0), 'meta' => 'از ' . to_persian_digits($kpis['contracts_total'] ?? 0) . ' قرارداد', 'tone' => 'primary', 'icon' => 'file-text'],
-    ['label' => 'وصول ماه جاری', 'value' => money_toman($kpis['received'] ?? 0), 'meta' => 'از ' . money_toman($kpis['due_month'] ?? 0) . ' سررسید', 'tone' => 'success', 'icon' => 'trending-up'],
-    ['label' => 'مانده وصول نشده', 'value' => money_toman($kpis['outstanding'] ?? 0), 'meta' => 'کل اقساط پرداخت نشده', 'tone' => 'warning', 'icon' => 'credit-card'],
-    ['label' => 'اقساط معوق', 'value' => to_persian_digits($kpis['overdue'] ?? 0), 'meta' => money_toman($kpis['overdue_amount'] ?? 0), 'tone' => 'danger', 'icon' => 'alert-triangle'],
+    ['label' => 'وصول واقعی اقساط در ماه', 'value' => money_toman($kpis['received'] ?? 0), 'meta' => 'تعهد سررسیدشده تا امروز: ' . money_toman($kpis['due_month'] ?? 0) . ' · مستقل از مجموعه دریافت‌ها', 'tone' => 'success', 'icon' => 'trending-up'],
+    ['label' => 'اصل مانده اقساط', 'value' => money_toman($kpis['outstanding'] ?? 0), 'meta' => 'از وضعیت مالی canonical اقساط', 'tone' => 'warning', 'icon' => 'credit-card'],
+    ['label' => 'اقساط معوق', 'value' => to_persian_digits($kpis['overdue'] ?? 0), 'meta' => 'اصل معوق: ' . money_toman($kpis['overdue_amount'] ?? 0), 'tone' => 'danger', 'icon' => 'alert-triangle'],
     ['label' => 'منتظر بررسی', 'value' => to_persian_digits($reviewCount), 'meta' => to_persian_digits($kpis['pending_receipts'] ?? 0) . ' رسید، ' . to_persian_digits($kpis['pending_identity'] ?? 0) . ' مدرک', 'tone' => 'info', 'icon' => 'inbox'],
 ];
 $healthCards = [
-    ['label' => 'نرخ وصول ماه', 'value' => (float) ($kpis['collection_rate'] ?? 0), 'hint' => money_toman($kpis['received'] ?? 0) . ' دریافتی'],
-    ['label' => 'سهم معوق از مانده', 'value' => (float) ($kpis['overdue_share'] ?? 0), 'hint' => money_toman($kpis['overdue_amount'] ?? 0) . ' معوق'],
+    ['label' => 'نرخ وصول Cohort ماه', 'value' => isset($kpis['collection_rate']) ? (float) $kpis['collection_rate'] : null, 'hint' => money_toman($kpis['cohort_collected'] ?? 0) . ' وصول از ' . money_toman($kpis['cohort_obligation'] ?? 0) . ' اصل اقساط همین Cohort'],
+    ['label' => 'سهم اصل معوق از اصل مانده', 'value' => isset($kpis['overdue_share']) ? (float) $kpis['overdue_share'] : null, 'hint' => money_toman($kpis['overdue_amount'] ?? 0) . ' اصل معوق'],
 ];
 ?>
 
@@ -105,20 +106,20 @@ $healthCards = [
       <div class="card-header card-no-border">
         <div class="header-top">
           <h5>سلامت وصول</h5>
-          <a class="link-only" href="<?= e(url('installments')) ?>">مدیریت اقساط</a>
+          <a class="link-only" href="<?= e(url('risk/portfolio')) ?>">گزارش کامل پرتفوی</a>
         </div>
       </div>
       <div class="card-body pt-0">
         <div class="proma-admin-health-list">
           <?php foreach ($healthCards as $item): ?>
-            <?php $healthTone = $item['value'] > 65 ? 'success' : ($item['value'] > 35 ? 'warning' : 'danger'); ?>
+            <?php $healthAvailable = $item['value'] !== null; $healthTone = !$healthAvailable ? 'muted' : ($item['value'] > 65 ? 'success' : ($item['value'] > 35 ? 'warning' : 'danger')); ?>
             <div class="proma-admin-health">
               <div>
                 <strong><?= e($item['label']) ?></strong>
                 <small><?= $item['hint'] ?></small>
               </div>
-              <span><?= to_persian_digits($item['value']) ?>٪</span>
-              <progress class="proma-admin-health-progress is-<?= e($healthTone) ?>" value="<?= e(min(100, max(0, $item['value']))) ?>" max="100" aria-label="<?= e($item['label']) ?>"></progress>
+              <span><?= $healthAvailable ? to_persian_digits($item['value']) . '٪' : '—' ?></span>
+              <?php if ($healthAvailable): ?><progress class="proma-admin-health-progress is-<?= e($healthTone) ?>" value="<?= e(min(100, max(0, $item['value']))) ?>" max="100" aria-label="<?= e($item['label']) ?>"></progress><?php else: ?><small role="status">دادهٔ واجد شرایط برای این بازه موجود نیست.</small><?php endif; ?>
             </div>
           <?php endforeach; ?>
         </div>
@@ -194,8 +195,8 @@ $healthCards = [
     <section class="card proma-admin-panel">
       <div class="card-header card-no-border">
         <div class="header-top">
-          <h5>پرریسک‌ترین مشتریان</h5>
-          <a class="link-only" href="<?= e(url('overdue')) ?>">پیگیری</a>
+          <h5>اولویت پیگیری معوقات</h5>
+          <a class="link-only" href="<?= e(url('risk/portfolio')) ?>#risk-contracts">تحلیل ریسک</a>
         </div>
       </div>
       <div class="card-body pt-0">

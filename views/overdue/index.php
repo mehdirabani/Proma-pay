@@ -182,12 +182,23 @@ foreach ([
       <form method="post" action="<?= e(url('overdue/followup/' . $primaryInstallmentId)) ?>">
         <?= csrf_field() ?>
         <div class="modal-body form-grid two">
-          <label>نتیجه تماس / وضعیت پیگیری
-            <input name="call_result" required maxlength="190" placeholder="مثلاً وعده پرداخت، عدم پاسخ، نیازمند تماس مجدد">
+          <label>نوع اقدام
+            <select name="action_type"><option value="customer_call">تماس با مشتری</option><option value="guarantor_call">تماس با ضامن</option><option value="reminder">یادآوری مجاز</option><option value="payment_review">بررسی پرداخت</option><option value="other_authorized">سایر اقدام مجاز</option></select>
+          </label>
+          <label>مخاطب
+            <select name="contact_target"><option value="customer">مشتری</option><option value="guarantor">ضامن</option><option value="other_authorized">سایر فرد مجاز</option></select>
+          </label>
+          <label>نتیجه پیگیری
+            <select name="result_code" required><option value="contacted">تماس برقرار شد</option><option value="no_answer">پاسخ نداد</option><option value="unreachable">در دسترس نبود</option><option value="promise_given">قول پرداخت داد</option><option value="requested_extension">درخواست مهلت</option><option value="disputed">اعتراض یا اختلاف</option><option value="needs_followup">نیازمند پیگیری</option><option value="referred_to_legal">پیشنهاد بررسی حقوقی</option><option value="other">سایر</option></select>
           </label>
           <label>تاریخ وعده پرداخت
             <input name="promise_payment_date" placeholder="۱۴۰۵/۰۷/۳۰" value="<?= e(!empty($item['latest_promise_date']) ? jdate($item['latest_promise_date']) : '') ?>">
           </label>
+          <label>مبلغ وعده (تومان، اختیاری)<input name="promise_amount_toman" inputmode="numeric" min="1"></label>
+          <label>اقدام بعدی
+            <select name="next_action_type" required><option value="call_customer">تماس با مشتری</option><option value="call_guarantor">تماس با ضامن</option><option value="check_promise">بررسی قول پرداخت</option><option value="send_reminder">ارسال یادآوری مجاز</option><option value="review_payment">بررسی پرداخت</option><option value="review_legal_referral">بررسی ارجاع حقوقی</option><option value="legal_followup">پیگیری حقوقی</option><option value="manager_review">بررسی مدیریتی</option></select>
+          </label>
+          <label>موعد اقدام بعدی <input name="next_followup_date" class="jalali-date" autocomplete="off" placeholder="انتخاب تاریخ" required></label>
           <label class="full">توضیحات
             <textarea name="notes" rows="4" placeholder="جزئیات صحبت با مشتری، شماره تماس، پیگیری بعدی یا توضیحات اپراتور"></textarea>
           </label>

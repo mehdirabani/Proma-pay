@@ -39,6 +39,8 @@ $pageUrl = function ($page) use ($viewMode) {
           <option value="">همه وضعیت‌ها</option>
           <option value="active"<?= selected($_GET['status'] ?? '', 'active') ?>>فعال</option>
           <option value="inactive"<?= selected($_GET['status'] ?? '', 'inactive') ?>>غیرفعال</option>
+          <option value="blocked"<?= selected($_GET['status'] ?? '', 'blocked') ?>>مسدود</option>
+          <option value="archived"<?= selected($_GET['status'] ?? '', 'archived') ?>>بایگانی‌شده</option>
         </select>
       </label>
       <div class="proma-filter-actions"><button class="btn secondary" type="submit">اعمال فیلتر</button><span class="proma-ajax-status" data-ajax-status></span></div>
@@ -66,7 +68,7 @@ $pageUrl = function ($page) use ($viewMode) {
             <h5><?= e($item['full_name']) ?> <?php if (!empty($item['identity_verified'])): ?><span class="badge badge-light-info" title="مدارک هویتی تأیید شده">✓</span><?php endif; ?><?php if (!empty($item['credit_profile'])): $credit = $item['credit_profile']; ?><span class="badge <?= ($credit['risk_level'] ?? '') === 'low' ? 'success' : (($credit['risk_level'] ?? '') === 'medium' ? 'warning' : 'danger') ?>" title="رتبهٔ اعتباری مشتری">اعتبار <?= to_persian_digits($credit['score'] ?? 0) ?> · <?= e(($credit['risk_level'] ?? '') === 'low' ? 'کم‌ریسک' : (($credit['risk_level'] ?? '') === 'medium' ? 'متوسط' : 'پرریسک')) ?></span><?php endif; ?></h5>
             <p><a class="proma-call-button" href="tel:<?= e(to_english_digits(preg_replace('/[^0-9۰-۹٠-٩+]/u', '', (string) $item['mobile']))) ?>"><?= proma_icon('phone') ?> <?= to_persian_digits($item['mobile']) ?></a> · <?= to_persian_digits($item['national_id']) ?></p>
           </div>
-          <span class="badge <?= e(badge_class($item['status'])) ?>"><?= e(status_label($item['status'])) ?></span>
+          <span class="badge <?= e(badge_class(!empty($item['archived_at']) ? 'archived' : $item['status'])) ?>"><?= e(status_label(!empty($item['archived_at']) ? 'archived' : $item['status'])) ?></span>
         </div>
 
         <div class="proma-customer-card-metrics">
@@ -88,7 +90,11 @@ $pageUrl = function ($page) use ($viewMode) {
           <button class="proma-icon-button warning" type="button" data-open-modal="customer-timeline-<?= (int) $item['id'] ?>" title="مشاهده تایم‌لاین پرداخت مشتری" aria-label="مشاهده تایم‌لاین پرداخت مشتری"><?= proma_icon('history') ?></button>
           <a class="proma-icon-button secondary" href="<?= e(url('customers/tab/' . $item['id'] . '/loyalty')) ?>" title="امتیاز و سطح مشتری" aria-label="امتیاز و سطح مشتری"><?= proma_icon('award') ?></a>
           <button class="proma-icon-button" type="button" data-open-modal="edit-customer-<?= (int) $item['id'] ?>" title="ویرایش مشتری" aria-label="ویرایش مشتری"><?= proma_icon('edit') ?></button>
-          <button class="proma-icon-button danger" type="button" data-open-modal="delete-customer-<?= (int) $item['id'] ?>" title="حذف مشتری" aria-label="حذف مشتری"><?= proma_icon('trash') ?></button>
+          <?php if (!empty($item['archived_at'])): ?>
+            <form method="post" action="<?= e(url('customers/restore/' . $item['id'])) ?>" class="proma-inline-form"><?= csrf_field() ?><button class="btn small secondary" type="submit">بازیابی</button></form>
+          <?php else: ?>
+            <button class="proma-icon-button warning" type="button" data-open-modal="archive-customer-<?= (int) $item['id'] ?>" title="بایگانی مشتری" aria-label="بایگانی مشتری"><?= proma_icon('archive') ?></button>
+          <?php endif; ?>
         </div>
       </div>
     </article>
@@ -115,14 +121,18 @@ $pageUrl = function ($page) use ($viewMode) {
           <td>
             <a class="badge badge-light-warning" href="<?= e(url('customers/tab/' . $item['id'] . '/loyalty')) ?>"><?= e($item['loyalty']['tier']['title'] ?? 'تازه‌وارد') ?> · <?= to_persian_digits($item['loyalty']['points'] ?? 0) ?> امتیاز</a>
           </td>
-          <td><span class="badge <?= e(badge_class($item['status'])) ?>"><?= e(status_label($item['status'])) ?></span></td>
+          <td><span class="badge <?= e(badge_class(!empty($item['archived_at']) ? 'archived' : $item['status'])) ?>"><?= e(status_label(!empty($item['archived_at']) ? 'archived' : $item['status'])) ?></span></td>
           <td class="actions">
             <a class="btn small secondary" href="<?= e(url('customers/show/' . $item['id'])) ?>">مشاهده</a>
             <button class="btn small info" type="button" data-open-modal="customer-chart-<?= (int) $item['id'] ?>">نمودار</button>
             <button class="btn small warning" type="button" data-open-modal="customer-timeline-<?= (int) $item['id'] ?>">تایم‌لاین</button>
             <a class="btn small secondary" href="<?= e(url('customers/tab/' . $item['id'] . '/loyalty')) ?>">امتیازها</a>
             <button class="btn small icon-only" type="button" data-open-modal="edit-customer-<?= (int) $item['id'] ?>" title="ویرایش" aria-label="ویرایش"><i data-feather="edit-2"></i></button>
-            <button class="btn small danger icon-only" type="button" data-open-modal="delete-customer-<?= (int) $item['id'] ?>" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button>
+            <?php if (!empty($item['archived_at'])): ?>
+              <form method="post" action="<?= e(url('customers/restore/' . $item['id'])) ?>" class="proma-inline-form"><?= csrf_field() ?><button class="btn small secondary" type="submit">بازیابی</button></form>
+            <?php else: ?>
+              <button class="btn small warning" type="button" data-open-modal="archive-customer-<?= (int) $item['id'] ?>" title="بایگانی مشتری" aria-label="بایگانی مشتری">بایگانی</button>
+            <?php endif; ?>
           </td>
         </tr>
       <?php endforeach; ?>
@@ -219,19 +229,26 @@ $pageUrl = function ($page) use ($viewMode) {
     </div>
   </div>
 
-  <div class="modal" id="delete-customer-<?= (int) $item['id'] ?>">
+  <?php if (empty($item['archived_at'])): ?>
+  <div class="modal" id="archive-customer-<?= (int) $item['id'] ?>">
     <div class="modal-content">
-      <div class="modal-header"><h3>تأیید حذف مشتری</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
-      <form method="post" action="<?= e(url('customers/retire/' . $item['id'])) ?>">
+      <div class="modal-header"><h3>بایگانی مشتری</h3><button class="icon-btn" type="button" data-close-modal>×</button></div>
+      <form method="post" action="<?= e(url('customers/archive/' . $item['id'])) ?>">
         <div class="modal-body">
           <?= csrf_field() ?>
-          <?php $deleteCode = ConfirmationCode::hint('customer_delete_' . (int) $item['id']); ?>
-          <div class="notice error">اگر مشتری قرارداد فعال داشته باشد حذف انجام نمی‌شود. برای تأیید حذف <?= e($item['full_name']) ?> عدد <strong class="ltr"><?= e($deleteCode) ?></strong> را وارد کنید.</div>
-          <label>عدد تأیید<input name="confirm_text" required inputmode="numeric" autocomplete="off" placeholder="<?= e($deleteCode) ?>"></label>
+          <p><strong><?= e($item['full_name']) ?></strong> · <?= to_persian_digits($item['contract_count'] ?? 0) ?> قرارداد</p>
+          <?php if ((int) ($item['open_obligation_count'] ?? 0) > 0): ?>
+            <div class="notice warning">این مشتری <?= to_persian_digits($item['open_obligation_count']) ?> تعهد باز دارد<?php if ((int) ($item['overdue_installments'] ?? 0) > 0): ?> و <?= to_persian_digits($item['overdue_installments']) ?> قسط معوق<?php endif; ?>. بایگانی وصول مطالبات و پیگیری حقوقی را متوقف نمی‌کند.</div>
+          <?php else: ?>
+            <div class="notice info">تعهد باز ثبت‌شده‌ای برای این مشتری دیده نشد.</div>
+          <?php endif; ?>
+          <div class="notice info">بایگانی فقط دسترسی ورود و فهرست عملیاتی را محدود می‌کند. قراردادها، اقساط، پرداخت‌ها، اسناد و پرونده‌های حقوقی حفظ می‌شوند.</div>
+          <label class="required-field">علت بایگانی<textarea name="archive_reason" required maxlength="500" rows="3" placeholder="علت بایگانی را ثبت کنید"></textarea></label>
         </div>
-        <div class="modal-footer"><button class="btn danger icon-only" type="submit" title="حذف" aria-label="حذف"><i data-feather="trash-2"></i></button><button class="btn secondary" type="button" data-close-modal>بستن</button></div>
+        <div class="modal-footer"><button class="btn warning" type="submit">تأیید بایگانی</button><button class="btn secondary" type="button" data-close-modal>انصراف</button></div>
       </form>
     </div>
   </div>
+  <?php endif; ?>
 <?php endforeach; ?>
 </div>

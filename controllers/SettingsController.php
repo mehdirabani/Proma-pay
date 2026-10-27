@@ -24,6 +24,7 @@ class SettingsController extends Controller
             'importBatches' => $importBatches,
             'webPushKeyReady' => $webPushKeyReady,
             'webPushSubscriberCount' => $webPushSubscriberCount,
+            'collectionManagers' => User::all('admin', null, 'active'),
         ]);
     }
 
@@ -32,7 +33,7 @@ class SettingsController extends Controller
         $this->requireRole('admin');
         $this->onlyPost();
         $values = [];
-        $digitFields = ['monthly_penalty_rate', 'legal_monthly_penalty_rate', 'late_penalty_grace_days', 'monthly_reward_rate', 'contract_next_serial', 'contract_year', 'company_representative_national_id', 'company_postal_code', 'company_phone', 'notifications_sound_volume', 'chat_file_auto_delete_days', 'card_transfer_card_number', 'card_transfer_account_number', 'smtp_port', 'legal_delay_value', 'legal_overdue_count_threshold', 'legal_overdue_amount_threshold', 'legal_warning_before_days'];
+        $digitFields = ['monthly_penalty_rate', 'legal_monthly_penalty_rate', 'late_penalty_grace_days', 'monthly_reward_rate', 'contract_next_serial', 'contract_year', 'company_representative_national_id', 'company_postal_code', 'company_phone', 'notifications_sound_volume', 'chat_file_auto_delete_days', 'card_transfer_card_number', 'card_transfer_account_number', 'smtp_port', 'legal_delay_value', 'legal_overdue_count_threshold', 'legal_overdue_amount_threshold', 'legal_warning_before_days', 'collection_assignment_manager_id'];
         foreach (Settings::defaults() as $key => $default) {
             if (array_key_exists($key, $_POST)) {
                 $rawValue = trim((string) $_POST[$key]);
@@ -116,6 +117,17 @@ class SettingsController extends Controller
         $values['card_transfer_primary_color'] = sanitize_hex_color($values['card_transfer_primary_color'] ?? '', '#7366ff');
         $values['card_transfer_secondary_color'] = sanitize_hex_color($values['card_transfer_secondary_color'] ?? '', '#16c7f9');
         $values['smtp_port'] = (string) max(1, min(65535, (int) to_english_digits($values['smtp_port'] ?? '587')));
+        $managerId = (int) to_english_digits($values['collection_assignment_manager_id'] ?? Settings::get('collection_assignment_manager_id', ''));
+        if ($managerId > 0) {
+            $manager = Model::fetch("SELECT id FROM users WHERE id=? AND role='admin' AND status='active' AND archived_at IS NULL LIMIT 1", [$managerId]);
+            if (!$manager) {
+                set_flash('error', 'مسئول صف تخصیص باید مدیر فعال باشد.');
+                redirect('settings', ['tab' => 'credit']);
+            }
+            $values['collection_assignment_manager_id'] = (string) $managerId;
+        } else {
+            $values['collection_assignment_manager_id'] = '';
+        }
         $currentSettings = Settings::allKeyed();
         if (array_key_exists('smtp_password', $values) && $values['smtp_password'] === '' && !empty($currentSettings['smtp_password'])) {
             unset($values['smtp_password']);

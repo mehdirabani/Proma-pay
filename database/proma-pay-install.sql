@@ -26,6 +26,124 @@ CREATE TABLE `ai_action_logs` (
   KEY `idx_ai_action_status` (`status`),
   CONSTRAINT `fk_ai_action_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Financial Reconciliation Center: operational findings and workflow only.
+-- These tables intentionally do not rewrite or cascade-delete financial source rows.
+CREATE TABLE IF NOT EXISTS `financial_reconciliation_runs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `run_uuid` char(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `run_type` varchar(20) NOT NULL,
+  `scope_contract_id` bigint unsigned DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'running',
+  `rule_version` varchar(40) NOT NULL,
+  `coverage_basis` varchar(120) NOT NULL,
+  `as_of_date` date NOT NULL,
+  `last_contract_id` bigint unsigned NOT NULL DEFAULT 0,
+  `max_contract_id` bigint unsigned NOT NULL DEFAULT 0,
+  `target_count` int unsigned NOT NULL DEFAULT 0,
+  `checked_count` int unsigned NOT NULL DEFAULT 0,
+  `error_count` int unsigned NOT NULL DEFAULT 0,
+  `discrepancy_count` int unsigned NOT NULL DEFAULT 0,
+  `historical_gap_count` int unsigned NOT NULL DEFAULT 0,
+  `started_by` bigint unsigned DEFAULT NULL,
+  `error_summary` text DEFAULT NULL,
+  `started_at` datetime NOT NULL,
+  `heartbeat_at` datetime NOT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_fin_recon_run_uuid` (`run_uuid`),
+  KEY `idx_fin_recon_run_status` (`status`,`heartbeat_at`,`id`),
+  KEY `idx_fin_recon_run_scope` (`scope_contract_id`,`started_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `financial_reconciliation_discrepancies` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `stable_key` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `rule_id` varchar(20) NOT NULL,
+  `rule_version` varchar(40) NOT NULL,
+  `issue_type` varchar(80) NOT NULL,
+  `classification` varchar(32) NOT NULL,
+  `severity` varchar(20) NOT NULL,
+  `status` varchar(32) NOT NULL DEFAULT 'open',
+  `contract_id` bigint unsigned DEFAULT NULL,
+  `customer_id` bigint unsigned DEFAULT NULL,
+  `payment_id` bigint unsigned DEFAULT NULL,
+  `payment_group_id` bigint unsigned DEFAULT NULL,
+  `allocation_id` bigint unsigned DEFAULT NULL,
+  `installment_id` bigint unsigned DEFAULT NULL,
+  `ledger_event_id` bigint unsigned DEFAULT NULL,
+  `expected_toman` bigint DEFAULT NULL,
+  `actual_toman` bigint DEFAULT NULL,
+  `difference_toman` bigint DEFAULT NULL,
+  `source_fingerprint` char(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+  `evidence_json` longtext NOT NULL,
+  `evidence_hash` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `first_seen_run_id` bigint unsigned NOT NULL,
+  `last_seen_run_id` bigint unsigned NOT NULL,
+  `assigned_user_id` bigint unsigned DEFAULT NULL,
+  `first_seen_at` datetime NOT NULL,
+  `last_seen_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_fin_recon_discrepancy_stable` (`stable_key`),
+  KEY `idx_fin_recon_discrepancy_queue` (`status`,`severity`,`last_seen_at`,`id`),
+  KEY `idx_fin_recon_discrepancy_rule` (`rule_id`,`classification`,`status`,`id`),
+  KEY `idx_fin_recon_discrepancy_contract` (`contract_id`,`status`,`id`),
+  KEY `idx_fin_recon_discrepancy_payment` (`payment_id`,`id`),
+  KEY `idx_fin_recon_discrepancy_group` (`payment_group_id`,`id`),
+  KEY `idx_fin_recon_discrepancy_ledger` (`ledger_event_id`,`id`),
+  KEY `idx_fin_recon_discrepancy_assignment` (`assigned_user_id`,`status`,`id`),
+  KEY `idx_fin_recon_discrepancy_last_run` (`last_seen_run_id`,`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `financial_reconciliation_history` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `discrepancy_id` bigint unsigned DEFAULT NULL,
+  `run_id` bigint unsigned DEFAULT NULL,
+  `proposal_id` bigint unsigned DEFAULT NULL,
+  `actor_id` bigint unsigned DEFAULT NULL,
+  `actor_role` varchar(40) NOT NULL,
+  `action` varchar(50) NOT NULL,
+  `status_before` varchar(32) DEFAULT NULL,
+  `status_after` varchar(32) DEFAULT NULL,
+  `reason` text DEFAULT NULL,
+  `evidence_json` longtext DEFAULT NULL,
+  `idempotency_key` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `occurred_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_fin_recon_history_idempotency` (`idempotency_key`),
+  KEY `idx_fin_recon_history_case` (`discrepancy_id`,`id`),
+  KEY `idx_fin_recon_history_run` (`run_id`,`id`),
+  KEY `idx_fin_recon_history_actor` (`actor_id`,`occurred_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `financial_reconciliation_proposals` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `proposal_uuid` char(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `discrepancy_id` bigint unsigned NOT NULL,
+  `correction_type` varchar(40) NOT NULL,
+  `status` varchar(24) NOT NULL DEFAULT 'pending_approval',
+  `source_fingerprint` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `preview_json` longtext NOT NULL,
+  `reason` text NOT NULL,
+  `proposed_by` bigint unsigned NOT NULL,
+  `decided_by` bigint unsigned DEFAULT NULL,
+  `decision_reason` text DEFAULT NULL,
+  `apply_idempotency_key` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `operation_id` varchar(80) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+  `result_json` longtext DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `decided_at` datetime DEFAULT NULL,
+  `applied_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_fin_recon_proposal_uuid` (`proposal_uuid`),
+  UNIQUE KEY `uq_fin_recon_proposal_apply` (`apply_idempotency_key`),
+  KEY `idx_fin_recon_proposal_queue` (`status`,`created_at`,`id`),
+  KEY `idx_fin_recon_proposal_case` (`discrepancy_id`,`status`,`id`),
+  KEY `idx_fin_recon_proposal_actor` (`proposed_by`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `audit_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -175,7 +293,7 @@ CREATE TABLE `contract_guarantors` (
   PRIMARY KEY (`contract_id`,`guarantor_id`),
   KEY `fk_guarantor_user` (`guarantor_id`),
   CONSTRAINT `fk_guarantor_contract` FOREIGN KEY (`contract_id`) REFERENCES `contracts` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_guarantor_user` FOREIGN KEY (`guarantor_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_guarantor_user` FOREIGN KEY (`guarantor_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `contract_items`;
@@ -231,7 +349,7 @@ CREATE TABLE `contracts` (
   KEY `idx_contract_operator` (`assigned_operator_id`),
   KEY `idx_contract_seller` (`seller_user_id`),
   KEY `idx_contract_marketer` (`marketer_user_id`),
-  CONSTRAINT `fk_contract_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_contract_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_contract_operator` FOREIGN KEY (`assigned_operator_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -316,7 +434,7 @@ CREATE TABLE `identity_documents` (
   KEY `idx_identity_documents_status` (`status`),
   KEY `fk_identity_documents_reviewer` (`reviewed_by`),
   CONSTRAINT `fk_identity_documents_reviewer` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_identity_documents_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_identity_documents_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `file_audit_logs`;
@@ -528,7 +646,7 @@ CREATE TABLE `legal_cases` (
   KEY `idx_legal_contract_status` (`contract_id`,`status`),
   UNIQUE KEY `uq_legal_case_request_uuid` (`request_uuid`),
   CONSTRAINT `fk_legal_contract` FOREIGN KEY (`contract_id`) REFERENCES `contracts` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_legal_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_legal_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_legal_lawyer` FOREIGN KEY (`lawyer_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -615,14 +733,25 @@ CREATE TABLE `operator_calls` (
   `notes` text DEFAULT NULL,
   `next_followup_date` date DEFAULT NULL,
   `promise_payment_date` date DEFAULT NULL,
+  `action_type` varchar(40) DEFAULT NULL,
+  `contact_target` varchar(32) DEFAULT NULL,
+  `result_code` varchar(40) DEFAULT NULL,
+  `promise_amount_toman` bigint(20) unsigned DEFAULT NULL,
+  `promise_event_type` varchar(20) DEFAULT NULL,
+  `related_promise_call_id` bigint(20) unsigned DEFAULT NULL,
+  `next_action_type` varchar(40) DEFAULT NULL,
+  `baseline_overdue_amount_toman` bigint(20) unsigned DEFAULT NULL,
+  `baseline_snapshot_status` varchar(24) DEFAULT NULL,
   `created_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_operator_calls_operator` (`operator_id`),
+  KEY `idx_operator_calls_contract_created` (`contract_id`,`created_at`,`id`),
+  KEY `idx_operator_calls_promise` (`contract_id`,`promise_payment_date`,`id`),
   KEY `fk_call_customer` (`customer_id`),
   KEY `fk_call_contract` (`contract_id`),
   KEY `fk_call_installment` (`installment_id`),
   CONSTRAINT `fk_call_contract` FOREIGN KEY (`contract_id`) REFERENCES `contracts` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_call_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_call_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_call_installment` FOREIGN KEY (`installment_id`) REFERENCES `installments` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_call_operator` FOREIGN KEY (`operator_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -761,7 +890,7 @@ CREATE TABLE `payment_receipts` (
   KEY `fk_payment_receipts_contract` (`contract_id`),
   KEY `fk_payment_receipts_reviewer` (`reviewed_by`),
   CONSTRAINT `fk_payment_receipts_contract` FOREIGN KEY (`contract_id`) REFERENCES `contracts` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_payment_receipts_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_payment_receipts_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_payment_receipts_installment` FOREIGN KEY (`installment_id`) REFERENCES `installments` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_payment_receipts_payment` FOREIGN KEY (`payment_id`) REFERENCES `payments` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_payment_receipts_reviewer` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
@@ -1024,6 +1153,10 @@ CREATE TABLE `users` (
   `password_hash` varchar(255) NOT NULL,
   `customer_password_mode` varchar(12) DEFAULT NULL,
   `status` varchar(30) NOT NULL DEFAULT 'active',
+  `archived_at` datetime DEFAULT NULL,
+  `archived_by` bigint(20) unsigned DEFAULT NULL,
+  `archive_reason` text DEFAULT NULL,
+  `restored_at` datetime DEFAULT NULL,
   `last_login_at` datetime DEFAULT NULL,
   `tour_completed_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL,
@@ -1032,7 +1165,8 @@ CREATE TABLE `users` (
   UNIQUE KEY `uq_users_username` (`username`),
   UNIQUE KEY `uq_users_national_id` (`national_id`),
   UNIQUE KEY `uq_users_mobile` (`mobile`),
-  KEY `idx_users_role_status` (`role`,`status`)
+  KEY `idx_users_role_status` (`role`,`status`),
+  KEY `idx_users_role_archived` (`role`,`archived_at`,`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `auth_login_attempts`;
@@ -1548,10 +1682,18 @@ CREATE TABLE IF NOT EXISTS `collection_tasks` (
   `created_at` datetime NOT NULL,
   `completed_at` datetime DEFAULT NULL,
   `completed_by` bigint unsigned DEFAULT NULL,
+  `action_type` varchar(40) DEFAULT NULL,
+  `priority` varchar(16) DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `completion_result` varchar(40) DEFAULT NULL,
+  `related_followup_id` bigint unsigned DEFAULT NULL,
+  `completion_note` varchar(500) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_collection_task_dedupe` (`dedupe_key`),
   KEY `idx_collection_task_assigned` (`assigned_to`,`status`,`due_at`),
-  KEY `idx_collection_task_contract` (`contract_id`,`status`,`id`)
+  KEY `idx_collection_task_contract` (`contract_id`,`status`,`id`),
+  KEY `idx_collection_task_contract_due` (`contract_id`,`status`,`due_at`,`id`),
+  KEY `idx_collection_task_related_followup` (`related_followup_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `customer_credit_profiles` (
@@ -2461,4 +2603,82 @@ CREATE TABLE IF NOT EXISTS merchant_api_quotes (
     (consumed_order_uuid IS NULL AND consumed_at IS NULL)
     OR (consumed_order_uuid IS NOT NULL AND consumed_at IS NOT NULL)
   )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Contract financial versioning (v7.0.4). Historical contracts are not
+-- backfilled here: application code records an explicit incomplete legacy baseline.
+CREATE TABLE IF NOT EXISTS contract_financial_versions (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  contract_id BIGINT UNSIGNED NOT NULL,
+  version_number INT UNSIGNED NOT NULL,
+  parent_version_id BIGINT UNSIGNED NULL,
+  source_amendment_id BIGINT UNSIGNED NULL,
+  provenance VARCHAR(96) NOT NULL,
+  history_complete TINYINT(1) NOT NULL DEFAULT 0,
+  is_current TINYINT(1) NOT NULL DEFAULT 0,
+  terms_snapshot_json LONGTEXT NOT NULL,
+  schedule_snapshot_json LONGTEXT NOT NULL,
+  calculation_version VARCHAR(64) NOT NULL,
+  content_hash CHAR(64) NOT NULL,
+  created_by BIGINT UNSIGNED NULL,
+  effective_from DATE NOT NULL,
+  document_version_id BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_contract_financial_version (contract_id, version_number),
+  UNIQUE KEY uq_contract_financial_source_amendment (source_amendment_id),
+  KEY idx_contract_financial_current (contract_id, is_current, version_number),
+  KEY idx_contract_financial_parent (parent_version_id),
+  KEY idx_contract_financial_document (document_version_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS contract_amendments (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  contract_id BIGINT UNSIGNED NOT NULL,
+  amendment_number INT UNSIGNED NOT NULL,
+  base_version_id BIGINT UNSIGNED NOT NULL,
+  result_version_id BIGINT UNSIGNED NULL,
+  status VARCHAR(32) NOT NULL,
+  reason TEXT NOT NULL,
+  effective_on DATE NOT NULL,
+  base_fingerprint CHAR(64) NOT NULL,
+  requested_changes_json LONGTEXT NOT NULL,
+  before_snapshot_json LONGTEXT NOT NULL,
+  proposed_snapshot_json LONGTEXT NOT NULL,
+  impact_snapshot_json LONGTEXT NOT NULL,
+  requested_by BIGINT UNSIGNED NOT NULL,
+  requested_at DATETIME NOT NULL,
+  approved_by BIGINT UNSIGNED NULL,
+  approved_at DATETIME NULL,
+  rejected_by BIGINT UNSIGNED NULL,
+  rejected_at DATETIME NULL,
+  rejection_reason TEXT NULL,
+  applied_by BIGINT UNSIGNED NULL,
+  applied_at DATETIME NULL,
+  document_version_id BIGINT UNSIGNED NULL,
+  idempotency_key VARCHAR(100) NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_contract_amendment_number (contract_id, amendment_number),
+  UNIQUE KEY uq_contract_amendment_idempotency (contract_id, idempotency_key),
+  KEY idx_contract_amendment_status (contract_id, status, requested_at),
+  KEY idx_contract_amendment_base_version (base_version_id),
+  KEY idx_contract_amendment_result_version (result_version_id),
+  KEY idx_contract_amendment_document (document_version_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS contract_amendment_history (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  amendment_id BIGINT UNSIGNED NOT NULL,
+  contract_id BIGINT UNSIGNED NOT NULL,
+  action VARCHAR(48) NOT NULL,
+  actor_id BIGINT UNSIGNED NULL,
+  old_status VARCHAR(32) NULL,
+  new_status VARCHAR(32) NULL,
+  reason TEXT NULL,
+  metadata_json LONGTEXT NULL,
+  request_id VARCHAR(64) NULL,
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_contract_amendment_history (amendment_id, created_at, id),
+  KEY idx_contract_amendment_history_contract (contract_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
