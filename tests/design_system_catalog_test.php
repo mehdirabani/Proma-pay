@@ -48,10 +48,15 @@ foreach ($requiredFamilies as $family) {
 $controller = file_get_contents(__DIR__ . '/../controllers/DesignSystemController.php');
 $view = file_get_contents(__DIR__ . '/../views/design-system/index.php');
 $js = file_get_contents(__DIR__ . '/../assets/js/design-system.js');
+$html = file_get_contents(__DIR__ . '/../design-system.html');
+$exporter = file_get_contents(__DIR__ . '/../scripts/build_design_system_html.php');
 $assert(is_string($controller) && strpos($controller, "Auth::requireRole(['admin'])") !== false, 'design-system route requires administrator access');
 $assert(is_string($controller) && strpos($controller, 'PaymentController') === false && strpos($controller, 'Database::') === false, 'design-system controller has no payment or database operation');
 $assert(is_string($view) && strpos($view, 'lang="fa" dir="rtl"') !== false, 'standalone view is native Persian RTL');
 $assert(is_string($view) && strpos($view, 'ppds-catalog-data') !== false, 'view serializes its local catalog for the browser');
+$assert(is_string($html) && strpos($html, 'PROMA PAY DESIGN SYSTEM') !== false, 'generated standalone HTML page exists');
+$assert(is_string($html) && strpos($html, 'assets/js/design-system.js') !== false && !preg_match('~(?:href|src)="/(?:assets|html/RTL/assets)/~', $html), 'static HTML uses relative local assets');
+$assert(is_string($exporter) && strpos($exporter, 'design-system.html') !== false, 'HTML export has a repeatable build script');
 $assert(is_string($js) && strpos($js, 'proma-design-system-theme') !== false, 'theme preference is scoped to the documentation page');
 $assert(is_string($js) && strpos($js, "elements.languageSelect.addEventListener('change', updateCode)") !== false, 'language selection refreshes the matching code example');
 $assert(is_string($js) && strpos($js, 'document.querySelector') !== false, 'playground code preview is text only and is not evaluated');
